@@ -2,6 +2,7 @@
 #include "translated_runtime.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FUNCTION_LIMIT 8192
 /* External native data uses explicit guest-visible spans, never truncation. */
@@ -16,16 +17,25 @@ struct Function {
 };
 static MemoriesMemory *active;
 static GuestRuntimeRegion *regions;
+static unsigned *region_order; /* region indices sorted by guest base */
 static size_t region_capacity;
 static u32 automatic_cursor = AUTOMATIC_BASE;
 static struct Function functions[FUNCTION_LIMIT];
 static unsigned region_count, function_count;
-/* The region the last data lookup found. Regions are kept in registration
- * order, thousands of globals first, and a mapping registered later (3D
- * Monsters' model arena) is read vertex by vertex, so it is tried before the
- * scan. Regions never overlap, so it can only be right or miss: a released or
- * moved one fails its bounds check like any other. */
-static unsigned last_region;
+/* Direct page candidates avoid hash collisions across model arenas. Entries
+ * retain indices, not reallocatable pointers; complete spans are checked.
+ * Removal invalidates candidates by epoch without clearing megabytes. */
+#define REGION_PAGE_SHIFT 12
+#define REGION_PAGE_COUNT ((EXTERNAL_END - EXTERNAL_BASE + 4095u) >> REGION_PAGE_SHIFT)
+static struct { unsigned index, epoch; } region_pages[REGION_PAGE_COUNT];
+static unsigned region_epoch = 1;
+static void invalidate_region_pages(void)
+{
+    if (!++region_epoch) {
+        memset(region_pages, 0, sizeof(region_pages));
+        region_epoch = 1;
+    }
+}
 static void *(*function_resolver)(u32);
 static char fatal_detail[512];
 
@@ -68,8 +78,11 @@ void GuestRuntime_Reset(void)
     active = NULL;
     function_resolver = NULL;
     region_count = function_count = 0;
+    invalidate_region_pages();
     free(regions);
+    free(region_order);
     regions = NULL;
+    region_order = NULL;
     region_capacity = 0;
     automatic_cursor = AUTOMATIC_BASE;
 }
@@ -106,6 +119,12 @@ int GuestRuntime_RegisterData(void *host, size_t length, u32 guest)
             (guest < r->guest + r->length && r->guest < guest + length)) return -1;
     }
     if (GuestRuntime_ReserveRegions((size_t)region_count + 1)) return -1;
+    unsigned position = region_count;
+    while (position && regions[region_order[position - 1]].guest > guest) {
+        region_order[position] = region_order[position - 1];
+        --position;
+    }
+    region_order[position] = region_count;
     regions[region_count++] = (GuestRuntimeRegion){start, length, guest, 0, 0};
     return 0;
 }
@@ -113,6 +132,7 @@ int GuestRuntime_ReserveRegions(size_t count)
 {
     size_t capacity = region_capacity ? region_capacity : 128;
     GuestRuntimeRegion *grown;
+    unsigned *order;
     if (count <= region_capacity) return 0;
     if (count > UINT32_MAX || count > SIZE_MAX / sizeof(*regions)) return -1;
     while (capacity < count) {
@@ -120,6 +140,9 @@ int GuestRuntime_ReserveRegions(size_t count)
         capacity *= 2;
     }
     if (capacity > SIZE_MAX / sizeof(*regions)) return -1;
+    order = realloc(region_order, capacity * sizeof(*order));
+    if (!order) return -1;
+    region_order = order;
     grown = realloc(regions, capacity * sizeof(*regions));
     if (!grown) return -1;
     regions = grown;
@@ -214,6 +237,13 @@ int GuestRuntime_UnregisterData(void *host)
         if (regions[i].guest >= AUTOMATIC_BASE && regions[i].guest < automatic_cursor)
             automatic_cursor = regions[i].guest;
         regions[i] = regions[--region_count];
+        unsigned position = 0;
+        for (unsigned n = 0; n <= region_count; ++n) {
+            unsigned index = region_order[n];
+            if (index == i) continue;
+            region_order[position++] = index == region_count ? i : index;
+        }
+        invalidate_region_pages();
         return 0;
     }
     return -1;
@@ -228,19 +258,36 @@ void *GuestRuntime_ResolveData(void *pointer, size_t length)
     if (!active) invalid("memory context is unbound", address, length);
     host = Memories_Resolve(active, (u32)address, length, 1);
     if (host) return host;
-    if (last_region < region_count) {
-        const GuestRuntimeRegion *r = &regions[last_region];
-        size_t offset = address - r->guest;
-        if (address >= r->guest && offset < r->length && length <= r->length - offset)
-            return (void *)(r->host + offset);
+    if (address < EXTERNAL_BASE || address >= EXTERNAL_END)
+        invalid("invalid guest data span", address, length);
+    unsigned page = (address - EXTERNAL_BASE) >> REGION_PAGE_SHIFT;
+    if (region_pages[page].epoch == region_epoch) {
+        unsigned cached = region_pages[page].index;
+        if (cached < region_count) {
+            const GuestRuntimeRegion *r = &regions[cached];
+            if (address >= r->guest) {
+                size_t offset = address - r->guest;
+                if (offset < r->length && length <= r->length - offset) {
+                    return (void *)(r->host + offset);
+                }
+            }
+        }
     }
-    for (i = 0; i < region_count; ++i) {
+    /* Small regions can share a page. A sorted fallback stays logarithmic
+     * instead of scanning every registered global on a candidate miss. */
+    unsigned low = 0, high = region_count;
+    while (low < high) {
+        unsigned middle = low + (high - low) / 2;
+        if (regions[region_order[middle]].guest <= address) low = middle + 1;
+        else high = middle;
+    }
+    if (low) {
+        i = region_order[low - 1];
         const GuestRuntimeRegion *r = &regions[i];
-        size_t offset;
-        if (address < r->guest) continue;
-        offset = address - r->guest;
+        size_t offset = address - r->guest;
         if (offset < r->length && length <= r->length - offset) {
-            last_region = i;
+            region_pages[page].index = i;
+            region_pages[page].epoch = region_epoch;
             return (void *)(r->host + offset);
         }
     }
