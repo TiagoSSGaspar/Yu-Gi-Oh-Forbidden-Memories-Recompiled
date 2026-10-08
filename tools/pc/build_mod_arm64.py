@@ -20,6 +20,23 @@ from guest_build import (
 from llvm_guest import ROOT, inspect, normalize, process, toolchain, validate_c_abi
 from macos_deps import sdk_path
 
+# libSystem routines a mod may import directly: dlopen binds them from the
+# system, not from the game's exports. Only math that takes and returns plain
+# numbers is listed, since a translated mod passes 32-bit guest tokens where it
+# has pointers (pointer routines go through the GuestRuntime_ bridges named in
+# HOST_LIBC). clang turns sin and cos of one value into __sincos_stret.
+SCALAR_LIBM = {
+    name + suffix
+    for name in (
+        "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
+        "sinh", "cosh", "tanh", "exp", "exp2", "log", "log2", "log10",
+        "pow", "sqrt", "cbrt", "hypot", "fabs", "floor", "ceil", "round",
+        "trunc", "fmod", "fmin", "fmax",
+    )
+    for suffix in ("", "f")
+} | {"__sincos_stret", "__sincosf_stret"}
+SYSTEM_IMPORTS = {"abort", "dyld_stub_binder"} | SCALAR_LIBM
+
 
 def mod_pins(summary, pin_tables):
     """Build mod guest pins without replacing native PC-owned storage."""
@@ -124,7 +141,8 @@ def compile_units(sources, folder, compiler, sdk, flags, aliases, signatures, pi
 
 
 def link_library(folder, library_name, objects, routines, compiler, sdk, exported):
-    """Pair global registration/cleanup and reject imports absent from the game."""
+    """Pair global registration/cleanup and reject imports absent from the game
+    and from SYSTEM_IMPORTS."""
     registration = folder / "registration.c"
     registration.write_text(
         "".join(
@@ -163,7 +181,7 @@ def link_library(folder, library_name, objects, routines, compiler, sdk, exporte
         ).splitlines()
         if line.strip()
     }
-    missing = imports - exported - {"abort", "dyld_stub_binder"}
+    missing = imports - exported - SYSTEM_IMPORTS
     if missing:
         raise SystemExit("ARM64 game does not provide: " + ", ".join(sorted(missing)))
     return staged

@@ -1792,7 +1792,9 @@ The compiler uses the same structured LLVM guest-memory translation as the
 game. Mods should include the game's annotated headers (`G32`, `PSXLONG`)
 for guest records; a plain LP64 recompile is insufficient. Imported function
 ABIs are checked against the current build's `mod_signatures.json`; missing
-imports are rejected. Constructors/destructors, TLS and machine assembly
+imports are rejected, except the system's math that takes and returns only
+numbers (`sin`, `sqrt`, `pow`, ...: `SCALAR_LIBM` in
+`tools/pc/build_mod_arm64.py`). Constructors/destructors, TLS and machine assembly
 are unsupported. Initialize through `MemoriesModInit` and release through
 `shutdown` instead.
 
