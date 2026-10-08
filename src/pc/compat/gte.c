@@ -1,3 +1,12 @@
+#if defined(MEMORIES_TRANSLATED) && !defined(MEMORIES_INSTRUMENT_SOFTGPU)
+#include "pc/guest/translated_runtime.h"
+/* An ordinary native unit on macOS (tools/pc/build_arm64.py), as SoftGpu is:
+ * the register file is host memory, and only an address a caller hands in
+ * can be a guest one, so those are resolved where they come in. */
+#define GTE_GUEST(pointer, size) GuestRuntime_ResolveData((void *)(pointer), (size))
+#else
+#define GTE_GUEST(pointer, size) (pointer)
+#endif
 #include "pgxp.h"
 #include "gte.h"
 #include <string.h>
@@ -46,9 +55,9 @@ void Memories_GteReset(void)
 int Memories_GtePrecise(unsigned slot, float *x, float *y, float *w)
 {
     if (slot > 2 || !precise[slot].known) return 0;
-    *x = precise[slot].x;
-    *y = precise[slot].y;
-    *w = precise[slot].w;
+    *(float *)GTE_GUEST(x, sizeof(*x)) = precise[slot].x;
+    *(float *)GTE_GUEST(y, sizeof(*y)) = precise[slot].y;
+    *(float *)GTE_GUEST(w, sizeof(*w)) = precise[slot].w;
     return 1;
 }
 
@@ -543,14 +552,14 @@ int Memories_GteCommand(uint32_t command)
 
 void Memories_GteLoad(unsigned index, const void *address)
 {
-    const uint8_t *bytes = address;
+    const uint8_t *bytes = GTE_GUEST(address, 4);
     Memories_GteWriteData(index, (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) |
                                      ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[3] << 24));
 }
 
 void Memories_GteStoreWord(uint32_t value, void *address)
 {
-    uint8_t *bytes = address;
+    uint8_t *bytes = GTE_GUEST(address, 4);
     bytes[0] = (uint8_t)value;
     bytes[1] = (uint8_t)(value >> 8);
     bytes[2] = (uint8_t)(value >> 16);
@@ -573,6 +582,6 @@ void Memories_GteStore(unsigned index, void *address)
 /* Save states: the register file, without tying the GTE to the state code. */
 void *Gte_StateData(unsigned *size)
 {
-    *size = sizeof(gte);
+    *(unsigned *)GTE_GUEST(size, sizeof(*size)) = sizeof(gte);
     return &gte;
 }

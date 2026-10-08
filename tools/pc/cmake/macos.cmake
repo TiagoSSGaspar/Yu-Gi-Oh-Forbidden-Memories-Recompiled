@@ -34,4 +34,8 @@ if(BUILD_TESTING)
         COMMAND "${Python3_EXECUTABLE}" tools/pc/test_host_renderer_boundaries.py --differential ${sanitizer_args})
     set_tests_properties(pc_host_renderer_boundaries PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         TIMEOUT 180 RUN_SERIAL TRUE)
+    add_test(NAME pc_gte_boundaries
+        COMMAND "${Python3_EXECUTABLE}" tools/pc/test_gte_boundaries.py --differential ${sanitizer_args})
+    set_tests_properties(pc_gte_boundaries PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        TIMEOUT 180 RUN_SERIAL TRUE)
 endif()
