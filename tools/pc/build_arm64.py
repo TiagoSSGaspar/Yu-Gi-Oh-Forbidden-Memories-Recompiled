@@ -5,10 +5,11 @@ The driver emits IR under tmp, compiles every resident and configured
 module unit, and links native SDK/platform services. Missing game functions use
 existing fatal Memories_Unimplemented diagnostics, never success placeholders.
 
-O2 code generation and audited native SoftGpu boundaries are enabled by default.
-The guest frontend remains O0 before translation; --no-optimize restores the
-fully instrumented O0 diagnostic build, and --instrument-softgpu retains O2
-while restoring per-access raster instrumentation for comparisons.
+O2 code generation and audited native SoftGpu and GTE boundaries are enabled
+by default. The guest frontend remains O0 before translation; --no-optimize
+restores the fully instrumented O0 diagnostic build, and --instrument-softgpu
+retains O2 while restoring per-access raster and GTE instrumentation for
+comparisons.
 """
 
 import argparse
@@ -43,6 +44,9 @@ from llvm_guest import TranslationError, inspect, normalize, toolchain, translat
 from native_call_marshalling import emit_native_calls
 
 SOFT_GPU = "src/pc/render/soft_gpu.c"
+# The software GTE touches only its register file; the addresses lwc2/swc2
+# hand it are resolved at its boundary (tools/pc/test_gte_boundaries.py).
+GTE = "src/pc/compat/gte.c"
 # Renderer caches and decoded PNGs never enter 32-bit guest storage.
 # Keep their LP64 pointers and lifetimes on the host, outside the token arena.
 # State restoration may replace guest heaps, but must not free live GL buffers.
@@ -630,13 +634,13 @@ def main():
     parser.add_argument(
         "--instrument-softgpu",
         action="store_true",
-        help="Keep full SoftGpu instrumentation for optimized A/B comparisons",
+        help="Keep full SoftGpu and GTE instrumentation for optimized A/B comparisons",
     )
     parser.add_argument(
         "--optimize",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Enable O2 translated IR/native helpers and audited SoftGpu boundaries (default); frontend remains O0",
+        help="Enable O2 translated IR/native helpers and audited SoftGpu and GTE boundaries (default); frontend remains O0",
     )
     args = parser.parse_args()
     llvm = toolchain()
@@ -663,7 +667,7 @@ def main():
         )
     ordinary = {s for s in natives if s in ORDINARY or "/translated_" in s}
     if args.optimize and not args.instrument_softgpu:
-        ordinary.add(SOFT_GPU)
+        ordinary |= {SOFT_GPU, GTE}
     # Local independent runtime helpers must never resolve their own accesses.
     flags = [
         *guest_frontend_flags(sdk),
