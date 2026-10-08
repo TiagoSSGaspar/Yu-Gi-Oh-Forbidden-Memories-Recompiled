@@ -13,6 +13,7 @@ static void expect_abort(int which)
     static const char *operations[] = {
         "invalid guest data span", "invalid guest data span",
         "unknown guest function", "unregistered native pointer cannot fit guest storage",
+        "invalid guest data span", "invalid guest data span",
         "invalid guest data span", "invalid guest data span"
     };
     int output[2], status;
@@ -30,8 +31,10 @@ static void expect_abort(int which)
         if (which == 1) GuestRuntime_ResolveData((void *)(uintptr_t)0xd0000007u, 2);
         if (which == 2) GuestRuntime_ResolveFunction((void *)(uintptr_t)0x80010008u);
         if (which == 3) GuestRuntime_EncodePointer((void *)(uintptr_t)0xfeed00000000ull);
-        if (which == 4) GuestRuntime_ResolveData((void *)(uintptr_t)0x90000000u, 1);
-        if (which == 5) GuestRuntime_ResolveData((void *)(uintptr_t)0x9000103eu, 4);
+        if (which == 4) GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010008u, 25);
+        if (which == 5) GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010008u, 1);
+        if (which == 6) GuestRuntime_ResolveData((void *)(uintptr_t)0x90000000u, 1);
+        if (which == 7) GuestRuntime_ResolveData((void *)(uintptr_t)0x9000103eu, 4);
         _exit(0);
     }
     close(output[1]);
@@ -88,12 +91,51 @@ int main(void)
     assert(function(10, -3) == 7);
     for (i = 0; i < 4; ++i) expect_abort((int)i);
     {
+        u8 first[32], second[32], replacement[16];
+        /* Small regions sharing a page must still resolve their own span.
+         * Removal swaps registry entries; reuse must point at new storage. */
+        assert(!GuestRuntime_RegisterData(first, sizeof(first), 0xd0010000u));
+        assert(!GuestRuntime_RegisterData(second, sizeof(second), 0xd0010300u));
+        for (i = 0; i < 8; ++i) {
+            assert(GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010008u, 24) == first + 8);
+            assert(GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010308u, 24) == second + 8);
+        }
+        expect_abort(4); /* Cached page cannot widen a registered span. */
+        assert(!GuestRuntime_UnregisterData(first));
+        expect_abort(5); /* Cached page cannot retain a freed allocation. */
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010308u, 24) == second + 8);
+        assert(!GuestRuntime_RegisterData(replacement, sizeof(replacement), 0xd0010000u));
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0xd0010008u, 8) == replacement + 8);
+        assert(!GuestRuntime_UnregisterData(second));
+        assert(!GuestRuntime_UnregisterData(replacement));
+    }
+    {
+        u8 storage[64][16];
+        /* Reverse/random guest ordering, gaps, multiple allocations per
+         * page, and swap removal must retain all surviving identities. */
+        for (i = 0; i < 64; ++i) {
+            unsigned slot = (i * 37u) & 63u;
+            assert(!GuestRuntime_RegisterData(storage[i], 16, 0xd0100000u + slot * 32));
+        }
+        for (i = 0; i < 64; ++i) {
+            unsigned slot = (i * 37u) & 63u;
+            assert(GuestRuntime_ResolveData((void *)(uintptr_t)(0xd0100000u + slot * 32 + 3), 13) == storage[i] + 3);
+        }
+        for (i = 0; i < 64; i += 2) assert(!GuestRuntime_UnregisterData(storage[i]));
+        for (i = 1; i < 64; i += 2) {
+            unsigned slot = (i * 37u) & 63u;
+            assert(GuestRuntime_ResolveData((void *)(uintptr_t)(0xd0100000u + slot * 32), 16) == storage[i]);
+            assert(!GuestRuntime_UnregisterData(storage[i]));
+        }
+    }
+    {
         /* The structured build registers over 5,000 globals; keep tokens
          * valid across table growth and reuse a released allocation. */
         u8 *many = calloc(8192, 1);
         u32 released;
         assert(many);
         for (i = 0; i < 8192; ++i) GuestRuntime_RegisterAutomatic(many + i, 1);
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0xd0000007u, 1) == external + 7);
         for (i = 0; i < 8192; ++i)
             assert(GuestRuntime_ResolveData((void *)(uintptr_t)GuestRuntime_EncodePointer(many + i), 1) == many + i);
         released = GuestRuntime_EncodePointer(many + 4000);
@@ -118,9 +160,9 @@ int main(void)
             assert(GuestRuntime_ResolveData((void *)(uintptr_t)(0x90000000u + i), 1) == mapping + i);
         assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x9000003cu, 4) == mapping + 60);
         assert(!GuestRuntime_UnregisterData(mapping)); /* other moves into its index */
-        expect_abort(4);
+        expect_abort(6);
         assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x90001008u, 4) == other + 8);
-        expect_abort(5);
+        expect_abort(7);
         assert(GuestRuntime_ResolveData((void *)(uintptr_t)GuestRuntime_EncodePointer(many + 7), 1) == many + 7);
         assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x9000103cu, 4) == other + 60);
         GuestRuntime_Reset();
