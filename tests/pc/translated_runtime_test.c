@@ -12,7 +12,8 @@ static void expect_abort(int which)
 {
     static const char *operations[] = {
         "invalid guest data span", "invalid guest data span",
-        "unknown guest function", "unregistered native pointer cannot fit guest storage"
+        "unknown guest function", "unregistered native pointer cannot fit guest storage",
+        "invalid guest data span", "invalid guest data span"
     };
     int output[2], status;
     char diagnostic[1024];
@@ -29,6 +30,8 @@ static void expect_abort(int which)
         if (which == 1) GuestRuntime_ResolveData((void *)(uintptr_t)0xd0000007u, 2);
         if (which == 2) GuestRuntime_ResolveFunction((void *)(uintptr_t)0x80010008u);
         if (which == 3) GuestRuntime_EncodePointer((void *)(uintptr_t)0xfeed00000000ull);
+        if (which == 4) GuestRuntime_ResolveData((void *)(uintptr_t)0x90000000u, 1);
+        if (which == 5) GuestRuntime_ResolveData((void *)(uintptr_t)0x9000103eu, 4);
         _exit(0);
     }
     close(output[1]);
@@ -97,6 +100,29 @@ int main(void)
         assert(!GuestRuntime_UnregisterData(many + 4000));
         GuestRuntime_RegisterAutomatic(many + 4000, 1);
         assert(GuestRuntime_EncodePointer(many + 4000) == released);
+        GuestRuntime_Reset();
+        free(many);
+    }
+    {
+        /* A mapping registered after thousands of globals (3D Monsters' model
+         * arena) is read again and again, so the resolver remembers the region
+         * it found last. Released, or with another region in its index, the
+         * remembered one must neither answer for the wrong region nor let a
+         * span run past its end. */
+        u8 *many = calloc(4096, 1), mapping[64], other[64];
+        assert(many && !GuestRuntime_Bind(memory));
+        for (i = 0; i < 4096; ++i) GuestRuntime_RegisterAutomatic(many + i, 1);
+        assert(!GuestRuntime_RegisterMapping(mapping, sizeof(mapping), 0x90000000u));
+        assert(!GuestRuntime_RegisterMapping(other, sizeof(other), 0x90001000u));
+        for (i = 0; i < 64; ++i)
+            assert(GuestRuntime_ResolveData((void *)(uintptr_t)(0x90000000u + i), 1) == mapping + i);
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x9000003cu, 4) == mapping + 60);
+        assert(!GuestRuntime_UnregisterData(mapping)); /* other moves into its index */
+        expect_abort(4);
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x90001008u, 4) == other + 8);
+        expect_abort(5);
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)GuestRuntime_EncodePointer(many + 7), 1) == many + 7);
+        assert(GuestRuntime_ResolveData((void *)(uintptr_t)0x9000103cu, 4) == other + 60);
         GuestRuntime_Reset();
         free(many);
     }

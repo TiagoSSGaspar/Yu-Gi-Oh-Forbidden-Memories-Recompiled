@@ -20,6 +20,12 @@ static size_t region_capacity;
 static u32 automatic_cursor = AUTOMATIC_BASE;
 static struct Function functions[FUNCTION_LIMIT];
 static unsigned region_count, function_count;
+/* The region the last data lookup found. Regions are kept in registration
+ * order, thousands of globals first, and a mapping registered later (3D
+ * Monsters' model arena) is read vertex by vertex, so it is tried before the
+ * scan. Regions never overlap, so it can only be right or miss: a released or
+ * moved one fails its bounds check like any other. */
+static unsigned last_region;
 static void *(*function_resolver)(u32);
 static char fatal_detail[512];
 
@@ -222,13 +228,21 @@ void *GuestRuntime_ResolveData(void *pointer, size_t length)
     if (!active) invalid("memory context is unbound", address, length);
     host = Memories_Resolve(active, (u32)address, length, 1);
     if (host) return host;
+    if (last_region < region_count) {
+        const GuestRuntimeRegion *r = &regions[last_region];
+        size_t offset = address - r->guest;
+        if (address >= r->guest && offset < r->length && length <= r->length - offset)
+            return (void *)(r->host + offset);
+    }
     for (i = 0; i < region_count; ++i) {
         const GuestRuntimeRegion *r = &regions[i];
         size_t offset;
         if (address < r->guest) continue;
         offset = address - r->guest;
-        if (offset < r->length && length <= r->length - offset)
+        if (offset < r->length && length <= r->length - offset) {
+            last_region = i;
             return (void *)(r->host + offset);
+        }
     }
     invalid("invalid guest data span", address, length);
     return NULL;
