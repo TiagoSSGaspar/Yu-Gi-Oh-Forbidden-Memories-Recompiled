@@ -93,6 +93,24 @@
             "description": "How much darker the cards are drawn under the monsters, in percent."
         },
         {
+            "key": "attack",
+            "label": "Monsters attack (3D models)",
+            "type": "choice",
+            "default": 1,
+            "choices": ["Off", "On the attack cards", "On the field", "Both"],
+            "description": "The attacker strikes and the defender reacts as in the 3D arena: it is hit, it guards, or, when the attacker is weaker, it strikes back. On the attack cards needs the monsters on the attack cards. On the field, the attacker crosses the field to the defender's zone, strikes and goes back; the damage shows over the monster struck, a destroyed monster fades away, and the attack cards do not come up. Both plays it on the field, then on the attack cards. The battle waits for the blows before it shows the damage. Only in the 3D models style."
+        },
+        {
+            "key": "attack_speed",
+            "label": "Attack speed (3D models)",
+            "type": "int",
+            "default": 200,
+            "min": 25,
+            "max": 400,
+            "step": 25,
+            "description": "How fast the attack and the reactions play, in percent of the 3D arena's speed: 100 is the arena's own pace."
+        },
+        {
             "key": "summon",
             "label": "Anime summon (3D models)",
             "type": "bool",

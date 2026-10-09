@@ -1503,6 +1503,161 @@ opponent's first attack and the player's quick and arena attacks after the
 `duel-3d-monsters` smoke input, frame by frame against the same frames with
 `MEMORIES_MOD_3D_MONSTERS_BATTLE=0`.
 
+**The attack.** The setting `attack` is a choice: off, on the attack cards
+(the default; the 1 the setting stored when it was a bool on or off), on the
+field, or both (one bit each). On the attack cards, with `battle` on, the
+two monsters fight on the big cards instead of standing there. The
+fight uses the rows of animation the 3D arena plays, which every model
+carries: the attack row is `field_DFE + 3` (row 3 from attack position), and
+the reactions are 5 (withstands the blow), 6 (hit) and 8 (guards). The arena's
+controller (`func_8004EB00`, mode 15) starts the defender's reaction from the
+attacker's control module. For a monster with no module, which is how the mod
+loads every one, `func_800559D4` starts it at the attack row's midpoint, and
+so does the mod. When the battle reaches step 7, before any damage number, the
+mod starts the attack and holds the battle there. A hook on
+`DuelScene_UpdateBattle` skips its update until the last blow lands (and at
+most 1,200 frames). Then the game shows its flash, numbers and flames as
+ever, over the reactions. The case comes from the exchange step 3 already
+resolved (`D_8009B1B0[side]`, -1 for a card destroyed and 1 for one hit
+that stays):
+
+- the defender is destroyed: it is hit (6);
+- its defence holds: it guards (8);
+- the attacker is the weaker: the defender withstands the blow (5), strikes
+  back with its own attack row as soon as that row ends (the arena waits for
+  the attacker's whole row), and the attacker is hit;
+- a tie: both are hit;
+- no defender: the attack alone.
+
+A trap that negates the attack skips step 7, and nothing is played. A monster
+that is hit holds the row's last frame until its card burns. Any other row
+ends back at rest (`Model_ControlSlotAnimation(0, 0, 0)`, then
+`func_800597C8(0, 1, 0)`).
+
+The arena's rows carry a monster across a wide floor, and a small monster
+stands on its card several times enlarged (Shadow Specter at 5.7 times), so
+the first version threw the defender off the screen with its recoil. Every
+frame the mod takes the mean world translation of the model's parts against
+the same mean at rest. It keeps 35% of the shift (`attack_drift`, not
+declared) and no more than half a card's width of it, and takes the rest off
+the placement. The attacker still lunges at the other card (Man-eating Plant's
+head reaches the skull), and the one hit recoils by its own.
+
+The two monsters are cache entries of their own while `attack` is on (tag
+`side + 1`), so the rows never reach the monsters on the field, and they are
+dropped when the presentation ends. `attack_speed` (default 200%) scales the
+slot's speed byte while a row plays. The arena plays rows at 8 units a VBlank,
+the same as here, so 100% is the arena's own pace: its blows land 1.3 to 4.5
+seconds in, and a counter-attack up to 10. The particles and sounds of the
+arena's attacks are not there: they come from each monster's MIPS control
+module and its sound bank, which the mod does not load.
+`MEMORIES_MOD_3D_MONSTERS_ATTACK_TEST=1..4` (not declared) forces the
+destroyed, guarded, counter or tie case for any exchange, which only changes
+what is shown. Checked frame by frame on the quick battle of the
+`animated_battle_inputs` timeline with its last Square turned into Cross
+(Man-eating Plant against Shadow Specter in defence, held 76 frames at 200%),
+on every case with `BATTLE_TEST` pairs, and against the previous build:
+`attack` off, and the arena attack, give the same frames. The smoke case
+`duel-3d-monsters-attack` is that battle at the bite (frame 20164).
+
+**The attack on the field.** With `attack` on the field (or both), the two
+fight on the field first, before the big cards come up, and need no `battle`.
+The quick battle lifts both field cards in its first call: their records
+lose `DUEL_CARD_FLAG_OCCUPIED`, and each card's display object becomes
+`D_800E9EF0[side]`, its `field_6A` the record. Through step 1 the cards fly
+up to the screen while the game's own camera comes back from overhead (pitch
+1022) to the view the duel is played from (600 away, pitch 256), with the
+panels gone. Step 1 ends by setting `D_8009B174` to 2 (frame 20045 of the
+timeline), and the next call makes the big cards. The same hook holds the
+battle at that call (`D_8009B174 == 2` exactly), so nothing of the game's
+camera or interface has to be touched, while:
+
+- the cards in the air are hidden (`DISPLAY_OBJECT_FLAG_RENDERABLE`, which
+  step 2 clears itself a little later), and both monsters grow on their own
+  zones (`D_800908A0`) over 12 frames, turned to face each other, a face-down
+  one shown;
+- the duel camera comes in over 24 frames, to 60% of its distance
+  (`fight_zoom`), aimed between the attacker, wherever it is, and the
+  defender, 48 units over the mat, and swung 60% of the way to seeing the two
+  side on (`fight_turn`; the camera looks along `(cos angle, sin angle)` on the
+  mat in `ViewState_ApplyOrbit`). The game re-applies the orbit only while one
+  of its own camera moves runs, and the last one ended with step 1. The mat is
+  drawn before the mod's pass, so each new camera is set for the next frame;
+- the attacker glides over 20 frames from its zone to where it strikes from.
+  The arena stands both models on one point facing each other, each body its
+  own way from it (the 1:1 body offset `raw_z`), and an attack row is made to
+  reach across that gap, so the attacker stops as far from the defender as the
+  two bodies would be in the arena at its own scale (`fight_reach` percent of
+  it; Man-eating Plant against Shadow Specter: 208 units, so it crosses 75
+  of the 283 between their zones). While a monster plays an attack row all of its body's shift shows,
+  up to that gap; any other row keeps 35% of it, at most 35 units;
+- the blows are the attack cards', from the outcome worked out ahead: it is
+  only stored at step 3, but it is `func_8001EFD4`'s (above 0 destroyed, 0
+  guarded, -1 a tie, below that a counter, or guarded when the defender is in
+  defence), which only reads;
+- once the last blow has landed and its row has ended, the attacker glides
+  home unless it was destroyed, and the camera goes back the same way; the
+  battle is let go when both monsters' rows are over (back at rest, or a
+  destroyed one stopped on its hit row).
+
+The hit row stops itself a step short of its end (`func_800556E8` calls
+`func_80059700(index, 0)` for row 6, which sets `field_E16` to 0x23), so a
+row that has stopped counts as over. The two are cache entries of their own
+(tag `side + 3`), dropped when the big cards' pass takes over or the battle
+ends; anything that lets go early (the 1,200-call limit, a setting changed,
+the mod turned off) puts the camera back, and a loaded state keeps its own.
+Both on the field and on the cards plays the fight twice. Checked frame by
+frame on the same timeline for every case with `attack_test`: the fight takes
+270 frames there (355 for the counter). The smoke case
+`duel-3d-monsters-attack-field` is the bite on the field (frame 20155).
+
+**On the field alone.** With `attack` on the field and not both, the big
+cards never come up: the fight ends the battle itself.
+
+- Each blow shows what the card it struck would have shown, as it lands.
+  Step 3's `D_8009B1B0` and `D_8009B1A4` are worked out ahead from the same
+  `func_8001EFD4` result. A side left untouched shows nothing; any other gets
+  step 8's damage effect (request id 2: `field_12` the number, `field_1A`
+  its size by thousands, at most 2) and its sound (0x10 plus the size, 0xD
+  plus it on the attacker's side). One struck for nothing gets the flash
+  alone, as the effect itself does with 0.
+- A direct attack's number is step 9's in its plain form: size 0-2, not the
+  burst of 3-5.
+- The effect adds its colour to whatever is under it, so over a pale monster
+  the digits all but vanished. Each number goes above the head of the monster
+  it is for, against the dark behind the fight; a direct attack's goes over
+  the middle of the screen, above the attacker. The head is the top of the
+  outline its packets covered when it was last drawn (`packet_height`), and
+  the number is kept whole on the 320-pixel screen.
+- A destroyed monster goes over 16 frames once its hit row has stopped: the
+  summon run backwards, with the burning card's sound (0x1B). Until it has
+  gone, the camera stays in and the attacker stays where it struck. While the
+  camera goes back, both turn to the way their zones face.
+- The battle is let go once every number has run (its request no longer
+  `DUEL_EFFECT_REQUEST_FLAG_ACTIVE`) and every destroyed monster has gone.
+  At the next call, still at step 2, the hook ends it:
+  - Step 3 runs as the game's own, with `D_8009B174 = 3 | 0x80` so its
+    fade-out counts as begun and the field stays up. It takes the life points
+    (`Mods_DamageLife`) and counts the ranks. Like step 3, this waits out any
+    screen fade (`D_800E9ECE[0]` bit 7), or no life points would be taken.
+  - What step 11 does first follows: each card that was not destroyed goes
+    back on its zone (`func_80024D34`, the saved 0xA00 flags, 0x4000 on the
+    attacker, the saved modifiers, `Duel_ApplyCardObjectFlags`), and its
+    summon is marked done, so its monster stands at once where the fighter
+    stood.
+  - The two lifted cards are released, the panels slide back to 0xC and
+    0x118 (`func_8001ED20`) and count to the new life points, and the scene
+    goes to state 5.
+  - A destroyed card's record stays empty, as after its card burns.
+
+Checked on the timeline with each real outcome, forced by a test mod at step
+1 that changes the cards' modifiers and positions. Destroyed with 2300
+damage, counter (-1700 to the player), tie, guarded with 1400 to the player,
+guarded for nothing and a direct attack for 800 all end on the field with
+the life points step 3 takes. The smoke case
+`duel-3d-monsters-attack-field-end` is the turn after the battle (frame
+20400): the attacker back on its zone, face up.
+
 ### Images from the disc
 
 `python tools/pc/extract_images.py [family ...]` writes the game's images
