@@ -40,7 +40,7 @@ TAG-XXXXXXXX, kept when the run found a difference not accepted in
 mod_compat.txt (or stopped) and removed otherwise: worktrees
 share tmp/ (a junction to the main checkout's), so two checks running at once
 in two of them took each other's frames and folders when they shared one."""
-import argparse, concurrent.futures, glob, hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, urllib.request, zipfile
+import argparse, concurrent.futures, glob, hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REPOSITORY = "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"   # src/pc/platform/update_check.c
@@ -341,9 +341,13 @@ def unpack(archive, into, top):
         if zipped:
             package.extractall(into)
         elif not hasattr(tarfile, "data_filter"):
-            sys.exit(f"check_mod_abi: unpacking {archive} needs tarfile's data filter (Python 3.12, or 3.8.17+)")
+            sys.exit(f"check_mod_abi: unpacking {archive} needs tarfile's data filter "
+                     "(Python 3.8.17+, 3.9.17+, 3.10.12+, 3.11.4+ or 3.12)")
         else:
-            package.extractall(into, filter="data")
+            try:
+                package.extractall(into, filter="data")
+            except tarfile.FilterError as error:   # a link out of the folder, a device node
+                sys.exit(f"check_mod_abi: {archive}: {error}; nothing of it was kept")
     if not os.path.isdir(os.path.join(into, top)):
         sys.exit(f"check_mod_abi: {archive} has no {top} folder")
 
@@ -398,23 +402,48 @@ def fetch(tag, system, digests):
                 sys.exit(f"check_mod_abi: {url} is not the {name} mod_compat.txt pins (sha256 {actual}, "
                          f"expected {expected}); nothing of it was unpacked")
         unpack(source, staging, top)
-        if os.path.isdir(unpacked):
-            if kept():
-                return unpacked   # another run put the folder and its package in meanwhile
-            # A folder no pinned package stood beside: set aside (removed with
-            # the staging folder) for the one just unpacked.
-            os.rename(unpacked, os.path.join(staging, "untrusted"))
+
+        def set_aside(as_name):
+            """Move a folder with no pinned package beside it out of the way
+            (removed with the staging folder); True if it turns out to be
+            another run's. A run moves its folder in and its package right
+            after, so its package is waited for about a second first."""
+            for attempt in range(11):
+                if not os.path.isdir(unpacked):
+                    return False   # another run set it aside meanwhile
+                if kept():
+                    return True
+                if attempt < 10:
+                    time.sleep(0.1)
+            try:
+                os.rename(unpacked, os.path.join(staging, as_name))
+            except OSError as error:
+                if not os.path.isdir(unpacked):
+                    return False
+                if kept():
+                    return True
+                sys.exit(f"check_mod_abi: cannot set aside {unpacked}, which has no pinned package beside "
+                         f"it ({error}); delete {folder} and run again")
+            return False
+
+        if os.path.isdir(unpacked) and set_aside("untrusted"):
+            return unpacked   # another run put the folder and its package in meanwhile
         try:
             os.rename(os.path.join(staging, top), unpacked)
         except OSError:
             if not os.path.isdir(unpacked):  # not another run's copy that got there first
                 raise
-            if kept():
-                return unpacked   # another run's, beside its package
-            # A folder that got there first with no pinned package beside it
-            # (copied in): set aside like the one above, never trusted.
-            os.rename(unpacked, os.path.join(staging, "untrusted-late"))
-            os.rename(os.path.join(staging, top), unpacked)
+            # A folder that got there first: another run's, beside its package,
+            # or one with none (copied in), set aside like the one above.
+            if set_aside("untrusted-late"):
+                return unpacked
+            try:
+                os.rename(os.path.join(staging, top), unpacked)
+            except OSError as error:
+                if os.path.isdir(unpacked) and kept():
+                    return unpacked   # another run's again, beside its package
+                sys.exit(f"check_mod_abi: cannot move the unpacked {top} to {unpacked} ({error}); "
+                         "another check may be fetching it, run again")
         # The package goes in last: a folder is trusted only beside it.
         if source != archive:
             try:

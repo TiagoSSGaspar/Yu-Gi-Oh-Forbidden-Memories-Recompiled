@@ -55,6 +55,17 @@ class Fetch(unittest.TestCase):
         patcher = mock.patch.object(check_mod_abi.urllib.request, "urlopen", counting)
         patcher.start()
         self.addCleanup(patcher.stop)
+        # fetch()'s waits for another run's package: none really, each one
+        # counted and, when a test sets one, a step of that other run.
+        self.waits, self.while_waiting = [], None
+
+        def sleep(seconds):
+            self.waits.append(seconds)
+            if self.while_waiting:
+                self.while_waiting()
+        patcher = mock.patch.object(check_mod_abi, "time", mock.Mock(sleep=sleep))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def publish(self, system="windows", members=None):
         """A package on the test's server: {(TAG, system): its sha256}."""
@@ -88,7 +99,8 @@ class Fetch(unittest.TestCase):
         for system in NAMES:
             with self.subTest(system=system):
                 if system == "linux" and not hasattr(tarfile, "data_filter"):
-                    self.skipTest("this Python's tarfile has no data filter (3.12, or 3.8.17+)")
+                    self.skipTest("this Python's tarfile has no data filter "
+                                  "(3.8.17+, 3.9.17+, 3.10.12+, 3.11.4+ or 3.12)")
                 digests = self.publish(system)
                 unpacked = check_mod_abi.fetch(TAG, system, digests)
                 self.assertEqual(unpacked, self.unpacked(system))
@@ -184,6 +196,65 @@ class Fetch(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(unpacked, "mods", "planted")))   # the other run's
         self.assert_only_kept()
 
+    def test_folder_whose_package_comes_while_waiting_is_used(self):
+        # Another run fetching the same release has moved its folder in and
+        # is about to move its package beside it: that folder is not evicted.
+        digests = self.publish()
+        os.makedirs(os.path.join(self.unpacked(), "mods", "planted"))
+        package = os.path.join(self.server, TAG, NAMES["windows"])
+        self.while_waiting = lambda: check_mod_abi.shutil.copy(package, self.folder())
+        unpacked = check_mod_abi.fetch(TAG, "windows", digests)
+        self.assertTrue(os.path.isdir(os.path.join(unpacked, "mods", "planted")))   # the other run's
+        self.assertEqual(len(self.waits), 1)
+        self.assert_only_kept()
+
+    def test_folder_set_aside_while_waiting_is_replaced(self):
+        digests = self.publish()
+        stale = self.unpacked()
+        os.makedirs(os.path.join(stale, "mods", "planted"))
+        self.while_waiting = lambda: check_mod_abi.shutil.rmtree(stale, ignore_errors=True)   # by another run
+        unpacked = check_mod_abi.fetch(TAG, "windows", digests)
+        self.assertEqual(len(self.waits), 1)
+        self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
+        self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
+        self.assert_only_kept()
+
+    def test_folder_that_cannot_be_set_aside_is_refused(self):
+        digests = self.publish()
+        stale = self.unpacked()
+        os.makedirs(os.path.join(stale, "mods", "planted"))
+        real = os.rename
+
+        def rename(source, target):
+            if source == stale:
+                raise PermissionError(13, "in use", source)
+            return real(source, target)
+        with mock.patch.object(check_mod_abi.os, "rename", rename):
+            message = self.refused(digests)
+        self.assertIn("cannot set aside", message)
+        self.assertIn(f"delete {self.folder()}", message)
+        self.assertEqual(len(self.waits), 10)
+        # Nothing of this fetch is left, and the folder is still not trusted.
+        self.assertEqual(os.listdir(self.folder()), ["verified"])
+        self.assertTrue(os.path.isdir(os.path.join(stale, "mods", "planted")))
+
+    def test_folder_another_run_set_aside_meanwhile_is_replaced(self):
+        digests = self.publish()
+        stale = self.unpacked()
+        os.makedirs(os.path.join(stale, "mods", "planted"))
+        real = os.rename
+
+        def rename(source, target):
+            if source == stale:   # another run moved it away first
+                check_mod_abi.shutil.rmtree(stale)
+                raise FileNotFoundError(2, "gone", source)
+            return real(source, target)
+        with mock.patch.object(check_mod_abi.os, "rename", rename):
+            unpacked = check_mod_abi.fetch(TAG, "windows", digests)
+        self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
+        self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
+        self.assert_only_kept()
+
     def test_changed_package_beside_folder_is_refused(self):
         digests = self.publish()
         check_mod_abi.fetch(TAG, "windows", digests)
@@ -206,6 +277,23 @@ class Fetch(unittest.TestCase):
                     self.assertIn("outside", message)
                     self.assert_nothing_kept(system)
                     self.assertFalse(os.path.exists(os.path.join(self.scratch.name, "escape.txt")))
+
+    def test_link_out_of_the_folder_is_refused(self):
+        # A name under the folder passes the name check; tarfile's data filter
+        # refuses the link, and that is a message, not a traceback.
+        if not hasattr(tarfile, "data_filter"):
+            self.skipTest("this Python's tarfile has no data filter (3.8.17+, 3.9.17+, 3.10.12+, 3.11.4+ or 3.12)")
+        path = os.path.join(self.server, TAG, NAMES["linux"])
+        with tarfile.open(path, "w:gz") as package:
+            info = tarfile.TarInfo(f"{TOP}/sdk")
+            info.type = tarfile.DIRTYPE
+            package.addfile(info)
+            info = tarfile.TarInfo(f"{TOP}/sdk/escape")
+            info.type, info.linkname = tarfile.SYMTYPE, "../../../escape.txt"
+            package.addfile(info)
+        message = self.refused({(TAG, "linux"): digest(path)}, "linux")
+        self.assertIn("nothing of it was kept", message)
+        self.assert_nothing_kept("linux")
 
     def test_package_without_its_folder_is_refused(self):
         digests = self.publish(members={f"{TOP}": b"a file, not the folder"})
