@@ -162,7 +162,7 @@ number, argument list or layout, and add beside it. Only a difference
 that provably breaks no mod goes in `mod_compat.txt` as `accept`, with the
 reason. After publishing a release, add `baseline <tag>` for it to
 `mod_compat.txt`, with its two `sha256` lines from
-`gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/<tag> --jq '.assets[] | .name + " " + .digest'`
+`gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/<tag> --jq '.assets[] | .name + " " + (.digest | ltrimstr("sha256:"))'`
 (`test_mod_compat_fetch.py`, a CTest, fails while a baseline lacks one).
 
 ## Android signing

@@ -5,7 +5,7 @@
 #   sha256 TAG SYSTEM DIGEST      the package of TAG the check may unpack and
 #                                 run (windows: the .zip, linux: the .tar.gz),
 #                                 as GitHub's release API lists its digest:
-#                                 gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/TAG --jq '.assets[] | .name + " " + .digest'
+#                                 gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/TAG --jq '.assets[] | .name + " " + (.digest | ltrimstr("sha256:"))'
 #   accept TAG KIND NAME reason   a difference that breaks no mod in use
 baseline v0.1.2
 sha256 v0.1.2 windows a6d5ddc86ad1de3fac263298b070224d990684ac221f1b55be60246186faf558

@@ -129,6 +129,34 @@ class Fetch(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
         self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
 
+    def plant_before_move_in(self, digests, with_package):
+        """fetch(), with a folder put in its place just before it moves its own
+        in: by an older check (no package) or by another run (its package)."""
+        real, unpacked, planted = os.rename, os.path.join(self.folder(), TOP), []
+
+        def rename(source, target):
+            if target == unpacked and not planted:
+                planted.append(target)
+                os.makedirs(os.path.join(unpacked, "mods", "planted"))
+                if with_package:
+                    check_mod_abi.shutil.copy(os.path.join(self.server, TAG, NAMES["windows"]), self.folder())
+            return real(source, target)
+        with mock.patch.object(check_mod_abi.os, "rename", rename):
+            return check_mod_abi.fetch(TAG, "windows", digests)
+
+    def test_folder_put_in_meanwhile_without_package_is_not_trusted(self):
+        digests = self.publish()
+        unpacked = self.plant_before_move_in(digests, with_package=False)
+        self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
+        self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
+        self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
+
+    def test_folder_put_in_meanwhile_beside_its_package_is_used(self):
+        digests = self.publish()
+        unpacked = self.plant_before_move_in(digests, with_package=True)
+        self.assertTrue(os.path.isdir(os.path.join(unpacked, "mods", "planted")))   # the other run's
+        self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
+
     def test_changed_package_beside_folder_is_refused(self):
         digests = self.publish()
         check_mod_abi.fetch(TAG, "windows", digests)

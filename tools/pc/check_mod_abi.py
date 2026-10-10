@@ -361,7 +361,7 @@ def fetch(tag, system, digests):
     if not expected:
         sys.exit(f"check_mod_abi: {LIST} pins no sha256 for {name}; add `sha256 {tag} {system} DIGEST` with the "
                  f"digest GitHub lists for it (gh api repos/{REPOSITORY}/releases/tags/{tag} "
-                 "--jq '.assets[] | .name + \" \" + .digest')")
+                 "--jq '.assets[] | .name + \" \" + (.digest | ltrimstr(\"sha256:\"))')")
     folder = os.path.join(CACHE, tag, system)
     top = f"yfm-redecomp-{tag}"
     unpacked, archive = os.path.join(folder, top), os.path.join(folder, name)
@@ -407,6 +407,12 @@ def fetch(tag, system, digests):
         except OSError:
             if not os.path.isdir(unpacked):  # not another run's copy that got there first
                 raise
+            if kept():
+                return unpacked   # another run's, beside its package
+            # A folder that got there first with no pinned package beside it
+            # (an older check's): set aside like the one above, never trusted.
+            os.rename(unpacked, os.path.join(staging, "untrusted-late"))
+            os.rename(os.path.join(staging, top), unpacked)
         # The package goes in last: a folder is trusted only beside it.
         if source != archive:
             try:
