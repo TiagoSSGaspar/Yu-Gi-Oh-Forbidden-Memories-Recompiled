@@ -845,9 +845,11 @@ if(Python3_Interpreter_FOUND)
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endif()
     # The FM Editor (tools/pc/fm_editor), on synthetic game files: one case
-    # per test file (pc_fm_editor_gui for test_gui.py, ...), each well inside
-    # CTest's time limit, which the whole suite no longer was. Most open Tk
-    # windows, some take the focus: one at a time, other tests beside them.
+    # per test file (pc_fm_editor_gui for test_gui.py, ...), as the whole
+    # suite outgrew CTest's 1500 s. Most open Tk windows, some take the focus:
+    # one at a time, other tests beside them. test_gui.py, a window built for
+    # each of its 96 tests, took 540 s with the machine half busy and passed
+    # 1500 s with it full, so it has a limit of its own.
     if(BUILD_TESTING)
         file(GLOB fm_editor_tests CONFIGURE_DEPENDS
             "${CMAKE_SOURCE_DIR}/tools/pc/fm_editor/tests/test_*.py")
@@ -860,6 +862,9 @@ if(Python3_Interpreter_FOUND)
                     -t tools/pc -p "${test_file}"
                 WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
             set_tests_properties(pc_fm_editor_${test_name} PROPERTIES RESOURCE_LOCK fm_editor_tk)
+            if(test_name STREQUAL "gui")
+                set_tests_properties(pc_fm_editor_gui PROPERTIES TIMEOUT 3600)
+            endif()
         endforeach()
         # replay.py's check on made-up recordings (notes/agent-control.md).
         add_test(NAME pc_replay_check
