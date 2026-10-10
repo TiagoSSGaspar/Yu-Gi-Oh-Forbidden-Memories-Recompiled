@@ -2884,8 +2884,10 @@ class InterfaceSizeTest(GuiCase):
         size("1400x850")
         page, panes = app.cards.page, app.cards.panes
         size("3600x2000")
-        if app.winfo_width() < 3000:
-            # Windows keeps a window within the screen (1024x768 on CI).
+        if app.winfo_width() < 3000 or app.winfo_height() < 1800:
+            # Windows keeps a window within the screen (1024x768 on CI); two
+            # screens side by side give the width but not the height, which
+            # Fit to window needs as much (zoom.fit_factor).
             self.skipTest("the screen is too small for a window this big")
         self.assertGreater(app.zoom.factor, 1.0)
         app.notebook.select(app.art)        # other tabs on the way, as a user goes
@@ -2953,8 +2955,10 @@ class InterfaceSizeTest(GuiCase):
         shares = []
         for geometry in ("1900x1050", "3800x2100", "1900x1050"):
             size(geometry)
-            if app.winfo_width() < int(geometry.split("x")[0]) - 40:
-                # Windows keeps a window within the screen (1024x768 on CI).
+            wide, tall = (int(n) for n in geometry.split("x"))
+            if app.winfo_width() < wide - 40 or app.winfo_height() < tall - 40:
+                # Windows keeps a window within the screen (1024x768 on CI); two
+                # screens side by side give the width but not the height.
                 self.skipTest("the screen is too small for a window this big")
             k = app.art.k
             self.assertEqual(k * 8, int(k * 8))
