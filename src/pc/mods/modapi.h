@@ -27,11 +27,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-/* Bumped when this header changes shape. A mod records the version it was
- * built against; the host refuses a mod built against a later one. New host
- * entries only ever go at the end, so a mod built against an earlier version
- * keeps working, and one built against a later version can check host->api
- * before it calls an entry the host may not have.
+/* Bumped for new host services, events or manifest features. A mod records
+ * the version it was built against; the host refuses a mod built against a
+ * later one. New host entries only ever go at the end, so a mod built
+ * against an earlier version keeps working, and one built against a later
+ * version can check host->api before it calls an entry the host may not
+ * have.
  *   1  the first
  *   2  now_us, map_fixed; setting() reads MEMORIES_MOD_<ID>_<KEY> first
  *   3  managed events, registered state and stable card lookup
@@ -41,7 +42,11 @@
  *   5  duelist_id
  *   6  the STARCHIP event
  *   7  card_notes, card_tag: a card's notes and the tags in them
- *   8  limit: the numbers the game caps, as the mods' "limits" set them */
+ *   8  limit: the numbers the game caps, as the mods' "limits" set them
+ *   9  menu_item and the MENU event
+ *  10  the MONSTER event and manifest features listed in notes/modding.md
+ *  11  manifest features only; no host layout or event change
+ * A data mod declares its required version with min_api in mod.json. */
 #include "mod_types.h"
 
 typedef struct MemoriesModHost MemoriesModHost;
@@ -161,7 +166,7 @@ struct MemoriesModHost {
     /* Overlay drawing, for MemoriesMod.overlay: the canvas's size in pixels
      * and the scale the port draws its own menus at (1 at 480 lines, more in
      * a bigger window); text (ASCII) with `middle` its vertical centre and
-     * its width; a rectangle blended in at `alpha` (0-255). Colours are
+     * its width; a rectangle blended in at `alpha` (0-255). Colors are
      * 0xRRGGBB. Outside the overlay callback these do nothing. */
     void (*overlay_size)(const MemoriesModHost *, int *width, int *height, int *scale);
     void (*draw_text)(const MemoriesModHost *, int x, int middle, const char *text, uint32_t rgb, int scale);
@@ -207,8 +212,12 @@ struct MemoriesModHost {
      * a monster has, 9999 on the disc), "life_points" (the start against the
      * CPU), "life_points_max" (how far healing goes; 0 while it stops at the
      * start), "two_player_start", "two_player_max", "two_player_step",
-     * "starchips", "chest", "free_duel_record" and "two_player_record".
-     * -1 for a name it does not know. Answers once the card tables are
+     * "starchips", "chest", "free_duel_record" and "two_player_record";
+     * and the other values by their keys (the FM Editor's Values tab):
+     * "deck_copies", "swords_turns", "crush_card", "spellbinding_circle",
+     * "shadow_spell", "rank_score.start", "rank_score.exodia",
+     * "rank_score.deck_out", "starchip_prize.S" to "starchip_prize.D" and
+     * "new_game_starchips". -1 for a name it does not know. Answers once the card tables are
      * built, which is before the title. A mod that deals damage or bonuses of
      * its own reads the caps here rather than assume 9999. */
     long (*limit)(const MemoriesModHost *, const char *name);

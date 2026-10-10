@@ -102,6 +102,9 @@ int CardArt_TitleFromImage(const char *path, unsigned char *plate, char *why, si
     return 0;
 }
 int CardArt_TitleFromName(const char *name, unsigned char *plate) { (void)name; (void)plate; return 0; }
+int CardLayout_FullBleed(void) { return 0; }
+int CardLayout_StyleOf(int card_id, CardLayoutStyle *style) { (void)card_id; (void)style; return 0; }
+void CardLayoutArt_Prewarm(void) {}
 int CardNotes_Tag(const char *text, const char *key, char *out, size_t size)
 {
     (void)text; (void)key; (void)out; (void)size;
@@ -115,6 +118,7 @@ void Library_UpdateCardUsedFlag(int flag) { (void)flag; }
 int Memories_Rand(void) { return 0; }
 void Starter_Build(void) {}
 void Packs_Build(void) {}
+const UiConfig *UiConfig_Load(void) { return NULL; }
 unsigned Packs_Signature(void) { return 0; }
 void Tables_Build(void) {}
 long Tables_Limit(const char *name) { (void)name; return -1; }

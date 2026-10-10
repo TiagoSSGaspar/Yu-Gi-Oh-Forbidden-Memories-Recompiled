@@ -12,19 +12,22 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .gamedata import (CARD_COUNT, DECK_COPY_LIMIT, DECK_POOL_MIN_CARDS, DECK_SIZE, DUELIST_NAMES, POOLS,
-                       POOL_LABELS, POOL_TOTAL, TYPE_MAGIC, TYPE_EQUIP, TYPE_NAMES, TYPE_RITUAL, exodia_piece)
-from . import art, campaign_map, card_text, fixed_decks, guardian_stars, limits, packs as packmath
-from . import monster_effects, starter_pools
+                       POOL_LABELS, POOL_TOTAL, RITUAL_ORIGINS, RITUAL_TRIBUTE_MAX, TAG_LENGTH_MAX, TAGS_MAX, TYPE_MAGIC, TYPE_EQUIP, TYPE_NAMES,
+                       TYPE_RITUAL, exodia_piece)
+from . import art, board_art, campaign_map, card_text, fixed_decks, guardian_stars, packs as packmath, values
+from . import monster_effects, roster, starter_pools, ui_rules
+from .compat import HOST_API, external_packs
 from .model import KEY_RE, Project, duelist_named
 
 MOD_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,63}$")
 SETTING_TYPES = ("int", "bool", "choice", "key")
 MANIFEST_KEYS = ("id", "name", "version", "author", "description", "library", "enabled", "restart",
-                 "legacy_setting", "data", "textures", "cards", "audio", "min_api", "game", "requires", "after",
-                 "conflicts", "priority", "settings", "fusions", "equips", "rituals", "drops", "decks", "text", "font",
+                 "legacy_setting", "data", "textures", "assets", "cards", "audio", "min_api", "game", "requires", "after",
+                 "conflicts", "priority", "settings", "fusions", "equips", "rituals", "drops", "decks", "duelists", "text",
+                 "font",
                  "chest_overflow", "terrain_bonus", "trap_thresholds", "equip_bonus_default", "passwords",
-                 "starter", "starter_pools", "limits", "guardian_stars", "packs", "pack_shop", "card_text_colors")
-HOST_API = 8
+                 "starter", "starter_pools", "limits", "guardian_stars", "packs", "pack_shop", "card_text_colors", "card_layout",
+                 "palette_ramps", "title", "menu", "ui")
 
 
 @dataclass
@@ -42,7 +45,7 @@ class Issue:
 def text_lines(text: str) -> int:
     """How many lines the port's card-text wrapping makes (cards.c
     encode_description): 20 letters a line, broken at spaces and at \\n;
-    an icon code is two letters, a colour code none."""
+    an icon code is two letters, a color code none."""
     return 1 + card_text.encode(text).count("\n")
 
 
@@ -182,10 +185,43 @@ def _check_card(project: Project, cid: int, out: list):
             add("error", problem)
         if extra["monster_effects"] and not card.is_monster():
             add("warning", "monster effects only work for a monster on the field; this card is not one")
+    if "tags" in extra:
+        tags = extra["tags"]
+        if not isinstance(tags, list):
+            add("warning", '"tags" is a list of words, such as ["god"]; the game reads none from this')
+        else:
+            for tag in tags:
+                if not isinstance(tag, str) or not tag:
+                    add("warning", "an empty tag (or not text): the game notes it and leaves it out")
+                elif len(tag.encode()) > TAG_LENGTH_MAX:
+                    add("warning", f'the tag "{tag}" is over {TAG_LENGTH_MAX} letters: the game notes it and '
+                                   "leaves it out")
     effect = project.retail.cards.get(project.effect_of(cid)) if "effect" in extra else None
     if effect and not card.is_monster() and effect.type != card.type:
         add("warning", f"its effect is {effect.name}'s, a {TYPE_NAMES[effect.type]} card's: the CPU does not play it, "
                        f"and as a {TYPE_NAMES[card.type]} card it may do nothing")
+
+
+def _check_tags(project: Project, out: list):
+    """More than the 32 different tags the game has room for (cards.c
+    tag_bit): those met after them, in the order the mod's cards are
+    written, are left out. Another mod's own count too."""
+    seen, over = [], {}
+    owners = [(cid, project.card_extra[cid]) for cid in sorted(project.card_extra)]
+    owners += [(cid, project.added[cid].extra) for cid in sorted(project.added)]
+    for cid, extra in owners:
+        tags = extra.get("tags")
+        for tag in tags if isinstance(tags, list) else ():
+            if not isinstance(tag, str) or not tag or len(tag.encode()) > TAG_LENGTH_MAX or tag in seen:
+                continue
+            if len(seen) < TAGS_MAX:
+                seen.append(tag)
+            elif tag not in over:
+                over[tag] = cid
+    if over:
+        out.append(Issue("warning", "Cards", project.card_label(next(iter(over.values()))),
+                         f"{len(seen) + len(over)} different tags, past the {TAGS_MAX} the game has room for "
+                         f"(with every mod's): {', '.join(over)} left out", next(iter(over.values()))))
 
 
 def _check_password(project: Project, cid: int, add):
@@ -234,29 +270,40 @@ def _check_tables(project: Project, out: list):
             elif not project.cards[m].is_monster():
                 out.append(Issue("warning", "Equips", where, f"{project.card_label(m)} is not a monster", equip))
     for ritual, recipe in project.rituals.items():
+        if recipe is None:      # an added copy with no recipe (Project.remove_ritual)
+            continue
         conditional = project.ritual_requirements.get(ritual)
-        if project.retail.rituals.get(ritual) == recipe and not conditional:
+        origin = project.ritual_from.get(ritual, "field")
+        if project.retail.rituals.get(ritual) == recipe and not conditional and origin == "field":
             continue
         where = project.card_label(ritual)
         if not valid(ritual) or not project.is_ritual(ritual):
             out.append(Issue("error", "Rituals", where, "\"card\" must be a ritual card whose effect is a ritual's "
                              "(a copy of one, or \"effect\" naming one)", ritual))
-        if len(recipe) != 4 or not valid(recipe[3]):
-            out.append(Issue("error", "Rituals", where, "a valid result card is required", ritual))
+        if not 2 <= len(recipe) <= RITUAL_TRIBUTE_MAX + 1 or not valid(recipe[-1]):
+            out.append(Issue("error", "Rituals", where, "one to five tributes and a valid result card are required",
+                             ritual))
             continue
+        if origin not in RITUAL_ORIGINS:
+            out.append(Issue("error", "Rituals", where, "tributes come from the field, the hand or both", ritual))
+        tributes = len(recipe) - 1
+        if origin == "hand" and tributes == RITUAL_TRIBUTE_MAX:
+            # The ritual card is in the hand too when played from it.
+            out.append(Issue("warning", "Rituals", where, "five tributes from the hand: only when the ritual card was "
+                             "set face down first (played from the hand, four other cards are there)", ritual))
         if conditional:
-            if len(conditional) != 3 or any(not req for req in conditional):
-                out.append(Issue("error", "Rituals", where, "three nonempty tribute requirements are required", ritual))
+            if len(conditional) != tributes or any(not req for req in conditional):
+                out.append(Issue("error", "Rituals", where, "every tribute needs a requirement", ritual))
             for req in conditional:
                 cid = req.get("card")
                 if cid and not valid(cid):
                     out.append(Issue("error", "Rituals", where, f"no card {cid}", ritual))
                 elif cid and not project.cards[cid].is_monster():
                     out.append(Issue("warning", "Rituals", where, f"{project.card_label(cid)} is not a monster", ritual))
-            if not project.cards[recipe[3]].is_monster():
+            if not project.cards[recipe[-1]].is_monster():
                 out.append(Issue("warning", "Rituals", where, "the result should be a monster", ritual))
         elif not all(valid(c) for c in recipe):
-            out.append(Issue("error", "Rituals", where, "three tributes and a result, all cards", ritual))
+            out.append(Issue("error", "Rituals", where, "every tribute and the result must be a card", ritual))
         elif not all(project.cards[c].is_monster() for c in recipe):
             out.append(Issue("warning", "Rituals", where, "tributes and result should be monsters", ritual))
     for d, pools in enumerate(project.pools):
@@ -329,6 +376,9 @@ def _check_packs(project: Project, out: list):
     for level, message in packmath.check_rules(project.pack_shop):
         out.append(Issue(level, "Packs", "pack_shop", message, None))
     if project.packs_file is not None:
+        _, problem = external_packs(project.packs_file, project)
+        if problem:
+            out.append(Issue("error", "Packs", "packs", problem + "; compatibility cannot be determined"))
         return
     resolve = pack_resolver(project)
     ids, passwords = set(), {}
@@ -399,17 +449,18 @@ def validate(project: Project) -> list:
     for cid in sorted(project.cards):
         if project.card_changed(cid):
             _check_card(project, cid, out)
+    _check_tags(project, out)
     _check_tables(project, out)
     _check_starter(project, out)
-    for level, where, message in limits.check(project.other.get("limits")):
-        out.append(Issue(level, "Limits", where, message))
+    for level, where, message in values.check(project.other.get("limits"), lambda name: roster.named(project, name)):
+        out.append(Issue(level, "Values", where, message))
     stars = {}
     for card in project.cards.values():
         if card.is_monster():
             for star in (card.star1, card.star2):
                 stars[star] = stars.get(star, 0) + 1
-    # The ATK/DEF cap a bonus is measured against: the Limits tab's, else 9999.
-    flat = limits.flatten(project.other.get("limits"))
+    # The ATK/DEF cap a bonus is measured against: the Values tab's, else 9999.
+    flat = values.flatten(project.other.get("limits"))
     caps = [flat[key] for key in ("stats", "attack", "defense") if isinstance(flat.get(key), int)]
     cap = max(caps) if caps else guardian_stars.STAT_CAP
     for level, where, message in guardian_stars.check(project.other.get("guardian_stars"), stat_cap=cap,
@@ -417,9 +468,16 @@ def validate(project: Project) -> list:
         out.append(Issue(level, "Guardian Stars", where, message))
     _check_packs(project, out)
     fixed_decks.check(project, out)
+    roster.check(project, out)
     art.check(project, out)
     campaign_map.check(project, out)
+    board_art.check(project, out)
     starter_pools.check(project, out)
+
+    def has_file(name):
+        return name in project.files or bool(project.source_dir and (Path(project.source_dir) / name).is_file())
+    for level, where, message in ui_rules.check(project, has_file):
+        out.append(Issue(level, "UI", where, message))
     return out
 
 
@@ -628,7 +686,11 @@ def cross_mod(project: Project, folders=None, settings_path=None) -> tuple:
     for overlap in overlaps.check(order, _ProjectSource(project, settings, order), involving=place):
         where = overlap.label + (" (with a mod off now)" if any(m in off for m in overlap.mods) else "")
         message = overlap.text[len(overlap.label) + 1:]
-        issues.append(Issue("warning" if overlap.severity else "note", "Other mods", where, message, overlap.label))
+        # The target: what the overlap is about (overlaps.KINDS) and its key,
+        # for Conflicts to go to the tab that edits it.
+        key = overlap.claims[0].key if overlap.claims else None
+        issues.append(Issue("warning" if overlap.severity else "note", "Other mods", where, message,
+                            (overlap.kind, key)))
     summary = f"Checked against {len(order) - 1} installed mods in " + ", ".join(str(f) for f in folders) + \
         f", in the order the game loads them; this mod loads {place + 1} of {len(order)}."
     if off:

@@ -9,12 +9,15 @@
 #define _POSIX_C_SOURCE 200809L
 #include "cards.h"
 #include "art.h"
+#include "card_layout.h"
+#include "card_layout_art.h"
 #include "card_notes.h"
 #include "monster_effects.h"
 #include "tables.h"
 #include "starter.h"
 #include "stars.h"
 #include "packs.h"
+#include "pc/platform/ui_config.h"
 #include "pc/free_duel/duelists.h"
 #include "pc/text/glyphs.h"
 #include "pc/text/text.h"
@@ -68,7 +71,7 @@ extern void Library_UpdateCardUsedFlag(int flag);
 
 static char *identities[CARD_TABLE_ID_END];
 static const JsonValue *definitions[CARD_TABLE_ID_END];
-static unsigned short model_ids[CARD_TABLE_ID_END], effect_ids[CARD_TABLE_ID_END];
+static unsigned short model_ids[CARD_TABLE_ID_END], effect_ids[CARD_TABLE_ID_END], ai_effect_ids[CARD_TABLE_ID_END];
 /* Threshold plus one: zero inherits the effect's global/retail threshold. */
 static unsigned int trap_thresholds[CARD_TABLE_ID_END];
 static unsigned char not_exodia[EXODIA_PIECE_COUNT];  /* a replaced piece without Exodia's rules */
@@ -76,14 +79,44 @@ static unsigned char not_exodia[EXODIA_PIECE_COUNT];  /* a replaced piece withou
  * left out, FRAME_TYPE "Type" (cards.h Cards_FrameColor). */
 #define FRAME_TYPE 0xFF
 static unsigned char frames[CARD_TABLE_ID_END];
+/* A card's "tags" (cards.h's Cards_HasTag): one bit a tag, in the order the
+ * tags were first met; 32 is room for a mod pack, more are noted and left out. */
+#define MAX_TAGS 32
+#define MAX_TAG_LENGTH 32
+static char tag_names[MAX_TAGS][MAX_TAG_LENGTH];
+static int tag_count;
+static unsigned int tag_masks[CARD_TABLE_ID_END];
+static int tag_bit(const char *name, int create)
+{
+    int i;
+    for (i = 0; i < tag_count; i++) {
+        if (!strcmp(tag_names[i], name)) return i;
+    }
+    if (!create || tag_count >= MAX_TAGS || strlen(name) >= MAX_TAG_LENGTH) return -1;
+    snprintf(tag_names[tag_count], MAX_TAG_LENGTH, "%s", name);
+    return tag_count++;
+}
+int Cards_HasTag(int id, const char *tag)
+{
+    int bit = tag ? tag_bit(tag, 0) : -1;
+    return Cards_Valid(id) && bit >= 0 && (tag_masks[id] >> bit & 1);
+}
 /* "monster_effects" (monster_effects.h): an entry's list, shared by its cards. */
 static const MonsterEffect *monster_effects[CARD_TABLE_ID_END];
 static unsigned char monster_effect_counts[CARD_TABLE_ID_END];
+static const MonsterEffect *card_effects[CARD_TABLE_ID_END];
+static unsigned char card_effect_counts[CARD_TABLE_ID_END], card_effect_replaces[CARD_TABLE_ID_END];
 int Cards_MonsterEffects(int id, const MonsterEffect **effects)
 {
     *effects = Cards_Valid(id) ? monster_effects[id] : NULL;
     return *effects ? monster_effect_counts[id] : 0;
 }
+int Cards_CardEffects(int id, const MonsterEffect **effects)
+{
+    *effects = Cards_Valid(id) ? card_effects[id] : NULL;
+    return *effects ? card_effect_counts[id] : 0;
+}
+int Cards_CardEffectsReplace(int id) { return Cards_Valid(id) && card_effect_replaces[id]; }
 /* Explicit secondary fusion groups for modded/replaced cards. Zero means inherit the retail base. */
 static unsigned int fusion_groups[CARD_TABLE_ID_END];
 static unsigned char has_fusion_groups[CARD_TABLE_ID_END];
@@ -106,16 +139,48 @@ int Cards_TrapThreshold(int id, int fallback)
 }
 static int retail_monster(int id);
 int Cards_HasModel(int id) { return Cards_Valid(id) && retail_monster(Cards_ModelId(id)); }
+int Cards_FrameOverride(int id)
+{
+    return Cards_Valid(id) && frames[id] && frames[id] != FRAME_TYPE ? frames[id] - 1 : -1;
+}
+int Cards_Class(int id)
+{
+    const MonsterEffect *effects;
+    int type = Cards_Type(id);
+    if (type == CARD_TYPE_MAGIC) return CARD_CLASS_SPELL;
+    if (type == CARD_TYPE_EQUIP) return CARD_CLASS_EQUIP;
+    if (type == CARD_TYPE_RITUAL) return CARD_CLASS_RITUAL_SPELL;
+    if (type == CARD_TYPE_TRAP) return CARD_CLASS_TRAP;
+    return Cards_MonsterEffects(id, &effects) ? CARD_CLASS_EFFECT_MONSTER : CARD_CLASS_MONSTER;
+}
+const char *Cards_ClassName(int cls)
+{
+    static const char *const names[CARD_CLASS_COUNT] = {"monster", "effect_monster", "spell", "equip",
+                                                        "ritual_spell", "trap"};
+    return cls >= 0 && cls < CARD_CLASS_COUNT ? names[cls] : "";
+}
+/* The color of the frame the disc draws for `id` by its type. */
+static int type_frame_color(int id)
+{
+    int type = Cards_Type(id);
+    if (type == CARD_TYPE_MAGIC || type == CARD_TYPE_EQUIP) return CARD_FRAME_MAGIC;
+    if (type == CARD_TYPE_TRAP) return CARD_FRAME_TRAP;
+    if (type == CARD_TYPE_RITUAL) return CARD_FRAME_RITUAL;
+    return CARD_FRAME_MONSTER;
+}
 int Cards_FrameColor(int id)
 {
-    if (!Cards_Valid(id) || frames[id] == FRAME_TYPE) return -1;
+    CardLayoutStyle style;
+    const MonsterEffect *effects;
+    if (!Cards_Valid(id)) return -1;
+    /* The anime frame on: the color of the style the layout picked, so a
+     * card's hand frame and its card view always agree. */
+    if (CardLayout_StyleOf(id, &style)) return style.color == type_frame_color(id) ? -1 : style.color;
+    if (Cards_FrameOverride(id) >= 0) return Cards_FrameOverride(id);
     /* Left out, a monster with effects of its own is drawn orange, as an
      * effect monster is in the card game. */
-    if (!frames[id]) {
-        const MonsterEffect *effects;
-        return Cards_Type(id) < CARD_TYPE_MAGIC && Cards_MonsterEffects(id, &effects) ? CARD_FRAME_ORANGE : -1;
-    }
-    return frames[id] - 1;
+    if (frames[id] == FRAME_TYPE) return -1;
+    return Cards_Type(id) < CARD_TYPE_MAGIC && Cards_MonsterEffects(id, &effects) ? CARD_FRAME_ORANGE : -1;
 }
 int Cards_ExodiaPiece(int id)
 {
@@ -301,7 +366,7 @@ static unsigned char *encode_name(const char *mod, const char *pattern, int n, i
 
 /* A code in card text, spelled as the FM Editor and the text listing show
  * it: "{f8 0B NN}" an icon (two letters wide: the card view draws it 16
- * pixels across), "{f8 0A NN}" a colour (none),
+ * pixels across), "{f8 0A NN}" a color (none),
  * "{g X}" a glyph by number. Returns the characters it takes, 0 when "at"
  * starts none (and is then read as letters); its bytes go to out. */
 static size_t text_code(const char *at, unsigned char out[3], int *bytes, int *letters)
@@ -438,6 +503,9 @@ static const char *const attribute_names[] = {"Light", "Dark", "Earth", "Water",
 /* The frames, in the order of their palettes (CARD_FRAME_*); "type" is the
  * card's own type's again. */
 static const char *const frame_names[] = {"Monster", "Magic", "Trap", "Ritual", "Purple", "Orange", "Type"};
+/* The same frames by the color they are: Gold, Green, Pink and Blue are
+ * Monster, Magic, Trap and Ritual (the disc's own labels for them). */
+static const char *const frame_color_names[] = {"Gold", "Green", "Pink", "Blue"};
 
 static int same_words(const char *a, const char *b)
 {
@@ -965,6 +1033,13 @@ int Cards_KindChanged(int id)
 int Cards_AiId(int id)
 {
     int as = Cards_EffectId(id);
+    /* A replacement's actual behavior is data-defined.  It must opt into a
+     * retail analogue for the script CPU; otherwise no script is allowed to
+     * mistake it for its old spell or trap effect. */
+    if (Cards_CardEffectsReplace(id)) {
+        if (!ai_effect_ids[id]) return -1;
+        as = ai_effect_ids[id];
+    }
     return Cards_Valid(id) && kind(Cards_Type(id)) == kind(Cards_RetailType(as)) ? as : -1;
 }
 
@@ -1113,8 +1188,13 @@ static void add_entry(const char *mod, const char *directory, int index, const J
     MonsterEffect read_effects[MONSTER_EFFECTS_MAX];
     MonsterEffect *own_effects = NULL;
     int effect_count;
+    MonsterEffect read_card_effects[MONSTER_EFFECTS_MAX];
+    MonsterEffect *own_card_effects = NULL;
+    int card_effect_count, card_effect_replace = 0, card_effect_mode_given = 0;
+    int ai_effect = 0, ai_effect_given = 0, spell_or_trap;
     unsigned int trap_threshold;
     unsigned char level_attr, frame;
+    unsigned int tags;
     if (Json_TypeOf(entry) != JSON_OBJECT) {
         Mods_Note(mod, "cards[%d] is not an object", index);
         return;
@@ -1155,6 +1235,30 @@ static void add_entry(const char *mod, const char *directory, int index, const J
         own_effects = malloc((size_t)effect_count * sizeof(*own_effects));
         if (own_effects) memcpy(own_effects, read_effects, (size_t)effect_count * sizeof(*own_effects));
         else effect_count = 0;
+    }
+    /* A spell/trap's data-defined actions use the monster-effect action
+     * vocabulary, but occur as the card is played or springs.  By default
+     * they run after its normal (possibly aliased) retail effect; `replace`
+     * suppresses that effect. */
+    card_effect_count = CardEffects_Read(mod, index, Json_Member(entry, "card_effects"), read_card_effects);
+    if (card_effect_count > 0) {
+        own_card_effects = malloc((size_t)card_effect_count * sizeof(*own_card_effects));
+        if (own_card_effects) memcpy(own_card_effects, read_card_effects,
+                                     (size_t)card_effect_count * sizeof(*own_card_effects));
+        else card_effect_count = 0;
+    }
+    if (Json_Member(entry, "card_effects_mode")) {
+        const char *mode = Json_String(Json_Member(entry, "card_effects_mode"), NULL);
+        if (!mode || (strcmp(mode, "add") && strcmp(mode, "replace")))
+            Mods_Note(mod, "cards[%d]: \"card_effects_mode\" must be add or replace", index);
+        else {
+            card_effect_replace = !strcmp(mode, "replace");
+            card_effect_mode_given = 1;
+        }
+    }
+    if (Json_Member(entry, "ai_effect")) {
+        ai_effect = Cards_Reference(Json_Member(entry, "ai_effect"));
+        ai_effect_given = 1;
     }
     /* What the entry leaves out is the base's. */
     stats = (unsigned)gDuel_adwCardStats[base - 1];
@@ -1274,10 +1378,27 @@ static void add_entry(const char *mod, const char *directory, int index, const J
     if (Json_Member(entry, "frame")) {
         value = choice(Json_Member(entry, "frame"), frame_names, CARD_FRAME_COUNT + 1);
         if (value < 0 || value > CARD_FRAME_COUNT) {
-            Mods_Note(mod, "cards[%d]: \"frame\" is Monster, Magic, Trap, Ritual, Purple, Orange or Type; left out",
+            value = choice(Json_Member(entry, "frame"), frame_color_names, 4);
+            if (value >= 4) value = -1;
+        }
+        if (value < 0 || value > CARD_FRAME_COUNT) {
+            Mods_Note(mod, "cards[%d]: \"frame\" is Gold, Green, Pink, Blue, Purple, Orange or Type (or the disc's Monster, Magic, Trap, Ritual); left out",
                       index);
         } else {
             frame = (unsigned char)(value == CARD_FRAME_COUNT ? FRAME_TYPE : value + 1);
+        }
+    }
+    /* Left out, the tags are the base's; "tags": [] clears them. */
+    tags = tag_masks[base];
+    if (Json_Member(entry, "tags")) {
+        const JsonValue *t;
+        tags = 0;
+        for (t = Json_At(Json_Member(entry, "tags"), 0); t; t = Json_Next(t)) {
+            const char *text = Json_String(t, NULL);
+            int bit = text && *text ? tag_bit(text, 1) : -1;
+            if (bit < 0) Mods_Note(mod, "cards[%d]: a \"tags\" entry is empty, too long (%d letters at most) or the %dth tag",
+                                   index, MAX_TAG_LENGTH - 1, MAX_TAGS + 1);
+            else tags |= 1u << bit;
         }
     }
     /* What View > Card passwords shows (passwords.h): a copy has none
@@ -1389,6 +1510,41 @@ static void add_entry(const char *mod, const char *directory, int index, const J
             monster_effects[id] = monster_effects[base];
             monster_effect_counts[id] = monster_effect_counts[base];
         }
+        /* Only a Magic or Trap card is played or springs: on any other
+         * kind the three are refused (a monster that inherited them from
+         * a Magic base drops them), so its AI identity stays its own. */
+        spell_or_trap = (int)((stats >> 26) & 0x1F) == CARD_TYPE_MAGIC ||
+                        (int)((stats >> 26) & 0x1F) == CARD_TYPE_TRAP;
+        if (!spell_or_trap) {
+            if (card_effect_count >= 0 || card_effect_mode_given || ai_effect_given)
+                Mods_Note(mod, "cards[%d]: \"card_effects\", \"card_effects_mode\" and \"ai_effect\" "
+                          "only work for a Magic or Trap card", index);
+            free(own_card_effects);
+            own_card_effects = NULL;
+            card_effect_count = 0;
+            card_effect_replace = card_effect_mode_given = ai_effect_given = 0;
+            ai_effect_ids[id] = 0;
+        }
+        if (card_effect_count >= 0) {
+            card_effects[id] = own_card_effects;
+            card_effect_counts[id] = (unsigned char)card_effect_count;
+            card_effect_replaces[id] = (unsigned char)card_effect_replace;
+        } else if (!replace && spell_or_trap) {
+            card_effects[id] = card_effects[base];
+            card_effect_counts[id] = card_effect_counts[base];
+            card_effect_replaces[id] = card_effect_replaces[base];
+        }
+        if (card_effect_count < 0 && card_effect_mode_given)
+            card_effect_replaces[id] = (unsigned char)card_effect_replace;
+        if (ai_effect_given) {
+            if (ai_effect < 1 || ai_effect > CARD_COUNT ||
+                Cards_RetailType(ai_effect) != (int)((stats >> 26) & 0x1F))
+                Mods_Note(mod, "cards[%d]: \"ai_effect\" must name a retail card of this card's type", index);
+            else
+                ai_effect_ids[id] = (unsigned short)ai_effect;
+        } else if (!replace && spell_or_trap) {
+            ai_effect_ids[id] = ai_effect_ids[base];
+        }
         trap_thresholds[id] = trap_threshold;
         fusion_groups[id] = entry_fusion_groups;
         has_fusion_groups[id] = (unsigned char)entry_has_fusion_groups;
@@ -1397,6 +1553,7 @@ static void add_entry(const char *mod, const char *directory, int index, const J
         if (((stats >> 26) & 0x1F) < CARD_TYPE_MAGIC && !(stats & (0xFu << 22))) Stars_NoteNoStar();
         gDuel_abCardLevelAttr[id] = level_attr;
         frames[id] = frame;
+        tag_masks[id] = tags;
         names[id] = name && *name ? encode_name(mod, name, n, id) : NULL;
         descriptions[id] = description && *description ? encode_description(mod, description, id) : NULL;
         add_notes(mod, index, id, Json_Member(entry, "notes"));
@@ -1524,6 +1681,9 @@ void Cards_Build(void)
      * mod signature covers. */
     Packs_Build();
     Mods_SetPackSignature(Packs_Signature());
+    /* The duel's pictures (ui_config.h), read now so that a mistake in a
+     * mod's "ui" is noted in the Mods window before any duel. */
+    UiConfig_Load();
 }
 
 /* --- what the game asks -------------------------------------------- */
@@ -2233,6 +2393,7 @@ void Cards_PairCommit(void)
 
 void Cards_Frame(void)
 {
+    CardLayoutArt_Prewarm();
     const void *state = gDuel_awPlayerDeck;
     int code = state_word(state, SAVE_DUELIST_CODE);
     /* NEW GAME writes a new duelist code into the running save. */
