@@ -1,6 +1,7 @@
 """Recovery copies on a timer (File > Recovery copy), written on a thread of
 their own, and undo snapshots that share pictures instead of storing them."""
 import copy
+import gc
 import json
 import tempfile
 import threading
@@ -145,6 +146,45 @@ class WriterTest(unittest.TestCase):
             writer = recovery.Writer(r, r.prepare(self.project)).start()
             writer.wait()
         self.assertIsInstance(writer.error, OSError)
+
+    def test_no_collection_on_the_writers_thread(self):
+        """The cycle collector waits while a copy is written: on that thread
+        it would finalize Tk objects (tkinter must not call Tcl from there),
+        and the window's thread turns it back on, by done() or wait()."""
+        self.assertTrue(gc.isenabled())
+        r = recovery.Recovery()
+        real = r.write_job
+        for finish in ("done", "wait"):
+            with self.subTest(finish=finish):
+                gate, seen = threading.Event(), []
+
+                def slow(job):
+                    seen.append(gc.isenabled())
+                    gate.wait(5)
+                    return real(job)
+                with mock.patch.object(r, "write_job", side_effect=slow):
+                    writer = recovery.Writer(r, r.prepare(self.project)).start()
+                    self.assertFalse(gc.isenabled())
+                    self.assertFalse(writer.done())
+                    self.assertFalse(gc.isenabled(), "still writing")
+                    gate.set()
+                    if finish == "done":
+                        deadline = time.monotonic() + 10
+                        while not writer.done() and time.monotonic() < deadline:
+                            time.sleep(0.01)
+                        self.assertTrue(gc.isenabled())
+                    writer.wait()
+                self.assertEqual(seen, [False])
+                self.assertTrue(gc.isenabled())
+                writer.wait()                   # once back on, it stays so
+                self.assertTrue(gc.isenabled())
+        # A collector turned off by someone else is left off.
+        gc.disable()
+        try:
+            recovery.Writer(r, r.prepare(self.project)).start().wait()
+            self.assertFalse(gc.isenabled())
+        finally:
+            gc.enable()
 
 
 CARD = 300
