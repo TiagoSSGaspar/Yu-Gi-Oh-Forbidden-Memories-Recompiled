@@ -42,8 +42,8 @@ the 64-bit compile ("changes address space of nested pointer", or LLVM
 failing to lower a call) stays the complete check for what text cannot see,
 such as guest storage reached through a helper's return value. An
 object-like macro of src/port_ptr.h that this file does not know, found where
-a declarator's name should be, is reported too: TRANSLATED_G32 once was, and
-the name it hid from every rule above was D_80090F18's.
+a declarator's name or type should be, is reported too: TRANSLATED_G32 once
+was, and the name it hid from every rule above was D_80090F18's.
 
 --fix inserts G32 at every member, global and local finding and respells a
 plain long; a call needs the callee's type for CALL32 and is left to the
@@ -800,11 +800,12 @@ def check(units: list, macros=frozenset()):
             [item for function in unit.functions
              for item in function.pointer_pointers.values()]
         for item in named:
-            if item.name in macros:
-                findings.append((unit.path, item.line,
-                                 f"'{item.name}' ({MACRO_HEADER}) is read as the "
-                                 "declarator's name: teach tools/project/check_g32.py "
-                                 "what it means", None))
+            for word in [item.name] + item.base:
+                if word in macros:
+                    findings.append((unit.path, item.line,
+                                     f"'{word}' ({MACRO_HEADER}) is read as the "
+                                     "declarator's name or type: teach "
+                                     "tools/project/check_g32.py what it means", None))
 
     # Typedefs, to a fixed point (a typedef of a pointer typedef).
     pointer_typedefs, function_typedefs, fnptr_typedefs = set(), set(), set()
@@ -954,6 +955,11 @@ def apply_fix(text: str, line: int, name: str, stars: str):
             return None
         lines[line - 1] = fixed
         return "\n".join(lines)
+    # Inserting G32 around TRANSLATED_G32 can land on the wrong '*' (the
+    # #301 local would become `(*TRANSLATED_G32 *G32 handlers)`, its entries
+    # still 8 bytes): the author respells it.
+    if re.search(r"\bTRANSLATED_G32\b", source):
+        return None
     for match in re.finditer(rf"\b{re.escape(name)}\b", source):
         start = match.start()
         if stars == "typedef":
@@ -1144,7 +1150,10 @@ CASES = (
     ("extern void (*NATIVE_G32 gPinnedN[])(u8 *);\n"
      "void (*NATIVE_G32 gTableN[2])(void) = { 0 };\n"
      "typedef struct { u8 *NATIVE_G32 m; } RN;\n"
-     "u8 *gS PSX_SECTION(\".sdata\") = 0;\n", {1, 2, 3}),
+     "u8 *gS PSX_SECTION(\".sdata\") = 0;\n"
+     "extern NATIVE_G32 u8 *gBefore;\n"
+     "extern NATIVE_G32 H gBeforeH[];\n"
+     "extern u8 *G32 PSX_SECTION;\n", {1, 2, 3, 5, 6}),
 )
 # The macros the cases see, as run() reads them from src/port_ptr.h.
 CASE_MACROS = "#define G32\n#define TRANSLATED_G32 G32\n#define NATIVE_G32\n" \
@@ -1164,6 +1173,8 @@ FIXES = (
     ("    Callback update;", "update", "typedef", "    Callback G32 update;"),
     # TRANSLATED_G32 is respelled by the author, never fixed around.
     ("extern void (*TRANSLATED_G32 gT[])(u8 *);", "gT", "all", None),
+    ("    void (*TRANSLATED_G32 *handlers)(u8 *);", "handlers", "first", None),
+    ("extern H TRANSLATED_G32 gH[];", "gH", "typedef", None),
 )
 
 

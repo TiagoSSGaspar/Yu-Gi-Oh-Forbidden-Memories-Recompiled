@@ -256,10 +256,10 @@ rejects game code under `src/` without them; `src/pc`, the port's own host
 code, is exempt. `TRANSLATED_G32` is `G32` only in the translated macOS build
 and empty on Windows x64 and Android arm64, so the check does not count it as
 `G32`: it fits only a global some declaration initializes, the port's own
-table in native .data. #301 put it on the pinned text command table
+table in native .data, and locals walking such a table. #301 put it on the pinned text command table
 D_80090F18, and both 64-bit games crashed reading that table 8 bytes an entry
 (fixed by #319). The check also rejects an object-like macro of `port_ptr.h`
-it does not know where a declarator's name should be, which is how
+it does not know where a declarator's name or type should be, which is how
 `TRANSLATED_G32` hid D_80090F18 from it before.
 
 ### What runs (2026-09-20)
