@@ -145,11 +145,25 @@ A mod made for one release has to keep working in the later ones.
   found a difference not accepted in `mod_compat.txt`: worktrees share `tmp/`, and two checks at once used to
   take each other's frames.
 
+Both run what a release package holds (its SDK's headers and tools, its
+mods' objects), so the package is pinned: `mod_compat.txt` has a
+`sha256 TAG SYSTEM DIGEST` line for each listed release's Windows `.zip`
+and Linux `.tar.gz`, the digest GitHub's release API gives the asset. A
+package is downloaded once into `tmp/pc/mod-compat/<tag>/<system>/` and
+unpacked only if its sha256 is the pinned one, and only if every name in
+it is under its `yfm-redecomp-<tag>/` folder. The package stays beside the
+unpacked folder and is hashed again whenever the folder is used. A folder
+without its package (an older check's, or one copied in) is fetched again
+rather than trusted; a package that differs is refused, with the folder to
+delete. `--baseline <folder>` runs an unpacked folder as it is, unchecked.
+
 A difference that fails the check is fixed, not waved through. Keep the old
 number, argument list or layout, and add beside it. Only a difference
 that provably breaks no mod goes in `mod_compat.txt` as `accept`, with the
 reason. After publishing a release, add `baseline <tag>` for it to
-`mod_compat.txt`.
+`mod_compat.txt`, with its two `sha256` lines from
+`gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/<tag> --jq '.assets[] | .name + " " + .digest'`
+(`test_mod_compat_fetch.py`, a CTest, fails while a baseline lacks one).
 
 ## Android signing
 
