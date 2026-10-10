@@ -47,7 +47,7 @@ was, and the name it hid from every rule above was D_80090F18's.
 
 --fix inserts G32 at every member, global and local finding and respells a
 plain long; a call needs the callee's type for CALL32 and is left to the
-author.
+author, as is a line with TRANSLATED_G32, which the author respells.
 """
 
 from __future__ import annotations
