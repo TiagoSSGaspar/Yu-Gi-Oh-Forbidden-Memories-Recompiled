@@ -1223,7 +1223,7 @@ What the rest of the port does with a roster it cannot see is covered too.
 `pc_tables`, `pc_free_duel_progress`, `pc_card_drops` and `pc_rank` link units
 this touches, and share `tests/pc/duelists_stubs.c`: the list as a run with no
 duelist mod, the disc's forty, which is what their cases are written against.
-`pc_fm_editor` reads a mod's own roster as duelists to edit and writes it back
+`pc_fm_editor_roster` reads a mod's own roster as duelists to edit and writes it back
 in these folders (`fm_editor/tests/test_roster.py`), and keeps a `decks` or
 `drops` entry naming another mod's duelist, or either table named as a file,
 exactly as the mod wrote it. `tests/pc/editor_duelists_runtime.py` plays a

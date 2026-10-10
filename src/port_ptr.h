@@ -38,8 +38,10 @@
 #define CALL32(type, pointer) pointer
 #endif
 
-/* TRANSLATED_G32 is G32 only in the translated build (macOS) and empty on
- * the fixed-memory 64-bit ones (Windows x64, Android arm64). It fits only a
+/* MEMORIES_TRANSLATED selects the translated memory model, used in production
+ * by macOS ARM64. Portable test harnesses may select it on other hosts.
+ * TRANSLATED_G32 is G32 only in the translated build and empty on the
+ * fixed-memory 64-bit ones (Windows x64, Android arm64). It fits only a
  * name some declaration in src/ initializes: the port's own table in native
  * .data, which the translated build shares with guest memory. Data of the
  * retail image (a pinned global, such as the text command table

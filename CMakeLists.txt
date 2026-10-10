@@ -243,6 +243,17 @@ if(BUILD_TESTING)
     add_executable(memories_libgs_ot_test tests/pc/libgs_ot_test.c)
     target_link_libraries(memories_libgs_ot_test PRIVATE memories_pc_core)
     add_test(NAME pc_libgs_ot COMMAND memories_libgs_ot_test)
+    add_executable(memories_texture_dump_clear_test tests/pc/texture_dump_clear_test.c
+        src/pc/render/texture_dump.c)
+    target_include_directories(memories_texture_dump_clear_test PRIVATE src)
+    if(WIN32)
+        target_link_libraries(memories_texture_dump_clear_test PRIVATE memories_pc_fs)
+    endif()
+    if(NOT MSVC)
+        target_compile_options(memories_texture_dump_clear_test PRIVATE
+            -Wall -Wextra -Wpedantic -Werror -Wno-strict-prototypes)
+    endif()
+    add_test(NAME pc_texture_dump_clear COMMAND memories_texture_dump_clear_test)
     # The translated runtime models a 64-bit host; 32-bit native targets
     # retain their existing direct-memory contracts and test inventory.
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -783,6 +794,26 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME pc_scratch_rules COMMAND memories_scratch_rules_test)
 
+    # Shared guest helpers also run on fixed 32-bit and native 64-bit hosts.
+    add_executable(memories_state_requests_test tests/pc/state_requests_test.c src/pc/guest/state_requests.c)
+    add_executable(memories_image_loader_test tests/pc/image_loader_test.c src/pc/guest/image_loader.c)
+    add_executable(memories_function_map_test tests/pc/function_map_test.c)
+    add_executable(memories_ot_chain_test tests/pc/ot_chain_test.c)
+    foreach(helper state_requests image_loader function_map ot_chain)
+        target_include_directories(memories_${helper}_test PRIVATE src tests/pc)
+        if(WIN32)
+            target_link_libraries(memories_${helper}_test PRIVATE memories_pc_fs)
+        endif()
+        if(NOT MSVC)
+            target_compile_options(memories_${helper}_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        endif()
+        if(MEMORIES_SANITIZERS)
+            target_compile_options(memories_${helper}_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+            target_link_options(memories_${helper}_test PRIVATE -fsanitize=address,undefined)
+        endif()
+        add_test(NAME pc_${helper} COMMAND memories_${helper}_test)
+    endforeach()
+
     # The tests state every expectation with assert(). A Release configuration
     # defines NDEBUG, which would leave them running and checking nothing;
     # the Windows CI job builds Release, so this is what makes it a test run.
@@ -843,12 +874,34 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_mod_cache
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mod_cache.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-    endif()
-    # The FM Editor's data layer (tools/pc/fm_editor), on synthetic game files.
-    if(BUILD_TESTING)
-        add_test(NAME pc_fm_editor
-            COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tools/pc/fm_editor/tests -t tools/pc
+        # check_mod_abi.py unpacks only the release packages whose sha256
+        # mod_compat.txt pins (synthetic packages, nothing downloaded).
+        add_test(NAME pc_mod_compat_fetch
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mod_compat_fetch.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endif()
+    # The FM Editor (tools/pc/fm_editor), on synthetic game files: one case
+    # per test file (pc_fm_editor_gui for test_gui.py, ...), as the whole
+    # suite outgrew CTest's 1500 s. Most open Tk windows, some take the focus:
+    # one at a time, other tests beside them. test_gui.py, a window built for
+    # nearly every one of its 96 tests, took 540 s with the machine half busy
+    # and passed 1500 s with it full, so it has a limit of its own.
+    if(BUILD_TESTING)
+        file(GLOB fm_editor_tests CONFIGURE_DEPENDS
+            "${CMAKE_SOURCE_DIR}/tools/pc/fm_editor/tests/test_*.py")
+        foreach(test_file IN LISTS fm_editor_tests)
+            get_filename_component(test_name "${test_file}" NAME_WE)
+            string(REGEX REPLACE "^test_" "" test_name "${test_name}")
+            get_filename_component(test_file "${test_file}" NAME)
+            add_test(NAME pc_fm_editor_${test_name}
+                COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tools/pc/fm_editor/tests
+                    -t tools/pc -p "${test_file}"
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+            set_tests_properties(pc_fm_editor_${test_name} PROPERTIES RESOURCE_LOCK fm_editor_tk)
+            if(test_name STREQUAL "gui")
+                set_tests_properties(pc_fm_editor_gui PROPERTIES TIMEOUT 3600)
+            endif()
+        endforeach()
         # replay.py's check on made-up recordings (notes/agent-control.md).
         add_test(NAME pc_replay_check
             COMMAND "${Python3_EXECUTABLE}" tests/pc/replay_check_test.py

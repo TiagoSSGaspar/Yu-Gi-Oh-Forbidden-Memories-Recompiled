@@ -408,12 +408,20 @@ void TextureDump_Moved(int sx, int sy, int dx, int dy, int w, int h)
 
 void TextureDump_Cleared(int x, int y, int w, int h)
 {
-    int i, j;
+    int j;
     if (!TextureDump_Tags) return;
     for (j = 0; j < h; j++) {
-        for (i = 0; i < w; i++) {
-            *tag_at(x + i, y + j) = 0;
-            if (TextureDump_Shadow) memset(TextureDump_Cell(x + i, y + j, 0), 0, 4 * sizeof(uint16_t));
+        /* Clear contiguous spans, retaining VRAM's horizontal wrap. This
+         * also avoids resolving each cell in the translated backend. */
+        int left = w, column = x & (SOFT_GPU_WIDTH - 1);
+        while (left > 0) {
+            int count = SOFT_GPU_WIDTH - column;
+            if (count > left) count = left;
+            memset(tag_at(column, y + j), 0, (size_t)count * sizeof(uint32_t));
+            if (TextureDump_Shadow)
+                memset(TextureDump_Cell(column, y + j, 0), 0, (size_t)count * 4 * sizeof(uint16_t));
+            left -= count;
+            column = 0;
         }
     }
     if (TextureDump_Forget) TextureDump_Forget(x, y, w, h);

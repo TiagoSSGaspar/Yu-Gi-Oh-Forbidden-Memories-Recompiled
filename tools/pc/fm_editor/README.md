@@ -1626,8 +1626,13 @@ verify every mod combination or replace testing the release on supported systems
 
     python -m unittest discover -s tools/pc/fm_editor/tests -t tools/pc
 
-(ctest `pc_fm_editor`). The tests build synthetic game files at the retail
-offsets (`tests/fixtures.py`), art records included, and their PNGs in code
+(one file: add `-p test_gui.py`). CTest runs each file as a case of its own,
+`pc_fm_editor_gui` for `test_gui.py` and so on (`ctest -R ^pc_fm_editor_`),
+one at a time, since most of them open windows. `pc_fm_editor_gui` has a
+3600 s limit of its own; the others keep CTest's 1500 s. The list of files is
+read when the build tree is configured or built: a file added or removed shows
+up in CTest after the next `cmake --build`. The tests build synthetic game files
+at the retail offsets (`tests/fixtures.py`), art records included, and their PNGs in code
 (`tests/map_fixture.py` adds the two overworld packages: a made-up table,
 resource bank, strip and a one-quad HMD);
 they need no game data (the bulk fusion tests time a 722 x 722 preview). PNGs are

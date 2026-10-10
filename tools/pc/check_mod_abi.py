@@ -30,18 +30,23 @@ mod is refused by name ("needs a 64-bit build of this mod", the Mods
 window's note) and never loaded, and that the data mods load as on 32-bit.
 
 The releases checked, and the differences reviewed and accepted, are in
-tools/pc/mod_compat.txt. A release is downloaded once into tmp/pc/mod-compat.
+tools/pc/mod_compat.txt, with the sha256 GitHub lists for each release's
+package. A release is downloaded once into tmp/pc/mod-compat, and unpacked
+only if its package is the one pinned there; the package is kept beside the
+folder and checked again each time the folder is used, and a folder without
+its package is downloaded again rather than trusted.
 Each --run plays in a folder of its own beside it, tmp/pc/mod-compat/run/
 TAG-XXXXXXXX, kept when the run found a difference not accepted in
 mod_compat.txt (or stopped) and removed otherwise: worktrees
 share tmp/ (a junction to the main checkout's), so two checks running at once
 in two of them took each other's frames and folders when they shared one."""
-import argparse, concurrent.futures, glob, json, os, re, shutil, subprocess, sys, tarfile, tempfile, urllib.request, zipfile
+import argparse, concurrent.futures, glob, hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REPOSITORY = "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"   # src/pc/platform/update_check.c
 CACHE = os.path.join(ROOT, "tmp/pc/mod-compat")
 LIST = os.path.join(ROOT, "tools/pc/mod_compat.txt")
+DOWNLOADS = f"https://github.com/{REPOSITORY}/releases/download"
 BUILD = os.path.join(ROOT, "tmp/pc/game32")
 FLAGS = ["--target=i386-pc-linux-gnu", "-std=gnu11", "-ffreestanding", "-nostdinc", "-fsyntax-only", "-w",
          "-DMEMORIES_PC", "-DMEMORIES_MOD", "-D_LANGUAGE_C", "-DLANGUAGE_C"]
@@ -289,9 +294,13 @@ def compare(old, new, exports_old, exports_new):
 
 # --- releases ---------------------------------------------------------------
 
+SYSTEMS = ("windows", "linux")
+
+
 def read_list():
-    """The baseline releases, and {(release, kind, name): reason} accepted."""
-    baselines, accepted = [], {}
+    """The baseline releases, {(release, kind, name): reason} accepted, and
+    {(release, system): sha256} of the packages fetch() may unpack."""
+    baselines, accepted, digests = [], {}, {}
     with open(LIST, encoding="utf-8") as handle:
         for number, line in enumerate(handle, 1):
             line = line.split("#", 1)[0].strip()
@@ -300,43 +309,148 @@ def read_list():
             words = line.split(None, 4)
             if words[0] == "baseline" and len(words) == 2:
                 baselines.append(words[1])
+            elif (words[0] == "sha256" and len(words) == 4 and words[2] in SYSTEMS
+                  and re.fullmatch(r"[0-9a-f]{64}", words[3])):
+                digests[(words[1], words[2])] = words[3]
             elif words[0] == "accept" and len(words) == 5:
                 accepted[tuple(words[1:4])] = words[4]
             else:
-                sys.exit(f"{LIST}:{number}: expected `baseline TAG` or `accept TAG KIND NAME reason`")
-    return baselines, accepted
+                sys.exit(f"{LIST}:{number}: expected `baseline TAG`, `sha256 TAG {'|'.join(SYSTEMS)} DIGEST` "
+                         "(64 lowercase hex digits) or `accept TAG KIND NAME reason`")
+    return baselines, accepted, digests
 
 
-def fetch(tag, system):
-    """A release's package for `system`, unpacked: its sdk/, mods/ and executable."""
-    folder = os.path.join(CACHE, tag, system)
-    unpacked = os.path.join(folder, f"yfm-redecomp-{tag}")
-    if os.path.isdir(unpacked):
-        return unpacked
-    os.makedirs(folder, exist_ok=True)
+def sha256_of(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def unpack(archive, into, top):
+    """Every member of `archive` under `top`/, refused whole otherwise (zipfile
+    rewrites a ../ or absolute name, tarfile's data filter refuses one; a
+    release package holds neither, so one is a package not to unpack)."""
+    zipped = archive.endswith(".zip")
+    with (zipfile.ZipFile(archive) if zipped else tarfile.open(archive)) as package:
+        for name in package.namelist() if zipped else package.getnames():
+            parts = name.replace("\\", "/").split("/")
+            if parts[0] != top or ".." in parts:
+                sys.exit(f"check_mod_abi: {archive} holds {name!r}, outside {top}/; nothing of it was unpacked")
+        if zipped:
+            package.extractall(into)
+        elif not hasattr(tarfile, "data_filter"):
+            sys.exit(f"check_mod_abi: unpacking {archive} needs tarfile's data filter "
+                     "(Python 3.8.17+, 3.9.17+, 3.10.12+, 3.11.4+ or 3.12)")
+        else:
+            try:
+                package.extractall(into, filter="data")
+            except tarfile.FilterError as error:   # a link out of the folder, a device node
+                sys.exit(f"check_mod_abi: {archive}: {error}; nothing of it was kept")
+    if not os.path.isdir(os.path.join(into, top)):
+        sys.exit(f"check_mod_abi: {archive} has no {top} folder")
+
+
+def fetch(tag, system, digests):
+    """A release's package for `system`, unpacked: its sdk/, mods/ and executable.
+
+    Only the package whose sha256 mod_compat.txt pins is unpacked. It is kept
+    beside the folder, and the folder is used again only while the package
+    beside it still has that sha256: a folder without it (an older check's,
+    or one copied in) is fetched again rather than trusted, and a package
+    that differs is refused. The folder is unpacked under verified/, where a
+    check older than the pinning, which unpacks beside the package, never
+    writes."""
     name = f"yfm-redecomp-{tag}-{system}." + ("zip" if system == "windows" else "tar.gz")
-    url = f"https://github.com/{REPOSITORY}/releases/download/{tag}/{name}"
-    print(f"check_mod_abi: downloading {url}", flush=True)
+    expected = digests.get((tag, system))
+    if not expected:
+        sys.exit(f"check_mod_abi: {LIST} pins no sha256 for {name}; add `sha256 {tag} {system} DIGEST` with the "
+                 f"digest GitHub lists for it (gh api repos/{REPOSITORY}/releases/tags/{tag} "
+                 "--jq '.assets[] | .name + \" \" + (.digest | ltrimstr(\"sha256:\"))')")
+    folder = os.path.join(CACHE, tag, system)
+    top = f"yfm-redecomp-{tag}"
+    unpacked, archive = os.path.join(folder, "verified", top), os.path.join(folder, name)
+
+    def kept():
+        """The package beside the folder is the pinned one (False: there is none)."""
+        if not os.path.isfile(archive):
+            return False
+        actual = sha256_of(archive)
+        if actual != expected:
+            sys.exit(f"check_mod_abi: {archive} is not the {name} mod_compat.txt pins (sha256 {actual}, "
+                     f"expected {expected}); delete {folder} to download it again")
+        return True
+
+    have_archive = kept()
+    if have_archive and os.path.isdir(unpacked):
+        return unpacked
+    os.makedirs(os.path.dirname(unpacked), exist_ok=True)
     # Downloaded and unpacked in a folder of this run's, then moved in whole:
     # a check in another worktree may be fetching the same release.
     staging = tempfile.mkdtemp(prefix="fetch-", dir=folder)
     try:
-        archive = os.path.join(staging, name)
-        with urllib.request.urlopen(url, timeout=300) as response, open(archive, "wb") as handle:
-            shutil.copyfileobj(response, handle)
-        if system == "windows":
-            with zipfile.ZipFile(archive) as package:
-                package.extractall(staging)
-        else:
-            with tarfile.open(archive) as package:
-                package.extractall(staging, filter="data")
-        if not os.path.isdir(os.path.join(staging, f"yfm-redecomp-{tag}")):
-            sys.exit(f"check_mod_abi: {name} has no yfm-redecomp-{tag} folder")
+        source = archive
+        if not have_archive:
+            url = f"{DOWNLOADS}/{tag}/{name}"
+            print(f"check_mod_abi: downloading {url}", flush=True)
+            source = os.path.join(staging, name)
+            with urllib.request.urlopen(url, timeout=300) as response, open(source, "wb") as handle:
+                shutil.copyfileobj(response, handle)
+            actual = sha256_of(source)
+            if actual != expected:
+                sys.exit(f"check_mod_abi: {url} is not the {name} mod_compat.txt pins (sha256 {actual}, "
+                         f"expected {expected}); nothing of it was unpacked")
+        unpack(source, staging, top)
+
+        def set_aside(as_name):
+            """Move a folder with no pinned package beside it out of the way
+            (removed with the staging folder); True if it turns out to be
+            another run's. A run moves its folder in and its package right
+            after, so its package is waited for about a second first."""
+            for attempt in range(11):
+                if not os.path.isdir(unpacked):
+                    return False   # another run set it aside meanwhile
+                if kept():
+                    return True
+                if attempt < 10:
+                    time.sleep(0.1)
+            try:
+                os.rename(unpacked, os.path.join(staging, as_name))
+            except OSError as error:
+                if not os.path.isdir(unpacked):
+                    return False
+                if kept():
+                    return True
+                sys.exit(f"check_mod_abi: cannot set aside {unpacked}, which has no pinned package beside "
+                         f"it ({error}); delete {folder} and run again")
+            return False
+
+        if os.path.isdir(unpacked) and set_aside("untrusted"):
+            return unpacked   # another run put the folder and its package in meanwhile
         try:
-            os.rename(os.path.join(staging, f"yfm-redecomp-{tag}"), unpacked)
+            os.rename(os.path.join(staging, top), unpacked)
         except OSError:
             if not os.path.isdir(unpacked):  # not another run's copy that got there first
                 raise
+            # A folder that got there first: another run's, beside its package,
+            # or one with none (copied in), set aside like the one above.
+            if set_aside("untrusted-late"):
+                return unpacked
+            try:
+                os.rename(os.path.join(staging, top), unpacked)
+            except OSError as error:
+                if os.path.isdir(unpacked) and kept():
+                    return unpacked   # another run's again, beside its package
+                sys.exit(f"check_mod_abi: cannot move the unpacked {top} to {unpacked} ({error}); "
+                         "another check may be fetching it, run again")
+        # The package goes in last: a folder is trusted only beside it.
+        if source != archive:
+            try:
+                os.replace(source, archive)
+            except OSError:
+                if not kept():  # not another run's copy that got there first
+                    raise
     finally:
         shutil.rmtree(staging, ignore_errors=True)
     return unpacked
@@ -470,16 +584,17 @@ def run_mods(tag, release, executable, build):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--build", default=BUILD, help="the game build whose sdk/ (and mods/) to check")
-    parser.add_argument("--baseline", action="append", help="a release tag, or an unpacked release folder "
+    parser.add_argument("--baseline", action="append", help="a release tag (its package must have a `sha256` in "
+                        "tools/pc/mod_compat.txt), or an unpacked release folder, used as it is "
                         "(default: every `baseline` in tools/pc/mod_compat.txt)")
     parser.add_argument("--run", action="store_true", help="also run the baseline's mods in this build (needs the disc)")
     parser.add_argument("--executable", help="the executable --run uses (default: the build's; a .exe runs in Wine)")
     options = parser.parse_args()
-    baselines, accepted = read_list()
+    baselines, accepted, digests = read_list()
     compiler = clang()
     current_sdk = os.path.join(options.build, "sdk")
     if is_64bit(options.executable or os.path.join(options.build, "memories-pc.exe")):
-        return run_64bit(options, baselines, accepted)
+        return run_64bit(options, baselines, accepted, digests)
     if not os.path.isfile(os.path.join(current_sdk, "exports.txt")):
         sys.exit(f"check_mod_abi: {current_sdk} has no exports.txt; build the game first (tools/pc/build_game32.py)")
     with open(os.path.join(current_sdk, "exports.txt")) as handle:
@@ -490,7 +605,7 @@ def main():
     system = "windows" if os.path.exists(os.path.join(options.build, "memories-pc.exe")) else "linux"
     failed = False
     for baseline in options.baseline or baselines:
-        release = baseline if os.path.isdir(baseline) else fetch(baseline, system)
+        release = baseline if os.path.isdir(baseline) else fetch(baseline, system, digests)
         tag = os.path.basename(os.path.normpath(release)).replace("yfm-redecomp-", "") if os.path.isdir(baseline) else baseline
         with open(os.path.join(release, "sdk", "exports.txt")) as handle:
             exports_old = set(handle.read().split())
@@ -526,7 +641,7 @@ def main():
     return 1 if failed else 0
 
 
-def run_64bit(options, baselines, accepted):
+def run_64bit(options, baselines, accepted, digests):
     """The 64-bit build: no SDK to compare (it loads no code mods), so only
     --run, which holds it to refusing each code mod by name."""
     if not options.run:
@@ -534,7 +649,7 @@ def run_64bit(options, baselines, accepted):
     executable = os.path.abspath(options.executable or os.path.join(options.build, "memories-pc.exe"))
     failed = False
     for baseline in options.baseline or baselines:
-        release = baseline if os.path.isdir(baseline) else fetch(baseline, "windows")
+        release = baseline if os.path.isdir(baseline) else fetch(baseline, "windows", digests)
         tag = os.path.basename(os.path.normpath(release)).replace("yfm-redecomp-", "") if os.path.isdir(baseline) else baseline
         found, work = run_mods(tag, release, executable, options.build)
         keep = False
