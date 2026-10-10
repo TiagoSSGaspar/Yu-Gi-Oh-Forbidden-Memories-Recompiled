@@ -843,6 +843,11 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_mod_cache
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mod_cache.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # check_mod_abi.py unpacks only the release packages whose sha256
+        # mod_compat.txt pins (synthetic packages, nothing downloaded).
+        add_test(NAME pc_mod_compat_fetch
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mod_compat_fetch.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endif()
     # The FM Editor (tools/pc/fm_editor), on synthetic game files: one case
     # per test file (pc_fm_editor_gui for test_gui.py, ...), as the whole
