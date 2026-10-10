@@ -96,6 +96,7 @@
 #include "pc/mods/modapi.h"
 #include "pc/cards/cards.h"
 #include "field_art.h"
+#include "fight_sounds.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -1582,6 +1583,25 @@ static void attack_counter(void)
     attack.want[1] = ROW_ATTACK;
 }
 
+/* The fighters' own sounds (fight_sounds.c), with `sounds`: their records
+ * are read again for the bank and the samples the quiet load leaves out,
+ * for the rows a fight plays, its attack and the reactions. */
+static void sounds_begin(Monster *const fighters[DUEL_SIDE_COUNT])
+{
+    int side;
+    for (side = 0; side < DUEL_SIDE_COUNT; side++) {
+        const Monster *monster = fighters[side];
+        int model = monster ? mrg_record(monster->card - 1) : -1;
+        unsigned rows = 1u << ROW_WITHSTAND | 1u << ROW_HIT | 1u << ROW_GUARD;
+        if (monster) {
+            rows |= 1u << (monster->slot.field_DFE + 3);
+        }
+        FightSounds_Load(side,
+                         model >= 0 && mrg_start >= 0 && tunable("sounds", 1) ? mrg_start + model * RECORD_SECTORS : -1,
+                         monster ? monster->slot.sound_entries : NULL, rows);
+    }
+}
+
 /* Once the big cards are up at step 7 with the attacker drawn. */
 static void attack_begin(Monster *const monsters[DUEL_SIDE_COUNT])
 {
@@ -1600,6 +1620,7 @@ static void attack_begin(Monster *const monsters[DUEL_SIDE_COUNT])
     attack.outcome = attack_outcome();
     attack.holding = 1;
     attack.want[0] = ROW_ATTACK;
+    sounds_begin(monsters);
     say("attack: case %d\n", attack.outcome);
 }
 
@@ -1654,6 +1675,7 @@ static void attack_side(int side, ModelSlot *slot, int yaw)
     } else if (progress == 2 && !attack.want[side]) {
         attack.want[side] = ROW_IDLE;
     }
+    FightSounds_Update(side, slot, attack.row[side] && slot->field_BF5 == attack.row[side]);
 }
 
 /* What to add to a side's placement so that only `attack_drift` percent of
@@ -1702,6 +1724,7 @@ static void attack_finish(void)
     int i;
     effect_end();
     fight_restore();
+    FightSounds_Release();
     for (i = 0; i < CACHE; i++) {
         if (cache[i].tag) {
             cache[i].card = 0;
@@ -2372,7 +2395,7 @@ static int effect_busy(void)
 static void fight_begin(void)
 {
     const ModelSlot *slot;
-    Monster *attacker, *defender;
+    Monster *attacker, *defender, *fighters[DUEL_SIDE_COUNT];
     int side, dx, dz, length, reach;
 
     if (attack.phase != ATTACK_IDLE || !fight_on() || D_8009B229 || D_8009B22A || !D_800E9EF0[0] ||
@@ -2427,6 +2450,9 @@ static void fight_begin(void)
     attack.outcome = fight_outcome();
     fight_tally();
     effect_begin(attacker, defender);
+    fighters[0] = attacker;
+    fighters[1] = defender;
+    sounds_begin(fighters);
     attack.holding = 1;
     say("fight: case %d, record %d against %d, from %d,%d to %d,%d, %d short\n", attack.outcome,
         attack.record[0], attack.record[1], attack.home[0][0], attack.home[0][1], attack.strike[0], attack.strike[1],
@@ -2957,6 +2983,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->reset = reset;
     mod->applied = applied;
     FieldArt_Init(from);
+    FightSounds_Init(from);
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
     if (from->api >= 4 && !original_card &&

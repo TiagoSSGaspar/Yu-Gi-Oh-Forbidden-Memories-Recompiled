@@ -1742,6 +1742,54 @@ case `duel-3d-monsters-attack-effects` is Blue-Eyes' White Lightning
 mid-beam (frame 20320). The two field fight cases set `effects` off, so
 their frames are as before.
 
+**The fighters' sounds.** With `sounds` on (the default; it does nothing
+unless `attack` is), both fights play the sounds the arena plays
+(`fight_sounds.c`).
+- **Where they are.** Each MODEL.MRG record carries its monster's own:
+  - sector 224, the sequence bank: up to 32 driver sound ids, each with a
+    note record (volume, timer, pitch, sample address);
+  - sectors 225-274, the ADPCM samples;
+  - sector 275, starting with the slot's 64 `sound_entries` (row, bank
+    index, time; 0x8000 for an XA clip off the disc), which the quiet load
+    copies too.
+- **How the arena plays them.** `func_8005106C` plays an entry when the
+  slot is in its row and the row's time passes the entry's:
+  `SD_SEPlay(0x4000 | index)`, which `field_044C` turns into the bank's
+  driver id. `func_800482B0` and `func_8004803C` give that id a voice at
+  the note's volume and pitch, and the voice is keyed off after the note's
+  timer. An id still sounding takes its own voice again (`mode` 0x10), so
+  an entry repeated every two frames restarts, it does not pile up. The
+  voices' envelope (attack, decay and sustain all at rate 0, sustain rising)
+  keeps them at full level.
+- **Why not there.** The bank goes to 0x801A8000, where the duel keeps the
+  opponent's AI script. Registering it (`SD_LoadSequenceBankPair`) first
+  drops every id the duel registered (`func_8004763C`). The samples go to
+  SPU RAM 0xD810 and up, over the duel's own sounds; in the duel all but 39
+  KB of SPU RAM is taken (0x3D000-0x40000 and 0x79400-0x80000 are free in
+  the quick battle), and a monster's samples take 80 to 100 KB.
+- **So the host plays them** (API 12, `sound_add`/`sound_play`). When a
+  fight begins, the mod reads each fighter's bank and samples again, and
+  decodes each note its entries name:
+  - the SPU's ADPCM from the note's address to the block that ends the
+    sample;
+  - at the note's pitch against the voices' sample note 0x3C00, through
+    libspu's own integer note-to-pitch (`0x2400` is 0x400, 11,025 Hz);
+  - cut at the note's timer (`timer << 2` VBlanks) with a 5 ms fade.
+
+  Then each frame it plays the entries of the row a fighter is in that the
+  row's time (`field_E06`) passed since the last frame, at twice the note's
+  volume (the voice's `(volume * 0xFF) >> 1` against 0x3FFF), and only in
+  rows the fight started: the attack and the reactions, not the rest the
+  monsters stand in. The XA entries are left out. The sounds are let go
+  when the fight ends.
+
+For Man-eating Plant against Shadow Specter (the quick battle), the fight
+rows name five of the plant's sounds and four of the specter's; the bite
+plays three, at 992, 1120 and 1184, the last as the blow lands. Reading
+takes under 0.1 ms; decoding and converting, on macOS, 2 and 4 ms, as the
+fight begins. The smoke cases run without sound, so their frames are as
+before.
+
 ### Images from the disc
 
 `python tools/pc/extract_images.py [family ...]` writes the game's images

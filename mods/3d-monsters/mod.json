@@ -118,6 +118,13 @@
             "description": "In the fight on the field, the attacker's own effects from the 3D arena: its beams, flashes and particles, sized to the field, and the blow lands when they reach the defender. Only in the 3D models style."
         },
         {
+            "key": "sounds",
+            "label": "Attack sounds (3D models)",
+            "type": "bool",
+            "default": 1,
+            "description": "When monsters attack, they make the sounds they make in the 3D arena: the attacker's blow and the defender's reaction, at the moments of the animation the arena plays them. Only with Monsters attack on."
+        },
+        {
             "key": "summon",
             "label": "Anime summon (3D models)",
             "type": "bool",
