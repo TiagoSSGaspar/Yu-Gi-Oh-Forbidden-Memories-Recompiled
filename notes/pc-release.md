@@ -151,11 +151,13 @@ mods' objects), so the package is pinned: `mod_compat.txt` has a
 and Linux `.tar.gz`, the digest GitHub's release API gives the asset. A
 package is downloaded once into `tmp/pc/mod-compat/<tag>/<system>/` and
 unpacked only if its sha256 is the pinned one, and only if every name in
-it is under its `yfm-redecomp-<tag>/` folder. The package stays beside the
-unpacked folder and is hashed again whenever the folder is used. A folder
-without its package (an older check's, or one copied in) is fetched again
-rather than trusted; a package that differs is refused, with the folder to
-delete. `--baseline <folder>` runs an unpacked folder as it is, unchecked.
+it is under its `yfm-redecomp-<tag>/` folder. It is unpacked into
+`verified/` there, where a check from before the pinning (which unpacks
+beside the package, unchecked) never writes. The package stays beside it
+and is hashed again whenever the folder is used. A folder without its
+package (one copied in) is fetched again rather than trusted; a package
+that differs is refused, with the folder to delete. `--baseline <folder>`
+runs an unpacked folder as it is, unchecked.
 
 A difference that fails the check is fixed, not waved through. Keep the old
 number, argument list or layout, and add beside it. Only a difference

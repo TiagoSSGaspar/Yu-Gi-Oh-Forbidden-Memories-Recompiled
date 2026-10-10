@@ -355,7 +355,9 @@ def fetch(tag, system, digests):
     beside the folder, and the folder is used again only while the package
     beside it still has that sha256: a folder without it (an older check's,
     or one copied in) is fetched again rather than trusted, and a package
-    that differs is refused."""
+    that differs is refused. The folder is unpacked under verified/, where a
+    check older than the pinning, which unpacks beside the package, never
+    writes."""
     name = f"yfm-redecomp-{tag}-{system}." + ("zip" if system == "windows" else "tar.gz")
     expected = digests.get((tag, system))
     if not expected:
@@ -364,7 +366,7 @@ def fetch(tag, system, digests):
                  "--jq '.assets[] | .name + \" \" + (.digest | ltrimstr(\"sha256:\"))')")
     folder = os.path.join(CACHE, tag, system)
     top = f"yfm-redecomp-{tag}"
-    unpacked, archive = os.path.join(folder, top), os.path.join(folder, name)
+    unpacked, archive = os.path.join(folder, "verified", top), os.path.join(folder, name)
 
     def kept():
         """The package beside the folder is the pinned one (False: there is none)."""
@@ -379,7 +381,7 @@ def fetch(tag, system, digests):
     have_archive = kept()
     if have_archive and os.path.isdir(unpacked):
         return unpacked
-    os.makedirs(folder, exist_ok=True)
+    os.makedirs(os.path.dirname(unpacked), exist_ok=True)
     # Downloaded and unpacked in a folder of this run's, then moved in whole:
     # a check in another worktree may be fetching the same release.
     staging = tempfile.mkdtemp(prefix="fetch-", dir=folder)
@@ -410,7 +412,7 @@ def fetch(tag, system, digests):
             if kept():
                 return unpacked   # another run's, beside its package
             # A folder that got there first with no pinned package beside it
-            # (an older check's): set aside like the one above, never trusted.
+            # (copied in): set aside like the one above, never trusted.
             os.rename(unpacked, os.path.join(staging, "untrusted-late"))
             os.rename(os.path.join(staging, top), unpacked)
         # The package goes in last: a folder is trusted only beside it.

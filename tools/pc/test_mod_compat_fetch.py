@@ -66,6 +66,19 @@ class Fetch(unittest.TestCase):
     def folder(self, system="windows"):
         return os.path.join(self.cache, TAG, system)
 
+    def unpacked(self, system="windows"):
+        return os.path.join(self.folder(system), "verified", TOP)
+
+    def assert_only_kept(self, system="windows"):
+        """Nothing of the fetch is left but the package and the folder unpacked from it."""
+        self.assertEqual(sorted(os.listdir(self.folder(system))), sorted(["verified", NAMES[system]]))
+        self.assertEqual(os.listdir(os.path.dirname(self.unpacked(system))), [TOP])
+
+    def assert_nothing_kept(self, system="windows"):
+        """No folder, no package, no staging."""
+        self.assertLessEqual(set(os.listdir(self.folder(system))), {"verified"})
+        self.assertFalse(os.path.exists(self.unpacked(system)))
+
     def refused(self, digests, system="windows"):
         with self.assertRaises(SystemExit) as caught:
             check_mod_abi.fetch(TAG, system, digests)
@@ -78,12 +91,12 @@ class Fetch(unittest.TestCase):
                     self.skipTest("this Python's tarfile has no data filter (3.12, or 3.8.17+)")
                 digests = self.publish(system)
                 unpacked = check_mod_abi.fetch(TAG, system, digests)
-                self.assertEqual(unpacked, os.path.join(self.folder(system), TOP))
+                self.assertEqual(unpacked, self.unpacked(system))
                 self.assertEqual(pathlib.Path(unpacked, "sdk", "exports.txt").read_bytes(), b"Mod_Name\n")
                 kept = os.path.join(self.folder(system), NAMES[system])
                 self.assertEqual(digest(kept), digests[(TAG, system)])
                 # Nothing of the download is left but the folder and its package.
-                self.assertEqual(sorted(os.listdir(self.folder(system))), sorted([TOP, NAMES[system]]))
+                self.assert_only_kept(system)
 
     def test_other_package_is_refused_before_unpacking(self):
         for system in NAMES:
@@ -93,7 +106,7 @@ class Fetch(unittest.TestCase):
                 self.assertIn("is not the", message)
                 self.assertIn("0" * 64, message)
                 self.assertIn("nothing of it was unpacked", message)
-                self.assertEqual(os.listdir(self.folder(system)), [])   # no folder, no package, no staging
+                self.assert_nothing_kept(system)
 
     def test_unpinned_release_is_refused(self):
         self.publish()
@@ -120,19 +133,33 @@ class Fetch(unittest.TestCase):
 
     def test_folder_without_package_is_fetched_again(self):
         digests = self.publish()
-        stale = os.path.join(self.folder(), TOP)
+        stale = self.unpacked()
         os.makedirs(os.path.join(stale, "mods", "planted"))
         pathlib.Path(stale, "mods", "planted", "mod.json").write_text("{}")
         unpacked = check_mod_abi.fetch(TAG, "windows", digests)
         self.assertEqual(len(self.downloads), 1)
         self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
         self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
-        self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
+        self.assert_only_kept()
+
+    def test_older_checks_folder_beside_the_package_is_not_used(self):
+        # A check from before the pinning unpacks to <tag>/<system>/TOP, with no
+        # hash check, even beside a verified package; that folder is never used.
+        digests = self.publish()
+        check_mod_abi.shutil.rmtree(check_mod_abi.fetch(TAG, "windows", digests))
+        older = os.path.join(self.folder(), TOP)
+        os.makedirs(os.path.join(older, "mods", "planted"))
+        self.downloads.clear()
+        unpacked = check_mod_abi.fetch(TAG, "windows", digests)
+        self.assertEqual(unpacked, self.unpacked())
+        self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
+        self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
+        self.assertEqual(self.downloads, [])
 
     def plant_before_move_in(self, digests, with_package):
         """fetch(), with a folder put in its place just before it moves its own
         in: by an older check (no package) or by another run (its package)."""
-        real, unpacked, planted = os.rename, os.path.join(self.folder(), TOP), []
+        real, unpacked, planted = os.rename, self.unpacked(), []
 
         def rename(source, target):
             if target == unpacked and not planted:
@@ -149,13 +176,13 @@ class Fetch(unittest.TestCase):
         unpacked = self.plant_before_move_in(digests, with_package=False)
         self.assertFalse(os.path.exists(os.path.join(unpacked, "mods", "planted")))
         self.assertTrue(os.path.isfile(os.path.join(unpacked, "mods", "a", "mod.json")))
-        self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
+        self.assert_only_kept()
 
     def test_folder_put_in_meanwhile_beside_its_package_is_used(self):
         digests = self.publish()
         unpacked = self.plant_before_move_in(digests, with_package=True)
         self.assertTrue(os.path.isdir(os.path.join(unpacked, "mods", "planted")))   # the other run's
-        self.assertEqual(sorted(os.listdir(self.folder())), sorted([TOP, NAMES["windows"]]))
+        self.assert_only_kept()
 
     def test_changed_package_beside_folder_is_refused(self):
         digests = self.publish()
@@ -177,7 +204,7 @@ class Fetch(unittest.TestCase):
                     digests = self.publish(system, {f"{TOP}/sdk/exports.txt": b"", outside: b"x"})
                     message = self.refused(digests, system)
                     self.assertIn("outside", message)
-                    self.assertEqual(os.listdir(self.folder(system)), [])
+                    self.assert_nothing_kept(system)
                     self.assertFalse(os.path.exists(os.path.join(self.scratch.name, "escape.txt")))
 
     def test_package_without_its_folder_is_refused(self):
