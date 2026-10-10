@@ -848,8 +848,8 @@ if(Python3_Interpreter_FOUND)
     # per test file (pc_fm_editor_gui for test_gui.py, ...), as the whole
     # suite outgrew CTest's 1500 s. Most open Tk windows, some take the focus:
     # one at a time, other tests beside them. test_gui.py, a window built for
-    # each of its 96 tests, took 540 s with the machine half busy and passed
-    # 1500 s with it full, so it has a limit of its own.
+    # nearly every one of its 96 tests, took 540 s with the machine half busy
+    # and passed 1500 s with it full, so it has a limit of its own.
     if(BUILD_TESTING)
         file(GLOB fm_editor_tests CONFIGURE_DEPENDS
             "${CMAKE_SOURCE_DIR}/tools/pc/fm_editor/tests/test_*.py")

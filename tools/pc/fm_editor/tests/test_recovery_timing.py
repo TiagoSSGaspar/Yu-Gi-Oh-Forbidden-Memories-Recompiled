@@ -166,18 +166,21 @@ class WriterTest(unittest.TestCase):
                     return real(job)
                 with mock.patch.object(r, "write_job", side_effect=slow):
                     writer = recovery.Writer(r, r.prepare(self.project)).start()
-                    self.addCleanup(writer.wait)    # a failure here leaves the collector on
-                    self.addCleanup(gate.set)
-                    self.assertFalse(gc.isenabled())
-                    self.assertFalse(writer.done())
-                    self.assertFalse(gc.isenabled(), "still writing")
-                    gate.set()
-                    if finish == "done":
-                        deadline = time.monotonic() + 10
-                        while not writer.done() and time.monotonic() < deadline:
-                            time.sleep(0.01)
-                        self.assertTrue(gc.isenabled())
-                    writer.wait()
+                    try:
+                        self.assertFalse(gc.isenabled())
+                        self.assertFalse(writer.done())
+                        self.assertFalse(gc.isenabled(), "still writing")
+                        gate.set()
+                        if finish == "done":
+                            deadline = time.monotonic() + 10
+                            while not writer.done() and time.monotonic() < deadline:
+                                time.sleep(0.01)
+                            self.assertTrue(gc.isenabled())
+                    finally:
+                        # Whatever failed: no writer left running, nor the
+                        # collector off for the next round or test.
+                        gate.set()
+                        writer.wait()
                 self.assertEqual(seen, [False])
                 self.assertTrue(gc.isenabled())
                 writer.wait()                   # once back on, it stays so
