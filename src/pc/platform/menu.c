@@ -782,6 +782,7 @@ void Menu_LoadSettings(void)
     Mods_SetTexturePack(TexturePack_Load, TexturePack_Unload);
     Mods_SetAssets(TexturePack_LoadAssets, TexturePack_LoadAssetFolder);
     Mods_SetAudio(AudioReplace_Load, AudioReplace_Unload);
+    Mods_SetAudioClips(AudioReplace_AddClip, AudioReplace_PlayClip, AudioReplace_FreeClip);
     Mods_Load(); /* the mods the settings say are applied, once they are read */
 }
 

@@ -94,6 +94,7 @@ typedef struct {
     const JsonValue *assets;     /* named image replacements from mod.json, or NULL */
     char asset_dir[PATH_MAX_];   /* "assets": a directory whose PNGs are named by their path */
     const JsonValue *audio;      /* the "audio" object: replacement sounds (src/pc/audio/replace.h) */
+    int sounds;                  /* its code added sounds of its own (host->sound_add) */
 } Mod;
 
 /* One stretch of the disc a mod replaces, and one run of patched bytes
@@ -389,6 +390,31 @@ static const char *(*menu_item_source)(int);
 void Mods_SetMenuItemSource(const char *(*source)(int)) { menu_item_source = source; }
 static const char *host_menu_item(const MemoriesModHost *host, int index)
 { (void)host; return menu_item_source ? menu_item_source(index) : NULL; }
+/* Mods_SetAudioClips: the audio replacement's clips. */
+static int (*clip_add)(int, const char *, const int16_t *, size_t, int, unsigned);
+static int (*clip_play)(int, int, int, int);
+static void (*clip_free)(int, int);
+static int host_sound_add(const MemoriesModHost *host, const int16_t *samples, size_t frames, int channels,
+                          unsigned rate)
+{
+    Mod *mod = owner(host);
+    /* Only while applied: turning the mod off frees them (Mods_Apply), and
+     * from MemoriesModInit, which runs once, they would not come back. */
+    int sound = mod && mod->active && clip_add ? clip_add((int)(mod - mods), mod->id, samples, frames, channels, rate)
+                                               : -1;
+    if (sound > 0) mod->sounds = 1;
+    return sound;
+}
+static int host_sound_play(const MemoriesModHost *host, int sound, int volume, int pan)
+{
+    Mod *mod = owner(host);
+    return mod && mod->active && clip_play ? clip_play((int)(mod - mods), sound, volume, pan) : 0;
+}
+static void host_sound_free(const MemoriesModHost *host, int sound)
+{
+    Mod *mod = owner(host);
+    if (mod && clip_free) clip_free((int)(mod - mods), sound);
+}
 static const char *(*notes_source)(int);
 static int (*tag_source)(int, const char *, char *, size_t);
 void Mods_SetCardNotes(const char *(*notes)(int), int (*tag)(int, const char *, char *, size_t))
@@ -541,6 +567,9 @@ static void fill_host(Mod *mod)
     mod->host.card_tag = host_card_tag;
     mod->host.limit = host_limit;
     mod->host.menu_item = host_menu_item;
+    mod->host.sound_add = host_sound_add;
+    mod->host.sound_play = host_sound_play;
+    mod->host.sound_free = host_sound_free;
     mod->host.api = MEMORIES_MOD_API;
     mod->host.id = mod->id;
     mod->host.directory = mod->directory;
@@ -1526,6 +1555,15 @@ void Mods_SetAudio(int (*load)(int mod, const char *id, const char *directory, c
     audio_unload = unload;
 }
 
+void Mods_SetAudioClips(int (*add)(int mod, const char *id, const int16_t *samples, size_t frames, int channels,
+                                   unsigned rate),
+                        int (*play)(int mod, int handle, int volume, int pan), void (*release)(int mod, int handle))
+{
+    clip_add = add;
+    clip_play = play;
+    clip_free = release;
+}
+
 void Mods_SetTexturePack(int (*load)(const char *directory, unsigned rank,
                                      int (*part)(const char *setting, void *context), void *context,
                                      char *problems, size_t size),
@@ -1732,7 +1770,9 @@ static void activate_once(int index, int on)
         if (mod->hooks.applied) mod->hooks.applied(1);
     } else {
         drop_overrides(index);
-        if (mod->audio && audio_unload) audio_unload(index);
+        /* The manifest's sounds, and those its code added (host->sound_add). */
+        if ((mod->audio || mod->sounds) && audio_unload) audio_unload(index);
+        mod->sounds = 0;
         if (has_images(mod) && texture_pack_unload) {
             /* The packs add up: the others' come back without this one's. */
             load_texture_packs(-1, index, NULL, 0);

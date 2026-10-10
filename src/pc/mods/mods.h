@@ -37,6 +37,12 @@ void Mods_SetAssets(int (*load)(const char *directory, const struct JsonValue *a
 void Mods_SetAudio(int (*load)(int mod, const char *id, const char *directory, const struct JsonValue *audio,
                                char *error, size_t size),
                    void (*unload)(int mod));
+/* A code mod's own sounds (host->sound_add/sound_play/sound_free): the
+ * audio replacement's clips (src/pc/audio/replace.h). Without these the
+ * host answers -1 and plays nothing. */
+void Mods_SetAudioClips(int (*add)(int mod, const char *id, const int16_t *samples, size_t frames, int channels,
+                                   unsigned rate),
+                        int (*play)(int mod, int handle, int volume, int pan), void (*release)(int mod, int handle));
 void Mods_Shutdown(void);
 /* What a mod's host->pad reads; NULL: Platform_Pad. The game sets it
  * (libetc.c) so mods see the control client's bits and, while a recording
