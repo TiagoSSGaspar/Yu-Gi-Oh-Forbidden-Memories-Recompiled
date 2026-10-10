@@ -844,11 +844,28 @@ if(Python3_Interpreter_FOUND)
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mod_cache.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endif()
-    # The FM Editor's data layer (tools/pc/fm_editor), on synthetic game files.
+    # The FM Editor (tools/pc/fm_editor), on synthetic game files: one case
+    # per test file (pc_fm_editor_gui for test_gui.py, ...), as the whole
+    # suite outgrew CTest's 1500 s. Most open Tk windows, some take the focus:
+    # one at a time, other tests beside them. test_gui.py, a window built for
+    # nearly every one of its 96 tests, took 540 s with the machine half busy
+    # and passed 1500 s with it full, so it has a limit of its own.
     if(BUILD_TESTING)
-        add_test(NAME pc_fm_editor
-            COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tools/pc/fm_editor/tests -t tools/pc
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        file(GLOB fm_editor_tests CONFIGURE_DEPENDS
+            "${CMAKE_SOURCE_DIR}/tools/pc/fm_editor/tests/test_*.py")
+        foreach(test_file IN LISTS fm_editor_tests)
+            get_filename_component(test_name "${test_file}" NAME_WE)
+            string(REGEX REPLACE "^test_" "" test_name "${test_name}")
+            get_filename_component(test_file "${test_file}" NAME)
+            add_test(NAME pc_fm_editor_${test_name}
+                COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tools/pc/fm_editor/tests
+                    -t tools/pc -p "${test_file}"
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+            set_tests_properties(pc_fm_editor_${test_name} PROPERTIES RESOURCE_LOCK fm_editor_tk)
+            if(test_name STREQUAL "gui")
+                set_tests_properties(pc_fm_editor_gui PROPERTIES TIMEOUT 3600)
+            endif()
+        endforeach()
         # replay.py's check on made-up recordings (notes/agent-control.md).
         add_test(NAME pc_replay_check
             COMMAND "${Python3_EXECUTABLE}" tests/pc/replay_check_test.py

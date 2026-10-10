@@ -10,6 +10,7 @@ The editor takes what a copy needs from the project on its own thread
 on another (Writer), so a big mod's copy does not stop the window."""
 from __future__ import annotations
 
+import gc
 import hashlib
 import itertools
 import json
@@ -136,21 +137,66 @@ class Recovery:
         shutil.rmtree(self.folder, ignore_errors=True)
 
 
+# Python's cycle collector runs on whichever thread allocates when it is due.
+# On the writer's thread it would finalize the Tk objects garbage holds (a
+# closed dialog's variables and images, a destroyed window): tkinter then
+# calls Tcl from the wrong thread, which outside mainloop waits a second and
+# fails, inside it queues the call to the window's thread (stuck while that
+# thread waits for the copy), and for a whole interpreter aborts the process
+# ("Tcl_AsyncDelete: async handler deleted by the wrong thread"). So while a
+# copy is written the collector waits, and the window's thread turns it back
+# on once the writer has finished.
+_gc_lock = threading.Lock()
+_gc_writers = 0
+_gc_was_enabled = False
+
+
+def _pause_gc():
+    global _gc_writers, _gc_was_enabled
+    with _gc_lock:
+        if _gc_writers == 0:
+            _gc_was_enabled = gc.isenabled()
+            gc.disable()
+        _gc_writers += 1
+
+
+def _resume_gc():
+    global _gc_writers
+    with _gc_lock:
+        _gc_writers -= 1
+        if _gc_writers == 0 and _gc_was_enabled:
+            gc.enable()
+
+
 class Writer:
     """One copy written on a thread of its own. The window asks done() from
     its own thread (Tk is never called from this one); cancel() (the mod was
-    saved or closed meanwhile) has the copy removed once it is written."""
+    saved or closed meanwhile) has the copy removed once it is written. The
+    cycle collector waits while it runs (_pause_gc): done() or wait(), on the
+    window's thread, turn it back on."""
 
     def __init__(self, recovery: Recovery, job: Job):
         self.recovery, self.job = recovery, job
         self.error = None
         self._lock = threading.Lock()
         self._cancelled = False
+        self._gc_paused = False
         self._thread = threading.Thread(target=self._run, name="FM Editor recovery copy")
 
     def start(self):
-        self._thread.start()
+        _pause_gc()
+        self._gc_paused = True
+        try:
+            self._thread.start()
+        except BaseException:
+            self._finished()
+            raise
         return self
+
+    def _finished(self):
+        if self._gc_paused:
+            self._gc_paused = False
+            _resume_gc()
 
     def _run(self):
         try:
@@ -170,10 +216,14 @@ class Writer:
         return self._cancelled
 
     def done(self) -> bool:
-        return not self._thread.is_alive()
+        if self._thread.is_alive():
+            return False
+        self._finished()
+        return True
 
     def wait(self):
         self._thread.join()
+        self._finished()
 
 
 def backup(folder, keep=5):
