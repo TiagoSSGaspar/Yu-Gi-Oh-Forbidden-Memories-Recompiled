@@ -132,6 +132,8 @@ class WriterTest(unittest.TestCase):
             return real(j)
         with mock.patch.object(r, "write_job", side_effect=slow):
             writer = recovery.Writer(r, job).start()
+            self.addCleanup(writer.wait)        # a failure here leaves no writer behind
+            self.addCleanup(gate.set)           # (cleanups run last first)
             self.assertFalse(writer.done())
             writer.cancel()
             r.clear()
@@ -164,6 +166,8 @@ class WriterTest(unittest.TestCase):
                     return real(job)
                 with mock.patch.object(r, "write_job", side_effect=slow):
                     writer = recovery.Writer(r, r.prepare(self.project)).start()
+                    self.addCleanup(writer.wait)    # a failure here leaves the collector on
+                    self.addCleanup(gate.set)
                     self.assertFalse(gc.isenabled())
                     self.assertFalse(writer.done())
                     self.assertFalse(gc.isenabled(), "still writing")

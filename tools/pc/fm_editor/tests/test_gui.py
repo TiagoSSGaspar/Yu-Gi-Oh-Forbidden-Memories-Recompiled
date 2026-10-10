@@ -1468,7 +1468,10 @@ class GuiTest(GuiCase):
             tab.search.set("Dragon")
             app.find()
             app.update()
-            self.assertIs(app.focus_get(), tab.search_entry)
+            # The window's own focus, which focus_get() gives only while the
+            # desktop lets it be the active window (another program may have
+            # the foreground): Tk keeps it and gives it back when it is.
+            self.assertIs(app.focus_lastfor(), tab.search_entry)
             self.assertTrue(tab.search_entry.selection_present())
             tab.search.set("")
         app.notebook.select(app.values)
@@ -2884,10 +2887,11 @@ class InterfaceSizeTest(GuiCase):
         size("1400x850")
         page, panes = app.cards.page, app.cards.panes
         size("3600x2000")
-        if app.winfo_width() < 3000 or app.winfo_height() < 1800:
+        from fm_editor.zoom import fit_factor
+        if fit_factor(app.winfo_width(), app.winfo_height(), app.zoom.desktop) <= 1.0:
             # Windows keeps a window within the screen (1024x768 on CI); two
             # screens side by side give the width but not the height, which
-            # Fit to window needs as much (zoom.fit_factor).
+            # Fit to window needs as much.
             self.skipTest("the screen is too small for a window this big")
         self.assertGreater(app.zoom.factor, 1.0)
         app.notebook.select(app.art)        # other tabs on the way, as a user goes
