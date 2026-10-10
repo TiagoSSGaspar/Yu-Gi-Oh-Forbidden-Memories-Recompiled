@@ -1780,7 +1780,10 @@ unless `attack` is), both fights play the sounds the arena plays
   row's time (`field_E06`) passed since the last frame, at twice the note's
   volume (the voice's `(volume * 0xFF) >> 1` against 0x3FFF), and only in
   rows the fight started: the attack and the reactions, not the rest the
-  monsters stand in. The XA entries are left out. The sounds are let go
+  monsters stand in. An XA entry, a voice clip off the disc, is the
+  game's own to play, as in the arena: `func_80045334` readies it on the
+  row's first frame and `SD_SEPlay(0x8000 | id)` starts it at its time
+  (Shadow Specter's counter-attack cries 0x800D). The sounds are let go
   when the fight ends.
 
 For Man-eating Plant against Shadow Specter (the quick battle), the fight

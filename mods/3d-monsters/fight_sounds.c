@@ -20,10 +20,12 @@
  * (func_8004803C): at its own pitch against the voices' sample note 0x3C00,
  * at its volume, and keyed off after its timer (timer << 2 ticks, one a
  * VBlank). The rows' XA entries (0x8000), the arena's voice clips off the
- * disc, are left out. */
+ * disc, are the game's own to play, as the arena plays them: func_80045334
+ * readies one on the row's first frame, SD_SEPlay starts it at its time. */
 #include "fight_sounds.h"
 #include "game/sound.h"
 #include "game/sound_pending_entries.h"
+#include "game/sound_output_state.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -235,14 +237,28 @@ void FightSounds_Load(int side, int record_lba, const ModelSlotSoundEntry *entri
     free(data);
 }
 
-/* The entries of `row` with times from `from` up to `to`, not including it. */
-static void play_span(Side *s, int row, int from, int to)
+/* The entries of `row` with times from `from` up to `to`, not including it;
+ * `first` on the row's first frame, when the arena readies its XA clips. */
+static void play_span(Side *s, int row, int from, int to, int first)
 {
     int i;
     for (i = 0; i < ENTRIES && s->entries[i].frame; i++) {
         const ModelSlotSoundEntry *e = &s->entries[i];
         int time = e->flags & 0x7FFF, j = e->id & (BANK_ENTRIES - 1);
-        if (e->frame != row || (e->flags & ENTRY_XA) || time < from || time >= to || !s->sound[j]) {
+        if (e->frame != row) {
+            continue;
+        }
+        if (e->flags & ENTRY_XA) {
+            if (first) {
+                func_80045334(ENTRY_XA | e->id);
+            }
+            if (time >= from && time < to) {
+                SD_SEPlay(ENTRY_XA | e->id, 0xFF, 0);
+                say("sound: row %d, XA 0x%X at %d\n", row, ENTRY_XA | e->id, time);
+            }
+            continue;
+        }
+        if (time < from || time >= to || !s->sound[j]) {
             continue;
         }
         /* func_8004803C: (note volume * 0xFF) >> 1 against the voice's 0x3FFF. */
@@ -254,7 +270,7 @@ static void play_span(Side *s, int row, int from, int to)
 void FightSounds_Update(int side, const ModelSlot *slot, int playing)
 {
     Side *s;
-    int row, at, length, from;
+    int row, at, length, from, first;
     if (side < 0 || side >= SIDES || !playable()) {
         return;
     }
@@ -266,13 +282,14 @@ void FightSounds_Update(int side, const ModelSlot *slot, int playing)
     }
     at = slot->field_E06;
     length = slot->field_750[row].max << 4;
-    from = s->row == row ? s->last : 0;
+    first = s->row != row;
+    from = first ? 0 : s->last;
     s->row = row;
     s->last = at;
     if (at >= from) {
-        play_span(s, row, from, at);
+        play_span(s, row, from, at, first);
     } else {
-        play_span(s, row, from, length); /* it wrapped round */
-        play_span(s, row, 0, at);
+        play_span(s, row, from, length, 0); /* it wrapped round */
+        play_span(s, row, 0, at, 0);
     }
 }
