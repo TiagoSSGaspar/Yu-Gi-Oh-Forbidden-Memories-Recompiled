@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #ifndef MEMORIES_ANDROID_GAME_BASE
 #error "build_game32.py defines MEMORIES_ANDROID_GAME_BASE and MEMORIES_ANDROID_GAME_SPAN"
@@ -65,7 +66,7 @@ static void fail(const char *text)
     ShowBox show = sdl ? (ShowBox)dlsym(sdl, "SDL_ShowSimpleMessageBox") : NULL;
     say(text);
     if (show) show(0x10u /* SDL_MESSAGEBOX_ERROR */, "YFM Re-Decomp", text, NULL);
-    exit(1);
+    _exit(1); /* not exit(): see end_process in android.c */
 }
 
 /* libgame.so beside this library (the app's native library folder). */
@@ -143,10 +144,14 @@ int SDL_main(int argc, char **argv)
 #endif
     snprintf(line, sizeof(line), "%ld", bias);
     setenv("MEMORIES_ANDROID_LOAD_BIAS", line, 1);
-    /* When the port's main returns (a problem before the game started, as
-     * a desktop program's would), the process ends with it, so the next
-     * launch starts afresh instead of SDL's Java shell finding a finished
-     * main in a live process. The game's own quit ends it with exit too. */
+    /* Memories_AndroidMain ends the process itself (exit(main(...)), through
+     * __wrap_exit in android.c), so the next launch starts afresh instead
+     * of SDL's Java shell finding a finished main in a live process. This
+     * exit is for one that returns anyway: it reaches end_process, the
+     * first atexit handler Memories_AndroidMain registers, which ends the
+     * process before the destructors of the system libraries loaded before
+     * it run under the activity's live threads (those of a library loaded
+     * later, such as one SDL opens during main, run first). */
     exit(run(argc, argv));
 }
 #endif

@@ -111,7 +111,17 @@ typedef struct {
 typedef struct { const char *label; Item items[20]; int count; int x, w; } Menu;
 
 enum { MENU_FILE, MENU_VIDEO, MENU_AUDIO, MENU_GAME, MENU_VIEW, MENU_DEBUG, MENU_HELP, MENU_COUNT };
-enum { SUB_SCALE, SUB_MENU_SIZE, SUB_SPEED, SUB_FPS, SUB_CHEATS, SUB_TRACE, SUB_SCALING, SUB_ASPECT, SUB_RESOLUTION, SUB_COLOR, SUB_EFFECTS, SUB_JUMP, SUB_ANTIALIAS, SUB_FILTER, SUB_RANK, SUB_LANGUAGE, SUB_PGXP, SUB_TOUCH, SUB_COUNT };
+#ifdef __ANDROID__
+#define HELP_ITEMS 7 /* with Offer crash reports at start */
+#else
+#define HELP_ITEMS 6
+#endif
+enum { SUB_SCALE, SUB_MENU_SIZE, SUB_SPEED, SUB_FPS, SUB_CHEATS, SUB_TRACE, SUB_SCALING, SUB_ASPECT, SUB_RESOLUTION, SUB_COLOR, SUB_EFFECTS, SUB_JUMP, SUB_ANTIALIAS, SUB_FILTER, SUB_RANK, SUB_LANGUAGE, SUB_PGXP, SUB_TOUCH, SUB_ROTATION, SUB_COUNT };
+#ifdef __ANDROID__
+#define VIDEO_ITEMS 15 /* with Screen rotation */
+#else
+#define VIDEO_ITEMS 14
+#endif
 static Menu menus[MENU_COUNT] = {
     {"File", {{"Save state", "F5", ITEM_ACTION, ACT_SAVE_STATE, -1},
               {"Load state", "F7", ITEM_ACTION, ACT_LOAD_STATE, -1},
@@ -127,6 +137,9 @@ static Menu menus[MENU_COUNT] = {
               {"Menu size", 0, ITEM_SUBMENU, 0, -1, SUB_MENU_SIZE},
               {"Fullscreen", "F11", ITEM_CHECK, MENU_ITEM_FULLSCREEN, SET_FULLSCREEN, 0, ITEM_GROUP_BREAK},
               {"Borderless fullscreen", 0, ITEM_CHECK, MENU_ITEM_BORDERLESS, SET_BORDERLESS},
+#ifdef __ANDROID__
+              {"Screen rotation", 0, ITEM_SUBMENU, 0, -1, SUB_ROTATION},
+#endif
               {"Scaling", 0, ITEM_SUBMENU, 0, -1, SUB_SCALING, ITEM_GROUP_BREAK},
               {"Aspect Ratio", 0, ITEM_SUBMENU, 0, -1, SUB_ASPECT},
               {"Resolution", 0, ITEM_SUBMENU, 0, -1, SUB_RESOLUTION},
@@ -134,9 +147,9 @@ static Menu menus[MENU_COUNT] = {
               {"Anti-aliasing", 0, ITEM_SUBMENU, 0, -1, SUB_ANTIALIAS},
               {"Filtering", 0, ITEM_SUBMENU, MENU_ITEM_FILTER, -1, SUB_FILTER, ITEM_GROUP_BREAK},
               {"VSync", 0, ITEM_CHECK, MENU_ITEM_VSYNC, SET_VSYNC},
-              {"Color", 0, ITEM_SUBMENU, 0, -1, SUB_COLOR, ITEM_GROUP_BREAK},
+              {"Color", 0, ITEM_SUBMENU, MENU_ITEM_COLOR, -1, SUB_COLOR, ITEM_GROUP_BREAK},
               {"Effects", 0, ITEM_SUBMENU, 0, -1, SUB_EFFECTS},
-              {"Precise geometry", 0, ITEM_SUBMENU, MENU_ITEM_PGXP, -1, SUB_PGXP, ITEM_GROUP_BREAK}}, 14},
+              {"Precise geometry", 0, ITEM_SUBMENU, MENU_ITEM_PGXP, -1, SUB_PGXP, ITEM_GROUP_BREAK}}, VIDEO_ITEMS},
     {"Audio", {{"Master", 0, ITEM_SLIDER, SLIDER_MASTER, SET_MASTER_VOLUME},
                {"Music", 0, ITEM_SLIDER, SLIDER_MUSIC, SET_MUSIC_VOLUME},
                {"Sound FX", 0, ITEM_SLIDER, SLIDER_SFX, SET_SFX_VOLUME},
@@ -175,13 +188,18 @@ static Menu menus[MENU_COUNT] = {
                {"Dump VRAM (PPM)", 0, ITEM_ACTION, ACT_DUMP_VRAM, -1},
                {"Trace", 0, ITEM_SUBMENU, 0, -1, SUB_TRACE, ITEM_GROUP_BREAK}}, 8},
     /* Update checks against the project's GitHub releases (update_check.h).
-     * The last row's label is this build's version, set by Menu_Init. */
+     * On Android, whether the last crash's report is offered at start
+     * (android_report.c), the way back from its "Don't ask again". The last
+     * row's label is this build's version, set by Menu_Init. */
     {"Help", {{"Check for updates at start", 0, ITEM_CHECK, 0, SET_UPDATE_CHECK},
               {"Include pre-releases", 0, ITEM_CHECK, 0, SET_UPDATE_PRERELEASES},
               {"Check for updates now", 0, ITEM_ACTION, ACT_CHECK_UPDATES, -1, 0, ITEM_GROUP_BREAK},
               {"Releases page", 0, ITEM_ACTION, ACT_RELEASES, -1},
               {"System info for bug reports...", 0, ITEM_ACTION, ACT_SYSTEM_INFO, -1, 0, ITEM_GROUP_BREAK},
-              {"Version", 0, ITEM_ACTION, ACT_VERSION, -1, 0, ITEM_GROUP_BREAK | ITEM_DISABLED}}, 6},
+#ifdef __ANDROID__
+              {"Offer crash reports at start", 0, ITEM_CHECK, 0, SET_CRASH_REPORT_OFFER},
+#endif
+              {"Version", 0, ITEM_ACTION, ACT_VERSION, -1, 0, ITEM_GROUP_BREAK | ITEM_DISABLED}}, HELP_ITEMS},
 };
 static Menu submenus[SUB_COUNT] = {
     {"Window scale", {{"1x", 0, ITEM_RADIO, MENU_ITEM_SCALE_1, SET_SCALE, 1},
@@ -241,9 +259,9 @@ static Menu submenus[SUB_COUNT] = {
                {"Saturation", 0, ITEM_SLIDER, 0, SET_SATURATION},
                {"Gamma", 0, ITEM_SLIDER, 0, SET_GAMMA},
                {"Reset", 0, ITEM_ACTION, ACT_RESET_COLOR, -1, 0, ITEM_GROUP_BREAK}}, 5},
-    {"Effects", {{"CRT scanlines", 0, ITEM_CHECK, 0, SET_CRT},
-                 {"Reduce flashes", 0, ITEM_CHECK, 0, SET_FLASH},
-                 {"xBR pixel smoothing", 0, ITEM_CHECK, 0, SET_XBR}}, 3},
+    {"Effects", {{"CRT scanlines", 0, ITEM_CHECK, MENU_ITEM_CRT, SET_CRT},
+                 {"Reduce flashes", 0, ITEM_CHECK, MENU_ITEM_FLASH, SET_FLASH},
+                 {"xBR pixel smoothing", 0, ITEM_CHECK, MENU_ITEM_XBR, SET_XBR}}, 3},
     /* The others go by way of the title and the game's debug menu, as the
      * control channel's `jump` does (title_jump.h); a duel needs a deck. */
     {"Jump to", {{"Title Screen", 0, ITEM_ACTION, MENU_ITEM_TITLE, -1, 0, ITEM_DISABLED},
@@ -283,6 +301,10 @@ static Menu submenus[SUB_COUNT] = {
     {"Touch controls", {{"Automatic (after a touch)", 0, ITEM_RADIO, 0, SET_TOUCH_PAD, 0},
                         {"Show", 0, ITEM_RADIO, 0, SET_TOUCH_PAD, 1},
                         {"Hide", 0, ITEM_RADIO, 0, SET_TOUCH_PAD, 2}}, 3},
+    /* Android (android.c, Android_ApplyScreenRotation): turned over with the
+     * phone by its sensor, or only as the system's auto-rotate allows. */
+    {"Screen rotation", {{"Turn with the phone", 0, ITEM_RADIO, 0, SET_SCREEN_ROTATION, 0},
+                         {"Follow auto-rotate", 0, ITEM_RADIO, 0, SET_SCREEN_ROTATION, 1}}, 2},
 };
 
 static int open_menu = -1, hot_item = -1, hover_bar = -1, grabbed, ready, visible = 1;
@@ -782,6 +804,7 @@ void Menu_LoadSettings(void)
     Mods_SetTexturePack(TexturePack_Load, TexturePack_Unload);
     Mods_SetAssets(TexturePack_LoadAssets, TexturePack_LoadAssetFolder);
     Mods_SetAudio(AudioReplace_Load, AudioReplace_Unload);
+    Mods_SetAudioClips(AudioReplace_AddClip, AudioReplace_PlayClip, AudioReplace_FreeClip);
     Mods_Load(); /* the mods the settings say are applied, once they are read */
 }
 
@@ -800,6 +823,7 @@ static void setting_changed(SettingId id, int value)
     case SET_SPEED: Platform_SetClockRate(value); break;
     case SET_FPS: Platform_SetPresentCap(value); break;
     case SET_MENU_SCALE: Platform_ApplyDisplaySettings(); break;
+    case SET_SCREEN_ROTATION: Platform_ApplyDisplaySettings(); break;
     default: break;
     }
 }
@@ -919,7 +943,42 @@ void Menu_SetPlatformItems(int windows, int window_modes, int update_check)
     }
 }
 
-static int hd_picture;
+static int hd_picture, present_pass = 1;
+
+/* An item's reason beside it, and dimmed while it has one. Only a row
+ * dimmed here is enabled again (these rows have no shortcut of their own):
+ * a backend may dim one for good (x11.c, Sharp bilinear). */
+static void set_reason(int id, const char *why)
+{
+    int menu, item, had = 0;
+    for (menu = 0; menu < MENU_COUNT + SUB_COUNT; menu++) {
+        Menu *m = menu < MENU_COUNT ? &menus[menu] : &submenus[menu - MENU_COUNT];
+        for (item = 0; item < m->count; item++) {
+            if (m->items[item].id != id) continue;
+            had |= m->items[item].shortcut != NULL;
+            m->items[item].shortcut = why;
+        }
+    }
+    if (why || had) Menu_SetItemEnabled(id, !why);
+}
+
+/* The desktop presenter's effects (present_pass.c) are not run on the
+ * OpenGL ES path (Android, sdl.c's es_picture) or by the SDL fallback.
+ * xBR is also the OpenGL picture pass's, on the textures, at Internal 2x
+ * and up (gl_picture.c). */
+static void update_effect_items(int console, const char *no_picture)
+{
+#ifdef __ANDROID__
+    const char *why = present_pass ? NULL : "not on Android yet";
+#else
+    const char *why = present_pass ? NULL : "needs desktop OpenGL";
+#endif
+    set_reason(MENU_ITEM_COLOR, why);
+    set_reason(MENU_ITEM_CRT, why);
+    set_reason(MENU_ITEM_FLASH, why);
+    set_reason(MENU_ITEM_FILTER_SHARP, why);
+    set_reason(MENU_ITEM_XBR, present_pass ? NULL : !hd_picture ? no_picture : console ? "needs Internal 2x" : NULL);
+}
 
 /* HD text takes effect in the OpenGL pass at Internal 2x and up; the
  * opponent's name also at 1x, where the software GPU draws it. */
@@ -948,6 +1007,11 @@ static void update_hd_items(void)
             }
         }
     }
+#ifdef __ANDROID__
+    update_effect_items(console, "needs OpenGL ES 3");
+#else
+    update_effect_items(console, "needs OpenGL 3");
+#endif
 }
 
 void Menu_SetHdPicture(int on)
@@ -956,10 +1020,17 @@ void Menu_SetHdPicture(int on)
     update_hd_items();
 }
 
+void Menu_SetPresentPass(int on)
+{
+    present_pass = !!on;
+    update_hd_items();
+}
+
 void Menu_SetVisible(int wanted) { visible = !!wanted; }
 int Menu_IsOpen(void) { return open_menu >= 0; }
 
 void Menu_SetTouchTarget(int pixels) { touch_row = pixels > 0 ? pixels : 0; }
+int Menu_TouchTarget(void) { return touch_row; }
 
 static void close_menu(void);
 

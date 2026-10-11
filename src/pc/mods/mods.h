@@ -37,6 +37,12 @@ void Mods_SetAssets(int (*load)(const char *directory, const struct JsonValue *a
 void Mods_SetAudio(int (*load)(int mod, const char *id, const char *directory, const struct JsonValue *audio,
                                char *error, size_t size),
                    void (*unload)(int mod));
+/* A code mod's own sounds (host->sound_add/sound_play/sound_free): the
+ * audio replacement's clips (src/pc/audio/replace.h). Without these the
+ * host answers -1 and plays nothing. */
+void Mods_SetAudioClips(int (*add)(int mod, const char *id, const int16_t *samples, size_t frames, int channels,
+                                   unsigned rate),
+                        int (*play)(int mod, int handle, int volume, int pan), void (*release)(int mod, int handle));
 void Mods_Shutdown(void);
 /* What a mod's host->pad reads; NULL: Platform_Pad. The game sets it
  * (libetc.c) so mods see the control client's bits and, while a recording
@@ -128,9 +134,27 @@ const char *Mods_Directory(int mod);
 /* Where players put new mods (MEMORIES_MODS_DIR, else the user mods
  * folder), created if missing; 0 on success. */
 int Mods_InstallDirectory(char *out, size_t size);
+/* A mod folder put in the player's mods folder while the game runs (the
+ * Android Mods panel's Import mod..., import.h), read as the startup scan
+ * reads one. A new id joins the list, off (its setting is recorded as off:
+ * the caller saves the settings), at the end, so no other mod's index
+ * moves. A mod with that id that was never put in place takes the new
+ * manifest; one that was (or is) in place keeps what it has until the next
+ * launch, now needs a restart for any change, and sets *later. The mod's
+ * index, or -1 when there is no mod.json or no room. */
+int Mods_Discover(const char *directory, int *later);
+/* Whether a mod is (or was, this launch) in place: its code, data, or
+ * pictures are the files read then, so they must not change under it. */
+int Mods_InUse(int mod);
+/* The mods' list or a manifest changed: the next Mods_Overlaps works its
+ * lines out again. */
+void Mods_OverlapsForget(void);
 const char *Mods_Origin(int mod);
 int Mods_Active(int mod);
 int Mods_Failed(int mod);
+/* The mod has code to load (a "library" or "libraries"), whether or not
+ * this game can load it. */
+int Mods_HasCode(int mod);
 /* What the mods in `enabled` change in common, loading in the order `ranks`
  * gives (each mod's Load order, as the Mods window stages it), or the saved
  * order when `ranks` is NULL, with the settings `values` gives (values[mod]

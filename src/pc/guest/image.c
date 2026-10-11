@@ -65,6 +65,9 @@ static struct {
  * where it is not, an access there takes the same register rebase as the
  * first 64 KiB, onto the port's view. Windows always maps it. */
 int Memories_ScratchpadRetailView;
+/* Memories_GuestMapError: the first step Memories_GuestMap failed at. */
+static char map_error[160];
+const char *Memories_GuestMapError(void) { return map_error; }
 
 static void report_low_access(uint32_t eip, uint32_t address)
 {
@@ -340,6 +343,34 @@ void Memories_ReleaseLowPlaceholder(void *address, size_t length)
         if (high < range.high) reserve_free((high + 0xffffu) & ~(uintptr_t)0xffffu, range.high);
         i = (unsigned)-1; /* the table changed: look again */
     }
+}
+
+/* Code mods' images (src/pc/mods/object_loader.c): the 64-bit game's mods
+ * go right after its own image, below 4 GB with bit 30 set, so that a mod's
+ * function fits a 4-byte guest slot and passes the branch thunks' fast path
+ * as the game's own do, and its calls reach the game with 32-bit offsets.
+ * Held from Memories_GuestMap with the other fixed regions; each image takes
+ * its piece back as compat/mman.h's mmap maps it. */
+#define MOD_CODE_SIZE 0x08000000u
+static uintptr_t mod_code_start, mod_code_end;
+
+int Memories_ModCodeRange(uintptr_t *start, uintptr_t *end)
+{
+    if (!mod_code_end) return 0;
+    *start = mod_code_start;
+    *end = mod_code_end;
+    return 1;
+}
+
+static void reserve_mod_code(uintptr_t base)
+{
+    const IMAGE_DOS_HEADER *dos = (const IMAGE_DOS_HEADER *)base;
+    const IMAGE_NT_HEADERS *nt = (const IMAGE_NT_HEADERS *)(base + (uintptr_t)dos->e_lfanew);
+    uintptr_t start = (base + nt->OptionalHeader.SizeOfImage + 0xffffu) & ~(uintptr_t)0xffffu;
+    if (start + MOD_CODE_SIZE > 0x80000000u) return;   /* not where the game was linked: no range */
+    mod_code_start = start;
+    mod_code_end = start + MOD_CODE_SIZE;
+    reserve_free(mod_code_start, mod_code_end);
 }
 
 static void fill_low_heap(void)
@@ -676,12 +707,13 @@ int Memories_GuestMap(void)
         }
     }
     if (!result) {
-        /* The fixed regions mapped later (mod arenas, the text arena, the
-         * low memory region, the interpreter's stack, the game stack) are
-         * held from here: in a 64-bit process the window's GL driver and
-         * audio load below 4 GB too, and took the game stack's range before
-         * it was mapped. Each takes its range back as compat/mman.h's mmap
-         * maps it. */
+        /* The fixed regions mapped later (mod code, mod arenas, the text
+         * arena, the low memory region, the interpreter's stack, the game
+         * stack) are held from here: in a 64-bit process the window's GL
+         * driver and audio load below 4 GB too, and took the game stack's
+         * range before it was mapped. Each takes its range back as
+         * compat/mman.h's mmap maps it. */
+        reserve_mod_code((uintptr_t)GetModuleHandleW(NULL));
         reserve_free(0x90000000u, 0x91000000u);
         reserve_free(0x9C000000u, 0x9D000000u);
         reserve_free(MEMORIES_LOW_MEMORY_BASE, MEMORIES_LOW_MEMORY_BASE + MEMORIES_LOW_MEMORY_SIZE);
@@ -723,6 +755,10 @@ static int map_at(uint32_t address, size_t length, int fd, off_t offset)
         if (got != MAP_FAILED) munmap(got, length);
         fprintf(stderr, "cannot map guest memory at 0x%08x: %s\n", (unsigned)address,
                 got == MAP_FAILED ? strerror(error) : "the system mapped it elsewhere");
+        if (!map_error[0])
+            snprintf(map_error, sizeof(map_error), "the addresses from 0x%08X to 0x%08llX could not be had (%s)",
+                     (unsigned)address, (unsigned long long)address + length - 1,
+                     got == MAP_FAILED ? strerror(error) : "the system placed them elsewhere");
         say_occupants(address, (uint64_t)address + length);
         return -1;
     }
@@ -1021,7 +1057,10 @@ int Memories_GuestMap(void)
     if (fd < 0) fd = memories_ashmem_create("memories-ram", MEMORIES_GUEST_RAM_SIZE + 0x1000);
 #endif
     if (fd < 0) {
+        int error = errno;
         perror("guest RAM");
+        snprintf(map_error, sizeof(map_error), "the system gave no shared memory for the game's RAM (%s)",
+                 strerror(error));
         return -1;
     }
     result = map_at(MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, fd, 0) ||
@@ -1048,16 +1087,65 @@ int Memories_GuestMap(void)
     }
     close(fd);
 #if defined(__aarch64__)
+    void Memories_ReserveModCode(void);
     /* Native function addresses go into 4-byte guest slots: the game must
      * be where it was linked (android_loader.c), below 4 GB. */
     if ((uintptr_t)Memories_GuestMap >= 0x100000000ull) {
         fprintf(stderr, "memories-pc: the game's code is at %p, above 4 GB; the 64-bit game needs its link address\n",
                 (void *)(uintptr_t)Memories_GuestMap);
+        if (!map_error[0])
+            snprintf(map_error, sizeof(map_error), "the game's code was loaded at %p, above 4 GB, not where it was built for",
+                     (void *)(uintptr_t)Memories_GuestMap);
         result = -1;
     }
+    if (!result) Memories_ReserveModCode();
 #endif
     return result ? -1 : 0;
 }
+
+#if defined(__aarch64__)
+/* Code mods' images (src/pc/mods/object_loader.c), as on 64-bit Windows:
+ * below 4 GB with bit 30 set, so that a mod's function fits a 4-byte guest
+ * slot and the branches between it and the game reach. The range is the
+ * 64 MiB right after the game's own (libgame.so at 0xC0000000, in the
+ * 64 MiB its loader reserves: build_game32.py's ANDROID_GAME_BASE and
+ * ANDROID_GAME_SPAN), held here as an inaccessible mapping from the start,
+ * before anything else in the process can take it; the loader maps each
+ * image over a piece of it. */
+#include <dlfcn.h>
+#define MOD_CODE_GAME_SPAN 0x04000000u
+#define MOD_CODE_SIZE 0x04000000u
+static uintptr_t mod_code_start, mod_code_end;
+
+int Memories_ModCodeRange(uintptr_t *start, uintptr_t *end)
+{
+    if (!mod_code_end) return 0;
+    *start = mod_code_start;
+    *end = mod_code_end;
+    return 2;   /* held: the loader maps over it */
+}
+
+void Memories_ReserveModCode(void)
+{
+    Dl_info info;
+    uintptr_t start;
+    void *got;
+    if (!dladdr((void *)Memories_GuestMap, &info) || !info.dli_fbase) return;
+    start = (uintptr_t)info.dli_fbase + MOD_CODE_GAME_SPAN;
+    if (start + MOD_CODE_SIZE > 0x100000000ull) return;
+    got = mmap((void *)start, MOD_CODE_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE |
+               MAP_FIXED_NOREPLACE, -1, 0);
+    if (got != (void *)start) {
+        if (got != MAP_FAILED) munmap(got, MOD_CODE_SIZE);   /* a kernel without MAP_FIXED_NOREPLACE */
+        fprintf(stderr, "memories-pc: the code mods' range at %p is taken; no code mod can be loaded\n",
+                (void *)start);
+        say_occupants((uint32_t)start, (uint64_t)start + MOD_CODE_SIZE);
+        return;
+    }
+    mod_code_start = start;
+    mod_code_end = start + MOD_CODE_SIZE;
+}
+#endif
 #endif /* _WIN32 */
 
 int Memories_GuestLoadExeData(const unsigned char *data, size_t length, const char *name)

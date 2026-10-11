@@ -46,6 +46,7 @@
  *   9  menu_item and the MENU event
  *  10  the MONSTER event and manifest features listed in notes/modding.md
  *  11  manifest features only; no host layout or event change
+ *  12  sound_add, sound_play, sound_free: a code mod's own sounds
  * A data mod declares its required version with min_api in mod.json. */
 #include "mod_types.h"
 
@@ -228,6 +229,22 @@ struct MemoriesModHost {
      * "mod-id:button-id" (11 on); NULL for none. A button's number depends
      * on the mods applied, so a mod knows its own by name. */
     const char *(*menu_item)(const MemoriesModHost *, int index);
+
+    /* --- API 12 ---
+     * Sounds of the mod's own, played as the game's sound effects are: on
+     * the same channels, under the sound-effect volume. sound_add copies
+     * `frames` frames of `channels` interleaved signed 16-bit samples at
+     * `rate` Hz and returns a handle, or -1; never from an interrupt.
+     * sound_play starts one once, `volume` 0-255 and `pan` -128 (left) to
+     * 128 (right), and is nonzero when it did; one still playing starts
+     * again from its beginning, as a game sound effect takes its own voice
+     * again. sound_free stops and frees one. Both sound_add and sound_play
+     * work only while the mod is applied (not from MemoriesModInit): the
+     * host frees a mod's sounds when it is turned off, and their handles go
+     * with them, so a mod adds them when it needs them, or in applied(1). */
+    int (*sound_add)(const MemoriesModHost *, const int16_t *samples, size_t frames, int channels, unsigned rate);
+    int (*sound_play)(const MemoriesModHost *, int sound, int volume, int pan);
+    void (*sound_free)(const MemoriesModHost *, int sound);
 };
 
 /* The symbol a mod's object defines, and its type. */

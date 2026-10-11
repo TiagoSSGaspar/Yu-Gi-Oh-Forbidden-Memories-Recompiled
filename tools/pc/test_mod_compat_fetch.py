@@ -110,6 +110,18 @@ class Fetch(unittest.TestCase):
                 # Nothing of the download is left but the folder and its package.
                 self.assert_only_kept(system)
 
+    def test_64bit_windows_package_is_unpacked_and_kept(self):
+        """An x86_64-windows baseline's package: the .zip whose folder is
+        yfm-redecomp-TAG-x64 (package.py), pinned like the others."""
+        name, top = f"{TOP}-windows-x64.zip", f"{TOP}-x64"
+        path = os.path.join(self.server, TAG, name)
+        make_zip(path, {f"{top}/sdk/exports.x86_64-windows.txt": b"Mod_Name\n"})
+        digests = {(TAG, "windows-x64"): digest(path)}
+        unpacked = check_mod_abi.fetch(TAG, "windows-x64", digests)
+        self.assertEqual(unpacked, os.path.join(self.folder("windows-x64"), "verified", top))
+        self.assertEqual(sorted(os.listdir(self.folder("windows-x64"))), sorted(["verified", name]))
+        self.assertIn("is not the", self.refused({(TAG, "windows-x64"): "0" * 64}, "windows-x64"))
+
     def test_other_package_is_refused_before_unpacking(self):
         for system in NAMES:
             with self.subTest(system=system):
@@ -311,8 +323,13 @@ class List(unittest.TestCase):
     def test_sha256_lines(self):
         baselines, accepted, digests = self.read(f"baseline {TAG}\nsha256 {TAG} windows {'a' * 64}\n"
                                                  f"sha256 {TAG} linux {'b' * 64}  # the tarball\n")
-        self.assertEqual(baselines, [TAG])
+        self.assertEqual(baselines, [(TAG, "i386")])
         self.assertEqual(digests, {(TAG, "windows"): "a" * 64, (TAG, "linux"): "b" * 64})
+
+    def test_64bit_baseline_and_its_package(self):
+        baselines, _, digests = self.read(f"baseline {TAG} x86_64-windows\nsha256 {TAG} windows-x64 {'c' * 64}\n")
+        self.assertEqual(baselines, [(TAG, "x86_64-windows")])
+        self.assertEqual(digests, {(TAG, "windows-x64"): "c" * 64})
 
     def test_malformed_sha256_lines(self):
         for line in (f"sha256 {TAG} windows {'a' * 63}", f"sha256 {TAG} windows {'A' * 64}",
@@ -322,8 +339,8 @@ class List(unittest.TestCase):
 
     def test_repository_list_pins_every_baseline(self):
         baselines, _, digests = check_mod_abi.read_list()
-        for tag in baselines:
-            for system in check_mod_abi.SYSTEMS:
+        for tag, target in baselines:
+            for system in check_mod_abi.PACKAGES[target]:
                 self.assertIn((tag, system), digests, f"mod_compat.txt: no `sha256 {tag} {system}`")
 
 

@@ -71,8 +71,14 @@ void (*gDisplayObject_ListRenderers[DISPLAY_OBJECT_LIST_COUNT])(void) = {
 def check_mod_retail_slots(compiler, flags):
     # Probe the declarations from the actual mods: testing only the shared
     # headers would miss a private declaration reverting to native pointers.
+    # A mod either declares the table itself (checked here) or includes the
+    # game header that declares it (checked through that header).
+    headers = {
+        "D_800E9D90": "game/ordering_tables.h",
+        "D_800E9DB0": "game/main_services.h",
+    }
     mods = {
-        "mods/3d-monsters/field_models.c": ("D_800E9D90", "D_800E9D98", "D_800E9DB0"),
+        "mods/3d-monsters/field_models.c": ("D_800E9D90", "D_800E9DB0"),
         "mods/3d-monsters/field_art.c": ("D_800E9D90",),
         "mods/hand-camera/hand_camera.c": ("D_800E9DB0",),
         "mods/yamyi-mods/menu_back_confirm.c": ("D_800E9D90",),
@@ -82,8 +88,10 @@ def check_mod_retail_slots(compiler, flags):
         declarations = []
         for symbol in symbols:
             matches = re.findall(rf"^extern [^;\n]*\b{symbol}\b[^;\n]*;", text, re.MULTILINE)
-            assert len(matches) == 1, (path, symbol, matches)
-            declarations.append(matches[0])
+            header = headers[symbol]
+            included = re.search(rf'^#include "{re.escape(header)}"', text, re.MULTILINE)
+            assert len(matches) == 1 or (not matches and included), (path, symbol, matches)
+            declarations.append(matches[0] if matches else f'#include "{header}"')
             declarations.append(
                 f'_Static_assert(sizeof({symbol}[0]) == 4, "{path}: {symbol} retail slot");'
             )

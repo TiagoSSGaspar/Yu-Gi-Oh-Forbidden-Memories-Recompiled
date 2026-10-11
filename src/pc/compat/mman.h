@@ -38,6 +38,7 @@ __declspec(dllimport) unsigned long __stdcall GetLastError(void);
 #define MAP_PRIVATE 0x02
 #define MAP_ANONYMOUS 0x20
 #define MAP_FIXED_NOREPLACE 0x100000
+#define MAP_FIXED 0x10   /* taken as NOREPLACE: VirtualAlloc never replaces */
 #define MAP_FAILED ((void *)-1)
 
 #ifdef _WIN64

@@ -1,9 +1,17 @@
 # The releases whose mods this build must still run, and the differences
 # from them that were looked at and accepted (tools/pc/check_mod_abi.py).
 #
-#   baseline TAG                  check this build against release TAG
+#   baseline TAG [TARGET]         check this build against release TAG's mods
+#                                 for TARGET: i386 (the default, the 32-bit
+#                                 games' objects) or x86_64-windows (the 64-bit
+#                                 Windows game's, from the first release that
+#                                 ships them; until then that game is only held
+#                                 to refusing the i386 baselines' code mods by
+#                                 name)
 #   sha256 TAG SYSTEM DIGEST      the package of TAG the check may unpack and
-#                                 run (windows: the .zip, linux: the .tar.gz),
+#                                 run (windows: the .zip, linux: the .tar.gz,
+#                                 windows-x64: the 64-bit .zip, which an
+#                                 x86_64-windows baseline needs pinned too),
 #                                 as GitHub's release API lists its digest:
 #                                 gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/TAG --jq '.assets[] | .name + " " + (.digest | ltrimstr("sha256:"))'
 #   accept TAG KIND NAME reason   a difference that breaks no mod in use
@@ -83,3 +91,10 @@ accept v0.2.0 record DuelResultDisplayState reads starchip_prize and its pad byt
 # enumerators TITLE_BACKGROUND_COLOUR and FONT_ART_COLOURS stay as aliases.
 accept v0.2.0 record TitleBackground names its colour field color
 accept v0.2.0 record TitleLine names its colour field color
+# The export lists of v0.1.2 and v0.2.0 (and of every build until the
+# per-target lists) held "name": build_mod.py read the C library list out
+# of all of mod_libc.c, where F(name) and AS(name, function) are the
+# macros' parameters. The game never lent anything under it (Mods_Lookup has no
+# such entry), so no mod can have used it.
+accept v0.1.2 export name was the C library macros' parameter, never a name the game lent
+accept v0.2.0 export name was the C library macros' parameter, never a name the game lent

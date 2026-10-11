@@ -47,8 +47,8 @@ def check_exe(image):
 
 def check(path):
     windows = path.suffix == ".zip"
-    # The 64-bit Windows game (package.py windows-x64): no mod SDK, as it
-    # refuses code mods, and an x86-64 executable.
+    # The 64-bit Windows game (package.py windows-x64): an x86-64
+    # executable, with its code mods' x86_64-windows objects.
     wide = path.name.endswith("-windows-x64.zip")
     if windows:
         with zipfile.ZipFile(path) as archive:
@@ -64,7 +64,8 @@ def check(path):
             machine = struct.unpack_from("<H", sdl, header + 4)[0]
             assert machine == (0x8664 if wide else 0x14C), f"SDL3.dll is for machine {machine:#x}"
             readme = archive.read(next(name for name in names if name.endswith("/README.txt") and name.count("/") == 1))
-            assert wide == (b"sdk/" not in readme), "the README's Mods section is not this archive's"
+            assert wide == (b"needs a 64-bit build of this mod" in readme), \
+                "the README's Mods section is not this archive's"
     else:
         with tarfile.open(path) as archive:
             members = archive.getmembers()
@@ -83,10 +84,15 @@ def check(path):
     if windows:
         required |= {"SDL3.dll", "memories-pc.pdb"}
     assert required <= contents, f"missing files: {required - contents}"
-    for directory in ("mods/", "symbols/") + (() if wide else ("sdk/",)):
+    for directory in ("mods/", "symbols/", "sdk/"):
         assert any(name.startswith(directory) for name in contents), f"missing {directory}"
-    if wide:
-        assert not any(name.startswith("sdk/") for name in contents), "the 64-bit archive carries the 32-bit mod SDK"
+    # Each code mod beside the game has the object for this game's target,
+    # and not another target's.
+    objects = [name for name in contents if name.startswith("mods/") and name.endswith(".o")]
+    ours = [name for name in objects if name.endswith(".x86_64-windows.o") == wide and not name.endswith(".aarch64.o")]
+    assert objects and ours == objects, f"mods/ has another target's objects: {sorted(set(objects) - set(ours))}"
+    exports = "sdk/exports.x86_64-windows.txt" if wide else "sdk/exports.i386.txt"
+    assert exports in contents, f"missing {exports}"
     languages = {f"languages/{name}.txt" for name in ("en-eu", "fr", "de", "it", "es")}
     assert {name for name in contents if name.startswith("languages/")} == languages, "languages/ needs the five packs"
     assert {name for name in contents if name.startswith("game/")} == {"game/README.txt"}

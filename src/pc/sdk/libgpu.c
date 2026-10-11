@@ -219,7 +219,12 @@ static void present_wide(int w, int h)
                 wide_x * at_scale, y * at_scale, wide_w * at_scale, h * at_scale, at_scale)) return;
         /* The backend's own renderer drew it (gl_picture.h). */
         if (!picture && at_scale > 1 && Platform_PresentWidePicture(x, y, w, h, wide_w, at_scale)) return;
-        if (SoftGpu_WideRastered()) {
+        /* That present may have given the pass up (sdl.c: a failed copy in
+         * es_take_frame, or a device reset whose pass did not start again),
+         * which drops the targets `pixels` was in: read the target again,
+         * without SoftGpu_WideFrame's side work. */
+        if (!picture && at_scale > 1) drawn = SoftGpu_WideFrameView(x, y, w, h, &pixels, &wide_x, &wide_w);
+        if (drawn && SoftGpu_WideRastered()) {
             Platform_Present(pixels, SOFT_GPU_WIDTH, wide_x, y, wide_w, h, 0);
             return;
         }

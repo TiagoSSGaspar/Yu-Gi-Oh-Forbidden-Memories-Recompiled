@@ -30,6 +30,9 @@ extern int Memories_ScratchpadRetailView;
 
 /* Both return 0 on success and print the reason on failure. */
 int Memories_GuestMap(void);
+/* What Memories_GuestMap could not do, in a few words for the player (the
+ * Linux and Android one says; "" otherwise). */
+const char *Memories_GuestMapError(void);
 /* Copy a user-supplied PS-X EXE's initialized image to its load address.
  * MIPS text comes along unused; it keeps every data offset exact. */
 int Memories_GuestLoadExe(const char *path);

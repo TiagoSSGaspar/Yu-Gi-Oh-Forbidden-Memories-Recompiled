@@ -20,10 +20,11 @@ The Linux executable is built against Debian 11's libraries
 other people's Linux. Every build is smoke tested before it is packed.
 
 The 64-bit Windows archive (-windows-x64.zip, notes/pc-build.md "64-bit
-Windows") unpacks to a folder of its own (yfm-redecomp-<version>-x64) and
-carries only the data mods, no mod SDK, and a README whose Mods section
-says so: that game refuses code mods, which are 32-bit objects. Its smoke
-test skips the cases that turn one on.
+Windows") unpacks to a folder of its own (yfm-redecomp-<version>-x64). Its
+mods are the same, with each code mod's x86_64-windows object in place of
+the 32-bit one, its SDK the same (build_mod.py builds every target), and
+its README's Mods section says that a code mod needs a 64-bit build
+there.
 
     python3 tools/pc/package.py android-arm64  # the Android app, signed
 
@@ -50,20 +51,16 @@ SUFFIX = {"windows": "-windows.zip", "windows-x64": "-windows-x64.zip", "linux":
 # build_game32.py's --target for a system, where it is not the same name.
 TARGETS = {"android-arm64": "android-arm64-v8a"}
 # The archive's top folder: the two Windows archives unpacked side by side
-# must not mix (the 32-bit sdk/ beside the 64-bit executable).
+# must not mix (one game's mod objects beside the other executable).
 FOLDER = {"windows-x64": "-x64"}
-# The README's Mods section for the 64-bit Windows game, which ships and
-# loads data mods only (tools/pc/release/README.txt has the 32-bit one).
-X64_MODS = """Game > Mods lists the mods the game found and lets you turn them on and
-off. This is the 64-bit Windows game: it loads mods made of data (cards,
-rules, texture packs, sounds, translations), not mods that contain code,
-which are built for the 32-bit game. 3D Monsters, Hand Camera, AI Hard
-Mode and Yamyi Mods are code mods, so they come with the 32-bit Windows
-and Linux archives only; a code mod you install here stays off, with the
-reason beside it in Game > Mods.
+# What the README's Mods section adds for the 64-bit Windows game, before
+# its paragraph on installing mods (tools/pc/release/README.txt).
+X64_MODS = """This is the 64-bit Windows game. A mod that contains code needs a 64-bit
+build of it here (a <name>.x86_64-windows.o beside its 32-bit <name>.o);
+the mods above come with theirs. One that has only the 32-bit build stays
+off, with "needs a 64-bit build of this mod" beside it in Game > Mods: play
+it with the 32-bit game, or ask its author for the 64-bit build.
 
-To install someone else's mod, put its folder in the "mods" folder of your
-user folder. Mod authors: the mod SDK comes with the 32-bit archives.
 """
 GAME_README = """Start memories-pc and choose your own ROM in the welcome screen.
 Alternatively, put your raw image of Forbidden Memories (USA, SLUS-01411)
@@ -155,8 +152,6 @@ def stage(system, label):
     if system.startswith("windows"):
         strip(os.path.join(folder, executable))
     for name in ("mods", "sdk", "languages"):
-        if name == "sdk" and system == "windows-x64":
-            continue   # the SDK builds 32-bit code mods, which this game refuses
         shutil.copytree(os.path.join(build_dir, name), os.path.join(folder, name))
     # This build's symbol table, under its build id and under the game
     # fingerprint (the same table): not the ones earlier builds left there.
@@ -172,10 +167,9 @@ def stage(system, label):
     if system == "windows-x64":
         with open(os.path.join(folder, "README.txt"), encoding="utf-8") as handle:
             text = handle.read()
-        start = text.index("Game > Mods lists")
-        end = text.index("Languages" + chr(10) + "---------")
+        at = text.index("To install someone else's mod")
         with open(os.path.join(folder, "README.txt"), "w", encoding="utf-8") as handle:
-            handle.write(text[:start] + X64_MODS + chr(10) + chr(10) + text[end:])
+            handle.write(text[:at] + X64_MODS + text[at:])
     shutil.copy2(os.path.join(ROOT, "LICENSE"), folder)
     with open(os.path.join(folder, "game", "README.txt"), "w", newline="\r\n" if system.startswith("windows") else "\n") as handle:
         handle.write(GAME_README)

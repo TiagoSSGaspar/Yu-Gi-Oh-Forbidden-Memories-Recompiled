@@ -152,8 +152,9 @@ if WINDOWS:
         "-mno-ms-bitfields",  # the game's structures, shared with native code (see CFLAGS)
         "-gcodeview"]
     if X64:
-        # The mods' code is 32-bit x86 (src/pc/mods/mods.c refuses it here).
-        NATIVE_CFLAGS = X64_FLAGS + NATIVE_CFLAGS + ["-DMEMORIES_NO_CODE_MODS"]
+        # Code mods are x86-64 objects of their own here (build_mod.py
+        # --target x86_64-windows; src/pc/mods/object_loader.c).
+        NATIVE_CFLAGS = X64_FLAGS + NATIVE_CFLAGS
 # Every unit's indirect calls and jumps go through __x86_indirect_thunk_<reg>
 # (src/pc/guest/branch_thunks.c), which sends a target in guest memory to its
 # native function: tables in the retail data image hold MIPS addresses, and
@@ -180,9 +181,9 @@ if ANDROID:
         # bionic lacks below the API level (memfd_create, iconv).
         "-Isrc/pc/compat/android", "-include", ANDROID_COMPAT]
     if A64:
-        # G32 as on windows-x64; the mods' code is 32-bit x86 (src/pc/mods/mods.c
-        # refuses it here).
-        NATIVE_CFLAGS = X64_FLAGS + NATIVE_CFLAGS + ["-DMEMORIES_NO_CODE_MODS"]
+        # G32 as on windows-x64; code mods are aarch64 objects of their own
+        # (build_mod.py --target aarch64; src/pc/mods/object_loader.c).
+        NATIVE_CFLAGS = X64_FLAGS + NATIVE_CFLAGS
         # No fused multiply-add: AArch64 has it and clang contracts a*b+c
         # into it by default, x86 (no -mfma) does not, so float code (LIBPRESS's
         # IDCT holds 83 of them) rounded differently from the other builds: the
@@ -190,9 +191,9 @@ if ANDROID:
         CFLAGS = CFLAGS + ["-ffp-contract=off"]
         NATIVE_CFLAGS = NATIVE_CFLAGS + ["-ffp-contract=off"]
 if A64:
-    # No patchable function entries: game functions are hooked on i386
-    # only (src/pc/mods/hooks.c).
-    CFLAGS = [f for f in CFLAGS if not f.startswith("-fpatchable-function-entry")]
+    # Room for a mod's hook as AArch64 has it (src/pc/mods/hooks.c): three
+    # nop words before each game function's entry and one at it.
+    CFLAGS = [("-fpatchable-function-entry=4,3" if f.startswith("-fpatchable-function-entry") else f) for f in CFLAGS]
 # Floating point in SSE registers, as clang does for the Windows build: GCC's
 # 32-bit default is the x87 with its 80-bit intermediates, which rounded the
 # MDEC's IDCT (libpress.c) a step apart from Windows and so broke replays
@@ -696,22 +697,25 @@ def exe_resources(build, release):
 
 
 def library(source_dir):
-    """The manifest's "library": the mod has code."""
+    """The manifest's "library" (or "libraries"): the mod has code."""
     with open(f"{source_dir}/mod.json", encoding="utf-8") as handle:
-        return bool(json.load(handle).get("library"))
+        manifest = json.load(handle)
+    return bool(manifest.get("library") or manifest.get("libraries"))
 
 
-def build_mods(build, release=False, code=True):
+def build_mods(build, release=False, code=True, target="i386"):
     """Each directory under mods/ becomes a mod directory beside the game.
 
     A mod is its manifest and whatever it ships; if it has C, that becomes
-    one object file (tools/pc/build_mod.py), which the game's own loader
-    links in when the mod is applied (src/pc/mods/object_loader.c). One
-    object serves every system, so the Linux and the Windows game can carry
-    the same file. build_mod.py keeps it in tmp/pc/mod-build/<mod>-<key>,
-    the key a digest of the compiler, the flags and the preprocessed
-    sources: every checkout shares tmp (the worktrees link it), and one
-    reuses an object only when it would build the same one. It is copied
+    one object file for this game's target (tools/pc/build_mod.py), which
+    the game's own loader links in when the mod is applied
+    (src/pc/mods/object_loader.c). One i386 object serves both 32-bit
+    systems, so the Linux and the Windows game can carry the same file; the
+    64-bit Windows game carries the x86_64-windows one. build_mod.py keeps
+    it in tmp/pc/mod-build/<mod>-<key>, the key a digest of the compiler,
+    the flags and the preprocessed sources: every checkout shares tmp (the
+    worktrees link it), and one reuses an object only when it would build
+    the same one. It is copied
     beside this game when the copy there differs, and checked against this
     game's exports either way.
 
@@ -721,12 +725,9 @@ def build_mods(build, release=False, code=True):
     pack tools under sdk/tools, the example mods under sdk/examples/mods and
     the modding notes under sdk/notes.
 
-    With code=False (the 64-bit game) only the data mods go beside it: a
-    mod with a library is 32-bit code that game refuses, and shipping it
-    would put one refusal per code mod in every player's Mods window (one
-    the player installs is still refused by name). No SDK goes beside it
-    either (the SDK builds 32-bit objects; the 64-bit one is a later
-    milestone)."""
+    With code=False (a build that links no code mods) only the data mods go
+    beside it: shipping a code mod would put one refusal per code mod in
+    every player's Mods window. No SDK goes beside it either."""
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import build_mod
     out_root = f"{build}/mods"
@@ -736,7 +737,7 @@ def build_mods(build, release=False, code=True):
         shutil.rmtree(out_root, ignore_errors=True)
     os.makedirs(out_root, exist_ok=True)
     if code:
-        write_sdk(build)
+        write_sdk(build, target)
     mods, skipped = [], []
     for manifest in sorted(glob.glob("mods/*/mod.json")):
         if tracked is not None and manifest not in tracked:
@@ -765,8 +766,8 @@ def build_mods(build, release=False, code=True):
               (f"; left out, code: {', '.join(skipped)}" if skipped else ""))
         return
     with concurrent.futures.ThreadPoolExecutor(max(1, len(mods))) as pool:
-        objects = list(pool.map(lambda mod: build_mod.build(mod[1], out_dir=mod[2], games=[build], quiet=True),
-                                mods))
+        objects = list(pool.map(lambda mod: build_mod.build(mod[1], out_dir=mod[2], games=[build], quiet=True,
+                                                            target=target), mods))
     built = []
     for (name, source_dir, out_dir), obj in zip(mods, objects):
         if not obj:
@@ -774,6 +775,10 @@ def build_mods(build, release=False, code=True):
             continue
         for stale in glob.glob(f"{out_dir}/*.so") + glob.glob(f"{out_dir}/*.dll"):
             os.remove(stale)   # native libraries from before mods were objects
+        for each in build_mod.TARGETS:   # another target's object, from a build folder used for it before
+            other = os.path.join(out_dir, build_mod.library_name(source_dir, each))
+            if each != target and os.path.abspath(other) != os.path.abspath(obj) and os.path.exists(other):
+                os.remove(other)
         built.append(name)
     if built:
         print(f"{out_root}: " + ", ".join(built))
@@ -804,7 +809,7 @@ def copy_if_changed(source, destination):
         shutil.copy2(source, destination)
 
 
-def write_sdk(build):
+def write_sdk(build, target="i386"):
     """<build>/sdk: what a mod is built against, beside the game."""
     sdk = f"{build}/sdk"
     for header in glob.glob("src/**/*.h", recursive=True):
@@ -814,7 +819,8 @@ def write_sdk(build):
         if relative.startswith(os.path.join("pc", "mods", "sdk")):
             relative = os.path.join("libc", os.path.relpath(header, "src/pc/mods/sdk"))
         copy_if_changed(header, os.path.join(sdk, "include", relative))
-    for name in ("build_mod.py", "build_process.py"):
+    # ptr32_stores.py: the IR pass build_mod.py runs on aarch64 units.
+    for name in ("build_mod.py", "build_process.py", "ptr32_stores.py"):
         copy_if_changed(f"tools/pc/{name}", f"{sdk}/tools/{name}")
     # What else a mod author needs beside the headers: the texture pack tools
     # (the standard library only; upscale_pack.py also wants Pillow and
@@ -827,10 +833,16 @@ def write_sdk(build):
             copy_if_changed(path, os.path.join(sdk, os.path.relpath(path)))
     for name in ("modding.md", "mod-api-3.md", "more-cards.md"):
         copy_if_changed(f"notes/{name}", f"{sdk}/notes/{name}")
-    # What this game lends a mod, for build_mod.py's check beside the game.
+    # What this game lends a mod, for build_mod.py's check beside the game:
+    # exports.<target>.txt, and for a 32-bit game also exports.txt, the name
+    # SDKs had before the 64-bit targets (check_mod_abi.py reads it).
     import build_mod
-    with open(f"{sdk}/exports.txt", "w") as handle:
-        handle.writelines(name + "\n" for name in sorted(build_mod.provided(build)))
+    names = "".join(name + "\n" for name in sorted(build_mod.provided(build, target)))
+    for listed in [f"exports.{target}.txt"] + (["exports.txt"] if target == "i386" else []):
+        with open(f"{sdk}/{listed}", "w") as handle:
+            handle.write(names)
+    if target != "i386" and os.path.exists(f"{sdk}/exports.txt"):
+        os.remove(f"{sdk}/exports.txt")   # a 32-bit build's, in a folder reused for this one
     stale = f"{build}/include"   # the lone modapi.h copy from before the SDK
     if os.path.isdir(stale):
         shutil.rmtree(stale)
@@ -1314,8 +1326,11 @@ def main():
         # as in an executable. The libraries: SDL3's shared object (packaged
         # beside it), libpng and FreeType linked in, the system's zlib, GLES
         # (sdl.c's glGetString), the log and the NDK's native window.
+        # --wrap=exit: the game's exit() is android.c's __wrap_exit, which
+        # ends the process without the system libraries' static destructors
+        # (the activity's threads still use what they free).
         output = f"{options.build}/libgame.so"
-        run([CC, *ANDROID_FLAGS, "-shared", "-o", output, "-Wl,-Bsymbolic", "-Wl,--no-undefined",
+        run([CC, *ANDROID_FLAGS, "-shared", "-o", output, "-Wl,-Bsymbolic", "-Wl,--no-undefined", "-Wl,--wrap=exit",
              f"-Wl,--image-base=0x{ANDROID_GAME_BASE:08X}", "-Wl,-soname,libgame.so",
              "-Wl,-z,noexecstack", *[obj(s) for s in game + NATIVE],
              f"{options.build}/stubs.o", guest_branches, f"{options.build}/mod_exports.o", version,
@@ -1337,9 +1352,14 @@ def main():
                else ["-lm", *fonts, "-lX11", "-lXext", "-lasound", *system]), *build_linux_sysroot.endfiles()])
     if ANDROID:
         link_android_loader(options.build, output)
-    # Code mods are 32-bit x86 objects: the 64-bit games take the data mods
-    # and refuse the others by name (MEMORIES_NO_CODE_MODS, src/pc/mods/mods.c).
-    build_mods(options.build, options.release, code=not WIDE)
+    # Code mods: an object per target (build_mod.py), the one for this game
+    # beside it (and in the APK's assets).
+    # The aarch64 objects need clang with lld: the NDK's has both, where a
+    # CI runner's /usr/bin/clang comes without ld.lld (build_mod.py then
+    # falls back to gcc and stops).
+    if A64 and not os.environ.get("MEMORIES_MOD_CC"):
+        os.environ["MEMORIES_MOD_CC"] = CC
+    build_mods(options.build, options.release, target="x86_64-windows" if X64 else "aarch64" if A64 else "i386")
     copy_languages(options.build, options.release)
     # Save states are carried between builds with these tables
     # (src/pc/guest/state.c): every function in the executable, because the

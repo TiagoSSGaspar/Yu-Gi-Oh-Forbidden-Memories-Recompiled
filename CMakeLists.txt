@@ -234,6 +234,14 @@ if(BUILD_TESTING)
         target_compile_options(memories_fs_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_fs COMMAND memories_fs_test)
+    # The Android crash report offer's reports folder (report_folder.h).
+    add_executable(memories_report_folder_test tests/pc/report_folder_test.c src/pc/platform/report_folder.c)
+    target_include_directories(memories_report_folder_test PRIVATE src tests/pc)
+    target_compile_definitions(memories_report_folder_test PRIVATE MEMORIES_REPORT_FOLDER_TEST)
+    if(NOT MSVC)
+        target_compile_options(memories_report_folder_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME pc_report_folder COMMAND memories_report_folder_test)
     add_executable(memories_pc_core_test tests/pc/core_test.c)
     target_link_libraries(memories_pc_core_test PRIVATE memories_pc_core)
     add_test(NAME pc_core COMMAND memories_pc_core_test)
@@ -666,13 +674,27 @@ if(BUILD_TESTING)
         target_compile_options(memories_serif_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_serif COMMAND memories_serif_test)
-    add_executable(memories_mods_window_test tests/pc/mods_window_test.c src/pc/platform/mods_window.c ${MOD_TEST_SOURCES})
-    target_link_libraries(memories_mods_window_test PRIVATE m Threads::Threads)
+    # Import mod... (src/pc/mods/import.c) inflates with zlib.
+    find_package(ZLIB REQUIRED)
+    add_executable(memories_mods_window_test tests/pc/mods_window_test.c src/pc/platform/mods_window.c
+        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
+    target_link_libraries(memories_mods_window_test PRIVATE m Threads::Threads ZLIB::ZLIB)
     target_include_directories(memories_mods_window_test PRIVATE src)
     if(NOT MSVC)
         target_compile_options(memories_mods_window_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_mods_window COMMAND memories_mods_window_test)
+    # The same with no code mod loader (MEMORIES_NO_CODE_MODS, which no game
+    # build sets now): what an import says about a code mod there.
+    add_executable(memories_mods_window_no_code_test tests/pc/mods_window_test.c src/pc/platform/mods_window.c
+        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
+    target_compile_definitions(memories_mods_window_no_code_test PRIVATE MEMORIES_NO_CODE_MODS)
+    target_link_libraries(memories_mods_window_no_code_test PRIVATE m Threads::Threads ZLIB::ZLIB)
+    target_include_directories(memories_mods_window_no_code_test PRIVATE src)
+    if(NOT MSVC)
+        target_compile_options(memories_mods_window_no_code_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME pc_mods_window_no_code COMMAND memories_mods_window_no_code_test)
     # Audio replacement: WAV/Ogg decoding, resampling, the "audio" manifest
     # object and the mixer side. stb_vorbis is upstream's file, built as is.
     add_executable(memories_audio_replace_test tests/pc/audio_replace_test.c src/pc/audio/replace.c
@@ -734,6 +756,17 @@ if(BUILD_TESTING)
         target_compile_options(memories_texture_pack_test PRIVATE -Wall -Wextra -Werror)
     endif()
     add_test(NAME pc_texture_pack COMMAND memories_texture_pack_test)
+    # A mod's .zip into the mods folder (src/pc/mods/import.c, the Android
+    # Mods panel's Import): layouts, what counts as code, Replace, and the
+    # .zip files refused before anything is written.
+    add_executable(memories_mod_import_test tests/pc/mod_import_test.c src/pc/mods/import.c src/pc/mods/json.c
+        src/pc/platform/paths.c)
+    target_include_directories(memories_mod_import_test PRIVATE src)
+    target_link_libraries(memories_mod_import_test PRIVATE ZLIB::ZLIB)
+    if(NOT MSVC)
+        target_compile_options(memories_mod_import_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME pc_mod_import COMMAND memories_mod_import_test)
     # Card title plates (src/pc/cards/art.c), set from a name in the serif
     # face as a translated card's is: where FreeType is at hand (beside
     # libpng, as in the Windows dependencies), and skipped (77) on a system

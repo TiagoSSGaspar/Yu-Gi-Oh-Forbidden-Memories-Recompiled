@@ -2,7 +2,10 @@
 
 A mod is a directory, not part of the game executable. The release ships its
 own mods that way, and anyone else's mod is installed the same way: drop the
-directory in, restart, apply it in **Game > Mods**.
+directory in, restart, apply it in **Game > Mods**. On Android, where there
+is no folder to drop it in, **Import mod...** in the Mods panel takes the
+mod's `.zip` through the system's file picker
+([Mod manager](mods-window.md)).
 
 ## Where mods live
 
@@ -1649,22 +1652,30 @@ line and in order (`pc_mods_overlap`, `test_overlaps.py`).
 
 ## Code mods
 
-A code mod is **one object file**, `<library>.o`, that runs on both the
-Linux and the 32-bit Windows game. macOS ARM64 needs a separate
-`<library>.dylib` build; mod authors supporting all three platforms must
-ship both files. See [Native macOS ARM64 code mods](#native-macos-arm64-code-mods)
-for the build command and manifest selection. Both i386 games are 32-bit
-x86 code with the same calling convention, so the machine code is the same;
-the game reads the file with its own loader
-([`src/pc/mods/object_loader.c`](../src/pc/mods/object_loader.c)) rather than
-the system's, so the container is the same too.
+A code mod is **an object file per target**, built from the same sources
+by `build_mod.py`:
 
-The 64-bit Windows game (`-windows-x64.zip`) loads data mods only: a code
-mod is 32-bit code, so it stays off there with "needs a 64-bit build of
-this mod" in the Mods window, and the 32-bit game is the one to play it
-with. A 64-bit Windows code-mod SDK is a later milestone (`notes/pc-build.md`,
-"64-bit Windows"). macOS ARM64 code mods use the separate native build
-described below.
+| Target | File | Game |
+|---|---|---|
+| `i386` | `<library>.o` | the 32-bit Linux and Windows games |
+| `x86_64-windows` | `<library>.x86_64-windows.o` | the 64-bit Windows game (`-windows-x64.zip`) |
+| `aarch64` | `<library>.aarch64.o` | the arm64 Android game |
+| `macos` | `<library>.dylib` | the macOS ARM64 game; built only with `--target macos` (see [Native macOS ARM64 code mods](#native-macos-arm64-code-mods)) |
+
+The `i386` object runs on both 32-bit games: both are 32-bit x86 code with
+the same calling convention, so the machine code is the same, and the game
+reads the file with its own loader
+([`src/pc/mods/object_loader.c`](../src/pc/mods/object_loader.c)) rather than
+the system's, so the container is the same too. The 64-bit Windows game
+reads its x86-64 object with the same loader (ELF64, the Windows x64
+calling convention); one that has only the 32-bit object stays off there
+with "needs a 64-bit build of this mod" in the Mods window; the arm64
+Android game reads its AArch64 object the same way, and one without it
+stays off with "needs an Android build of this mod". A mod ships
+whichever objects it has beside its `mod.json`; `"library": "card-tweaks"`
+(or `"card-tweaks.o"`) names all of them, and `"libraries": {"x86_64-windows":
+"other.o"}` names one target's file outright. Mod authors supporting every
+platform ship every file.
 
 The mod exports one function, described in
 [`src/pc/mods/modapi.h`](../src/pc/mods/modapi.h):
@@ -1697,7 +1708,7 @@ the player's settings file as `mod.<id>.<key>`, and read from
 `MEMORIES_MOD_<ID>_<KEY>` first when that is set; a key is letters, digits,
 `_` and `-`, and `order` is the manager's), `disc_file_start`/
 `disc_read`, `pad`, and from mod API 2 `now_us` (a clock) and `map_fixed`
-(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)).
+(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`).
 A mod that uses an entry newer than API 1 should refuse to start when
 `host->api` is older.
 
@@ -1782,17 +1793,23 @@ same with no mod hooking anything (the smoke screenshots are unchanged).
 ### Building one
 
 ```sh
-python3 tools/pc/build_mod.py my-mod            # writes my-mod/<library>.o
+python3 tools/pc/build_mod.py my-mod            # my-mod/<library>.o, .x86_64-windows.o, .aarch64.o
+python3 tools/pc/build_mod.py my-mod --target i386   # one target only
 ```
 
-`build_mod.py` compiles every `.c` in the directory and merges them into the
-one object. Beside a released game the same script is
+`build_mod.py` compiles every `.c` in the directory and merges them into one
+object per target. Beside a released game the same script is
 `sdk/tools/build_mod.py`, and it builds against `sdk/include` there. The
 release's `sdk/` also carries `extract_images.py` and `upscale_pack.py` in
 `sdk/tools`, the example mods in `sdk/examples/mods`, and this note with
 `mod-api-3.md` and `more-cards.md` in `sdk/notes`. It needs
 clang (on Windows, the llvm-mingw clang; it builds the Linux object format
-there too) or, on Linux, gcc with 32-bit support. `./build-pc.sh` builds
+there too) or, on Linux, gcc with 32-bit support. clang is used only with
+lld beside it or on PATH. With clang it builds all three ELF targets unless
+`--target` names some; the 64-bit ones also need `llvm-objcopy` (looked for
+beside clang and beside the file a `clang` link points to, then on PATH and
+in llvm-mingw), and without it the script builds the `i386` object alone
+and says so. gcc builds the `i386` object only. `./build-pc.sh` builds
 every directory under `mods/` this way, once, and copies the same file into
 both games' `mods/` directories. The script keeps what it builds in
 `tmp/pc/mod-build` (beside `sdk/`, or in the repository), under a key of the
@@ -1802,7 +1819,8 @@ any time.
 
 A mod reaches the game directly. Its undefined names are bound when it is
 loaded, against a table compiled into the game (`mod_exports.c`, generated
-by `tools/pc/build_game32.py`). The table holds every game function and
+by `tools/pc/build_game32.py`; beside a game, its SDK's
+`exports.<target>.txt`). The table holds every game function and
 variable, every guest variable pinned to its retail address, and the
 port's own globals. That is what makes something like 3D Monsters possible:
 it borrows the model loader, the software GPU's texture banks and the duel's
@@ -1839,6 +1857,32 @@ covered by a test (`tools/pc/test_object_loader.py`):
 | `-ffreestanding -nostdinc` | no system C library, as above |
 | `-mretpoline-external-thunk` (clang), `-mindirect-branch=thunk-extern -mindirect-branch-register` (GCC) | every indirect call goes through the game's `__x86_indirect_thunk_*`, which the C library list lends, so a call through a function pointer read from a game table (a MIPS address) reaches the native function without DEP, as in the game's own code. See below the table |
 
+That table is the `i386` target's. The 64-bit ones need clang (llvm-mingw's
+on Windows builds all three) and keep the game's guest structures as they
+are: their stored pointers stay 4 bytes (`G32`, `src/port_ptr.h`, with
+`-fms-extensions`). So, for `x86_64-windows` and `aarch64`:
+
+* `src/pc/mods/prelude64.h` is included first. It also declares the guest
+  tables mods reach most (`D_800E9D90` to `D_800E9D9C`, the frame's ordering
+  tables, and `D_800E9DB0`, its service callbacks) as the game does, with
+  `G32`: a mod that declares one itself without it, which would read 8-byte
+  entries out of a table of 4-byte ones, does not compile ("redeclaration
+  of 'D_800E9D90' with a different type"). Include the game's header
+  (`game/ordering_tables.h`, `game/main_services.h`) instead, and index
+  `D_800E9D90` rather than declaring `D_800E9D98` as an array.
+* A pointer cast to a 32-bit integer, an integer cast to a pointer, a
+  mismatched pointer type and an int-pointer conversion are errors: on 64
+  bits each loses half an address. A host address a mod hands the game must
+  be below 4 GB (`map_fixed` memory is; the mod's own code and data are).
+* The Psy-Q `long` is 32 bits: spell it `PSXLONG` where the game's headers
+  do (`RotTransPers`' results, say), as `long` is 64 bits on arm64.
+* `x86_64-windows` is the Windows x64 calling convention in an ELF64 object
+  (`--target=x86_64-w64-windows-gnu-elf -mno-ms-bitfields`); `aarch64` is
+  the Android game's (`aarch64-linux-android24`, `-mharden-sls=blr`,
+  `-ffp-contract=off`), each unit through `tools/pc/ptr32_stores.py` as the
+  game's are. Each object carries a `.memories.abi` section naming its
+  target, which the loader checks.
+
 The thunk flags came with the change that lets the game run without DEP
 (Windows' Data Execution Prevention). Two consequences for mods:
 
@@ -1863,6 +1907,7 @@ not provide. A crash inside a mod names the function it was in
 
 A code mod built against one release keeps working in the later ones,
 without being rebuilt. Every name that release's `sdk/exports.txt` lists
+(`sdk/exports.<target>.txt` for each target, since the 64-bit ones)
 stays exported, with the type its SDK declared. Every structure those
 names reach keeps its layout, and every enumerator (`SET_PGXP`,
 `MENU_ITEM_OPPONENT_NAME`) keeps its value. New settings, menu items and

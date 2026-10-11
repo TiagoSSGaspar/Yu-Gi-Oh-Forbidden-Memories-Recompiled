@@ -67,6 +67,14 @@ static const SettingInfo info[SET_COUNT] = {
     /* View > Touch controls: 0 shown once the screen is touched (hidden
      * again by a key or a controller), 1 always, 2 never (touch_pad.h). */
     [SET_TOUCH_PAD] = {"touch_controls", NULL, "MEMORIES_TOUCH_CONTROLS", NULL, 0, 0, 2},
+    /* Android, Help > Offer crash reports at start: the last crash's report
+     * offered to share or save at the next launch (android_report.c); the
+     * offer's "Don't ask again" sets 0. Nothing reads it elsewhere. */
+    [SET_CRASH_REPORT_OFFER] = {"offer_crash_reports", NULL, "MEMORIES_OFFER_CRASH_REPORTS", NULL, 1, 0, 1},
+    /* Android, Video > Screen rotation: 0 the picture turns over with the
+     * phone whether auto-rotate is on or not, 1 it follows the system's
+     * auto-rotate (android.c, Android_ApplyScreenRotation). */
+    [SET_SCREEN_ROTATION] = {"screen_rotation", NULL, "MEMORIES_SCREEN_ROTATION", NULL, 0, 0, 1},
     [SET_MASTER_VOLUME] = {"master_volume", "volume", "MEMORIES_MASTER_VOLUME", "MEMORIES_VOLUME", 100, 0, 100},
     [SET_MUSIC_VOLUME] = {"music_volume", NULL, "MEMORIES_MUSIC_VOLUME", NULL, 100, 0, 100},
     [SET_SFX_VOLUME] = {"sfx_volume", NULL, "MEMORIES_SFX_VOLUME", NULL, 100, 0, 100},

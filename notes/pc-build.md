@@ -1198,11 +1198,26 @@ settings that are off at their defaults:
     picture made of several rectangles shows no seams. HD text and texture
     pack images are left as they are. A texel like the four beside it is
     drawn after five reads, so at 4x the duel's replay time stays within
-    its noise (about 2 to 3.5 ms here, on or off).
+    its noise (about 2 to 3.5 ms here, on or off). The neighbourhood is
+    kept as 25 words and each color made from its word where it is read,
+    the outer 16 fetched one by one: a phone's GPU (Adreno 660) keeps an
+    array of 25 colors filled in a loop in memory, and the Free Duel screen
+    at 4x took 120 ms a frame (7.5 frames a second, 27 at 2x). Now 44 at 4x
+    with 2x anti-aliasing and 60 at 2x, the picture the same pixel for
+    pixel (on the phone, and on NVIDIA against the base build). Named
+    variables instead of any array ran faster still but that driver then
+    read some texels as transparent (black corners).
 
 While every effect is at its default, the pass is not used, and the picture
 is drawn by the fixed-function quad exactly as before. The SDL_Render
-fallback (no OpenGL) has no pass.
+fallback (no OpenGL) has no pass, and neither has the OpenGL ES path
+(Android, below): where it does not run, Video > Color, CRT scanlines,
+Reduce flashes and Sharp bilinear are dimmed with the reason beside them
+("not on Android yet", "needs OpenGL"), and xBR, the OpenGL picture's at
+2x and up there, says "needs Internal 2x" at 1x (`Menu_SetPresentPass`,
+from `use_gl`). On a phone (2400x1080) with Integer scaling, Internal 4x
+shows the 1280x960 picture pixel for pixel, so Filtering has nothing to
+filter there; at 1x and 2x, or with Fit to window, Smooth shows.
 
 ### Speed, frame rate and vsync
 
@@ -1643,7 +1658,7 @@ cards never come up: the fight ends the battle itself.
   alone, as the effect itself does with 0.
 - A direct attack's number is step 9's in its plain form: size 0-2, not the
   burst of 3-5.
-- The effect adds its colour to whatever is under it, so over a pale monster
+- The effect adds its color to whatever is under it, so over a pale monster
   the digits all but vanished. Each number goes above the head of the monster
   it is for, against the dark behind the fight; a direct attack's goes over
   the middle of the screen, above the attacker. The head is the top of the
@@ -1708,13 +1723,13 @@ keeps its equip and fusion tables.
     fades at 500-520 (its command-0 table at module +0x38A4), never fired
     within its 270-frame attack row. It is handed 2.
   - **Space.** A module works at the arena's scale, around slot 0's arena
-    pose. It aims at the other slot's body centre (`field_DD0`, through
+    pose. It aims at the other slot's body center (`field_DD0`, through
     `Model_CopySlotU16Values`) and draws camera-facing billboards with
     view-space sizes (`GsGetLs`, then `ReadRotMatrix`, `RotMatrix`,
     `ScaleMatrix`, `SetRotMatrix`). So for the call:
     - the attacker stands at the arena pose (`func_8005A4C4(slot, 0, 0, 0,
       0)`, scale 1);
-    - both body centres go through the inverse of its field root matrix T
+    - both body centers go through the inverse of its field root matrix T
       (`field_D18`: rotation times its scale s, then its position);
     - `GsWSMATRIX` (`D_800FE148`, which the port's `GsGetLs` reads too) is
       WS T scaled by 1/s. That keeps the field's screen positions at the
@@ -1724,7 +1739,7 @@ keeps its equip and fusion tables.
   - **Camera.** Its camera requests are refused (`D_8009B07B`/`D_8009B07C`).
   - **Reactions.** The reactions it would start in slot 1 go with the copy
     of the defender put there for the call. For a direct attack, the copy's
-    body centre is the empty zone across.
+    body center is the empty zone across.
 - **Timing.** The module's answer times the fight:
   - its first 4, 3 or 1 lands the attacker's blow (or the end of the attack
     row, if it never says);
@@ -1741,6 +1756,57 @@ battle ends. The 8 cards that are not monsters fight no fight. The smoke
 case `duel-3d-monsters-attack-effects` is Blue-Eyes' White Lightning
 mid-beam (frame 20320). The two field fight cases set `effects` off, so
 their frames are as before.
+
+**The fighters' sounds.** With `sounds` on (the default; it does nothing
+unless `attack` is), both fights play the sounds the arena plays
+(`fight_sounds.c`).
+- **Where they are.** Each MODEL.MRG record carries its monster's own:
+  - sector 224, the sequence bank: up to 32 driver sound ids, each with a
+    note record (volume, timer, pitch, sample address);
+  - sectors 225-274, the ADPCM samples;
+  - sector 275, starting with the slot's 64 `sound_entries` (row, bank
+    index, time; 0x8000 for an XA clip off the disc), which the quiet load
+    copies too.
+- **How the arena plays them.** `func_8005106C` plays an entry when the
+  slot is in its row and the row's time passes the entry's:
+  `SD_SEPlay(0x4000 | index)`, which `field_044C` turns into the bank's
+  driver id. `func_800482B0` and `func_8004803C` give that id a voice at
+  the note's volume and pitch, and the voice is keyed off after the note's
+  timer. An id still sounding takes its own voice again (`mode` 0x10), so
+  an entry repeated every two frames restarts, it does not pile up. The
+  voices' envelope (attack, decay and sustain all at rate 0, sustain rising)
+  keeps them at full level.
+- **Why not there.** The bank goes to 0x801A8000, where the duel keeps the
+  opponent's AI script. Registering it (`SD_LoadSequenceBankPair`) first
+  drops every id the duel registered (`func_8004763C`). The samples go to
+  SPU RAM 0xD810 and up, over the duel's own sounds; in the duel all but 39
+  KB of SPU RAM is taken (0x3D000-0x40000 and 0x79400-0x80000 are free in
+  the quick battle), and a monster's samples take 80 to 100 KB.
+- **So the host plays them** (API 12, `sound_add`/`sound_play`). When a
+  fight begins, the mod reads each fighter's bank and samples again, and
+  decodes each note its entries name:
+  - the SPU's ADPCM from the note's address to the block that ends the
+    sample;
+  - at the note's pitch against the voices' sample note 0x3C00, through
+    libspu's own integer note-to-pitch (`0x2400` is 0x400, 11,025 Hz);
+  - cut at the note's timer (`timer << 2` VBlanks) with a 5 ms fade.
+
+  Then each frame it plays the entries of the row a fighter is in that the
+  row's time (`field_E06`) passed since the last frame, at twice the note's
+  volume (the voice's `(volume * 0xFF) >> 1` against 0x3FFF), and only in
+  rows the fight started: the attack and the reactions, not the rest the
+  monsters stand in. An XA entry, a voice clip off the disc, is the
+  game's own to play, as in the arena: `func_80045334` readies it on the
+  row's first frame and `SD_SEPlay(0x8000 | id)` starts it at its time
+  (Shadow Specter's counter-attack cries 0x800D). The sounds are let go
+  when the fight ends.
+
+For Man-eating Plant against Shadow Specter (the quick battle), the fight
+rows name five of the plant's sounds and four of the specter's; the bite
+plays three, at 992, 1120 and 1184, the last as the blow lands. Reading
+takes under 0.1 ms; decoding and converting, on macOS, 2 and 4 ms, as the
+fight begins. The smoke cases run without sound, so their frames are as
+before.
 
 ### Images from the disc
 
@@ -1992,7 +2058,8 @@ texture as an SDL texture does not work: SDL's `GLES2_CreateTexture`
 specifies the storage of a texture it is handed, which wipes it.) A
 repaint of the menu over a still frame shows the same texture again.
 `use_gl` stays 0 on this path: the desktop presenter and Video > Color
-(`present_pass.c`, fixed function) are desktop only. A device without
+(`present_pass.c`, fixed function) are desktop only; their menu rows are
+dimmed there ("Present pass" above). A device without
 ES 3 (or a failed context) gets the renderer SDL picks and the software
 picture, as before, and Video > HD text says "needs OpenGL ES 3".
 
@@ -2007,15 +2074,31 @@ GLSL ES 3.20", then "OpenGL picture pass on").
 the background; SDL then makes a new one and sends
 `SDL_EVENT_RENDER_DEVICE_RESET`. SDL's GLES2 renderer cannot go on (its
 context is the lost one), so `reset_renderer` forgets the pass's GL names
-(`GlPicture_Lost`, nothing deleted), destroys and makes the renderer again,
+(`GlPicture_Lost`, nothing deleted: they went with the lost context), destroys and makes the renderer again,
 starts the pass in the new context and lets the next frame make the
 textures again; the pass's first replay draws the picture again from VRAM
 (as a resync does). Where the pass does not start again, or its frame
 cannot be copied into the renderer's texture, `GlPicture_Stop` takes its
 recorder out of the software GPU, which draws the scaled picture again
-from VRAM, as on a device without ES 3. `MEMORIES_TEST_GL_RESET=<frame>`
-sends that event at a frame, with nothing lost, to try the path anywhere;
-`<frame>fail` also keeps the pass from starting again.
+from VRAM, as on a device without ES 3, and deletes every GL name the
+pass holds (at 4x with anti-aliasing the picture and its copies are
+hundreds of MiB); a `GlPicture_Init` that fails half way deletes what it
+made. A pass given up stays off for the session: a reset starts the pass
+again only when it was on. The reset is handled inside a present (the
+pump in `begin_present`), which may be copying the software GPU's
+picture, and the recorder's return (`SoftGpu_SetRecorder`) frees that
+picture (before 2026-10-09 a failed copy followed by a reset read the
+freed picture there and crashed).
+`MEMORIES_TEST_GL_RESET=<frame>` sends that event at a frame, with nothing
+lost, to try the path anywhere; `<frame>fail` also keeps the pass from
+starting again. `MEMORIES_TEST_GL_COPY_FAIL=<frame>` makes that frame's
+copy fail, as when SDL cannot make its texture.
+
+On ES the pass needs a vertex array of its own (`glGenVertexArrays`, core
+in ES 3.0): SDL's renderer draws with the one there is, and the pass's
+attribute changes would turn off SDL's. Without it the pass does not
+start. `es_source` converts GLSL 1.30 alone and refuses a shader whose
+first line is not `#version 130`.
 
 **On a desktop: `MEMORIES_GLES=1`** takes the same path in a desktop
 window, to test it where frame dumps and the desktop renderer can be
@@ -3032,8 +3115,8 @@ box naming the folder to put it in. Crash and hang reports, minidumps and
 menu frame dumps go to `reports/` in the user directory when the game is not
 run from a checkout (`Crash_ReportDir`; `tmp/pc` in one).
 
-The 64-bit Windows archive has the data mods only and no mod SDK ("64-bit
-Windows" below). Where its compiler is missing (x86_64-w64-mingw32-clang 21
+The 64-bit Windows archive carries each code mod's x86_64-windows object
+in place of the 32-bit one, and the same mod SDK ("Mod SDK M1" below). Where its compiler is missing (x86_64-w64-mingw32-clang 21
 or later), `package.py` with no arguments skips it with a message and packs
 the other two; `package.py windows-x64` stops instead.
 
@@ -3415,29 +3498,17 @@ drifted.
   `saves/slotNN.sav`, are the game's data; that the other width loads them
   is expected but not yet checked.) The width check comes before the mods check, so
   the mods refusal ("uses different mods...") is only ever between two
-  states of one width, whose code mods are the same (none on 64-bit).
-- **Mods.** The 64-bit build carries the data mods (`build_mods(code=False)`
-  copies them and leaves the code mods out), and the game is built with
-  `MEMORIES_NO_CODE_MODS`. The data mod loader is the 32-bit one, and what
+  states of one width, whose code mods are the same.
+- **Mods.** At X3 the 64-bit build carried the data mods only
+  (`build_mods(code=False)`, `MEMORIES_NO_CODE_MODS`; code mods came with
+  M1 below). The data mod loader is the 32-bit one, and what
   was run on 64-bit draws as there: cards and a texture pack (the gate
   replay below), a booster pack (state-load-rng's test mod), and the
   baseline release's data examples load without a note (`check_mod_abi`
   below). Fusions and the other tables, guardian stars, duelists, limits,
   audio, translations and disc patches load the same way but have no
   64-bit frame check yet; star and duelist names come from the low memory
-  region (X2), which no mod has exercised there. A mod with a `library` (3d-monsters,
-  hand-camera, ai-hard-mode, yamyi-mods, the gameplay-rules example) is a
-  32-bit object: none ships with the 64-bit game, and one the player
-  installs is not loaded: the Mods window shows "needs a 64-bit build of
-  this mod" beside it. It is not a broken mod, so
-  the other mods' Apply goes on, and it is not in a state's mod set. What
-  stays off with it: `object_loader.c` maps an object wherever the system
-  puts it and its relocations are i386 (`ObjectLoader_Load` refuses too),
-  `mod_libc.c` lends 32-bit helpers and the heap's `malloc` (which may be
-  above 4 GB), and `hooks.c` writes an i386 `jmp *[abs32]` (inert off
-  i386 already). No mod SDK goes beside the 64-bit game: it builds 32-bit
-  objects. `check_mod_abi.py --run --build <64-bit build>` plays a
-  baseline release's mods there and requires that note for each code mod.
+  region (X2), which no mod has exercised there.
   A replay recorded on 32-bit with two data mods on (the card-pack example
   with its two cards in the deck, and a texture pack of the screens'
   sheets with every color turned, made from the disc at play time) plays
@@ -3452,21 +3523,116 @@ drifted.
   reports.
 - **Package.** `python tools/pc/package.py windows-x64` makes
   `dist/yfm-redecomp-<version>-windows-x64.zip` (its folder
-  `yfm-redecomp-<version>-x64`, with the data mods and a README that says
-  so) beside the 32-bit
-  `-windows.zip` (the default now packs all three); `smoke.py` skips the
-  cases that turn on a code mod for it, and `test_package.py` checks the
-  x86-64 executable and that there is no SDK. The release workflow
+  `yfm-redecomp-<version>-x64`) beside the 32-bit `-windows.zip` (the
+  default now packs all three); since M1 below it carries the code mods'
+  x86_64-windows objects and the SDK, and `test_package.py` checks the
+  x86-64 executable and that each archive's mods have their own target's
+  objects. The release workflow
   (pc-release.yml) does not build it yet: its Windows job's later steps
   (the FM Editor, VirusTotal) key on the runner being Windows, so a second
   Windows entry would need them keyed on the system, and the 64-bit
   libraries (`tmp/pc/win64-deps`) a cache of their own.
 
-Still off in the 64-bit build: code mods, whose 64-bit SDK is a later
-milestone, after arm64, covering both 64-bit targets (the loader for
-x86-64 and AArch64 objects, the mod C library, function hooks); the
-interrupt clock (the cooperative one is the default anyway); a state from
-the other width.
+**Mod SDK M1 (2026-10-05): code mods on 64-bit Windows.** A code mod is an
+object per target (`notes/modding.md`, "Code mods"): `build_mod.py` builds
+`<library>.o` (i386, unchanged), `<library>.x86_64-windows.o` and
+`<library>.aarch64.o`, and this game loads the second.
+
+- **Loader.** `object_loader.c` reads ELF64 x86-64 relocatables (RELA;
+  64, PC32, PLT32, 32, 32S, PC64 and GOTPCREL(X)), with a veneer
+  (`jmp *[rip]`) for a call to a host function out of reach, the C
+  runtime's DLL far above 4 GB, and a GOT entry per symbol. An object must
+  carry `.memories.abi` naming `x86_64-windows`: x86-64 objects of the
+  Windows and the Linux ABI look alike. The i386 path and its hash are as
+  they were.
+- **Where mods go.** Below 4 GB with bit 30 set, so that a mod's function
+  fits a 4-byte guest slot and takes the branch thunks' fast path, as the
+  game's own: `image.c` holds 128 MiB from the first 64 KiB after the
+  executable's image (`Memories_ModCodeRange`; 0x42390000 in the build
+  of 2026-10-05), and each image takes its piece through `compat/mman.h`'s `mmap`.
+- **Hooks** are the same 6 + 2 bytes: `jmp *[rip+disp32]` to the slot in
+  the image (every game unit already had the padding). `mod_libc.c` lends
+  `___chkstk_ms` and `__x86_indirect_thunk_r11` there; the mods' rand seed
+  is a `uint32_t` (the `mod-rng` chunk's 4 bytes).
+- **map_fixed** goes through `compat/mman.h`'s `mmap`: the plain
+  `VirtualAlloc` over the range `Memories_GuestMap` holds for the mod arenas
+  (0x90000000) failed, so 3D Monsters had no arenas there.
+- **The shipped mods** had declared `D_800E9D90`, `D_800E9D98` and
+  `D_800E9DB0` themselves without `G32` (3D Monsters, Hand Camera, Yamyi
+  Mods): built for x86-64 they would have read 8-byte entries out of
+  4-byte tables. They include the game's headers now, and
+  `src/pc/mods/prelude64.h`, force-included into every 64-bit unit, makes
+  such a declaration a compile error.
+- **Gate.** One replay per shipped mod, each alone, recorded on 32-bit
+  (`tests/pc/replays/mod-3d-monsters`, `-3d-monsters-card-art`,
+  `-hand-camera`, `-ai-hard-mode`, `-yamyi-mods`), plays frame for frame
+  on this build, also with `MEMORIES_X64_HIGH_HEAP=1`; no float
+  difference between the i386 mods' x87 code and the x86-64 build's SSE
+  showed. The Yamyi Mods drop panel is drawn by the host over the picture,
+  which the frame hashes do not cover.
+- **Crashes.** A fault in a mod's code is named in the report as on
+  32-bit (`crasher:crasher_fault_here+0x0`, a scratch mod faulting in its
+  frame hook, with the game's callers below it). Mod code has no unwind
+  tables, so above a mod function that keeps a frame of its own the
+  callers may be lost: M3.
+- **Not yet:** a host pointer a mod stores into a guest slot is cut to 32
+  bits without a warning (`malloc` may be above 4 GB; the shipped mods pass
+  the replays with `MEMORIES_X64_HIGH_HEAP=1`): M3.
+
+Still off in the 64-bit build: the interrupt clock (the cooperative one is
+the default anyway); a state from the other width.
+
+**Mod SDK M2 (2026-10-09): code mods on arm64 (Android).** The arm64 game
+loads each code mod's `<library>.aarch64.o`.
+
+- **Loader.** `object_loader.c` takes AArch64 RELA relocations (ABS64/32,
+  PREL64/32, ADR_PREL_LO21, ADR_PREL_PG_HI21(_NC), ADD_ABS_LO12_NC,
+  LDST8-128_ABS_LO12_NC, CALL26/JUMP26, CONDBR19, TSTBR14 and the GOT
+  pair), with a veneer (`ldr x16, 8; br x16`) for a branch to a host
+  function beyond 128 MB (bionic) and a cache flush once the code is in
+  place. clang's weak `__llvm_slsblr_thunk_xN` copies are bound to the
+  game's own; `mod_libc.c` lends them. Mod code goes in the 64 MiB after
+  the game's reservation (0xC4000000 with `libgame.so` at 0xC0000000:
+  below 4 GB, bit 30 set).
+- **Hooks.** Game units get `-fpatchable-function-entry=4,3`: the three
+  nops before an entry become `adrp x16, slot; ldr x16, [x16, :lo12:slot];
+  br x16`, the entry toggles between `nop` and `b .-12`, each write
+  followed by cache maintenance. Where the system refuses to make the text
+  writable (EACCES, an app's SELinux execmod), it is copied once into
+  anonymous memory moved over the same range (`mremap`) and patched there;
+  stderr (logcat) says which (`memories-pc: hooks: ...`). In that case the
+  range is no longer file-backed: a system tombstone names no `libgame.so`
+  for frames there.
+  `MEMORIES_TEST_ANON_TEXT=1`, read only by builds that are not releases
+  (`MEMORIES_TEST_HOOKS`), takes the first write in place as refused, so
+  the copy is tried where the write would be allowed;
+  `test_mods_lifecycle.py --target android-arm64` runs the hooks test on
+  the adb device both ways.
+- **Pages.** An AArch64 kernel may run 4, 16 or 64 KiB pages (Android 15
+  phones can run 16 KiB ones). The loader lays an aarch64 image out on the
+  system's page, 16 KiB at least, so the code's `mprotect` covers the code
+  alone and an image (and its hash in save states) is the same on 4 KiB
+  and 16 KiB phones; the hooks take the page for `mprotect` and the
+  anonymous copy from `sysconf(_SC_PAGESIZE)`. The x86 targets keep 4 KiB.
+  A game whose mod range could not be held loads no code mod (rather than
+  one somewhere it may not be reachable from a 4-byte slot), and a failed
+  anonymous copy is unmapped and not tried again.
+- **ptr32.** Every mod unit goes through `ptr32_stores.py`, as the game's
+  (NDK r29's clang still has the narrow-store bug; AI Hard Mode had one
+  such write).
+- **In the app.** Mods are turned on and off in the Mods panel (Game >
+  Mods drawn inside the window). Each
+  code mod that starts says so on stderr (`memories-pc: mods: ID loaded
+  its code`).
+- **Gate (emulator `api35x64`, arm64 code through libndk_translation).**
+  The five per-mod replays play frame for frame through `device_run.py`,
+  with the text patched in place and in the anonymous copy, as do the
+  mods-off replays; in the app (the four code mods set on in
+  `settings.txt`), 3D models, the hand camera, the CPU's turns
+  with AI Hard Mode and Yamyi Mods on, and no SELinux denial but liblog's
+  `/dev/pmsg0` getattr (there with mods off too). The emulator checks
+  neither a real core's instruction cache nor a phone vendor's policy: the
+  phone check is the release gate.
 
 ## Android
 
@@ -3502,8 +3668,10 @@ phones too ("Android arm64").
 
 ### Build, install, run
 
-Needs the Android SDK with the NDK (r29 tested), a platform (android-35) and
-build-tools (35), a JDK (17 or later: `javac`, `keytool`), cmake and ninja.
+Needs the Android SDK with the NDK (r29 tested), a platform (android-35;
+`package_android.py` stops below android-34, as the manifest's
+`configChanges` names `grammaticalGender`) and build-tools (35), a JDK (17
+or later: `javac`, `keytool`), cmake and ninja.
 Nothing else: no Gradle, no Android Studio.
 
 ```sh
@@ -3531,7 +3699,7 @@ adb install -r tmp/pc/android-x86/memories-x86.apk
   port's `main` returns, the process ends with it. If the range cannot be
   had, the game loads where the system puts it and keeps save states for
   that launch only. `tools/pc/package_android.py` then compiles SDL's Java
-  with `javac` against the SDK's `android.jar`, dexes it with `d8`, links
+  and the port's own (`src/pc/platform/android/*.java`) with `javac` against the SDK's `android.jar`, dexes it with `d8`, links
   the manifest with `aapt2`, adds `lib/<abi>/libmain.so`, `libgame.so` and
   `libSDL3.so` and the build's `buildid`, `commit` and symbol table as
   assets (`assets/build/`), and aligns and signs the APK (`zipalign`,
@@ -3550,7 +3718,8 @@ adb install -r tmp/pc/android-x86/memories-x86.apk
   uninstall the test app once first, which deletes its files (disc copy,
   saves). The
   package is `org.yfmredecomp.game`; the activity is SDL's own
-  `SDLActivity`, with no Java of ours.
+  `SDLActivity`. Our own Java is each `src/pc/platform/android/*.java`,
+  compiled with SDL's.
 - `--target android-armeabi-v7a` is refused: 32-bit ARM was removed.
 
 **The disc image.** On the first run the game finds no image and shows its
@@ -3569,6 +3738,19 @@ desktop. Only raw `.bin` images: `game_files.c` reads nothing else (no
 `.cue`, `.iso` or `.chd`). The Android TV images have no document picker
 (the intent resolves to a stub that returns at once, and the welcome box
 comes back): there the image has to be put in place by other means.
+
+The external files folder has to be there before the game starts:
+`Memories_AndroidMain` makes it, asking again for up to 10 s while it
+cannot (while the shared storage is not mounted Java's `getExternalFilesDir`
+gives no folder, `adb shell sm unmount "emulated;0"` shows it; just as it
+mounts, Java may give the folder while mkdir here says "File exists" and
+stat may not see it yet), and otherwise says "The game could not use
+its storage folder right now. Close the game and open it again." and quits,
+unless the internal `environment.txt` names a `MEMORIES_USER_DIR` (testing).
+Android has no fallback folder (the desktop's `./saves`, which on Android is
+no folder the app can write): the disc image and the saves would be split
+between two places. A copy of the picked image that cannot make `game/`
+says so too, with mkdir's reason, and the welcome box comes back.
 
 Testing aids: `environment.txt`, `NAME=value` per line, in the external
 files folder (or, for a debuggable build, the internal one, which `run-as`
@@ -3594,6 +3776,69 @@ the program directory's `game/` (`files/program/game/` in the internal
 files folder), which `game_files.c` searches first.
 Screenshots of the device, never the host: `adb exec-out screencap -p`.
 
+### Crash reports on Android
+
+A crash writes its report as on Linux (`crash.c`, in the process: there is
+no monitor), `crash-<pid>.txt` (or `hang-<pid>.txt` where a freeze
+watchdog runs, which it does not on Android by default) in
+`reports/` of the external files folder, which no file manager opens since
+Android 11. So the next launch offers it (`android_report.c`, from the end
+of `sdl.c`'s `Platform_Open`) in the game's own notice: **Share** (the
+system's share sheet, the report attached: Discord, a chat app, e-mail),
+**Save to Downloads** (MediaStore, Android 10 and later: before that,
+writing there needs a storage permission the app does not ask for, so the
+button is not offered and only Share is), **Don't ask again** and **Not
+now** (nothing: it is offered again next launch; Back presses it, the
+last button). Share, Save and Don't ask again retire every
+report in the folder at that moment (`report_folder.c`): `crash-<pid>.txt`
+becomes `crash-<pid>.txt.sent`, which is no longer offered; the newest ten
+retired ones are kept and older ones removed; a report with the running
+game's pid is left, unless it is the one offered (a pid used again). No
+time is compared: a report is offered until
+it is retired, even one written while the clock was behind (only the
+newest report is offered at a time; the others go with it). If a report
+cannot be renamed, the player is told it may be offered again (after Don't
+ask again: if the offer is turned back on). Share
+counts once the share sheet opens, whether or not an app is then picked.
+"Report saved" names the file as Downloads has it (MediaStore adds
+" (1)" when the name is taken). Don't ask again also sets
+**Help > Offer crash reports at start** (`offer_crash_reports`,
+`MEMORIES_OFFER_CRASH_REPORTS`: 1, the default, offers; 0 does not) to 0:
+that Help row, on Android only, is the way back, since `settings.txt` is
+in the folder the player cannot reach. Turned back on, it offers the
+newest report not retired: one written while it was off, or one still there
+when it was turned off in the menu (retired ones stay retired). The folder
+logic has a host test, `pc_report_folder`. Headless, scripted and
+agent-driven runs (`MEMORIES_HEADLESS`, `MEMORIES_INPUT`,
+`MEMORIES_SDL_SCRIPT`, `MEMORIES_CONTROL`) are never asked. The desktops
+have none of it.
+
+What goes out, `yfm-redecomp-crash-<date>-<time>.txt`: the app's version
+(or "development build"), the build id and commit, the device's maker and
+model, the Android version and API level, the memory free now, then the
+game's report with the player's own paths taken out: the user folder
+becomes `<app folder>` (the "user dir" fact, log lines naming a file in
+it), a `content://` URI (the disc image the player picked, whose URI names
+their folders and file) becomes `content://<removed>`, and "started" loses
+its time zone. The report's own facts stay (settings, mods, GPU, CPU, the
+start time without its zone). Nothing of the saves, the settings file or
+the disc. The authority `org.yfmredecomp.game.reports` is spelled in the
+manifest, `ReportProvider.java` and `android_report.c`;
+`package_android.py` stops if one differs.
+
+Share hands the file to the chosen app through a Java class of the port's
+own, `org.yfmredecomp.game.ReportProvider`
+(`src/pc/platform/android/ReportProvider.java`, compiled with SDL's by
+`package_android.py`): a read-only content provider, not exported, that
+serves the one copy in the cache folder's `shared/` to the app the share's
+Intent grants it to (`FLAG_GRANT_READ_URI_PERMISSION`), with its name and
+size. The Java calls (MediaStore, the Intent) are made through JNI on the
+thread's own stack (`Memories_OnHostStack`).
+
+To try it: `MEMORIES_CRASH_TEST=segv@600` in `environment.txt` (above),
+launch, let it crash, remove the line, launch again; `adb shell ls
+/sdcard/Download` after Save.
+
 ### How it differs (and what is shared)
 
 - `src/pc/platform/android.c` is the whole platform layer:
@@ -3603,12 +3848,16 @@ Screenshots of the device, never the host: `adb exec-out screencap -p`.
   internal files folder's `program/` and names it the program directory
   (`MEMORIES_PROGRAM_DIR`, `paths.h`: save states and crash reports read
   `buildid` and `symbols/` there; the symbol tables of earlier builds stay,
-  so a state from an earlier APK is carried over by name), turns off what
-  re-executes the program (the crash monitor, `Platform_RestartGame`) and
-  the update check, asks SDL for landscape, a fullscreen (immersive) window
+  so a state from an earlier APK is carried over by name), turns off the
+  crash monitor (it re-executes the program) and the update check, restarts
+  the game through a small activity of its own (`Platform_RestartGame`,
+  below), asks SDL for landscape, a fullscreen (immersive) window
   and Back for the game, and runs the port's `main`. It has the disc picker
   (`Platform_SelectDisc`) and says what a failed guest mapping means
-  (`Platform_GuestMemoryHelp`). `Platform_HasDesktopGL` answers 0: the
+  (`Platform_GuestMemoryHelp`: the step that failed, from
+  `Memories_GuestMapError` in `image.c`, such as the address range that
+  was taken; "This Android is 32-bit" only in a 32-bit game, android-x86,
+  on a 32-bit kernel). `Platform_HasDesktopGL` answers 0: the
   window takes the SDL renderer path (opengles2), in an OpenGL ES 3.0
   context with the OpenGL picture pass in it where the device has ES 3,
   else showing the software GPU's picture ("OpenGL ES 3 (Android)"). It
@@ -3625,9 +3874,9 @@ Screenshots of the device, never the host: `adb exec-out screencap -p`.
   a menu or answers a notice as Esc does, closes the deck slot screen, and
   otherwise asks "Quit the game?" with Quit, Menu (opens the first menu: the
   way to the menus with a controller in hand) and Keep playing
-  (`QuitPrompt_Back`); the rows for second
-  windows (Controls..., Mods), the window's size and mode, and the update
-  check are dimmed (`Menu_SetPlatformItems`), `Platform_HasWindowModes`
+  (`QuitPrompt_Back`); the window's size and mode and the update check
+  are dimmed (`Menu_SetPlatformItems`), Mods and Controls open as panels
+  inside the window (below), `Platform_HasWindowModes`
   answers 0 (F11, Alt+Enter and Esc keep the whole screen). Sizes come from
   the display's density (SDL's content scale, densityDpi / 160), not the
   window: Automatic menu size is the density rounded (13 px text at 1 dp,
@@ -3653,6 +3902,182 @@ Screenshots of the device, never the host: `adb exec-out screencap -p`.
   events, which reach only event watchers); touch controls (View > Touch
   controls); `Platform_GuestMemoryHelp`; `Menu_SetPlatformItems`.
 
+### Mods and Controls as panels inside the window
+
+An app has one window, so Game > Mods and Game > Controls... draw the same
+modules as the desktop's second windows (`mods_window.c`,
+`controls_window.c`) into the game's window instead: one module, two hosts.
+`panel.c` (`panel.h`) is the second host, platform-independent and
+display-free; `sdl.c` uses it where `Platform_OpenMods`/`OpenControls` would
+open a window and `panel_overlay()` says so (always on Android;
+`MEMORIES_PANELS=overlay` tries it on a desktop). The desktop's windows are
+untouched: with a mouse every path is the old one, pixel for pixel.
+
+- **What shows.** The panel covers the window, opaque, drawn into the
+  overlay canvas the menu bar uses (`draw_overlay`), so neither the picture
+  nor the bar, the HUD or the touch controls show while it is up. Its
+  contents keep within the safe area across (a landscape phone's cutout;
+  `SDL_GetWindowSafeArea`), the whole height down (the system bars are
+  hidden over the game); the rest is filled with the panel's background.
+- **Sizes by density.** With a finger (`Menu_TouchTarget`, 48 dp) both
+  modules keep the menu's unit (the density rounded, 13 px text at 1 dp)
+  instead of shrinking to fit, and every row and button is at least 48 dp
+  tall. Mods drops its title and keyboard hints (the counts go to the
+  footer's message line) and, where the list and the details do not fit side
+  by side (every phone; the 2208x1768 tablet at 420 dpi), shows them as two
+  pages: the list, and a mod's page (Back, name, load order, Enabled, the
+  three tabs) that a tap on its row opens; the settings' count and Restore
+  defaults scroll with the settings there. Controls is one page between a
+  fixed header (Keyboard/Controller, Player 1/2) and a fixed footer (Clear,
+  Rebind, Cancel, Apply, OK over a message line): the device, the pad
+  picture, both lists at full length, the fixed keys and Restore defaults.
+- **A finger is not a mouse.** `panel.c` holds a press until it is a tap
+  (the module gets the press and the release where the finger went down,
+  then a leave, so no hover stays) or a drag (8 dp of movement: what it
+  went down on scrolls, `ModsWindow_Drag`/`ControlsWindow_Drag`: Mods' list
+  by rows, its details by the pixel, Controls' page or its device list). A
+  press on what follows the finger (an int setting's slider, a scrollbar:
+  `ModsWindow_Grabs`) goes to the module at once; a scrollbar takes a press
+  up to 8 units beside it with a finger (3 with a desktop's mouse), one test
+  (`bar_hit`) for both, so a press held for the bar never opens the row
+  under it. A mouse is passed on as in the window; on the Controls page,
+  whose lists are at full length, its wheel scrolls the page a row a notch,
+  as a drag does.
+- **Keys and typing.** Esc, and a phone's Back, are the window's Esc: a
+  capture, a dialog, the device list, a mod's page close first, then the
+  panel (asking about unsaved changes as the window does); a desktop's close
+  button under `MEMORIES_PANELS=overlay` does the same
+  (`Panel_RequestClose`), and the next press reaches the quit prompt, which
+  would otherwise ask unseen under the panel. A hardware
+  keyboard drives both as on the desktop. While Mods' search or profile
+  field has the focus (`Panel_TextFocus`) the system's on-screen keyboard
+  shows (`SDL_StartTextInput`; a second tap on the field shows it again) and
+  its Enter ends the typing. Rebinding takes a key or a controller's button
+  as the window does: select a binding, tap Rebind, press it (a second tap
+  on a binding also starts listening).
+- **The game pauses** while a panel shows (`Platform_SetClockRate(0)`, the
+  speed it had back when it closes, unless the app is in the background or
+  paused by then): the picture is covered and the panel has the input, so a
+  running game could only go on unseen. Neither the keyboard's nor a
+  controller's bindings reach the game while it shows
+  (`ControlsRuntime_Block`, for both panels): no hotkey such as Turbo,
+  Pause, Exit or a save state acts behind it. The desktop's windows leave
+  the game running beside them, as before.
+- **Coming back** (Home and back, or another activity in front, such as a
+  system file picker): the panel's still picture is repainted for a second,
+  since the window's surface returns a moment after
+  `SDL_EVENT_DID_ENTER_FOREGROUND` (before, the screen stayed black until
+  the next touch). Desktops never set that deadline.
+- **The footer's message** beside Close and Apply: one of two to four lines
+  (a refusal, a code mod's note) raises the footer's top, and the list and
+  the details end above it, instead of being cut.
+- **Import mod...** In the Mods panel's footer, left of Close: the
+  system's file picker (SDL's file dialog, as for the disc; any document),
+  and the chosen `.zip`'s mods go into `mods/` and into the list, off, with
+  no restart ([Mod manager](mods-window.md): the layouts it takes, Replace,
+  a code mod staying off, what it refuses). `Platform_PickModZip`
+  returns at once and the answer comes on the Java thread; the panel asks
+  for it once per pump (`Panel_Tick`, `ModsWindow_Tick`,
+  `Platform_PickedModZip`), shows "Importing...", and then the document is
+  copied into the mods folder (`mods/.incoming.zip`, `Platform_FetchModZip`)
+  through `SDL_IOFromFile` before it is read, so a provider's stream that
+  cannot seek works too. A big `.zip` holds the frame while it is copied and
+  unpacked. `MEMORIES_IMPORT_ZIP=<file>` in `environment.txt` takes that file
+  instead of the picker. The picker puts the app in the background; coming
+  back is as above (the panel repainted for a second).
+- **HD pack...** In the Mods panel's top bar, left of Save: downloads the
+  latest release's HD pack (`yfm-redecomp-hd-mod-<tag>.zip`) from GitHub and
+  installs it through the importer, off, as an import ([Mod
+  manager](mods-window.md): the question first, the checks, the errors).
+  `Platform_HdNet` (android.c) is the network: `HdDownload.java`, called
+  through JNI only on the job's own threads (`hd_pack.c`), which SDL
+  attaches to the VM; `HdDownload` comes through the activity's class
+  loader, since `FindClass` on a thread native code attached sees only the
+  system's classes, and every JNI call is checked before the next (a
+  pending exception would end the app when the thread detaches). The
+  question to GitHub's API is one `HttpURLConnection` GET; the pack goes
+  through the system's `DownloadManager`, since on API 35 the app's own
+  sockets were destroyed three seconds after Home ("Destroyed live tcp
+  sockets for uids=...", and the app frozen) and an in-process download
+  ended with every switch away; the system's goes on, shows its
+  notification while it runs and waits for the network. The game thread
+  makes no JNI call for it. The manifest asks for
+  `android.permission.INTERNET`, which Android grants at install without a
+  prompt; nothing is contacted until the button is tapped.
+  `MEMORIES_HD_TEST_SHA256=<hex>` in `environment.txt` (a development build
+  only) makes a download need that SHA-256, to see the damaged-download
+  path.
+- **Apply & restart.** A change that needs a restart (a load order, a mod
+  or setting that says so) restarts the app for real: `Platform_RestartGame`
+  in `android.c` starts `Restart.java`'s activity (`org.yfmredecomp.game.Restart`,
+  `android:process=":restart"`, translucent, no history) through JNI on the
+  thread's own stack, while the game is in the foreground (so Android lets
+  it start); that activity ends the game's process (its id is the Intent's
+  `pid`), waits until it is gone (the game's activity is `singleInstance`: a
+  live one would only be brought back), launches the game as the launcher
+  does and ends its own process. Gone means no `/proc/<pid>` and no longer
+  in `ActivityManager.getRunningAppProcesses()` (the system's own record,
+  which can trail the process's end); where neither ever showed it, a fixed
+  half second; five seconds at most. The wait runs on a thread of its own
+  (the main thread would be an ANR), the launch back on the main thread
+  while the translucent activity still shows; it takes configuration
+  changes itself, so a rotation during the wait does not recreate it. Nothing is half applied: the Mods window has
+  saved the mods, their order and settings (`Mods_Apply`, `Settings_Save`)
+  before it asks for the restart, and the new process reads them as any
+  start does. If the activity cannot start, or this process is not ended
+  within 10 s, the restart reports failure and the window says "Restart
+  failed; relaunch the game to finish applying them", as on a desktop. The
+  same restart serves Game > Language's Restart now and the end of the
+  credits, which fell back to the title before.
+- **Testing.** `tests/pc/panels_preview.c` (`tools/pc/preview_panels.sh`)
+  draws both windows at UI scale 1 and 2 (the pictures to compare between
+  commits: they must not change) and, with `PREVIEW_TOUCH=1`, both panels on
+  six phones and tablets (2400x1080 at 440 dpi, 1280x720 at 320, 3200x1440
+  at 560, 2560x1600 at 320, 2048x1536 at 320, 2208x1768 at 420), tapping
+  and dragging through them by `Panel_Pointer`. In the app,
+  `MEMORIES_TRACE=window` logs where the panel's widgets are each time that
+  changes ("panel widgets: apply=2144,902 ..."), for `adb shell input tap`.
+  `tests/pc/android_panels/panel-test` is a data mod for the phone: enabled
+  it writes PANEL TEST on the title, and its setting (a restart) changes the
+  name entry's prompt.
+- **Checked** (2026-10-06, arm64 APK on the api35x64 emulator, SwiftShader,
+  `wm size`/`wm density` for each of the six screens above): Mods opened
+  from the Game menu, Drop missing cards switched on by its [x], the search
+  typed through the on-screen keyboard, the panel-test mod enabled, its
+  setting changed, its load order raised, the settings dragged, Apply &
+  restart: a new process each time (pids logged), `63 pool edits` (Drop
+  missing cards) and the panel-test text in the log, PANEL TEST on the title,
+  "Input your PANEL NAME!" at the name entry, the four choices in
+  `settings.txt`, the panel shown again with both mods Active, Back closing
+  it. Controls: Up rebound to J by a tap on its row, Rebind and a key, saved
+  in `controls.txt`. The emulator's own keyboard counts as a keyboard to
+  SDL, which then shows no on-screen keyboard (`SDL_HINT_ENABLE_SCREEN_KEYBOARD`
+  "auto"); `SDL_ENABLE_SCREEN_KEYBOARD=1` in `environment.txt` shows it
+  there. A phone without a keyboard shows it. The desktop's Mods and Controls
+  windows are unchanged: PrintWindow captures of both, 32- and 64-bit
+  Windows builds before and after, are the same pixels.
+- **Checked again** after the rebase on master's GLES3 renderer and release
+  versioning (2026-10-09, debug-signed arm64 APK, versionCode 20141, on an
+  API 35 x86_64 emulator with `hw.keyboard=no`, SwiftShader): Mods from the
+  Game menu with no Open mods folder in its footer; the search typed on the
+  system's keyboard, which the field opened by itself and Enter closed; the
+  panel-test mod switched on, Apply, then Apply & restart: the game's process
+  ended and a new one started through `:restart` (exit 0), PANEL TEST on the
+  title, the mod Active after it; Controls: Up rebound to J (Rebind, then a
+  key within the listening time), the page dragged, OK, `bind 0 8 key.j` in
+  `controls.txt` and J shown again after a relaunch, Back closing the panel; a code mod
+  (AI Hard Mode) said "has code, which the game cannot run on Android yet";
+  Game > Language > Français, Restart now: a new process, `language=2`;
+  after hiding the system keyboard, a drag in the list did not bring it
+  back and a tap on the search field did;
+  both panels within the safe area with the tall cutout emulated (safe area
+  132,66 2066x926) and at 1280x720 (320 dpi) and 800x480 (240 dpi). A
+  density or overlay change while the game runs ends the process with a
+  SIGABRT in `hwuiTask` as SDL tears the activity down; the same happens with
+  master's APK. The desktop windows are pixel-identical to master's (32- and
+  64-bit, PrintWindow), except the mod's folder path, which names the
+  checkout.
+
 ### What works on the emulator (API 30 x86)
 
 - Boot, intro logos, the opening movie (MDEC), title, main menu, New Game to
@@ -3669,6 +4094,70 @@ Screenshots of the device, never the host: `adb exec-out screencap -p`.
   and the picture comes back. Rotation is landscape only. Back asks "Quit
   the game?" (a second Back keeps playing); Quit ends the process, and the
   next launch starts afresh.
+- **Configuration changes:** the activity takes every change the manifest
+  can name itself (`CONFIG_CHANGES` in `package_android.py`: density, font
+  scale and weight, colour mode, grammatical gender, touchscreen, SIM
+  country and network, besides the orientation, size, locale, keyboard and
+  UI mode ones), so the system does not destroy and re-create it. A
+  re-created activity ends the game (SDL's `onDestroy` sends a quit; the
+  game, at its fixed addresses, cannot start over in the same process), and
+  the way it ended aborted ("FORTIFY: pthread_mutex_lock called on a
+  destroyed mutex" in `hwuiTask0/1`): Display size in the system settings
+  (`adb shell wm density 300`) closed the running game that way. A density
+  change keeps the window's pixels, so SDL sends no resize and its content
+  scale stays the starting one: `Android_Density` (`android.c`, the
+  activity's `getDisplayMetrics().densityDpi` through JNI, read again at
+  most once a second from `sdl.c`'s pump, on the thread's own stack) gives
+  the sizes instead, and a change lays the menu, its touch targets and the
+  touch controls out again (the touch controls are 13% of the screen's
+  short side within 48 to 80 dp, so on a 1080-pixel-high screen they change
+  only where that range moves past 140 pixels: below 279 dpi or above
+  468). What the manifest cannot name (an overlay that changes the
+  app's resources, as `cmd overlay enable
+  com.android.internal.display.cutout.emulation.corner` does) still
+  re-creates the activity, and the game ends as on Quit.
+- **Ending the process:** the game ends with `exit()` on its own thread
+  (Quit, in `libetc.c`'s VSync; the quit SDL sends when the system destroys
+  the activity; a problem the game reports). There, `exit()` ran every
+  handler in the process, the system libraries' static destructors among
+  them, while the activity's HWUI threads still ran, and every Quit aborted
+  ("FORTIFY: pthread_mutex_lock called on a destroyed mutex" in
+  `hwuiTask0/1`, SIGABRT, recorded by the system as a crash). `libgame.so`
+  is linked with `--wrap=exit`: the game's `exit()` is `__wrap_exit`
+  (`android.c`), which runs only the library's own `atexit` handlers (the
+  debug tools' files), flushes stdio, lets the log pipe drain into logcat
+  and ends the process with `_exit` and the game's status;
+  `Memories_AndroidMain` ends with `exit(main(...))`, so a return from
+  `main` goes the same way. An `exit()` from outside the game (Java's
+  `System.exit`) reaches `end_process` as the first `atexit` handler
+  `Memories_AndroidMain` registers (after the handlers of libraries loaded
+  later, and with status 0: a handler is not told it); the loader's start-up
+  failures `_exit(1)`. The headless runner calls `main` and keeps the system's
+  `exit()`. Nothing of the player's is written at exit (memory cards, save
+  states, deck slots and settings are written and renamed into place when
+  they change). When the system re-creates the activity (a change the
+  manifest cannot take, such as `cmd overlay enable
+  com.android.internal.display.cutout.emulation.corner`), the game quits
+  the same clean way, the app closes, and the next launch starts afresh.
+- **Rotation:** Video > Screen rotation (`screen_rotation`,
+  `MEMORIES_SCREEN_ROTATION`). "Turn with the phone" (0, the default) turns
+  the picture over when the phone is turned over, whether the system's
+  auto-rotate is on or off, as most landscape games do; "Follow auto-rotate"
+  (1) turns it only while auto-rotate is on. SDL asks for the activity's
+  orientation when it makes the window: the `LandscapeLeft LandscapeRight`
+  hint gives `USER_LANDSCAPE` (11), which honours the rotation lock, and SDL
+  gives `SENSOR_LANDSCAPE` (6) only without a hint and for a window that
+  cannot be resized, which the port's can. So `Android_ApplyScreenRotation`
+  (android.c) asks the activity again over JNI
+  (`setRequestedOrientation`) after the window is made and when the setting
+  changes (sdl.c, `apply_display_settings`); SDL asks again only when a
+  window is made or made resizable. Turning over by half a circle is no
+  configuration change: the activity, the game and the surface's size stay
+  (emulator, auto-rotate locked: the accelerometer to either landscape
+  turns the display between rotations 1 and 3, the same process and a
+  2280x1080 surface throughout, and a tap in the turned picture lands where
+  it is drawn). Before this, a Xiaomi 11T Pro with auto-rotate off stayed
+  upside down when turned over.
 - **Save states:** `libgame.so` sits at `0x08000000` with load bias 0 on
   every launch; F5 on the Options screen, the app force-stopped and started
   again, F7 at the title brings the Options screen back, live.
@@ -3678,6 +4167,37 @@ Screenshots of the device, never the host: `adb exec-out screencap -p`.
 - Presents take 20-40 ms at 2280x1080 with the emulator's host GPU
   (`-gpu host`), 40-80 ms with SwiftShader; the game clock keeps time and
   presents drop frames.
+- **Portrait after the file picker (API 35 x86_64 emulator; system side,
+  not fixed):** the picker (DocumentsUI, `SDL_ShowOpenFileDialog`: the
+  first run's disc, and the mod import where it exists) opens in the
+  game's task (`dumpsys activity activities`: both in the same task) and
+  follows the device, so on a device held upright it is portrait, and
+  closing it rotates the display back to landscape in a shell transition
+  (likely played by SystemUI's WindowManagerShell). In one emulator boot
+  that had a SystemUI ANR, two returns left the display in portrait:
+  `dumpsys window` had `DisplayRotation mRotation=1` while the display's
+  configuration stayed `ROTATION_0`, with `USER_LANDSCAPE` as the app's
+  orientation (the game's request is right) and
+  `mTopFullscreenOpaqueWindowState` still naming the closed picker. The
+  game's landscape picture was shown cropped in the portrait display, so
+  the game itself saw no change (in the frozen runs below, SDL only reports
+  a 2280x1080 surface). Home and back to the game recovers it, likely
+  because the launcher's portrait is a real rotation change and the way
+  back to landscape is then delivered; a second landscape request
+  presumably does not, as `mRotation` already holds the landscape
+  rotation. Redrawing the panel steadily (tried on the mod import branch)
+  did not help. Not reproduced otherwise: 25 cancels and a pick of the
+  disc picker, and 47 picks or cancels of the mod import (10 of them after
+  a natural SystemUI ANR), all came back landscape. Freezing SystemUI
+  (`kill -STOP`) across a return only holds the picker on screen in
+  portrait while it is frozen (top window the picker, app orientation
+  unspecified), landscape again within 6 s of `kill -CONT`; the sighting's
+  state (the game in front, `mRotation=1` not applied) was not produced.
+  An app-side recovery would have to ask for portrait and then landscape
+  again when the display's real rotation (the `DisplayManager` display,
+  not the activity's, which follows the activity's own configuration)
+  stays 0 or 180 under a landscape request, focused, for a few seconds;
+  it was not added, as it could not be tested.
 
 ### M4, where it stopped
 
@@ -3705,22 +4225,23 @@ Paused on 2026-09-29 until the 64-bit (relocatable guest) work is done.
   `/sdcard/Android/data/<package>`, so tests there need root (the M3
   `chcon` recipe above) or a debuggable build's `run-as`.
 - **Not started / half-done:**
-  - Applying mods in the app: Game > Mods is still dimmed, so only mods
-    whose manifest says `"enabled": true` are applied; not yet checked in a
-    game on Android (code mods that hook game functions write to
-    `libgame.so`'s text: watch for SELinux denials on the first apply).
-  - A mod `.zip` through the system's file picker; Mods and Controls as
-    panels inside the game window (the game's font, as the other overlays);
-    the menu bar hiding in play: done on feat/android-arm64 (the mouse SDL
+  - Applying mods in the app: done (Mods and Controls as panels, above);
+    data mods checked on the arm64 build in the emulator: Drop missing
+    cards and the panel-test mod applied after a real restart. Code mods
+    run on arm64 (Mod SDK M2 above) and are turned on and off in the same
+    panel; a code mod with no AArch64 object stays off, and the panel says
+    why beside it.
+  - A mod `.zip` through the system's file picker: not started (the Mods
+    panel's footer has room left of Close for its button).
+  - The menu bar hiding in play: done on feat/android-arm64 (the mouse SDL
     makes of a touch kept it shown; see "How it differs").
 
 ### Not yet
 
-- **Mods:** see "M4, where it stopped". Game > Mods and Controls... are
-  dimmed (second windows; an in-window version of both is for later).
-- **Restart:** an app cannot re-execute itself; where the port restarts
-  (the end of the credits, Game > Language), it falls back as when a
-  restart fails (back to the title; "start the game again").
+- **Mods:** see "M4, where it stopped" (code mods). Game > Mods and
+  Controls... are panels inside the window (above).
+- **Restart:** done through `Restart.java` (above); the crash monitor,
+  which re-executes the program, stays off.
 - Video > Color (the present pass, desktop GL's fixed function) and no
   update check. Internal 2x and 4x, HD text and PGXP are drawn by the GPU
   on OpenGL ES 3 ("OpenGL ES 3 (Android)"); a phone without ES 3 keeps the
@@ -3733,7 +4254,7 @@ Paused on 2026-09-29 until the 64-bit (relocatable guest) work is done.
 | M | Goal |
 |---|---|
 | M2 | Done, then removed (2026-10-04): the app is arm64-v8a |
-| M3 | Done: disc import through the file picker, the input latch, touch controls with the game's art, lifecycle (background, Back, landscape), the fixed-base loader (save states, crash symbols), desktop-only menu rows dimmed, the 32-bit-kernel message. Left: Mods/Controls as in-window overlays, performance (internal scale above 1), a real restart, the disc on Android TV |
+| M3 | Done: disc import through the file picker, the input latch, touch controls with the game's art, lifecycle (background, Back, landscape), the fixed-base loader (save states, crash symbols), desktop-only menu rows dimmed, the 32-bit-kernel message; since, Mods/Controls as panels inside the window and a real restart. Left: performance (internal scale above 1), the disc on Android TV |
 | M4 | Paused (above), waits for M6's 64-bit work. Mods on Android: content-only mods first; then per-ABI objects for code mods (bundled mods built by `build_game32.py`, third-party ones by the SDK's `build_mod.py` per target), ARM relocations in the object loader, `__aeabi_*` helpers, hook trampolines for armv7 |
 | M5 | Release: signing, CI for both ABIs, emulator smoke; before it, a duel played on a real arm64 phone that runs 32-bit apps (the TV translator mishandles the fault paths) |
 | M6 | The relocatable guest / 64-bit everywhere: closes both gaps left, arm64-only phones (no 32-bit apps) and 32-bit kernels (3 GB, the top taken), since the guest then needs no fixed addresses; Windows and Linux move with it |
@@ -3953,8 +4474,10 @@ Java heap. Every native path translates a retail scratchpad address to the
 view at 0x9F800000 ("How it works" above), the words the interpreter hands
 to native code included, since the retail view is not mapped there
 (`Memories_ScratchpadRetailView` 0). `MEMORIES_TEST_HOLD_SCRATCHPAD` holds
-the page as ART does, in a test build (Linux or Android). Code mods, which
-could write a retail address of their own, are not loaded on arm64.
+the page as ART does, in a test build (Linux or Android). A code mod (loaded
+on arm64 since Mod SDK M2, above) is held to the same rule: one that wrote
+a retail scratchpad address of its own would reach that heap; the shipped
+ones write none.
 
 **SDL's calls into Java run on the thread's own stack.** SDL reaches Java
 (JNI) for events and joysticks (`Android_JNI_PollInputDevices`, every 3 s

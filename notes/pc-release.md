@@ -151,7 +151,8 @@ mods' objects), so the package is pinned: `mod_compat.txt` has a
 and Linux `.tar.gz`, the digest GitHub's release API gives the asset. A
 package is downloaded once into `tmp/pc/mod-compat/<tag>/<system>/` and
 unpacked only if its sha256 is the pinned one, and only if every name in
-it is under its `yfm-redecomp-<tag>/` folder. It is unpacked into
+it is under its `yfm-redecomp-<tag>/` folder (`yfm-redecomp-<tag>-x64/` in
+the 64-bit Windows one). It is unpacked into
 `verified/` there, where a check from before the pinning (which unpacks
 beside the package, unchecked) never writes. The package stays beside it
 and is hashed again whenever the folder is used. A folder without its
@@ -166,6 +167,11 @@ reason. After publishing a release, add `baseline <tag>` for it to
 `mod_compat.txt`, with its two `sha256` lines from
 `gh api repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases/tags/<tag> --jq '.assets[] | .name + " " + (.digest | ltrimstr("sha256:"))'`
 (`test_mod_compat_fetch.py`, a CTest, fails while a baseline lacks one).
+The first release whose 64-bit Windows package carries x86_64-windows mods
+also gets `baseline <tag> x86_64-windows`, with a `sha256 <tag> windows-x64`
+line for its `-windows-x64.zip`: the 64-bit game's SDK is compared with
+those (none is listed yet; until then that game is only held to refusing
+the 32-bit releases' code mods by name).
 
 ## Android signing
 

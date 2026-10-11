@@ -13,7 +13,7 @@
 /* Once the window's context exists. Returns 1 when the pass is available,
  * and from then on the software GPU records for it instead of drawing its
  * own picture. 0 (GL too old, MEMORIES_GL_PICTURE=0) leaves the software
- * picture in place. */
+ * picture in place, and nothing made in the context. */
 int GlPicture_Init(void);
 /* Replays what was recorded since the last call; the framebuffer's texture
  * is then the picture. Returns 0 when the pass is off or the scale is 1. */
@@ -64,7 +64,11 @@ int GlPicture_CopyInto(unsigned from, int x, int y, int w, int h, unsigned to);
  * again from VRAM. */
 void GlPicture_Lost(void);
 /* The pass given up for good (OpenGL ES: a failed start after a lost
- * context, or the presenter's texture cannot be drawn into): off, and the
- * software GPU draws the picture again, from VRAM, as without the pass. */
+ * context, or the presenter's texture cannot be made or drawn into): every
+ * name it holds deleted, so the context must be current, the pass off, and
+ * the software GPU draws the picture again, from VRAM, as without the pass.
+ * sdl.c does not start it again at a later device reset: the recorder's
+ * return (SoftGpu_SetRecorder) would free the software picture that the
+ * present handling the reset is reading. */
 void GlPicture_Stop(void);
 #endif

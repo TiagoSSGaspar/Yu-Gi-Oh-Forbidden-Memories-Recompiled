@@ -58,6 +58,8 @@
 #define DUEL_SCREEN_TABLES_TYPED_POSITIONS
 #include "game/duel_screen_tables.h"
 #include "game/view_state.h"
+#include "game/main_services.h"
+#include "game/ordering_tables.h"
 #include "game/view_state_orbit.h"
 #include "game/graphics_frame.h"
 #include "game/graphics_frame_buffer.h"
@@ -96,6 +98,7 @@
 #include "pc/mods/modapi.h"
 #include "pc/cards/cards.h"
 #include "field_art.h"
+#include "fight_sounds.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -106,9 +109,6 @@
 #endif
 
 extern u8 D_8009B1D5;          /* the side the view belongs to */
-extern void *G32 D_800E9D98[]; /* D_800E9D90[2]: func_800540B4's table */
-extern GsOT *G32 D_800E9D90[4]; /* the four ordering tables of the frame */
-extern void (*G32 D_800E9DB0[4])(void); /* the frame service callbacks */
 extern u32 D_800FE240;         /* GsSetWorkBase */
 
 /* One monster's private RAM. 96 sectors of model data, then the module
@@ -513,8 +513,8 @@ static int load_monster(Monster *monster, int card, int position)
     }
     D_80010000 = payload_base;
 
-    slot->field_DE8 = (s32)(monster->arena + ARENA_DATA_A);
-    slot->field_DEC = (s32)(monster->arena + ARENA_DATA_B);
+    slot->field_DE8 = (s32)(uintptr_t)(monster->arena + ARENA_DATA_A);   /* the arena is below 4 GB (map_fixed) */
+    slot->field_DEC = (s32)(uintptr_t)(monster->arena + ARENA_DATA_B);
     /* The quiet load leaves the slot's command words at -1, so no module
      * runs; the record's own are kept for the attack's effects. */
     memcpy(monster->commands, record + META_SECTOR * SECTOR + META_COMMANDS, sizeof(monster->commands));
@@ -655,7 +655,8 @@ static u8 *scratch;
 
 /* Sorting a monster into the game's own model ordering table is all the
  * drawing there is: the frame it belongs to has not been sent to the GPU yet.
- * D_800E9D98[0] is the table func_800540B4 uses for slots 0 and 1, which the
+ * D_800E9D90[2] is the table func_800540B4 uses for slots 0 and 1 (its own
+ * name for it is D_800E9D98[0], the same word), which the
  * battle presentation draws its duellists into.
  *
  * The field's cards and a model measure depth differently in that table: a
@@ -720,7 +721,7 @@ static void effect_run(void);
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
     const u32 *from = (const u32 *)(uintptr_t)D_800FE240;
-    GsOT *live = (GsOT *)D_800E9D98[0];
+    GsOT *live = D_800E9D90[2];
     GsOT *table = (GsOT *)(scratch + TABLE_AT);
     u32 *tags = (u32 *)scratch, *entry, *last = NULL, first = LINK_END, end;
 #ifdef MEMORIES_TRANSLATED
@@ -738,12 +739,12 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     table->point = 0;
     GsClearOt(0, 0, table);
     end = tags[0] & LINK_MASK; /* what entry 0 leads to: the table's tail */
-    D_800E9D98[0] = table;
+    D_800E9D90[2] = table;
     func_800540B4(0);
     if (monster == effect_monster) {
         effect_run();
     }
-    D_800E9D98[0] = live;
+    D_800E9D90[2] = live;
     if (D_800FE240 - (u32)(uintptr_t)from > monster->packet_bytes) {
         monster->packet_bytes = D_800FE240 - (u32)(uintptr_t)from;
     }
@@ -793,7 +794,7 @@ static int packet_height(const u32 *from, const u32 *to);
 static int sort_aside(Monster *monster)
 {
     GsOT *table = (GsOT *)(scratch + TABLE_AT);
-    void *live = D_800E9D98[0];
+    GsOT *live = D_800E9D90[2];
     u32 base = D_800FE240;
     int height;
     table->length = 14;
@@ -802,13 +803,13 @@ static int sort_aside(Monster *monster)
     table->point = 0;
     GsClearOt(0, 0, table);
     GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
-    D_800E9D98[0] = table;
+    D_800E9D90[2] = table;
     func_800540B4(0);
     height = packet_height((const u32 *)(scratch + PACKETS_AT), (const u32 *)(uintptr_t)D_800FE240);
     if (D_800FE240 - (u32)(uintptr_t)(scratch + PACKETS_AT) > monster->packet_bytes) {
         monster->packet_bytes = D_800FE240 - (u32)(uintptr_t)(scratch + PACKETS_AT);
     }
-    D_800E9D98[0] = live;
+    D_800E9D90[2] = live;
     D_800FE240 = base;
     return height;
 }
@@ -987,7 +988,7 @@ static void draw_monster(Monster *monster, int x, int z, int yaw, int share, int
     place_flat(slot, turned ? x + body_x : x - body_x, -body_y - lifted,
                turned ? z + body_z : z - body_z, yaw, monster->scale * share / MODEL_FIXED_ONE, height);
     monster->fade = fade;
-    sort_monster(monster, (GsOT *)D_800E9D98[0], at);
+    sort_monster(monster, D_800E9D90[2], at);
     monster->fade = 0;
     if (!monster->stepped) {
         func_800556E8(0);
@@ -1582,6 +1583,25 @@ static void attack_counter(void)
     attack.want[1] = ROW_ATTACK;
 }
 
+/* The fighters' own sounds (fight_sounds.c), with `sounds`: their records
+ * are read again for the bank and the samples the quiet load leaves out,
+ * for the rows a fight plays, its attack and the reactions. */
+static void sounds_begin(Monster *const fighters[DUEL_SIDE_COUNT])
+{
+    int side;
+    for (side = 0; side < DUEL_SIDE_COUNT; side++) {
+        const Monster *monster = fighters[side];
+        int model = monster ? mrg_record(monster->card - 1) : -1;
+        unsigned rows = 1u << ROW_WITHSTAND | 1u << ROW_HIT | 1u << ROW_GUARD;
+        if (monster) {
+            rows |= 1u << (monster->slot.field_DFE + 3);
+        }
+        FightSounds_Load(side,
+                         model >= 0 && mrg_start >= 0 && tunable("sounds", 1) ? mrg_start + model * RECORD_SECTORS : -1,
+                         monster ? monster->slot.sound_entries : NULL, rows);
+    }
+}
+
 /* Once the big cards are up at step 7 with the attacker drawn. */
 static void attack_begin(Monster *const monsters[DUEL_SIDE_COUNT])
 {
@@ -1600,6 +1620,7 @@ static void attack_begin(Monster *const monsters[DUEL_SIDE_COUNT])
     attack.outcome = attack_outcome();
     attack.holding = 1;
     attack.want[0] = ROW_ATTACK;
+    sounds_begin(monsters);
     say("attack: case %d\n", attack.outcome);
 }
 
@@ -1654,6 +1675,7 @@ static void attack_side(int side, ModelSlot *slot, int yaw)
     } else if (progress == 2 && !attack.want[side]) {
         attack.want[side] = ROW_IDLE;
     }
+    FightSounds_Update(side, slot, attack.row[side] && slot->field_BF5 == attack.row[side]);
 }
 
 /* What to add to a side's placement so that only `attack_drift` percent of
@@ -1702,6 +1724,7 @@ static void attack_finish(void)
     int i;
     effect_end();
     fight_restore();
+    FightSounds_Release();
     for (i = 0; i < CACHE; i++) {
         if (cache[i].tag) {
             cache[i].card = 0;
@@ -2141,10 +2164,10 @@ static int fight_turn(int dx, int dz)
  *   the VBlanks a frame took: 2 in the 30 fps arena, 1 on the 60 fps field,
  *   where it ran at half speed and Blue-Eyes never fired. It is handed 2.
  * - space: it works at the arena's scale around slot 0's arena pose, aims at
- *   the other slot's body centre (field_DD0, through
+ *   the other slot's body center (field_DD0, through
  *   Model_CopySlotU16Values) and draws camera-facing billboards sized in
  *   view space. So for the call the attacker stands at that pose, both body
- *   centres are carried into it through the inverse of its field root matrix
+ *   centers are carried into it through the inverse of its field root matrix
  *   T (field_D18: rotation times its scale s, and its position), and the
  *   world-screen matrix (GsWSMATRIX, which GsGetLs reads too) is WS T scaled
  *   by 1/s: the field's screen positions at the arena's depth, so everything
@@ -2372,7 +2395,7 @@ static int effect_busy(void)
 static void fight_begin(void)
 {
     const ModelSlot *slot;
-    Monster *attacker, *defender;
+    Monster *attacker, *defender, *fighters[DUEL_SIDE_COUNT];
     int side, dx, dz, length, reach;
 
     if (attack.phase != ATTACK_IDLE || !fight_on() || D_8009B229 || D_8009B22A || !D_800E9EF0[0] ||
@@ -2427,6 +2450,9 @@ static void fight_begin(void)
     attack.outcome = fight_outcome();
     fight_tally();
     effect_begin(attacker, defender);
+    fighters[0] = attacker;
+    fighters[1] = defender;
+    sounds_begin(fighters);
     attack.holding = 1;
     say("fight: case %d, record %d against %d, from %d,%d to %d,%d, %d short\n", attack.outcome,
         attack.record[0], attack.record[1], attack.home[0][0], attack.home[0][1], attack.strike[0], attack.strike[1],
@@ -2500,7 +2526,7 @@ static void draw_fighter(int side, Monster *monster, int x, int z, int share, in
     monster->fade = fade;
     {
         const u32 *start = (const u32 *)(uintptr_t)D_800FE240;
-        sort_monster(monster, (GsOT *)D_800E9D98[0], -1);
+        sort_monster(monster, D_800E9D90[2], -1);
         if (fight_alone() && packet_height(start, (const u32 *)(uintptr_t)D_800FE240) > 0) {
             attack.head[side][0] = (bounds.left + bounds.right) / 2;
             attack.head[side][1] = bounds.top;
@@ -2533,7 +2559,7 @@ static void fight_screen(int side, int *sx, int *sy)
 }
 
 /* Where a number goes: over the head of the monster it is for, all of it on
- * the screen. The effect adds its colour to what is under it, so over the
+ * the screen. The effect adds its color to what is under it, so over the
  * monster, a pale one above all, it all but went; the dark behind the fight
  * shows it whole. A direct attack's is over the middle of the screen, above
  * the attacker. */
@@ -2849,7 +2875,7 @@ static void draw_frame(void)
             standing[count].summon = side * MONSTER_ZONES + zone;
             standing[count].at = -1;
             if (overhead && (card->flags & DUEL_CARD_FLAG_SPRITE) && card->object) {
-                int at = (int)((DisplayObject *)card->object)->field_14 - (int)((GsOT *)D_800E9D98[0])->offset -
+                int at = (int)((DisplayObject *)card->object)->field_14 - (int)(D_800E9D90[2])->offset -
                          BOARD_DEPTH_STEPS;
                 standing[count].at = at < 0 ? 0 : at;
             }
@@ -2896,8 +2922,8 @@ static void draw_frame(void)
 }
 
 /* The card under a summoned monster. Duel_DrawFieldCards draws each field
- * card through func_80015EF4, which takes its colour from the card's display
- * object: for FLASH_FRAMES frames after the card has landed that colour rises
+ * card through func_80015EF4, which takes its color from the card's display
+ * object: for FLASH_FRAMES frames after the card has landed that color rises
  * to full, then the card is not drawn at all while the monster stands on it.
  * This runs in the game's frame, before draw_frame (GsDrawOt), so it reads
  * what the last frame left in summons[]. A card drawn the other way (flag
@@ -2957,6 +2983,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->reset = reset;
     mod->applied = applied;
     FieldArt_Init(from);
+    FightSounds_Init(from);
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
     if (from->api >= 4 && !original_card &&

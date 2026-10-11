@@ -32,6 +32,7 @@ static void *resolve_branch(unsigned address)
 {
     return GuestRuntime_ResolveFunction((void *)(uintptr_t)address);
 }
+const char *Memories_GuestMapError(void) { return ""; }
 int Memories_GuestMap(void)
 {
     unsigned i;
