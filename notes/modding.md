@@ -742,6 +742,7 @@ is keyed where the jump is, not where it lands.
 * `loop` and `loop_start` do not apply to voices.
 
 How it is done: [`src/pc/text/voice.h`](../src/pc/text/voice.h).
+
 ## The title screen
 
 A mod may change the title screen with a `"title"` object: its song, the
