@@ -60,6 +60,7 @@ USUAL_UPSCAYL = [
     os.path.expandvars(r"%LOCALAPPDATA%\Programs\upscayl\resources\bin\upscayl-bin.exe"),
     "/opt/Upscayl/resources/bin/upscayl-bin",
     "/usr/lib/upscayl/resources/bin/upscayl-bin",
+    "/Applications/Upscayl.app/Contents/Resources/bin/upscayl-bin",
 ]
 
 
