@@ -17,6 +17,13 @@
             "description": "3D models shows each monster standing on its card as its battle model. Card art shows an enlarged cutout of the card's own art instead, with an optional glow. Monsters on attack cards works in 3D models only."
         },
         {
+            "key": "hd_textures",
+            "label": "HD textures (3D models)",
+            "type": "bool",
+            "default": 1,
+            "description": "Lays the PNGs in the mod's hd/<card> folder over the monsters' model textures, at Internal 2x and up. Without that folder nothing changes."
+        },
+        {
             "key": "scale",
             "label": "Model scale (3D models)",
             "type": "int",

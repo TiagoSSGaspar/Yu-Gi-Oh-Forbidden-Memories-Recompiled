@@ -99,6 +99,7 @@
 #include "pc/cards/cards.h"
 #include "field_art.h"
 #include "fight_sounds.h"
+#include "hd_textures.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -193,6 +194,7 @@ typedef struct {
     int fade;      /* 0 opaque to 255 gone, as it is drawn now */
     s32 commands[3]; /* its control modules' command words (effect_begin) */
     u32 packet_bytes; /* the most its packets have taken in one sort */
+    int hd_pending;   /* its HD textures (hd_textures.c) go over its bank at its next sort */
 } Monster;
 
 static const MemoriesModHost *host;
@@ -225,9 +227,21 @@ static void module_dropped(void);
 static int fight_moved;
 static ViewState fight_view;
 
+/* Every bank's HD textures go; a monster still loaded lays its own again at
+ * its next sort. */
+static void hd_forget_all(void)
+{
+    int i;
+    HdTextures_ForgetAll();
+    for (i = 0; i < CACHE; i++) {
+        cache[i].hd_pending = cache[i].card != 0;
+    }
+}
+
 static void reset(void)
 {
     int i;
+    hd_forget_all();
     for (i = 0; i < CACHE; i++) {
         cache[i].card = 0;
     }
@@ -435,14 +449,16 @@ static int run_setup(void)
  * are the ones the model's primitives already carry: a bank is VRAM-shaped. */
 static void keep_textures(Monster *monster)
 {
+    static u16 row[ROW_W];
     u16 *bank = SoftGpu_Bank(monster->bank);
     if (!bank) {
         return;
     }
     store_rect(BLOCK_X, BLOCK_Y, BLOCK_W, BLOCK_H, scratch_pixels);
     bank_put(bank, BLOCK_X, BLOCK_Y, BLOCK_W, BLOCK_H, scratch_pixels);
-    store_rect(ROW_X, ROW_Y, ROW_W, 1, scratch_pixels);
-    bank_put(bank, ROW_X, ROW_Y, ROW_W, 1, scratch_pixels);
+    store_rect(ROW_X, ROW_Y, ROW_W, 1, row);
+    bank_put(bank, ROW_X, ROW_Y, ROW_W, 1, row);
+    HdTextures_Dump(monster->card, monster->position, scratch_pixels, BLOCK_W * BLOCK_H, row, ROW_W);
 }
 
 /* Put the duel's staging buffer and its pixels back. */
@@ -522,6 +538,7 @@ static int load_monster(Monster *monster, int card, int position)
     monster->card = card;
     monster->position = position;
     keep_textures(monster);
+    monster->hd_pending = 1;
     give_back(staging, sizeof(staging));
     finished = host->now_us(host);
     say("card %d stance %d loaded in %d us: %d units, %d parts, animation %d\n", card, position,
@@ -561,6 +578,8 @@ static Monster *acquire(int card, int position, int tag)
         monster->arena = got;
     }
     monster->bank = (int)(monster - cache) + 1;
+    HdTextures_Forget(monster->bank); /* the entry's last monster's */
+    monster->hd_pending = 0;
     monster->card = 0;
     monster->tag = tag;
     monster->battle_scale = 0;
@@ -785,6 +804,11 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     entry = (u32 *)into->org + at;
     *last = (*last & ~LINK_MASK) | (*entry & LINK_MASK);
     *entry = (*entry & ~LINK_MASK) | first;
+    if (monster->hd_pending) {
+        monster->hd_pending = 0;
+        HdTextures_Register(monster->bank, monster->card, monster->position, from,
+                            (const u32 *)(uintptr_t)D_800FE240);
+    }
     stamp_bank(from, (const u32 *)(uintptr_t)D_800FE240, monster->bank, monster->fade);
 }
 
@@ -1968,6 +1992,7 @@ static void applied(int on)
         undim(1);
         memset(summons, 0, sizeof(summons));
         attack_finish();
+        hd_forget_all();
     }
 }
 
@@ -2760,6 +2785,14 @@ static void draw_frame(void)
         (gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) != DUEL_SCENE_BATTLE) {
         attack_finish(); /* the battle is over */
     }
+    {
+        static int hd_was = -1;
+        int hd = tunable("hd_textures", 1);
+        if (hd != hd_was) { /* switched in the Mods window: lay again, or not */
+            hd_was = hd;
+            hd_forget_all();
+        }
+    }
     /* Card art has no battle-presentation equivalent (draw_battle, the
      * models standing on the attack cards): style gates it out here,
      * before it can run at all, the same way every other 3D-only setting
@@ -2768,6 +2801,7 @@ static void draw_frame(void)
      * Card art is showing, the same standard Card art's own settings are
      * held to the other way round. */
     if (tunable("style", 0)) {
+        hd_forget_all();
         FieldArt_DrawFrame();
         return;
     }
@@ -2983,6 +3017,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->reset = reset;
     mod->applied = applied;
     FieldArt_Init(from);
+    HdTextures_Init(from);
     FightSounds_Init(from);
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
