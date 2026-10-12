@@ -1808,6 +1808,22 @@ takes under 0.1 ms; decoding and converting, on macOS, 2 and 4 ms, as the
 fight begins. The smoke cases run without sound, so their frames are as
 before.
 
+#### HD textures
+
+A model's texture can be replaced above the console's resolution with PNGs
+in the mod's own `hd/<card>/` folder (card id, four digits). Each PNG is one
+texture page of the model read through one palette, named for where the
+game keeps them: `p<column>_<palette x>_<palette y>.png` (column 0-2, the
+palette's VRAM x and y in hexadecimal), and `p3s<stance>_..._....png` for the
+fourth column, whose texels depend on the monster's stance. A page is 128x256
+texels at 8 bits; a PNG of any size is stretched over it. The mod lays them
+over the monster's texture bank when it is first drawn
+(`mods/3d-monsters/hd_textures.c`): at View > Internal 2x and up the PNG is
+drawn, at 1x and through any other palette (a flash) the game's own texels.
+`MEMORIES_TRACE=mods` names the files each model looks for and whether they
+were there. **HD textures** in the mod's settings turns them off. The images
+are the game's, enlarged: make them from your own disc, never ship them.
+
 ### Images from the disc
 
 `python tools/pc/extract_images.py [family ...]` writes the game's images
