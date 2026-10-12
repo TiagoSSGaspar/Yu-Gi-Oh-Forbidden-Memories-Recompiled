@@ -53,8 +53,11 @@ static unsigned owner(int bank, int use)
 /* The (page, palette) pairs of the textured polygons in a run of packets,
  * walked as stamp_bank walks them (field_models.c): the palette is in the
  * first corner's texture word, the page in the second's. Pairs beyond USES
- * are not listed; *dropped counts them. */
-static int uses_of(const u32 *from, const u32 *to, Use *uses, int *dropped)
+ * are not listed; *dropped counts them. With `polygons`, every textured
+ * polygon of the model's band is also written there, one a line: page,
+ * palette, depth and its corners' texels (u v each), which is what tells
+ * apart the parts of a page that are read through different palettes. */
+static int uses_of(const u32 *from, const u32 *to, Use *uses, int *dropped, FILE *polygons)
 {
     int count = 0;
     *dropped = 0;
@@ -77,6 +80,23 @@ static int uses_of(const u32 *from, const u32 *to, Use *uses, int *dropped)
                 use.clut_x = (int)(clut & 0x3F) * 16;
                 use.clut_y = (int)(clut >> 6) & 0x1FF;
                 if ((page & 0x10) && use.page_x < BAND_W) {
+                    if (polygons) {
+                        /* A corner is a vertex and its texels, after a
+                         * colour from the second corner on when shaded. */
+                        unsigned corners = (op & 8) ? 4 : 3, step = (op & 0x10) ? 3 : 2, corner;
+                        char line[96];
+                        int n = snprintf(line, sizeof(line), "%d %d %d %d", use.page_x / 64, use.clut_x,
+                                         use.clut_y, use.depth);
+                        for (corner = 0; corner < corners && n > 0 && n < (int)sizeof(line); corner++) {
+                            u32 texels = from[at + 2 + step * corner];
+                            n += snprintf(line + n, sizeof(line) - (size_t)n, " %u %u", (unsigned)(texels & 0xFF),
+                                          (unsigned)((texels >> 8) & 0xFF));
+                        }
+                        if (n > 0 && n < (int)sizeof(line) - 1) {
+                            line[n++] = '\n';
+                            fwrite(line, 1, (size_t)n, polygons);
+                        }
+                    }
                     for (i = 0; i < count && memcmp(&uses[i], &use, sizeof(use)); i++) {
                     }
                     if (i == count && count < USES) {
@@ -107,7 +127,18 @@ void HdTextures_Register(int bank, int card, int position, const u32 *from, cons
 {
     Use uses[USES];
     char relative[64], path[1024];
-    int dropped, count = uses_of(from, to, uses, &dropped), on = host->setting(host, "hd_textures", 1), laid = 0, i;
+    FILE *polygons = NULL;
+    int dropped, count, on = host->setting(host, "hd_textures", 1), laid = 0, i;
+
+    if (host->setting(host, "dump_bank", 0)) {
+        snprintf(relative, sizeof(relative), "uv-%04d-%d.txt", card, position);
+        polygons = host->open_data(host, relative, "wb");
+    }
+    count = uses_of(from, to, uses, &dropped, polygons);
+    if (polygons) {
+        fclose(polygons);
+        say("hd: card %d stance %d: polygons written to %s\n", card, position, relative);
+    }
 
     HdTextures_Forget(bank);
     if (dropped > 0) {
