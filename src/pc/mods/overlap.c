@@ -555,8 +555,8 @@ static long audio_id(const char *text)
 }
 static void read_audio(ModsOverlaps *x, int mod)
 {
-    static const char *const kinds[] = {"music", "xa", "sfx"};
-    for (int k = 0; k < 3; k++)
+    static const char *const kinds[] = {"music", "xa", "sfx", "voice"};
+    for (int k = 0; k < 4; k++)
         for (const JsonValue *m = Json_At(object_of(Json_Member(object_of(member(x, mod, "audio")), kinds[k])), 0); m;
              m = Json_Next(m)) {
             long id = audio_id(name_of(m));

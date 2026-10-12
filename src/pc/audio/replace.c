@@ -373,12 +373,13 @@ typedef struct Sound {
     uint32_t loop_start;
     int gain;               /* Q12, from "volume" */
     const char *mod_id;     /* the mod's, alive until exit */
+    char *path;             /* a voice's file, decoded when its page shows */
 } Sound;
 
 static Sound **table;       /* in the order they were added: the last match wins */
 static int table_count;
 
-static const char *const kind_names[AUDIO_KINDS] = {"music", "xa", "sfx"};
+static const char *const kind_names[AUDIO_KINDS] = {"music", "xa", "sfx", "voice"};
 
 static const Sound *find(int kind, int id)
 {
@@ -440,7 +441,7 @@ static void block_clock(int on, sigset_t *previous)
 
 /* --- channels and requests ---------------------------------------------- */
 
-enum { CHANNEL_MUSIC, CHANNEL_XA, CHANNEL_SFX, SFX_CHANNELS = 8, CHANNELS = CHANNEL_SFX + SFX_CHANNELS };
+enum { CHANNEL_MUSIC, CHANNEL_XA, CHANNEL_VOICE, CHANNEL_SFX, SFX_CHANNELS = 8, CHANNELS = CHANNEL_SFX + SFX_CHANNELS };
 
 typedef struct {
     const Sound *volatile sound;   /* to start; NULL stops */
@@ -467,6 +468,7 @@ static volatile int mixer_hold, mixer_busy;
 static int music_id = -1;
 static const Sound *music_sound;
 static const Sound *xa_sound;
+static Sound *voice_sound;               /* the page's voice, decoded: the game thread's to free */
 static int xa_mute_lba, xa_mute_end;     /* the replaced clip's sectors, while xa_mute_on */
 static volatile int xa_mute_on;
 
@@ -622,12 +624,17 @@ static void stop_all(void)
     sfx_busy = 0;
 }
 
+static void free_sound(Sound *sound);
+
 void AudioReplace_Reset(int id)
 {
     sigset_t previous;
+    Sound *voice;
     block_clock(1, &previous);
     hold_mixer(1);
     stop_all();
+    voice = voice_sound;
+    voice_sound = NULL;
     hold_mixer(0);
     music_id = -1;
     music_sound = xa_sound = NULL;
@@ -635,6 +642,7 @@ void AudioReplace_Reset(int id)
     xa_mute_on = 0;
     if (id >= 0) music_start(id & 0xFFFF, 0);
     block_clock(0, &previous);
+    free_sound(voice);
 }
 
 /* --- the manifest -------------------------------------------------------- */
@@ -643,6 +651,7 @@ static void free_sound(Sound *sound)
 {
     if (!sound) return;
     free(sound->clip.frames);
+    free(sound->path);
     free(sound);
 }
 
@@ -684,6 +693,27 @@ static Sound *load_entry(const char *directory, int kind, const JsonValue *value
         snprintf(error, error_size, "audio %s %s: volume is 0-%d, loop_start not negative", kind_names[kind], key,
                  VOLUME_MAX);
         return NULL;
+    }
+    if (kind == AUDIO_VOICE) {
+        /* Only that the file is there: a voice is decoded when its page shows. */
+        FILE *probe;
+        size_t length;
+        if (snprintf(path, sizeof(path), "%s/%s", directory, file) >= (int)sizeof(path) ||
+            !(probe = fopen(path, "rb"))) {
+            snprintf(error, error_size, "audio: cannot read %s", file);
+            return NULL;
+        }
+        fclose(probe);
+        length = strlen(path) + 1;
+        if (!(sound = calloc(1, sizeof(*sound))) || !(sound->path = malloc(length))) {
+            free(sound);
+            snprintf(error, error_size, "audio: out of memory for %s", file);
+            return NULL;
+        }
+        memcpy(sound->path, path, length);
+        sound->kind = kind;
+        sound->gain = (int)(volume * GAIN_ONE / 100);
+        return sound;
     }
     if (snprintf(path, sizeof(path), "%s/%s", directory, file) >= (int)sizeof(path) ||
         !(data = read_file(path, &size))) {
@@ -844,6 +874,7 @@ void AudioReplace_Unload(int mod)
         block_clock(0, &previous);
         for (i = 0; i < gone_count; i++) free_sound(gone[i]);
     }
+    if (voice_sound && voice_sound->mod == mod) AudioReplace_VoiceStop();
 }
 
 /* --- a code mod's own sounds (host->sound_add) ----------------------------- */
@@ -913,6 +944,59 @@ void AudioReplace_FreeClip(int mod, int handle)
     free_sound(gone);
 }
 
+/* --- dialogue voices (src/pc/text/voice.c) --------------------------------- */
+
+void AudioReplace_VoiceStop(void)
+{
+    Sound *gone = voice_sound;
+    sigset_t previous;
+    if (!gone) return;
+    TRACE("voice 0x%04lX stops", gone->id, (const Sound *)NULL);
+    block_clock(1, &previous);
+    post(CHANNEL_VOICE, NULL, 0);
+    hold_mixer(1);
+    let_go(&gone, 1);
+    hold_mixer(0);
+    voice_sound = NULL;
+    block_clock(0, &previous);
+    free_sound(gone);
+}
+
+int AudioReplace_VoicePage(int page)
+{
+    const Sound *entry = find(AUDIO_VOICE, page & 0xFFFF);
+    unsigned char *data;
+    size_t size = 0;
+    char why[160];
+    Sound *sound;
+    AudioReplace_VoiceStop();
+    if (!entry) return 0;
+    if (!(data = read_file(entry->path, &size))) {
+        TRACE("voice 0x%04lX: its file cannot be read", page & 0xFFFF, entry);
+        return 0;
+    }
+    if (!(sound = calloc(1, sizeof(*sound)))) {
+        free(data);
+        return 0;
+    }
+    if (AudioReplace_Decode(data, size, &sound->clip, why, sizeof(why))) {
+        TRACE("voice 0x%04lX: its file does not decode", page & 0xFFFF, entry);
+        free(data);
+        free(sound);
+        return 0;
+    }
+    free(data);
+    sound->kind = AUDIO_VOICE;
+    sound->id = entry->id;
+    sound->mod = entry->mod;
+    sound->mod_id = entry->mod_id;
+    sound->gain = entry->gain;
+    voice_sound = sound;
+    TRACE("voice 0x%04lX plays", page & 0xFFFF, entry);
+    post(CHANNEL_VOICE, sound, 0);
+    return 1;
+}
+
 /* --- the mixer ------------------------------------------------------------- */
 
 static int mix_gain[CHANNELS][2]; /* this period's, Q12 */
@@ -938,7 +1022,7 @@ int AudioReplace_MixBegin(void)
         if (i == CHANNEL_MUSIC) {
             mix_gain[i][0] = channel->sound->gain * music_level[0] / GAIN_ONE;
             mix_gain[i][1] = channel->sound->gain * music_level[1] / GAIN_ONE;
-        } else if (i == CHANNEL_XA) {
+        } else if (i == CHANNEL_XA || i == CHANNEL_VOICE) {
             mix_gain[i][0] = mix_gain[i][1] = channel->sound->gain;
         } else {
             mix_gain[i][0] = channel->sound->gain * channel->gain_left / GAIN_ONE;
@@ -961,7 +1045,7 @@ void AudioReplace_MixFrame(int out[6])
         int bus;
         if (!sound) continue;
         frame = sound->clip.frames + (size_t)channel->position * 2;
-        bus = i == CHANNEL_MUSIC ? 0 : i == CHANNEL_XA ? 4 : 2;
+        bus = i == CHANNEL_MUSIC ? 0 : i == CHANNEL_XA ? 4 : 2;   /* a voice under the sound effects' volume */
         out[bus] += frame[0] * mix_gain[i][0] / GAIN_ONE;
         out[bus + 1] += frame[1] * mix_gain[i][1] / GAIN_ONE;
         if (++channel->position >= sound->clip.count) {

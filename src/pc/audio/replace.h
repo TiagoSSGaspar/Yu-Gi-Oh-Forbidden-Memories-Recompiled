@@ -28,7 +28,11 @@
 
 struct JsonValue;
 
-typedef enum { AUDIO_MUSIC, AUDIO_XA, AUDIO_SFX, AUDIO_KINDS } AudioKind;
+/* AUDIO_VOICE: a page of dialogue's voice, by where the page starts in the
+ * disc's dialogue bank. Its files are only checked when the mod is applied
+ * and decoded when their page shows (AudioReplace_VoicePage): a game's
+ * worth of voices would not fit in memory decoded. */
+typedef enum { AUDIO_MUSIC, AUDIO_XA, AUDIO_SFX, AUDIO_VOICE, AUDIO_KINDS } AudioKind;
 
 /* Decoded sound: interleaved stereo s16 at 44.1 kHz. */
 typedef struct AudioClip {
@@ -103,6 +107,15 @@ void AudioReplace_StopSfx(void);
 /* An XA clip (id 0x8xxx, 0x9xxx or 0xAxxx) is requested from `sectors`
  * sectors at `lba`. */
 void AudioReplace_XaStart(int id, int lba, int sectors);
+/* --- dialogue voices (src/pc/text/voice.c) ------------------------------- */
+/* A page of dialogue shows its first letter: `page` is where its text starts
+ * in the disc's dialogue bank (0-0xFFFF). The voice a mod gives that page is
+ * decoded now and plays on a channel of its own, under the sound effects'
+ * volume; the one before stops. Game thread, not the clock. Nonzero when a
+ * voice started. */
+int AudioReplace_VoicePage(int page);
+/* The page was confirmed away or its box closed: its voice stops. */
+void AudioReplace_VoiceStop(void);
 /* The driver stopped XA playback. */
 void AudioReplace_XaStop(void);
 /* From the drive model: whether a decoded XA sector at `lba` belongs to a

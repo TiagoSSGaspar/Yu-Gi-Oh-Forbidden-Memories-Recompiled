@@ -612,7 +612,7 @@ class _Check:
 
     def read_audio(self, mod):
         audio = _obj(self.member(mod, "audio"))
-        for k, kind in enumerate(("music", "xa", "sfx")):
+        for k, kind in enumerate(("music", "xa", "sfx", "voice")):
             for name, value in _obj(audio.get(kind)).items():
                 number = _audio_id(name)
                 if number >= 0:

@@ -703,6 +703,45 @@ MEMORIES_INPUT="700:0008,706:0000" tmp/pc/game32/memories-pc
 
 `out.raw` is s16le stereo at 44.1 kHz. How it is done:
 [`src/pc/audio/replace.h`](../src/pc/audio/replace.h).
+
+### Voices
+
+`"voice"` gives a page of dialogue a spoken line. Its keys are not ids the
+game asks for but places: where the page starts in the disc's dialogue bank
+(0x801B0000), the same offsets `tools/pc/text_listing.py` names its labels
+by. A text's first page starts where its string does; every other page
+starts right after the `{page}` before it, so a page reached by a `{jump}`
+is keyed where the jump is, not where it lands.
+
+```json
+"audio": {
+    "voice": { "0x1288": "lines/1288.ogg",
+               "0x129D": { "file": "lines/129D.ogg", "volume": 120 } }
+}
+```
+
+* A page's voice starts with the page's first letter and stops when the
+  page is confirmed away, when the next page starts or when the box closes;
+  a voice longer than its page is cut there. One voice plays at a time.
+* Holding Square, the game's fast-forward, skips the voices too: the one
+  playing stops at the next letter drawn, and a page that starts while
+  Square is held says nothing.
+* Voices go through the sound effects' volume (the game's and the port's
+  **Sound FX**).
+* Only the disc's own text speaks: a page of a translation, of a
+  `"text"` mod or of Game > Language's European text has no place in the
+  disc's bank, and is silent. Only text box 0 speaks, the one story scenes
+  and duel dialogue use.
+* When the mod is applied only that each file is there is checked; a file
+  is decoded when its page shows, so a game's worth of voices costs no
+  memory until then. One that will not decode is skipped then, with a line
+  in the `mods` trace.
+* `MEMORIES_TRACE=mods` names every page as it shows, voiced or not
+  (`voice: page 0x1288 shows`, then `audio: voice 0x1288 plays (replaced
+  by ...)`), which is how to find a page's place while playing.
+* `loop` and `loop_start` do not apply to voices.
+
+How it is done: [`src/pc/text/voice.h`](../src/pc/text/voice.h).
 ## The title screen
 
 A mod may change the title screen with a `"title"` object: its song, the

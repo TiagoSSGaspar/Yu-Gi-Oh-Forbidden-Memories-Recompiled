@@ -700,6 +700,12 @@ static uintptr_t text_address(const unsigned char *pointer)
 #endif
 }
 
+int Text_DialogPlace(const unsigned char *pointer)
+{
+    uintptr_t address = text_address(pointer);
+    return (address & 0xFFFF0000u) == bases[TEXT_BANK_DIALOG] ? (int)(address & 0xFFFF) : -1;
+}
+
 unsigned char *Text_Retarget(unsigned char *cursor, unsigned target)
 {
     int i;

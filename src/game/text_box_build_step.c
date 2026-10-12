@@ -28,6 +28,7 @@
 #include "pc/text/language.h"
 #include "pc/text/text.h"
 #include "pc/cards/duel_ui.h"
+#include "pc/text/voice.h"
 #endif
 
 /* Defined rather than declared: the assembler only resolves a small global
@@ -92,6 +93,7 @@ void TextBox_BuildStep(DuelEffectChannel *object)
         object->text_00 = text;
 #ifdef MEMORIES_PC
         DuelUi_NameStream(object, 0);   /* a new text: no name read yet (duel_ui.h) */
+        TextVoice_PageAt(object->index_57, object->text_00);   /* its first page (voice.h) */
 #endif
         object->field_56 = 0;
         object->state_51 = 0;
@@ -190,6 +192,9 @@ next_opcode:
     /* Glyphs past the retail font's have words of their own (glyphs.h). */
     func_80036C14(object, Glyphs_Word((s16)D_8009B33A) & 0x8FF0FFFF);
     object->field_38 = object->field_38 - pal_shift;
+    /* A page's first letter starts its voice, if a mod gives it one; Square
+       held skips the text and its voice (voice.h). */
+    TextVoice_Letter(object->index_57, (gInput_wPad1Held & PAD_BUTTON_SQUARE) != 0);
 #else
     func_80036C14(object, D_801D9000[(s16)D_8009B33A] & 0x8FF0FFFF);
 #endif

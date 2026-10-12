@@ -1,6 +1,9 @@
 #include "../types.h"
 #include "duel_effect.h"
 #include "duel_effect_entry_control.h"
+#ifdef MEMORIES_PC
+#include "pc/text/voice.h"
+#endif
 
 #define DUEL_EFFECT_ENTRY_FROM_FIELD_13(field) \
     ((DuelEffectEntry *)((field) - 0x13))
@@ -78,6 +81,11 @@ void Text_CompletePageAdvance(DuelEffectChannel *object)
 
     if ((state & DUEL_EFFECT_STATE_FLAG_INITIALIZED) == 0) {
         object->state_51 = state | DUEL_EFFECT_STATE_FLAG_INITIALIZED;
+#ifdef MEMORIES_PC
+        /* The page was confirmed away: its voice stops, and the next page
+           starts where the text stands now (voice.h). */
+        TextVoice_PageAt(object->index_57, ((TextStreamOwner *)object)->streams[object->stream_58]);
+#endif
         func_800373C8(object, 2, 0);
         return;
     }

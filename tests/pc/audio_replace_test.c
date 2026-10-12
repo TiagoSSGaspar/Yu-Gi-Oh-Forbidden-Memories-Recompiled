@@ -452,6 +452,64 @@ static void test_clips(void)
     assert(!sums[2] && !AudioReplace_PlayClip(6, b, 255, 0));
 }
 
+
+/* Dialogue voices: a manifest's "voice" entries are only checked when the
+ * mod is applied and decoded when their page shows; one plays at a time on
+ * the sfx bus, a page with none or a stop silences it, and removing the mod
+ * stops it and forgets its pages. */
+static void test_voices(void)
+{
+    static const char *manifest =
+        "{ \"voice\": { \"0x128B\": \"line.wav\", \"0x129D\": { \"file\": \"line.wav\", \"volume\": 50 },"
+        "               \"0x12B6\": \"absent.wav\" } }";
+    char error[256];
+    JsonDocument *doc = Json_Parse(manifest, error, sizeof(error));
+    int16_t flat[16];
+    int sums[6], last[6], i;
+    size_t size;
+    assert(doc);
+    for (i = 0; i < 16; i++) flat[i] = 6000;
+    size = make_wav(1, 16, 2, AUDIO_RATE, 8, 0, 0);
+    memcpy(wav + size - sizeof(flat), flat, sizeof(flat));
+    write_file("line.wav", wav, size);
+    /* A missing file is refused when the mod is applied; the rest wait. */
+    assert(AudioReplace_Load(7, "voices", root, Json_Root(doc), error, sizeof(error)) == 2);
+    assert(strstr(error, "absent.wav") && AudioReplace_Count(AUDIO_VOICE) == 2);
+    assert(AudioReplace_Owner(AUDIO_VOICE, 0x128B) == 7);
+    /* Decoded when the page shows: a file changed since plays as it is now. */
+    for (i = 0; i < 16; i++) flat[i] = 8000;
+    memcpy(wav + size - sizeof(flat), flat, sizeof(flat));
+    write_file("line.wav", wav, size);
+    /* A page with no voice: nothing plays. */
+    assert(!AudioReplace_VoicePage(0x1000));
+    mix(1, sums, NULL);
+    assert(!sums[2]);
+    /* A page's voice plays once, on the sfx bus. */
+    assert(AudioReplace_VoicePage(0x128B));
+    mix(1, sums, last);
+    assert(last[2] == 8000 && last[3] == 8000 && !last[0] && !last[4]);
+    mix(7, sums, NULL);
+    assert(sums[2] == 7 * 8000);
+    mix(1, sums, NULL);
+    assert(!sums[2]);
+    /* The next page's replaces it, at its own volume. */
+    assert(AudioReplace_VoicePage(0x128B));
+    mix(2, sums, NULL);
+    assert(AudioReplace_VoicePage(0x129D));
+    mix(1, sums, last);
+    assert(last[2] == 4000 && last[3] == 4000);
+    /* Confirmed away: silent at once. */
+    AudioReplace_VoiceStop();
+    mix(1, sums, NULL);
+    assert(!sums[2]);
+    /* Removing the mod stops its voice and forgets its pages. */
+    assert(AudioReplace_VoicePage(0x128B));
+    AudioReplace_Unload(7);
+    mix(1, sums, NULL);
+    assert(!sums[2] && !AudioReplace_Count(AUDIO_VOICE) && !AudioReplace_VoicePage(0x128B));
+    Json_Free(doc);
+}
+
 int main(void)
 {
     char *made;
@@ -462,6 +520,7 @@ int main(void)
     assert(made);
     test_manifest();
     test_clips();
+    test_voices();
     printf("audio replacement: ok\n");
     return 0;
 }

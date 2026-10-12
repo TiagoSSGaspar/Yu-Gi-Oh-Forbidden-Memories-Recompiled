@@ -6,12 +6,14 @@
 #include "text_box_set_rect.h"
 #ifdef MEMORIES_PC
 #include "pc/cards/card_text_colors.h"
+#include "pc/text/voice.h"
 #endif
 
 void TextBox_Destroy(DuelEffectChannel *record)
 {
 #ifdef MEMORIES_PC
     CardTextColors_DestroyChannel(record);
+    TextVoice_Close(record->index_57);   /* its page's voice stops (voice.h) */
 #endif
     func_80035CA8(record->index_57);
     DuelEffect_ClearMatchingMarker(record->index_57);

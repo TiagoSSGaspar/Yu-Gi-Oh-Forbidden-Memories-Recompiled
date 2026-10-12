@@ -20,6 +20,10 @@ void Text_SortCards(void);
 
 /* The text for string `id`: a mod's, else `retail`. */
 const unsigned char *Text_Resolve(int id, const unsigned char *retail);
+/* Where `pointer` is in the disc's own dialogue bank (0-0xFFFF), or -1 when
+ * it reads other text: a translation's, a mod's, another bank's. Dialogue
+ * voices are looked up by it (voice.h). */
+int Text_DialogPlace(const unsigned char *pointer);
 
 /* A menu with choices is laid out in one go: func_80039794 steps its text
  * with no frame in between until the last choice line is down. A line
