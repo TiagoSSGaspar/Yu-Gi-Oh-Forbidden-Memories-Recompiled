@@ -11,6 +11,9 @@
 # Memory card images written by the native port
 /saves/
 
+# HD textures made from the player's own disc (3D Monsters' hd/<card>/): never committed
+mods/*/hd/
+
 # Generated and temporary project state
 /tmp/
 /dist/

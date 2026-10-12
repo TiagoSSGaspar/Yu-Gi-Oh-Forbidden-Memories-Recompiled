@@ -1815,11 +1815,14 @@ in the mod's own `hd/<card>/` folder (card id, four digits). Each PNG is one
 texture page of the model read through one palette, named for where the
 game keeps them: `p<column>_<palette x>_<palette y>.png` (column 0-2, the
 palette's VRAM x and y in hexadecimal), and `p3s<stance>_..._....png` for the
-fourth column, whose texels depend on the monster's stance. A page is 128x256
-texels at 8 bits; a PNG of any size is stretched over it. The mod lays them
-over the monster's texture bank when it is first drawn
+fourth column, whose texels depend on the monster's stance. A page is 64 VRAM
+words by 256 rows: 128 texels wide at 8 bits (256 at 4 bits, 64 at 16); the
+mod reads the depth from the model. A PNG of any size is stretched over it.
+The mod lays them over the monster's texture bank when it is first drawn
 (`mods/3d-monsters/hd_textures.c`): at View > Internal 2x and up the PNG is
 drawn, at 1x and through any other palette (a flash) the game's own texels.
+Which pages and palettes a model needs is read from its first drawn frame, so
+a page only a later frame of its animation uses keeps the game's texels.
 `MEMORIES_TRACE=mods` names the files each model looks for and whether they
 were there. **HD textures** in the mod's settings turns them off. The images
 are the game's, enlarged: make them from your own disc, never ship them.

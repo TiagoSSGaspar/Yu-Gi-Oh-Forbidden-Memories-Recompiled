@@ -52,10 +52,12 @@ static unsigned owner(int bank, int use)
 
 /* The (page, palette) pairs of the textured polygons in a run of packets,
  * walked as stamp_bank walks them (field_models.c): the palette is in the
- * first corner's texture word, the page in the second's. */
-static int uses_of(const u32 *from, const u32 *to, Use *uses)
+ * first corner's texture word, the page in the second's. Pairs beyond USES
+ * are not listed; *dropped counts them. */
+static int uses_of(const u32 *from, const u32 *to, Use *uses, int *dropped)
 {
     int count = 0;
+    *dropped = 0;
     while (from < to) {
         unsigned words = *from >> 24, at = 1;
         while (at <= words) {
@@ -79,6 +81,8 @@ static int uses_of(const u32 *from, const u32 *to, Use *uses)
                     }
                     if (i == count && count < USES) {
                         uses[count++] = use;
+                    } else if (i == count) {
+                        (*dropped)++;
                     }
                 }
             }
@@ -103,9 +107,12 @@ void HdTextures_Register(int bank, int card, int position, const u32 *from, cons
 {
     Use uses[USES];
     char relative[64], path[1024];
-    int count = uses_of(from, to, uses), on = host->setting(host, "hd_textures", 1), laid = 0, i;
+    int dropped, count = uses_of(from, to, uses, &dropped), on = host->setting(host, "hd_textures", 1), laid = 0, i;
 
     HdTextures_Forget(bank);
+    if (dropped > 0) {
+        say("hd: card %d stance %d: more than %d pairs, %d keep the game's texels\n", card, position, USES, dropped);
+    }
     for (i = 0; i < count; i++) {
         const Use *use = &uses[i];
         int width = use->depth == 0 ? 256 : use->depth == 1 ? 128 : 64;
