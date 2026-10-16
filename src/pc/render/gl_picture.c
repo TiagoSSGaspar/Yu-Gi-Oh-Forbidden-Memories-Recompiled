@@ -28,6 +28,7 @@
 #include "gl_picture.h"
 #include "soft_gpu.h"
 #include "texture_pack.h"
+#include "mesh_pass.h"
 #include "pc/text/hd_text.h"
 #include "pc/platform/settings.h"
 #include "pc/compat/signal.h"
@@ -1709,6 +1710,34 @@ static int wide_target(void)
     return oldest;
 }
 
+/* A model the mesh pass draws in place of a monster's polygons (mesh_pass.h),
+ * met where they would have been in the frame: what came before it is drawn
+ * first, and the picture's own GL state is set again after it. */
+static void mesh_marker(uint32_t word)
+{
+    MeshPassTarget target;
+    if (scale < 2) return;
+    flush_runs();
+    target.fbo = picture_draw();
+    target.width = SOFT_GPU_WIDTH * scale;
+    target.height = SOFT_GPU_HEIGHT * scale;
+    target.scale = scale;
+    target.samples = picture_ms_fbo ? samples : 0;
+    target.offset_x = state.offset_x;
+    target.offset_y = state.offset_y;
+    target.clip_x1 = state.clip_x1;
+    target.clip_y1 = state.clip_y1;
+    target.clip_x2 = state.clip_x2;
+    target.clip_y2 = state.clip_y2;
+    MeshPass_Draw(word, &target);
+    if (vertex_array) glBindVertexArray_(vertex_array);
+    gl_UseProgram(program);
+    gl_ActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, vram_texture);
+    gl_BindFramebuffer(GL_FRAMEBUFFER, picture_draw());
+    glViewport(0, 0, SOFT_GPU_WIDTH * scale, SOFT_GPU_HEIGHT * scale);
+}
+
 /* The batch, as SoftGpu_Gp0 reads it: the same commands, the same cuts. */
 static void gp0(const uint32_t *words, size_t count)
 {
@@ -1741,6 +1770,8 @@ static void gp0(const uint32_t *words, size_t count)
                 state.offset_x = offset_x;
                 wide[t].drawn++;
             }
+        } else if (command == 0x00) {
+            if (MeshPass_IsMarker(word)) mesh_marker(word);
         } else if (command == 0x02) {
             used = count - at >= 3 ? 3 : 0;
             if (used) {
@@ -2901,7 +2932,11 @@ static void forget_names(void)
     want_resync = 1; /* VRAM whole into the new picture, at the next replay after Init */
 }
 
-void GlPicture_Lost(void) { forget_names(); } /* they went with the lost context */
+void GlPicture_Lost(void) /* they went with the lost context */
+{
+    forget_names();
+    MeshPass_GlLost();
+}
 
 void GlPicture_Stop(void)
 {
@@ -2909,4 +2944,5 @@ void GlPicture_Stop(void)
     SoftGpu_SetRecorder(NULL); /* the software GPU draws its own picture again, from VRAM */
     delete_names(); /* the picture, its scratch copy and anti-aliasing: hundreds of MiB at 4x */
     forget_names();
+    MeshPass_GlStop();
 }

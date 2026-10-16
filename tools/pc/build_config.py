@@ -77,6 +77,8 @@ BACKENDS = {
     "sdl": [
         "src/pc/platform/sdl.c",
         "src/pc/render/gl_picture.c",
+        "src/pc/render/mesh_model.c",
+        "src/pc/render/mesh_pass.c",
         "src/pc/render/present_pass.c",
     ],
     "x11": [
