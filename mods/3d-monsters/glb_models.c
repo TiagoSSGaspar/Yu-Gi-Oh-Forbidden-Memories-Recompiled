@@ -17,6 +17,7 @@
 static const MemoriesModHost *host;
 static struct {
     int card, model; /* model 0: none for that card */
+    int fitted;      /* sized already: by the first stance loaded */
 } known[KNOWN];
 static int known_count;
 
@@ -55,16 +56,25 @@ int GlbModels_Load(int card)
     if (known_count < KNOWN) {
         known[known_count].card = card;
         known[known_count].model = model;
+        known[known_count].fitted = 0;
         known_count++;
     }
     return model;
 }
 
+/* Once a model: each stance of a card is loaded and fitted on its own, and
+ * the defence stance measures taller than the attack one, but the glTF model
+ * is the same in both and keeps the size the first gave it. */
 void GlbModels_Fit(int model, int card, const MATRIX *ls, int height, int x, int y, int z)
 {
-    int yaw = host->setting(host, "glb_yaw", 0), scale = host->setting(host, "glb_scale", 100);
+    int yaw = host->setting(host, "glb_yaw", 0), scale = host->setting(host, "glb_scale", 100), i, at = -1;
     if (!model) return;
+    for (i = 0; i < known_count && at < 0; i++) {
+        if (known[i].card == card) at = i;
+    }
+    if (at >= 0 && known[at].fitted) return;
     if (MeshPass_Fit(model, (const MeshPassMatrix *)ls, height, x, y, z, yaw, scale)) {
+        if (at >= 0) known[at].fitted = 1;
         say("glb: card %d fitted to %d lines, feet at %d,%d,%d, yaw %d, %d%%\n", card, height, x, y, z, yaw, scale);
     } else {
         say("glb: card %d could not be fitted (%d lines)\n", card, height);
