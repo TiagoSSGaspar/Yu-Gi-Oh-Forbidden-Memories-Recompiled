@@ -39,6 +39,24 @@
             "description": "Model height in game pixels."
         },
         {
+            "key": "glb_models",
+            "label": "glTF models (3D models)",
+            "type": "bool",
+            "default": 1,
+            "description": "Draws a monster from the mod's models/<card>.glb (four digits) instead of its battle model, at Internal 2x and up. Without that folder nothing changes."
+        },
+        {
+            "key": "glb_scale",
+            "label": "glTF model size (3D models)",
+            "type": "int",
+            "default": 100,
+            "min": 30,
+            "max": 200,
+            "step": 10,
+            "restart": true,
+            "description": "Percent of the size that makes a glTF model as tall as the battle model it replaces."
+        },
+        {
             "key": "lift",
             "label": "Vertical lift",
             "type": "int",

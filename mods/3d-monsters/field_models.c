@@ -99,6 +99,7 @@
 #include "pc/cards/cards.h"
 #include "field_art.h"
 #include "fight_sounds.h"
+#include "glb_models.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -193,6 +194,7 @@ typedef struct {
     int fade;      /* 0 opaque to 255 gone, as it is drawn now */
     s32 commands[3]; /* its control modules' command words (effect_begin) */
     u32 packet_bytes; /* the most its packets have taken in one sort */
+    int glb;       /* its glTF model in the mesh pass (glb_models.c), 0 for none */
 } Monster;
 
 static const MemoriesModHost *host;
@@ -568,6 +570,7 @@ static Monster *acquire(int card, int position, int tag)
     if (!load_monster(monster, card, position)) {
         return NULL;
     }
+    monster->glb = GlbModels_Load(card);
     fit(monster);
     /* Taken for this frame: another zone missing before the draws must not
      * pick this entry again and leave the first zone the later monster. */
@@ -718,9 +721,22 @@ static int packets_fit(const Monster *monster)
 static Monster *effect_monster;
 static void effect_run(void);
 
+/* A run of packets left in the chain with nothing in them: the glTF model
+ * draws in their place (sort_monster). */
+static void silence(u32 *from, const u32 *to)
+{
+    while (from < to) {
+        unsigned words = *from >> 24;
+        *from &= LINK_MASK;
+        from += words + 1;
+    }
+}
+
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
-    const u32 *from = (const u32 *)(uintptr_t)D_800FE240;
+    const u32 *from = (const u32 *)(uintptr_t)D_800FE240, *model_end;
+    MATRIX ls;
+    u32 marker = 0;
     GsOT *live = D_800E9D90[2];
     GsOT *table = (GsOT *)(scratch + TABLE_AT);
     u32 *tags = (u32 *)scratch, *entry, *last = NULL, first = LINK_END, end;
@@ -739,8 +755,15 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     table->point = 0;
     GsClearOt(0, 0, table);
     end = tags[0] & LINK_MASK; /* what entry 0 leads to: the table's tail */
+    if (monster->glb) {
+        /* Drawn by the mesh pass, through the matrix the root's polygons
+         * have; 0 when it is not drawing (1x), and the polygons are. */
+        GsGetLsUnit(D_800F2C40[0].field_D18, &ls);
+        marker = GlbModels_Marker(monster->glb, &ls, monster->fade);
+    }
     D_800E9D90[2] = table;
     func_800540B4(0);
+    model_end = (const u32 *)(uintptr_t)D_800FE240;
     if (monster == effect_monster) {
         effect_run();
     }
@@ -778,6 +801,17 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     if (!last) {
         return;
     }
+    if (marker) {
+        /* The model's packets keep their places in the chain, empty; the
+         * marker goes first in the run, so the model is drawn at the run's
+         * depth and the attacker's effects over it. */
+        u32 *packet = (u32 *)(uintptr_t)D_800FE240;
+        silence((u32 *)from, model_end);
+        packet[0] = (1u << 24) | first;
+        packet[1] = marker;
+        D_800FE240 += 8;
+        first = (u32)(uintptr_t)packet & LINK_MASK;
+    }
     if (at < 0) {
         at = nearest / 4 - tunable("depth", DEPTH_STEPS);
     }
@@ -785,7 +819,7 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     entry = (u32 *)into->org + at;
     *last = (*last & ~LINK_MASK) | (*entry & LINK_MASK);
     *entry = (*entry & ~LINK_MASK) | first;
-    stamp_bank(from, (const u32 *)(uintptr_t)D_800FE240, monster->bank, monster->fade);
+    stamp_bank(marker ? model_end : from, (const u32 *)(uintptr_t)D_800FE240, monster->bank, monster->fade);
 }
 
 
@@ -914,6 +948,7 @@ static void fit(Monster *monster)
 {
     ModelSlot *slot = &D_800F2C40[0];
     int target = tunable("pixels", TALL_PIXELS), attempt, wide, height = 0;
+    MATRIX measured; /* the root's local-to-screen matrix the last height was measured at */
 
     monster->scale = MODEL_FIXED_ONE / 2;
     monster->natural = MIDDLING_PIXELS;
@@ -923,6 +958,7 @@ static void fit(Monster *monster)
         scale_body(monster);
         *slot = monster->slot;
         place(slot, -monster->body_x, -monster->body_y, -monster->body_z, 0, monster->scale);
+        GsGetLsUnit(slot->field_D18, &measured);
         height = sort_aside(monster);
         if (height <= 0) {
             break;
@@ -933,6 +969,11 @@ static void fit(Monster *monster)
         }
         monster->scale = wanted < SCALE_SMALLEST ? SCALE_SMALLEST
                        : wanted > SCALE_LARGEST ? SCALE_LARGEST : wanted;
+    }
+    if (height > 0 && monster->glb) {
+        /* Its glTF model stands where its body does, as high on the screen. */
+        GlbModels_Fit(monster->glb, monster->card, &measured, height, monster->raw_x, monster->raw_y,
+                      monster->raw_z);
     }
     if (height > 0 && monster->scale > 0) {
         /* The size that would make it TALL_PIXELS high says how big the
@@ -2984,6 +3025,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->applied = applied;
     FieldArt_Init(from);
     FightSounds_Init(from);
+    GlbModels_Init(from);
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
     if (from->api >= 4 && !original_card &&

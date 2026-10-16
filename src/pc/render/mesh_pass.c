@@ -286,8 +286,11 @@ static const char *fragment_source =
     "uniform float opacity;\n"
     "out vec4 fragment;\n"
     "void main() {\n"
+    /* glTF's colour factors are linear and its textures sRGB: lit in
+     * linear, then back to sRGB as the picture is */
     "    vec4 texel = textured != 0 ? texture(image, uv) : vec4(1.0);\n"
-    "    vec3 rgb = min(texel.rgb * color.rgb * (0.5 + 0.7 * light), vec3(1.0));\n"
+    "    vec3 linear = pow(texel.rgb, vec3(2.2)) * color.rgb * (0.35 + 0.85 * light);\n"
+    "    vec3 rgb = pow(min(linear, vec3(1.0)), vec3(1.0 / 2.2));\n"
     /* as the picture blends: colour pre-multiplied, alpha what is left of the destination */
     "    fragment = vec4(rgb * opacity, 1.0 - opacity);\n"
     "}\n";

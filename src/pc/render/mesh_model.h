@@ -4,9 +4,10 @@
 /* A glTF binary (.glb, or .gltf with its files beside it) read into what
  * mesh_pass.c draws: the model in its rest pose, each node's mesh placed by
  * its node and each skinned mesh by its joints as they stand, as triangles
- * grouped by material. Positions and normals are turned into the console's
- * axes: x right, y down, z away (glTF's y up and z towards the viewer, turned
- * half round x). No GL here; on macOS this is a native unit (build_arm64.py,
+ * grouped by material. Positions and normals are turned half round x, from
+ * glTF's y up into the console's y down, which also turns the model's front
+ * from glTF's +z to -z, where a duel model faces (the player's edge of the
+ * mat at yaw 0). No GL here; on macOS this is a native unit (build_arm64.py,
  * ORDINARY), so it is handed and hands back host pointers only. */
 
 /* x y z, nx ny nz, u v */

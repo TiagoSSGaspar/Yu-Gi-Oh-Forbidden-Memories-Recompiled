@@ -191,7 +191,8 @@ static int add_primitive(Building **parts, int *part_count, const cgltf_node *no
         vertex_matrix(node, joint_matrices, joints, weights, index, node_world, m);
         transform_point(m, p, placed);
         transform_normal(m, n, turned);
-        /* glTF's y up, z towards the viewer; the console's y down, z away */
+        /* glTF's y up and the model's front towards +z; a duel model's y
+         * down and its front towards -z: half a turn round x */
         v[0] = placed[0];
         v[1] = -placed[1];
         v[2] = -placed[2];
