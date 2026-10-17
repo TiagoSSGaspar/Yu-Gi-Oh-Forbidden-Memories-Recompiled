@@ -732,6 +732,10 @@ static void silence(u32 *from, const u32 *to)
     }
 }
 
+/* While the summon grows a monster (draw_frame): how far, per mille; -1 else. */
+static int summon_permille = -1;
+static void glb_pose(const ModelSlot *slot, int *which, int *permille);
+
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
     const u32 *from = (const u32 *)(uintptr_t)D_800FE240, *model_end;
@@ -757,9 +761,12 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     end = tags[0] & LINK_MASK; /* what entry 0 leads to: the table's tail */
     if (monster->glb) {
         /* Drawn by the mesh pass, through the matrix the root's polygons
-         * have; 0 when it is not drawing (1x), and the polygons are. */
+         * have, posed as their row stands; 0 when it is not drawing (1x),
+         * and the polygons are. */
+        int which, permille;
         GsGetLsUnit(D_800F2C40[0].field_D18, &ls);
-        marker = GlbModels_Marker(monster->glb, &ls, monster->fade);
+        glb_pose(&D_800F2C40[0], &which, &permille);
+        marker = GlbModels_Marker(monster->glb, &ls, monster->fade, which, permille);
     }
     D_800E9D90[2] = table;
     func_800540B4(0);
@@ -1425,6 +1432,26 @@ static int battle_lost(int side)
  * counter-attack up to 10; twice as fast reads as one exchange. */
 #define ATTACK_SPEED 200
 #define ATTACK_DRIFT 35           /* percent of the body's shift kept */
+
+/* Which clip of a glTF model plays in place of the row the game's model
+ * plays, and how far in (per mille): its attack row the attack, the hit row
+ * (a destroyed monster's, held on its last frame until it goes) the death, a
+ * blow withstood or guarded the hit, any other row the idle; and the summon
+ * while the summon grows it. */
+static void glb_pose(const ModelSlot *slot, int *which, int *permille)
+{
+    int row = slot->field_BF5, length = slot->field_750[row].max << 4;
+    if (summon_permille >= 0) {
+        *which = GLB_SUMMON;
+        *permille = summon_permille;
+        return;
+    }
+    *which = row == slot->field_DFE + 3                ? GLB_ATTACK
+             : row == ROW_HIT                          ? GLB_DIE
+             : row == ROW_WITHSTAND || row == ROW_GUARD ? GLB_HIT
+                                                        : GLB_IDLE;
+    *permille = length <= 0 ? 0 : slot->field_E06 >= length ? 1000 : slot->field_E06 * 1000 / length;
+}
 
 enum { CASE_DESTROYED = 1, CASE_BLOCKED, CASE_COUNTER, CASE_TIE, CASE_DIRECT };
 enum { ATTACK_IDLE, ATTACK_FIRST, ATTACK_COUNTER, ATTACK_OVER };
@@ -2939,8 +2966,12 @@ static void draw_frame(void)
         }
         share = share * board_share / MODEL_FIXED_ONE;
         lifted = lifted * board_share / MODEL_FIXED_ONE;
+        summon_permille = summoning && summon->elapsed < (unsigned)frames
+                              ? (int)(summon->elapsed * 1000 / (unsigned)frames)
+                              : -1;
         draw_monster(standing[i].monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted,
                      standing[i].at, height);
+        summon_permille = -1;
         if (summon->elapsed < 0xFFFFu) {
             summon->elapsed++;
         }
