@@ -78,26 +78,42 @@ static void transform_normal(const float *m, const float *in, float *out)
     }
 }
 
-/* A vertex array that grows as triangles are added to its material. */
+/* A vertex array that grows as triangles are added to its material, and
+ * beside it, for posing, each vertex as the file has it (position and normal,
+ * before any node or joint moves it) and the four palette entries that move
+ * it, with their weights. */
 typedef struct Building {
     const cgltf_material *material;
     float *vertices;
+    float *source;
+    unsigned short *which;
+    float *weight;
     int count, room;
 } Building;
 
-static float *room_for(Building *part, int vertices)
+static int grow(void **array, int room, size_t size)
+{
+    void *more = realloc(*array, (size_t)room * size);
+    if (!more) return 0;
+    *array = more;
+    return 1;
+}
+
+/* Room for `vertices` more: the index of the first, or -1. */
+static int room_for(Building *part, int vertices)
 {
     if (part->count + vertices > part->room) {
         int room = part->room ? part->room * 2 : 3072;
-        float *more;
         while (room < part->count + vertices) room *= 2;
-        more = realloc(part->vertices, (size_t)room * MESH_VERTEX_FLOATS * sizeof(float));
-        if (!more) return NULL;
-        part->vertices = more;
+        if (!grow((void **)&part->vertices, room, MESH_VERTEX_FLOATS * sizeof(float)) ||
+            !grow((void **)&part->source, room, 6 * sizeof(float)) ||
+            !grow((void **)&part->which, room, 4 * sizeof(unsigned short)) ||
+            !grow((void **)&part->weight, room, 4 * sizeof(float)))
+            return -1;
         part->room = room;
     }
     part->count += vertices;
-    return part->vertices + (size_t)(part->count - vertices) * MESH_VERTEX_FLOATS;
+    return part->count - vertices;
 }
 
 static Building *part_for(Building **parts, int *count, const cgltf_material *material)
@@ -160,13 +176,40 @@ static float *joint_matrices_of(const cgltf_skin *skin)
     return out;
 }
 
+/* Each triangle's own facing as all three of its vertices' normals. */
+static void flat_normals(float *vertices, cgltf_size triangles)
+{
+    cgltf_size i;
+    for (i = 0; i < triangles; i++) {
+        float *a = vertices + i * 3 * MESH_VERTEX_FLOATS, *b = a + MESH_VERTEX_FLOATS, *c = b + MESH_VERTEX_FLOATS;
+        float e1[3] = {b[0] - a[0], b[1] - a[1], b[2] - a[2]}, e2[3] = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+        float f[3] = {e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]};
+        float length = sqrtf(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]);
+        int k;
+        if (length > 0.0f) {
+            f[0] /= length;
+            f[1] /= length;
+            f[2] /= length;
+        } else {
+            f[0] = 0.0f;
+            f[1] = -1.0f;
+            f[2] = 0.0f;
+        }
+        for (k = 0; k < 3; k++) memcpy(a + k * MESH_VERTEX_FLOATS + 3, f, sizeof(f));
+    }
+}
+
+/* A primitive's triangles into its material's part. `skin_entry` is the
+ * palette entry of its skin's first joint (-1 for none), `own_entry` that of
+ * its own node, which moves it when it has no skin. */
 static int add_primitive(Building **parts, int *part_count, const cgltf_node *node, const cgltf_primitive *primitive,
-                         const float *node_world, const float *joint_matrices)
+                         const float *node_world, const float *joint_matrices, int skin_entry, int own_entry)
 {
     const cgltf_accessor *position = NULL, *normal = NULL, *texcoord = NULL, *joints = NULL, *weights = NULL;
     cgltf_size i, triangles;
     Building *part;
     float *out;
+    int first, skinned;
     if (primitive->type != cgltf_primitive_type_triangles) return 1;
     for (i = 0; i < primitive->attributes_count; i++) {
         const cgltf_attribute *attribute = &primitive->attributes[i];
@@ -180,14 +223,37 @@ static int add_primitive(Building **parts, int *part_count, const cgltf_node *no
     triangles = (primitive->indices ? primitive->indices->count : position->count) / 3;
     if (!triangles) return 1;
     part = part_for(parts, part_count, primitive->material);
-    if (!part || !(out = room_for(part, (int)triangles * 3))) return 0;
+    if (!part || (first = room_for(part, (int)triangles * 3)) < 0) return 0;
+    out = part->vertices + (size_t)first * MESH_VERTEX_FLOATS;
+    skinned = node->skin && joints && weights && skin_entry >= 0;
     for (i = 0; i < triangles * 3; i++) {
         cgltf_size index = primitive->indices ? cgltf_accessor_read_index(primitive->indices, i) : i;
         float p[3] = {0, 0, 0}, n[3] = {0, 1, 0}, uv[2] = {0, 0}, m[16], placed[3], turned[3];
         float *v = out + i * MESH_VERTEX_FLOATS;
+        float *source = part->source + ((size_t)first + i) * 6, *weight = part->weight + ((size_t)first + i) * 4;
+        unsigned short *which = part->which + ((size_t)first + i) * 4;
+        int k;
         cgltf_accessor_read_float(position, index, p, 3);
         if (normal) cgltf_accessor_read_float(normal, index, n, 3);
         if (texcoord) cgltf_accessor_read_float(texcoord, index, uv, 2);
+        memcpy(source, p, sizeof(p));
+        /* no normal: a zero one, which posing reads as the face's own */
+        if (normal) memcpy(source + 3, n, sizeof(n));
+        else source[3] = source[4] = source[5] = 0.0f;
+        if (skinned) {
+            cgltf_uint joint[4] = {0, 0, 0, 0};
+            cgltf_accessor_read_uint(joints, index, joint, 4);
+            cgltf_accessor_read_float(weights, index, weight, 4);
+            for (k = 0; k < 4; k++) {
+                which[k] = (unsigned short)(skin_entry + (joint[k] < node->skin->joints_count ? (int)joint[k] : 0));
+                if (joint[k] >= node->skin->joints_count) weight[k] = 0.0f;
+            }
+        } else {
+            which[0] = (unsigned short)own_entry;
+            which[1] = which[2] = which[3] = 0;
+            weight[0] = 1.0f;
+            weight[1] = weight[2] = weight[3] = 0.0f;
+        }
         vertex_matrix(node, joint_matrices, joints, weights, index, node_world, m);
         transform_point(m, p, placed);
         transform_normal(m, n, turned);
@@ -202,26 +268,7 @@ static int add_primitive(Building **parts, int *part_count, const cgltf_node *no
         v[6] = uv[0];
         v[7] = uv[1];
     }
-    if (!normal) {
-        /* flat: each triangle's own facing */
-        for (i = 0; i < triangles; i++) {
-            float *a = out + i * 3 * MESH_VERTEX_FLOATS, *b = a + MESH_VERTEX_FLOATS, *c = b + MESH_VERTEX_FLOATS;
-            float e1[3] = {b[0] - a[0], b[1] - a[1], b[2] - a[2]}, e2[3] = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
-            float f[3] = {e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]};
-            float length = sqrtf(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]);
-            int k;
-            if (length > 0.0f) {
-                f[0] /= length;
-                f[1] /= length;
-                f[2] /= length;
-            } else {
-                f[0] = 0.0f;
-                f[1] = -1.0f;
-                f[2] = 0.0f;
-            }
-            for (k = 0; k < 3; k++) memcpy(a + k * MESH_VERTEX_FLOATS + 3, f, sizeof(f));
-        }
-    }
+    if (!normal) flat_normals(out, triangles); /* flat: each triangle's own facing */
     return 1;
 }
 
@@ -286,14 +333,395 @@ static void load_images(MeshModel *model, const cgltf_data *data, const char *pa
     }
 }
 
+/* --- clips ---------------------------------------------------------------- */
+
+/* One node's translation, rotation or scale through a clip. */
+typedef struct Channel {
+    int node, path;        /* path: 0 translation, 1 rotation, 2 scale */
+    int step;              /* held from key to key; else linear (a cubic spline's values, unbent) */
+    int count;
+    float *times, *values; /* values: 4 a key for a rotation, 3 else */
+} Channel;
+
+typedef struct Clip {
+    char name[64];
+    int length, strike; /* ms */
+    Channel *channels;
+    int channel_count;
+} Clip;
+
+/* A posable model: its nodes as they stand, the matrices a vertex can follow
+ * (each skin's joints times their inverse binds, then each mesh's own node),
+ * and per part, per vertex, where it stands before them and which follow it
+ * (the parts' Building arrays, kept). */
+struct MeshAnimation {
+    int node_count;
+    int *parent;            /* -1: a root */
+    float (*rest)[10];      /* translation, rotation (x y z w), scale */
+    float (*fixed)[16];     /* a node given by a matrix keeps it */
+    unsigned char *is_fixed;
+    int palette_count;
+    int *palette_node;
+    float (*palette_inverse)[16];
+    float **source;         /* per part: x y z nx ny nz a vertex; a zero normal is the face's own */
+    unsigned short **which; /* per part: four palette entries a vertex */
+    float **weight;         /* per part: their four weights */
+    int part_count;
+    Clip *clips;
+    int clip_count;
+};
+
+static void free_animation(MeshAnimation *anim)
+{
+    int i, k;
+    if (!anim) return;
+    for (i = 0; i < anim->part_count; i++) {
+        if (anim->source) free(anim->source[i]);
+        if (anim->which) free(anim->which[i]);
+        if (anim->weight) free(anim->weight[i]);
+    }
+    for (i = 0; i < anim->clip_count; i++) {
+        for (k = 0; k < anim->clips[i].channel_count; k++) {
+            free(anim->clips[i].channels[k].times);
+            free(anim->clips[i].channels[k].values);
+        }
+        free(anim->clips[i].channels);
+    }
+    free(anim->clips);
+    free(anim->source);
+    free(anim->which);
+    free(anim->weight);
+    free(anim->palette_node);
+    free(anim->palette_inverse);
+    free(anim->parent);
+    free(anim->rest);
+    free(anim->fixed);
+    free(anim->is_fixed);
+    free(anim);
+}
+
+/* An accessor's floats, unpacked: NULL when there are none. */
+static float *unpack(const cgltf_accessor *accessor, cgltf_size *count)
+{
+    cgltf_size floats = accessor ? cgltf_accessor_unpack_floats(accessor, NULL, 0) : 0;
+    float *out = floats ? malloc(floats * sizeof(float)) : NULL;
+    if (out) cgltf_accessor_unpack_floats(accessor, out, floats);
+    *count = out ? floats : 0;
+    return out;
+}
+
+/* The number after "strike" in an animation's extras, in seconds; -1 for none. */
+static float extras_strike(const cgltf_data *data, const cgltf_extras *extras)
+{
+    char json[256];
+    const char *at;
+    cgltf_size size = 0;
+    if (extras->data) {
+        at = strstr(extras->data, "\"strike\"");
+    } else {
+        size = extras->end_offset > extras->start_offset ? extras->end_offset - extras->start_offset : 0;
+        if (!size || size >= sizeof(json)) return -1.0f;
+        memcpy(json, data->json + extras->start_offset, size);
+        json[size] = 0;
+        at = strstr(json, "\"strike\"");
+    }
+    if (!at || !(at = strchr(at, ':'))) return -1.0f;
+    return strtof(at + 1, NULL);
+}
+
+static int read_channel(Channel *out, const cgltf_data *data, const cgltf_animation_channel *channel)
+{
+    const cgltf_animation_sampler *sampler = channel->sampler;
+    cgltf_size times, values, width, k;
+    if (!sampler || !channel->target_node) return 0;
+    if (channel->target_path == cgltf_animation_path_type_translation) out->path = 0;
+    else if (channel->target_path == cgltf_animation_path_type_rotation) out->path = 1;
+    else if (channel->target_path == cgltf_animation_path_type_scale) out->path = 2;
+    else return 0;
+    width = out->path == 1 ? 4 : 3;
+    out->node = (int)(channel->target_node - data->nodes);
+    out->step = sampler->interpolation == cgltf_interpolation_type_step;
+    out->times = unpack(sampler->input, &times);
+    out->values = unpack(sampler->output, &values);
+    if (sampler->interpolation == cgltf_interpolation_type_cubic_spline && out->values && values == times * width * 3) {
+        /* in-tangent, value, out-tangent a key: the values alone */
+        for (k = 0; k < times; k++) memmove(out->values + k * width, out->values + (k * 3 + 1) * width, width * sizeof(float));
+        values = times * width;
+    }
+    if (!out->times || !out->values || !times || values < times * width) {
+        free(out->times);
+        free(out->values);
+        return 0;
+    }
+    out->count = (int)times;
+    return 1;
+}
+
+static void read_clips(MeshAnimation *anim, const cgltf_data *data)
+{
+    cgltf_size a, c;
+    anim->clips = calloc(data->animations_count, sizeof(*anim->clips));
+    if (!anim->clips) return;
+    for (a = 0; a < data->animations_count; a++) {
+        const cgltf_animation *animation = &data->animations[a];
+        Clip *clip = &anim->clips[anim->clip_count];
+        float last = 0.0f, strike;
+        clip->channels = calloc(animation->channels_count ? animation->channels_count : 1, sizeof(*clip->channels));
+        if (!clip->channels) continue;
+        for (c = 0; c < animation->channels_count; c++) {
+            Channel *channel = &clip->channels[clip->channel_count];
+            if (!read_channel(channel, data, &animation->channels[c])) continue;
+            if (channel->times[channel->count - 1] > last) last = channel->times[channel->count - 1];
+            clip->channel_count++;
+        }
+        if (animation->name) snprintf(clip->name, sizeof(clip->name), "%s", animation->name);
+        else snprintf(clip->name, sizeof(clip->name), "clip%d", (int)a);
+        clip->length = (int)(last * 1000.0f + 0.5f);
+        strike = extras_strike(data, &animation->extras);
+        clip->strike = strike >= 0.0f ? (int)(strike * 1000.0f + 0.5f) : clip->length / 2;
+        if (clip->strike > clip->length) clip->strike = clip->length;
+        anim->clip_count++;
+    }
+}
+
+/* The nodes as they stand, and the palette: each skin's joints from
+ * skin_entry[skin], then each mesh node's own at own_entry[node]. */
+static MeshAnimation *read_nodes(const cgltf_data *data, int *skin_entry, int *own_entry)
+{
+    MeshAnimation *anim = calloc(1, sizeof(*anim));
+    cgltf_size n, s, j;
+    int entries = 0;
+    if (!anim) return NULL;
+    for (s = 0; s < data->skins_count; s++) entries += (int)data->skins[s].joints_count;
+    for (n = 0; n < data->nodes_count; n++) entries += data->nodes[n].mesh != NULL;
+    anim->node_count = (int)data->nodes_count;
+    anim->parent = malloc((data->nodes_count ? data->nodes_count : 1) * sizeof(*anim->parent));
+    anim->rest = malloc((data->nodes_count ? data->nodes_count : 1) * sizeof(*anim->rest));
+    anim->fixed = malloc((data->nodes_count ? data->nodes_count : 1) * sizeof(*anim->fixed));
+    anim->is_fixed = calloc(data->nodes_count ? data->nodes_count : 1, 1);
+    anim->palette_node = malloc((size_t)(entries ? entries : 1) * sizeof(*anim->palette_node));
+    anim->palette_inverse = malloc((size_t)(entries ? entries : 1) * sizeof(*anim->palette_inverse));
+    if (!anim->parent || !anim->rest || !anim->fixed || !anim->is_fixed || !anim->palette_node ||
+        !anim->palette_inverse) {
+        free_animation(anim);
+        return NULL;
+    }
+    for (n = 0; n < data->nodes_count; n++) {
+        const cgltf_node *node = &data->nodes[n];
+        float *trs = anim->rest[n];
+        anim->parent[n] = node->parent ? (int)(node->parent - data->nodes) : -1;
+        if (node->has_matrix) {
+            anim->is_fixed[n] = 1;
+            cgltf_node_transform_local(node, anim->fixed[n]);
+        }
+        trs[0] = node->has_translation ? node->translation[0] : 0.0f;
+        trs[1] = node->has_translation ? node->translation[1] : 0.0f;
+        trs[2] = node->has_translation ? node->translation[2] : 0.0f;
+        trs[3] = node->has_rotation ? node->rotation[0] : 0.0f;
+        trs[4] = node->has_rotation ? node->rotation[1] : 0.0f;
+        trs[5] = node->has_rotation ? node->rotation[2] : 0.0f;
+        trs[6] = node->has_rotation ? node->rotation[3] : 1.0f;
+        trs[7] = node->has_scale ? node->scale[0] : 1.0f;
+        trs[8] = node->has_scale ? node->scale[1] : 1.0f;
+        trs[9] = node->has_scale ? node->scale[2] : 1.0f;
+    }
+    for (s = 0; s < data->skins_count; s++) {
+        const cgltf_skin *skin = &data->skins[s];
+        skin_entry[s] = anim->palette_count;
+        for (j = 0; j < skin->joints_count; j++) {
+            float *inverse = anim->palette_inverse[anim->palette_count];
+            memset(inverse, 0, sizeof(anim->palette_inverse[0]));
+            inverse[0] = inverse[5] = inverse[10] = inverse[15] = 1.0f;
+            if (skin->inverse_bind_matrices) cgltf_accessor_read_float(skin->inverse_bind_matrices, j, inverse, 16);
+            anim->palette_node[anim->palette_count++] = skin->joints[j] ? (int)(skin->joints[j] - data->nodes) : 0;
+        }
+    }
+    for (n = 0; n < data->nodes_count; n++) {
+        float *inverse;
+        own_entry[n] = -1;
+        if (!data->nodes[n].mesh) continue;
+        inverse = anim->palette_inverse[anim->palette_count];
+        memset(inverse, 0, sizeof(anim->palette_inverse[0]));
+        inverse[0] = inverse[5] = inverse[10] = inverse[15] = 1.0f;
+        own_entry[n] = anim->palette_count;
+        anim->palette_node[anim->palette_count++] = (int)n;
+    }
+    return anim;
+}
+
+static void sample(const Channel *channel, float t, float *out)
+{
+    int width = channel->path == 1 ? 4 : 3, i = 0, k;
+    float u = 0.0f;
+    const float *a, *b;
+    if (t <= channel->times[0] || channel->count == 1) {
+        memcpy(out, channel->values, (size_t)width * sizeof(float));
+        return;
+    }
+    if (t >= channel->times[channel->count - 1]) {
+        memcpy(out, channel->values + (size_t)(channel->count - 1) * width, (size_t)width * sizeof(float));
+        return;
+    }
+    while (i + 2 < channel->count && channel->times[i + 1] <= t) i++;
+    a = channel->values + (size_t)i * width;
+    b = a + width;
+    if (!channel->step && channel->times[i + 1] > channel->times[i])
+        u = (t - channel->times[i]) / (channel->times[i + 1] - channel->times[i]);
+    if (width == 4) {
+        /* the shorter way round, then back to unit length */
+        float dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], sign = dot < 0.0f ? -1.0f : 1.0f, length;
+        for (k = 0; k < 4; k++) out[k] = a[k] + (sign * b[k] - a[k]) * u;
+        length = sqrtf(out[0] * out[0] + out[1] * out[1] + out[2] * out[2] + out[3] * out[3]);
+        for (k = 0; k < 4 && length > 0.0f; k++) out[k] /= length;
+    } else {
+        for (k = 0; k < 3; k++) out[k] = a[k] + (b[k] - a[k]) * u;
+    }
+}
+
+/* translation, rotation (x y z w), scale: the matrix T R S */
+static void compose(const float *trs, float *m)
+{
+    float x = trs[3], y = trs[4], z = trs[5], w = trs[6];
+    float r[9] = {1 - 2 * (y * y + z * z), 2 * (x * y + z * w),     2 * (x * z - y * w),
+                  2 * (x * y - z * w),     1 - 2 * (x * x + z * z), 2 * (y * z + x * w),
+                  2 * (x * z + y * w),     2 * (y * z - x * w),     1 - 2 * (x * x + y * y)};
+    int column, k;
+    for (column = 0; column < 3; column++) {
+        for (k = 0; k < 3; k++) m[column * 4 + k] = r[column * 3 + k] * trs[7 + column];
+        m[column * 4 + 3] = 0.0f;
+    }
+    m[12] = trs[0];
+    m[13] = trs[1];
+    m[14] = trs[2];
+    m[15] = 1.0f;
+}
+
+static void world_of(const MeshAnimation *anim, float (*local)[16], float (*world)[16], unsigned char *done, int i)
+{
+    int parent = anim->parent[i];
+    if (done[i]) return;
+    done[i] = 1; /* a cycle, which a valid file has not, stops here */
+    if (parent >= 0) {
+        world_of(anim, local, world, done, parent);
+        multiply(world[parent], local[i], world[i]);
+    } else {
+        memcpy(world[i], local[i], sizeof(world[i]));
+    }
+}
+
+int MeshModel_Clip(const MeshModel *model, const char *name)
+{
+    int i;
+    if (!model || !model->animation || !name) return -1;
+    for (i = 0; i < model->animation->clip_count; i++) {
+        if (!strcmp(model->animation->clips[i].name, name)) return i;
+    }
+    return -1;
+}
+
+int MeshModel_ClipLength(const MeshModel *model, int clip)
+{
+    if (!model || !model->animation || clip < 0 || clip >= model->animation->clip_count) return 0;
+    return model->animation->clips[clip].length;
+}
+
+int MeshModel_ClipStrike(const MeshModel *model, int clip)
+{
+    if (!model || !model->animation || clip < 0 || clip >= model->animation->clip_count) return 0;
+    return model->animation->clips[clip].strike;
+}
+
+int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out)
+{
+    const MeshAnimation *anim = model ? model->animation : NULL;
+    const Clip *c;
+    float (*trs)[10], (*local)[16], (*world)[16], (*palette)[16];
+    unsigned char *done;
+    float t;
+    int i, v, k, nodes;
+    if (!anim || clip < 0 || clip >= anim->clip_count || !out) return 0;
+    c = &anim->clips[clip];
+    t = (float)(ms < 0 ? 0 : ms > c->length ? c->length : ms) / 1000.0f;
+    nodes = anim->node_count ? anim->node_count : 1;
+    trs = malloc((size_t)nodes * sizeof(*trs));
+    local = malloc((size_t)nodes * sizeof(*local));
+    world = malloc((size_t)nodes * sizeof(*world));
+    done = calloc((size_t)nodes, 1);
+    palette = malloc((size_t)(anim->palette_count ? anim->palette_count : 1) * sizeof(*palette));
+    if (!trs || !local || !world || !done || !palette) {
+        free(trs);
+        free(local);
+        free(world);
+        free(done);
+        free(palette);
+        return 0;
+    }
+    memcpy(trs, anim->rest, (size_t)anim->node_count * sizeof(*trs));
+    for (k = 0; k < c->channel_count; k++) {
+        const Channel *channel = &c->channels[k];
+        sample(channel, t, trs[channel->node] + (channel->path == 0 ? 0 : channel->path == 1 ? 3 : 7));
+    }
+    for (i = 0; i < anim->node_count; i++) {
+        if (anim->is_fixed[i]) memcpy(local[i], anim->fixed[i], sizeof(local[i]));
+        else compose(trs[i], local[i]);
+    }
+    for (i = 0; i < anim->node_count; i++) world_of(anim, local, world, done, i);
+    for (i = 0; i < anim->palette_count; i++) multiply(world[anim->palette_node[i]], anim->palette_inverse[i], palette[i]);
+    for (i = 0; i < model->part_count && i < anim->part_count; i++) {
+        const MeshPart *part = &model->parts[i];
+        for (v = 0; v < part->count; v++) {
+            const float *source = anim->source[i] + (size_t)v * 6;
+            const unsigned short *which = anim->which[i] + (size_t)v * 4;
+            const float *weight = anim->weight[i] + (size_t)v * 4;
+            float m[16], total = 0.0f, placed[3], turned[3];
+            float *o = out[i] + (size_t)v * MESH_VERTEX_FLOATS;
+            memset(m, 0, sizeof(m));
+            for (k = 0; k < 4; k++) {
+                int e;
+                if (weight[k] <= 0.0f || which[k] >= anim->palette_count) continue;
+                for (e = 0; e < 16; e++) m[e] += weight[k] * palette[which[k]][e];
+                total += weight[k];
+            }
+            if (total <= 0.0f) {
+                memcpy(m, palette[which[0] < anim->palette_count ? which[0] : 0], sizeof(m));
+            } else if (total != 1.0f) {
+                for (k = 0; k < 16; k++) m[k] /= total;
+            }
+            transform_point(m, source, placed);
+            transform_normal(m, source + 3, turned);
+            /* half a turn round x, as the rest pose (add_primitive) */
+            o[0] = placed[0];
+            o[1] = -placed[1];
+            o[2] = -placed[2];
+            o[3] = turned[0];
+            o[4] = -turned[1];
+            o[5] = -turned[2];
+            o[6] = part->vertices[(size_t)v * MESH_VERTEX_FLOATS + 6];
+            o[7] = part->vertices[(size_t)v * MESH_VERTEX_FLOATS + 7];
+            if (v % 3 == 2 && source[3] == 0.0f && source[4] == 0.0f && source[5] == 0.0f) {
+                flat_normals(out[i] + (size_t)(v - 2) * MESH_VERTEX_FLOATS, 1); /* had none: the face's own */
+            }
+        }
+    }
+    free(trs);
+    free(local);
+    free(world);
+    free(done);
+    free(palette);
+    return 1;
+}
+
+/* --- loading -------------------------------------------------------------- */
+
 MeshModel *MeshModel_Load(const char *path, char *error, int error_size)
 {
     cgltf_options options;
     cgltf_data *data = NULL;
     cgltf_result result;
     MeshModel *model;
+    MeshAnimation *anim;
     Building *parts = NULL;
-    int part_count = 0, i, ok = 1;
+    int part_count = 0, i, ok = 1, *skin_entry, *own_entry;
     cgltf_size n;
     memset(&options, 0, sizeof(options));
     if (error && error_size > 0) error[0] = 0;
@@ -305,27 +733,63 @@ MeshModel *MeshModel_Load(const char *path, char *error, int error_size)
         cgltf_free(data);
         return NULL;
     }
+    skin_entry = calloc(data->skins_count ? data->skins_count : 1, sizeof(int));
+    own_entry = calloc(data->nodes_count ? data->nodes_count : 1, sizeof(int));
+    anim = skin_entry && own_entry ? read_nodes(data, skin_entry, own_entry) : NULL;
+    ok = anim != NULL;
     for (n = 0; n < data->nodes_count && ok; n++) {
         const cgltf_node *node = &data->nodes[n];
         float world[16], *joints;
         cgltf_size p;
+        int skin = node->skin ? skin_entry[node->skin - data->skins] : -1;
         if (!node->mesh) continue;
         cgltf_node_transform_world(node, world);
         joints = joint_matrices_of(node->skin);
         for (p = 0; p < node->mesh->primitives_count && ok; p++) {
-            ok = add_primitive(&parts, &part_count, node, &node->mesh->primitives[p], world, joints);
+            ok = add_primitive(&parts, &part_count, node, &node->mesh->primitives[p], world, joints, skin,
+                               own_entry[n]);
         }
         free(joints);
     }
+    free(skin_entry);
+    free(own_entry);
     model = ok && part_count ? calloc(1, sizeof(*model)) : NULL;
     if (model) model->parts = calloc((size_t)part_count, sizeof(*model->parts));
     if (!model || !model->parts) {
         if (error) snprintf(error, (size_t)error_size, "%s: %s", path, ok ? "no triangles" : "out of memory");
-        for (i = 0; i < part_count; i++) free(parts[i].vertices);
+        for (i = 0; i < part_count; i++) {
+            free(parts[i].vertices);
+            free(parts[i].source);
+            free(parts[i].which);
+            free(parts[i].weight);
+        }
         free(parts);
+        if (model) free(model->parts);
         free(model);
+        free_animation(anim);
         cgltf_free(data);
         return NULL;
+    }
+    /* What posing needs, when the file has clips; without, the model stands. */
+    if (data->animations_count) read_clips(anim, data);
+    anim->source = anim->clip_count ? calloc((size_t)part_count, sizeof(*anim->source)) : NULL;
+    anim->which = anim->source ? calloc((size_t)part_count, sizeof(*anim->which)) : NULL;
+    anim->weight = anim->which ? calloc((size_t)part_count, sizeof(*anim->weight)) : NULL;
+    if (anim->weight) {
+        anim->part_count = part_count;
+        for (i = 0; i < part_count; i++) {
+            anim->source[i] = parts[i].source;
+            anim->which[i] = parts[i].which;
+            anim->weight[i] = parts[i].weight;
+        }
+        model->animation = anim;
+    } else {
+        for (i = 0; i < part_count; i++) {
+            free(parts[i].source);
+            free(parts[i].which);
+            free(parts[i].weight);
+        }
+        free_animation(anim);
     }
     load_images(model, data, path);
     model->part_count = part_count;
@@ -368,6 +832,7 @@ void MeshModel_Free(MeshModel *model)
     if (!model) return;
     for (i = 0; i < model->part_count; i++) free(model->parts[i].vertices);
     for (i = 0; i < model->image_count; i++) stbi_image_free(model->images[i].rgba);
+    free_animation(model->animation);
     free(model->parts);
     free(model->images);
     free(model);
