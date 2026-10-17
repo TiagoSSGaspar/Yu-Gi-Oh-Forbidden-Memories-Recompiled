@@ -53,8 +53,22 @@ uint32_t MeshPass_Submit(int model, const MeshPassMatrix *ls, int fade);
 /* The same, posed as clip `clip` has it `ms` milliseconds in (mesh_model.h);
  * a clip it does not have leaves it in its rest pose. */
 uint32_t MeshPass_SubmitPosed(int model, const MeshPassMatrix *ls, int fade, int clip, int ms);
+/* The same, posed, and with the clip's effects (mesh_model.h) as they stand
+ * `strike_ms` real milliseconds from its strike (negative before it;
+ * MESH_PASS_NO_STRIKE: none show), aimed at `target` in the camera's space
+ * (the GTE's: x right, y down, z away) when `aimed`. */
+#define MESH_PASS_NO_STRIKE (-0x7fffffff)
+typedef struct MeshPassPose {
+    int clip, ms;
+    int strike_ms;
+    int aimed;
+    int target[3];
+} MeshPassPose;
+uint32_t MeshPass_SubmitPose(int model, const MeshPassMatrix *ls, int fade, const MeshPassPose *pose);
 /* Model `model`'s clip called `name`: its index, or -1. */
 int MeshPass_Clip(int model, const char *name);
+/* How many effects the clip plays (0 for none, or no such clip). */
+int MeshPass_ClipEffects(int model, int clip);
 /* Its length and when its blow lands, in milliseconds; 0 for no such clip. */
 int MeshPass_ClipLength(int model, int clip);
 int MeshPass_ClipStrike(int model, int clip);

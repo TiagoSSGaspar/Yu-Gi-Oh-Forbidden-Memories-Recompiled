@@ -348,6 +348,8 @@ typedef struct Clip {
     int length, strike; /* ms */
     Channel *channels;
     int channel_count;
+    MeshEffect *effects;
+    int effect_count;
 } Clip;
 
 /* A posable model: its nodes as they stand, the matrices a vertex can follow
@@ -386,6 +388,7 @@ static void free_animation(MeshAnimation *anim)
             free(anim->clips[i].channels[k].values);
         }
         free(anim->clips[i].channels);
+        free(anim->clips[i].effects);
     }
     free(anim->clips);
     free(anim->source);
@@ -410,23 +413,123 @@ static float *unpack(const cgltf_accessor *accessor, cgltf_size *count)
     return out;
 }
 
-/* The number after "strike" in an animation's extras, in seconds; -1 for none. */
-static float extras_strike(const cgltf_data *data, const cgltf_extras *extras)
+/* An animation's extras as text, to be freed; NULL for none. They are this
+ * port's own, written by its converter:
+ *   {"strike": seconds,
+ *    "effects": [{"kind": "glow" | "beam" | "burst", "node": n (-1 the target),
+ *                 "offset": [x, y, z], "from": s, "to": s, "size": units,
+ *                 "image": "name", "grid": [columns, rows], "color": [r, g, b, a]}]}
+ * with times from the strike in real seconds. Read by looking for the keys,
+ * not by a JSON parser: nothing else is written there. */
+static char *extras_text(const cgltf_data *data, const cgltf_extras *extras)
 {
-    char json[256];
-    const char *at;
-    cgltf_size size = 0;
+    cgltf_size size;
+    char *text;
     if (extras->data) {
-        at = strstr(extras->data, "\"strike\"");
-    } else {
-        size = extras->end_offset > extras->start_offset ? extras->end_offset - extras->start_offset : 0;
-        if (!size || size >= sizeof(json)) return -1.0f;
-        memcpy(json, data->json + extras->start_offset, size);
-        json[size] = 0;
-        at = strstr(json, "\"strike\"");
+        size = strlen(extras->data);
+        text = malloc(size + 1);
+        if (text) memcpy(text, extras->data, size + 1);
+        return text;
     }
-    if (!at || !(at = strchr(at, ':'))) return -1.0f;
-    return strtof(at + 1, NULL);
+    size = extras->end_offset > extras->start_offset ? extras->end_offset - extras->start_offset : 0;
+    if (!size || !data->json) return NULL;
+    text = malloc(size + 1);
+    if (!text) return NULL;
+    memcpy(text, data->json + extras->start_offset, size);
+    text[size] = 0;
+    return text;
+}
+
+/* Just past the colon after "key" in [from, to), or NULL. */
+static const char *json_field(const char *from, const char *to, const char *key)
+{
+    size_t length = strlen(key);
+    const char *at;
+    for (at = from; at + length + 2 < to; at++) {
+        if (at[0] == '"' && !strncmp(at + 1, key, length) && at[length + 1] == '"') {
+            at += length + 2;
+            while (at < to && (*at == ' ' || *at == ':')) at++;
+            return at < to ? at : NULL;
+        }
+    }
+    return NULL;
+}
+
+static float json_number(const char *from, const char *to, const char *key, float otherwise)
+{
+    const char *at = json_field(from, to, key);
+    return at ? strtof(at, NULL) : otherwise;
+}
+
+/* Up to `count` numbers of the array after "key"; how many were read. */
+static int json_numbers(const char *from, const char *to, const char *key, float *out, int count)
+{
+    const char *at = json_field(from, to, key);
+    char *end;
+    int n = 0;
+    if (!at || *at != '[') return 0;
+    at++;
+    while (n < count && at < to && *at != ']') {
+        float value = strtof(at, &end);
+        if (end == at) break;
+        out[n++] = value;
+        at = end;
+        while (at < to && (*at == ',' || *at == ' ')) at++;
+    }
+    return n;
+}
+
+static void read_effects(Clip *clip, const char *text, const cgltf_data *data)
+{
+    const char *at = json_field(text, text + strlen(text), "effects"), *end = text + strlen(text);
+    int room = 0;
+    if (!at || *at != '[') return;
+    while ((at = strchr(at, '{')) != NULL) {
+        const char *close = strchr(at, '}'), *kind, *image;
+        MeshEffect *effect, *more;
+        float grid[2] = {1, 1};
+        if (!close || close > end) break;
+        if (clip->effect_count == room) {
+            room = room ? room * 2 : 4;
+            more = realloc(clip->effects, (size_t)room * sizeof(*more));
+            if (!more) return;
+            clip->effects = more;
+        }
+        effect = &clip->effects[clip->effect_count];
+        memset(effect, 0, sizeof(*effect));
+        kind = json_field(at, close, "kind");
+        if (kind && !strncmp(kind, "\"beam\"", 6)) effect->kind = MESH_EFFECT_BEAM;
+        else if (kind && !strncmp(kind, "\"burst\"", 7)) effect->kind = MESH_EFFECT_BURST;
+        else if (kind && !strncmp(kind, "\"glow\"", 6)) effect->kind = MESH_EFFECT_GLOW;
+        else {
+            at = close;
+            continue;
+        }
+        effect->node = (int)json_number(at, close, "node", -1.0f);
+        if (effect->node >= (int)data->nodes_count) effect->node = -1;
+        json_numbers(at, close, "offset", effect->offset, 3);
+        effect->from = (int)(json_number(at, close, "from", 0.0f) * 1000.0f);
+        effect->to = (int)(json_number(at, close, "to", 0.0f) * 1000.0f);
+        effect->size = json_number(at, close, "size", 1.0f);
+        json_numbers(at, close, "grid", grid, 2);
+        effect->columns = grid[0] >= 1.0f ? (int)grid[0] : 1;
+        effect->rows = grid[1] >= 1.0f ? (int)grid[1] : 1;
+        effect->color[0] = effect->color[1] = effect->color[2] = effect->color[3] = 1.0f;
+        json_numbers(at, close, "color", effect->color, 4);
+        effect->image = -1;
+        image = json_field(at, close, "image");
+        if (image && *image == '"') {
+            cgltf_size i;
+            const char *name_end = strchr(image + 1, '"');
+            for (i = 0; name_end && i < data->images_count; i++) {
+                const char *name = data->images[i].name;
+                if (name && strlen(name) == (size_t)(name_end - image - 1) && !strncmp(name, image + 1, strlen(name)))
+                    effect->image = (int)i;
+            }
+        }
+        if (effect->to > effect->from) clip->effect_count++;
+        at = close;
+    }
 }
 
 static int read_channel(Channel *out, const cgltf_data *data, const cgltf_animation_channel *channel)
@@ -465,7 +568,8 @@ static void read_clips(MeshAnimation *anim, const cgltf_data *data)
     for (a = 0; a < data->animations_count; a++) {
         const cgltf_animation *animation = &data->animations[a];
         Clip *clip = &anim->clips[anim->clip_count];
-        float last = 0.0f, strike;
+        float last = 0.0f, strike = -1.0f;
+        char *extras;
         clip->channels = calloc(animation->channels_count ? animation->channels_count : 1, sizeof(*clip->channels));
         if (!clip->channels) continue;
         for (c = 0; c < animation->channels_count; c++) {
@@ -477,7 +581,12 @@ static void read_clips(MeshAnimation *anim, const cgltf_data *data)
         if (animation->name) snprintf(clip->name, sizeof(clip->name), "%s", animation->name);
         else snprintf(clip->name, sizeof(clip->name), "clip%d", (int)a);
         clip->length = (int)(last * 1000.0f + 0.5f);
-        strike = extras_strike(data, &animation->extras);
+        extras = extras_text(data, &animation->extras);
+        if (extras) {
+            strike = json_number(extras, extras + strlen(extras), "strike", -1.0f);
+            read_effects(clip, extras, data);
+            free(extras);
+        }
         clip->strike = strike >= 0.0f ? (int)(strike * 1000.0f + 0.5f) : clip->length / 2;
         if (clip->strike > clip->length) clip->strike = clip->length;
         anim->clip_count++;
@@ -631,15 +740,16 @@ int MeshModel_ClipStrike(const MeshModel *model, int clip)
     return model->animation->clips[clip].strike;
 }
 
-int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out)
+/* Every node's world matrix with clip `clip` `ms` in: an array to free, or
+ * NULL for no such clip (or no room). */
+static float (*posed_nodes(const MeshAnimation *anim, int clip, int ms))[16]
 {
-    const MeshAnimation *anim = model ? model->animation : NULL;
     const Clip *c;
-    float (*trs)[10], (*local)[16], (*world)[16], (*palette)[16];
+    float (*trs)[10], (*local)[16], (*world)[16];
     unsigned char *done;
     float t;
-    int i, v, k, nodes;
-    if (!anim || clip < 0 || clip >= anim->clip_count || !out) return 0;
+    int i, k, nodes;
+    if (!anim || clip < 0 || clip >= anim->clip_count) return NULL;
     c = &anim->clips[clip];
     t = (float)(ms < 0 ? 0 : ms > c->length ? c->length : ms) / 1000.0f;
     nodes = anim->node_count ? anim->node_count : 1;
@@ -647,25 +757,59 @@ int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out)
     local = malloc((size_t)nodes * sizeof(*local));
     world = malloc((size_t)nodes * sizeof(*world));
     done = calloc((size_t)nodes, 1);
-    palette = malloc((size_t)(anim->palette_count ? anim->palette_count : 1) * sizeof(*palette));
-    if (!trs || !local || !world || !done || !palette) {
-        free(trs);
-        free(local);
+    if (trs && local && world && done) {
+        memcpy(trs, anim->rest, (size_t)anim->node_count * sizeof(*trs));
+        for (k = 0; k < c->channel_count; k++) {
+            const Channel *channel = &c->channels[k];
+            sample(channel, t, trs[channel->node] + (channel->path == 0 ? 0 : channel->path == 1 ? 3 : 7));
+        }
+        for (i = 0; i < anim->node_count; i++) {
+            if (anim->is_fixed[i]) memcpy(local[i], anim->fixed[i], sizeof(local[i]));
+            else compose(trs[i], local[i]);
+        }
+        for (i = 0; i < anim->node_count; i++) world_of(anim, local, world, done, i);
+    } else {
         free(world);
-        free(done);
-        free(palette);
+        world = NULL;
+    }
+    free(trs);
+    free(local);
+    free(done);
+    return world;
+}
+
+int MeshModel_ClipEffects(const MeshModel *model, int clip, const MeshEffect **effects)
+{
+    if (!model || !model->animation || clip < 0 || clip >= model->animation->clip_count) return 0;
+    if (effects) *effects = model->animation->clips[clip].effects;
+    return model->animation->clips[clip].effect_count;
+}
+
+int MeshModel_NodePoint(const MeshModel *model, int clip, int ms, int node, const float offset[3], float out[3])
+{
+    const MeshAnimation *anim = model ? model->animation : NULL;
+    float (*world)[16], placed[3];
+    if (!anim || node < 0 || node >= anim->node_count || !(world = posed_nodes(anim, clip, ms))) return 0;
+    transform_point(world[node], offset, placed);
+    free(world);
+    /* half a turn round x, as the parts */
+    out[0] = placed[0];
+    out[1] = -placed[1];
+    out[2] = -placed[2];
+    return 1;
+}
+
+int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out)
+{
+    const MeshAnimation *anim = model ? model->animation : NULL;
+    float (*world)[16], (*palette)[16];
+    int i, v, k;
+    if (!anim || !out || !(world = posed_nodes(anim, clip, ms))) return 0;
+    palette = malloc((size_t)(anim->palette_count ? anim->palette_count : 1) * sizeof(*palette));
+    if (!palette) {
+        free(world);
         return 0;
     }
-    memcpy(trs, anim->rest, (size_t)anim->node_count * sizeof(*trs));
-    for (k = 0; k < c->channel_count; k++) {
-        const Channel *channel = &c->channels[k];
-        sample(channel, t, trs[channel->node] + (channel->path == 0 ? 0 : channel->path == 1 ? 3 : 7));
-    }
-    for (i = 0; i < anim->node_count; i++) {
-        if (anim->is_fixed[i]) memcpy(local[i], anim->fixed[i], sizeof(local[i]));
-        else compose(trs[i], local[i]);
-    }
-    for (i = 0; i < anim->node_count; i++) world_of(anim, local, world, done, i);
     for (i = 0; i < anim->palette_count; i++) multiply(world[anim->palette_node[i]], anim->palette_inverse[i], palette[i]);
     for (i = 0; i < model->part_count && i < anim->part_count; i++) {
         const MeshPart *part = &model->parts[i];
@@ -703,10 +847,7 @@ int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out)
             }
         }
     }
-    free(trs);
-    free(local);
     free(world);
-    free(done);
     free(palette);
     return 1;
 }

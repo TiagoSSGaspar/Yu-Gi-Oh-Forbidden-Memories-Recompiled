@@ -54,4 +54,25 @@ int MeshModel_ClipStrike(const MeshModel *model, int clip);
  * room for parts[i].count of them. 0, writing nothing, for no such clip. */
 int MeshModel_Pose(const MeshModel *model, int clip, int ms, float *const *out);
 
+/* What a clip plays besides the model, from its extras ("effects", see
+ * mesh_model.c): a glow at a node, a beam from a node to a target, a burst
+ * at the target. Times are real milliseconds from the clip's strike. */
+enum { MESH_EFFECT_GLOW, MESH_EFFECT_BEAM, MESH_EFFECT_BURST };
+typedef struct MeshEffect {
+    int kind;
+    int node;          /* where it starts: a node, or -1 for the target */
+    float offset[3];   /* from the node, in its own space */
+    int from, to;      /* ms from the strike: when it shows */
+    float size;        /* in the file's units; a beam's width */
+    int image;         /* in MeshModel.images, or -1 */
+    int columns, rows; /* a flipbook's frames, played from `from` to `to` */
+    float color[4];
+} MeshEffect;
+/* Clip `clip`'s effects: how many, and *effects pointing at them (the
+ * model's own). 0 for none. */
+int MeshModel_ClipEffects(const MeshModel *model, int clip, const MeshEffect **effects);
+/* Where `offset`, in node `node`'s own space, stands with clip `clip` `ms`
+ * milliseconds in, in the parts' axes. 0 for no such clip or node. */
+int MeshModel_NodePoint(const MeshModel *model, int clip, int ms, int node, const float offset[3], float out[3]);
+
 #endif

@@ -54,6 +54,9 @@ typedef struct Submission {
     uint32_t handle; /* 0: none */
     int model;
     int clip, ms; /* the pose: clip -1 the rest pose */
+    int strike_ms; /* its effects' time, MESH_PASS_NO_STRIKE for none */
+    int aimed;
+    float target[3]; /* where they aim, in the camera's space */
     float rotation[9]; /* column-major, for the shader */
     float translation[3];
     float h, ofx, ofy;
@@ -171,18 +174,31 @@ uint32_t MeshPass_Submit(int id, const MeshPassMatrix *ls, int fade)
 
 uint32_t MeshPass_SubmitPosed(int id, const MeshPassMatrix *ls, int fade, int clip, int ms)
 {
+    MeshPassPose pose;
+    memset(&pose, 0, sizeof(pose));
+    pose.clip = clip;
+    pose.ms = ms;
+    pose.strike_ms = MESH_PASS_NO_STRIKE;
+    return MeshPass_SubmitPose(id, ls, fade, &pose);
+}
+
+uint32_t MeshPass_SubmitPose(int id, const MeshPassMatrix *ls, int fade, const MeshPassPose *pose)
+{
     Model *model = model_at(id);
     Submission *at;
     uint32_t handle;
     int r, c;
-    if (!model || !model->fitted || !ls || !MeshPass_Ready()) return 0;
+    if (!model || !model->fitted || !ls || !pose || !MeshPass_Ready()) return 0;
     if (++handles > 0xffffu) handles = 1; /* 0 is no handle */
     handle = handles;
     at = &ring[handle % RING];
     at->handle = handle;
     at->model = id;
-    at->clip = MeshModel_ClipLength(model->mesh, clip) > 0 ? clip : -1;
-    at->ms = at->clip >= 0 ? ms : 0;
+    at->clip = MeshModel_ClipLength(model->mesh, pose->clip) > 0 ? pose->clip : -1;
+    at->ms = at->clip >= 0 ? pose->ms : 0;
+    at->strike_ms = at->clip >= 0 ? pose->strike_ms : MESH_PASS_NO_STRIKE;
+    at->aimed = pose->aimed;
+    for (r = 0; r < 3; r++) at->target[r] = (float)pose->target[r];
     for (r = 0; r < 3; r++) {
         for (c = 0; c < 3; c++) at->rotation[c * 3 + r] = (float)ls->m[r][c] / 4096.0f;
         at->translation[r] = (float)ls->t[r];
@@ -204,6 +220,12 @@ int MeshPass_Clip(int id, const char *name)
     for (length = 0; length + 1 < sizeof(copy) && name[length]; length++) copy[length] = name[length];
     copy[length] = 0;
     return MeshModel_Clip(model->mesh, copy);
+}
+
+int MeshPass_ClipEffects(int id, int clip)
+{
+    Model *model = model_at(id);
+    return model ? MeshModel_ClipEffects(model->mesh, clip, NULL) : 0;
 }
 
 int MeshPass_ClipLength(int id, int clip)
@@ -271,10 +293,10 @@ int MeshPass_IsMarker(uint32_t word)
 GL_FUNCTIONS(DECLARE)
 #undef DECLARE
 
-static GLuint program, vertex_array, depth;
+static GLuint program, vertex_array, depth, effect_buffer;
 static int depth_width, depth_height, depth_samples;
 static GLint u_rotation, u_translation, u_place, u_feet, u_turn, u_screen, u_h, u_picture, u_scale, u_image,
-    u_textured, u_color, u_opacity;
+    u_textured, u_color, u_opacity, u_effect;
 
 static const char *vertex_source =
 #ifdef __APPLE__
@@ -324,11 +346,18 @@ static const char *fragment_source =
     "uniform int textured;\n"
     "uniform vec4 color;\n"
     "uniform float opacity;\n"
+    "uniform int effect;\n"
     "out vec4 fragment;\n"
     "void main() {\n"
+    "    vec4 texel = textured != 0 ? texture(image, uv) : vec4(1.0);\n"
+    /* an effect adds its light to what is there */
+    "    if (effect != 0) {\n"
+    "        vec4 glow = texel * color;\n"
+    "        fragment = vec4(glow.rgb * glow.a * opacity, 1.0);\n"
+    "        return;\n"
+    "    }\n"
     /* glTF's colour factors are linear and its textures sRGB: lit in
      * linear, then back to sRGB as the picture is */
-    "    vec4 texel = textured != 0 ? texture(image, uv) : vec4(1.0);\n"
     "    vec3 linear = pow(texel.rgb, vec3(2.2)) * color.rgb * (0.35 + 0.85 * light);\n"
     "    vec3 rgb = pow(min(linear, vec3(1.0)), vec3(1.0 / 2.2));\n"
     /* as the picture blends: colour pre-multiplied, alpha what is left of the destination */
@@ -407,7 +436,9 @@ static int start(void)
     u_textured = gl_GetUniformLocation(program, "textured");
     u_color = gl_GetUniformLocation(program, "color");
     u_opacity = gl_GetUniformLocation(program, "opacity");
+    u_effect = gl_GetUniformLocation(program, "effect");
     gl_GenVertexArrays(1, &vertex_array);
+    gl_GenBuffers(1, &effect_buffer);
     return 1;
 }
 
@@ -480,6 +511,150 @@ static void show(Model *model, int clip, int ms)
     gl_BindBuffer(GL_ARRAY_BUFFER, 0);
     model->shown_clip = posed ? clip : -1;
     model->shown_ms = posed ? ms : 0;
+}
+
+/* --- effects ---------------------------------------------------------------- */
+
+/* The vertex shader's placing of a point of the model's own in the camera's
+ * space, and back: an effect is shaped where the camera sees it and handed
+ * to the shader as the model's own points. */
+static void to_camera(const Model *model, const Submission *at, const float *v, float *c)
+{
+    float d[3] = {v[0] - model->feet[0], v[1] - model->feet[1], v[2] - model->feet[2]}, p[3];
+    int r;
+    p[0] = model->anchor[0] + model->scale * (model->turn[0] * d[0] + model->turn[1] * d[2]);
+    p[1] = model->anchor[1] + model->scale * d[1];
+    p[2] = model->anchor[2] + model->scale * (-model->turn[1] * d[0] + model->turn[0] * d[2]);
+    for (r = 0; r < 3; r++) {
+        c[r] = at->rotation[r] * p[0] + at->rotation[3 + r] * p[1] + at->rotation[6 + r] * p[2] + at->translation[r];
+    }
+}
+
+static int to_model(const Model *model, const Submission *at, const float *c, float *v)
+{
+    const float *m = at->rotation; /* column-major: m[column * 3 + row] */
+    float m00 = m[0], m10 = m[1], m20 = m[2], m01 = m[3], m11 = m[4], m21 = m[5], m02 = m[6], m12 = m[7], m22 = m[8];
+    float q[3] = {c[0] - at->translation[0], c[1] - at->translation[1], c[2] - at->translation[2]}, p[3], e[3];
+    float det = m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20) + m02 * (m10 * m21 - m11 * m20);
+    int r;
+    if (fabsf(det) < 1e-12f || model->scale == 0.0f) return 0;
+    p[0] = ((m11 * m22 - m12 * m21) * q[0] - (m01 * m22 - m02 * m21) * q[1] + (m01 * m12 - m02 * m11) * q[2]) / det;
+    p[1] = (-(m10 * m22 - m12 * m20) * q[0] + (m00 * m22 - m02 * m20) * q[1] - (m00 * m12 - m02 * m10) * q[2]) / det;
+    p[2] = ((m10 * m21 - m11 * m20) * q[0] - (m00 * m21 - m01 * m20) * q[1] + (m00 * m11 - m01 * m10) * q[2]) / det;
+    for (r = 0; r < 3; r++) e[r] = (p[r] - model->anchor[r]) / model->scale;
+    v[0] = model->turn[0] * e[0] - model->turn[1] * e[2] + model->feet[0];
+    v[1] = e[1] + model->feet[1];
+    v[2] = model->turn[1] * e[0] + model->turn[0] * e[2] + model->feet[2];
+    return 1;
+}
+
+/* Two triangles from four corners in the camera's space (round the quad),
+ * textured from (u0, v0) at the first to (u1, v1) at the third. */
+static int quad(const Model *model, const Submission *at, float corner[4][3], float u0, float v0, float u1, float v1,
+                float *out)
+{
+    static const int order[6] = {0, 1, 2, 0, 2, 3};
+    float uv[4][2] = {{u0, v0}, {u1, v0}, {u1, v1}, {u0, v1}};
+    int i;
+    for (i = 0; i < 6; i++) {
+        float *o = out + i * MESH_VERTEX_FLOATS;
+        if (!to_model(model, at, corner[order[i]], o)) return 0;
+        o[3] = 0.0f;
+        o[4] = -1.0f;
+        o[5] = 0.0f;
+        o[6] = uv[order[i]][0];
+        o[7] = uv[order[i]][1];
+    }
+    return 1;
+}
+
+/* A square facing the camera, `half` across from its middle. */
+static void facing(float corner[4][3], const float *middle, float half)
+{
+    int i;
+    for (i = 0; i < 4; i++) {
+        corner[i][0] = middle[0] + (i == 1 || i == 2 ? half : -half);
+        corner[i][1] = middle[1] + (i >= 2 ? half : -half);
+        corner[i][2] = middle[2];
+    }
+}
+
+/* The clip's effects that show at the submission's time, drawn after the
+ * model with its depth to hide behind but none of their own. */
+static void draw_effects(Model *model, const Submission *at)
+{
+    const MeshEffect *effects;
+    float camera_unit, out[6 * MESH_VERTEX_FLOATS];
+    int count = at->clip >= 0 && at->strike_ms != MESH_PASS_NO_STRIKE
+                    ? MeshModel_ClipEffects(model->mesh, at->clip, &effects)
+                    : 0;
+    int i;
+    if (!count) return;
+    /* the camera's units to one of the model's own */
+    camera_unit = model->scale * sqrtf(at->rotation[0] * at->rotation[0] + at->rotation[1] * at->rotation[1] +
+                                       at->rotation[2] * at->rotation[2]);
+    glDepthMask(GL_FALSE);
+    gl_Uniform1i(u_effect, 1);
+    gl_BindBuffer(GL_ARRAY_BUFFER, effect_buffer);
+    gl_VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, MESH_VERTEX_FLOATS * sizeof(float), (const void *)0);
+    gl_VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, MESH_VERTEX_FLOATS * sizeof(float), (const void *)(3 * sizeof(float)));
+    gl_VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, MESH_VERTEX_FLOATS * sizeof(float), (const void *)(6 * sizeof(float)));
+    for (i = 0; i < count; i++) {
+        const MeshEffect *effect = &effects[i];
+        float u, strength, from[3], to[3], corner[4][3], point[3], size;
+        GLuint texture = 0;
+        int made = 0;
+        if (at->strike_ms < effect->from || at->strike_ms >= effect->to) continue;
+        u = (float)(at->strike_ms - effect->from) / (float)(effect->to - effect->from);
+        /* in quickly, out more slowly */
+        strength = (u < 0.15f ? u / 0.15f : 1.0f) * (u > 0.75f ? (1.0f - u) / 0.25f : 1.0f);
+        size = effect->size * camera_unit;
+        if (effect->node >= 0) {
+            if (!MeshModel_NodePoint(model->mesh, at->clip, at->ms, effect->node, effect->offset, point)) continue;
+            to_camera(model, at, point, from);
+        }
+        if (effect->kind == MESH_EFFECT_GLOW && effect->node >= 0) {
+            facing(corner, from, size * (0.6f + 0.4f * u) / 2.0f);
+            made = quad(model, at, corner, 0.0f, 0.0f, 1.0f, 1.0f, out);
+        } else if (effect->kind == MESH_EFFECT_BURST && at->aimed) {
+            int frames = effect->columns * effect->rows, frame = (int)(u * (float)frames);
+            float cw = 1.0f / (float)effect->columns, ch = 1.0f / (float)effect->rows;
+            if (frame >= frames) frame = frames - 1;
+            facing(corner, at->target, size * (0.5f + 0.5f * u) / 2.0f);
+            made = quad(model, at, corner, (float)(frame % effect->columns) * cw, (float)(frame / effect->columns) * ch,
+                        (float)(frame % effect->columns + 1) * cw, (float)(frame / effect->columns + 1) * ch, out);
+        } else if (effect->kind == MESH_EFFECT_BEAM && effect->node >= 0 && at->aimed) {
+            /* a band from the node to the target, turned to face the eye */
+            float axis[3], side[3], length, across, k;
+            int r;
+            for (r = 0; r < 3; r++) to[r] = at->target[r], axis[r] = to[r] - from[r];
+            side[0] = axis[1] * from[2] - axis[2] * from[1];
+            side[1] = axis[2] * from[0] - axis[0] * from[2];
+            side[2] = axis[0] * from[1] - axis[1] * from[0];
+            across = sqrtf(side[0] * side[0] + side[1] * side[1] + side[2] * side[2]);
+            length = sqrtf(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+            if (across <= 0.0f || length <= 0.0f || size <= 0.0f) continue;
+            k = size * (0.5f + 0.5f * strength) / 2.0f / across;
+            for (r = 0; r < 3; r++) {
+                corner[0][r] = from[r] - side[r] * k;
+                corner[1][r] = to[r] - side[r] * k;
+                corner[2][r] = to[r] + side[r] * k;
+                corner[3][r] = from[r] + side[r] * k;
+            }
+            /* the streaks run along it, towards the target */
+            made = quad(model, at, corner, -(float)at->strike_ms / 250.0f, 0.0f,
+                        length / size - (float)at->strike_ms / 250.0f, 1.0f, out);
+        }
+        if (!made) continue;
+        if (effect->image >= 0 && effect->image < model->mesh->image_count) texture = model->textures[effect->image];
+        glBindTexture(GL_TEXTURE_2D, texture);
+        gl_Uniform1i(u_textured, texture != 0);
+        gl_Uniform4f(u_color, effect->color[0], effect->color[1], effect->color[2], effect->color[3] * strength);
+        gl_BufferData(GL_ARRAY_BUFFER, sizeof(out), out, GL_STREAM_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+    gl_Uniform1i(u_effect, 0);
+    glDepthMask(GL_TRUE);
 }
 
 /* A depth buffer the size of the target, with its samples. */
@@ -573,6 +748,7 @@ void MeshPass_Draw(uint32_t word, const MeshPassTarget *target)
         gl_Uniform4f(u_color, part->color[0], part->color[1], part->color[2], part->color[3]);
         glDrawArrays(GL_TRIANGLES, 0, part->count);
     }
+    draw_effects(model, at);
     gl_DisableVertexAttribArray(0);
     gl_DisableVertexAttribArray(1);
     gl_DisableVertexAttribArray(2);
@@ -597,7 +773,7 @@ static void forget(void)
         models[i].buffers = models[i].textures = NULL;
         models[i].uploaded = 0;
     }
-    program = vertex_array = depth = 0;
+    program = vertex_array = depth = effect_buffer = 0;
     depth_width = depth_height = depth_samples = 0;
 }
 
@@ -615,6 +791,7 @@ void MeshPass_GlStop(void)
             if (models[i].textures) glDeleteTextures(models[i].mesh->image_count, models[i].textures);
         }
         if (depth) gl_DeleteRenderbuffers(1, &depth);
+        if (effect_buffer) gl_DeleteBuffers(1, &effect_buffer);
         gl_DeleteVertexArrays(1, &vertex_array);
         gl_DeleteProgram(program);
     }
