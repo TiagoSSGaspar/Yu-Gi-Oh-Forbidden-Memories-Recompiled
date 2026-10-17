@@ -47,8 +47,17 @@ int MeshPass_Fit(int model, const MeshPassMatrix *ls, int height_px, int feet_x,
 int MeshPass_Ready(void);
 /* The marker word for model `model` drawn through `ls` with the GTE's
  * projection as it is now, faded `fade` (0 opaque to 255 gone); 0 when it
- * would not be drawn, and the caller's polygons should be. */
+ * would not be drawn, and the caller's polygons should be. It stands in its
+ * rest pose. */
 uint32_t MeshPass_Submit(int model, const MeshPassMatrix *ls, int fade);
+/* The same, posed as clip `clip` has it `ms` milliseconds in (mesh_model.h);
+ * a clip it does not have leaves it in its rest pose. */
+uint32_t MeshPass_SubmitPosed(int model, const MeshPassMatrix *ls, int fade, int clip, int ms);
+/* Model `model`'s clip called `name`: its index, or -1. */
+int MeshPass_Clip(int model, const char *name);
+/* Its length and when its blow lands, in milliseconds; 0 for no such clip. */
+int MeshPass_ClipLength(int model, int clip);
+int MeshPass_ClipStrike(int model, int clip);
 
 /* For gl_picture.c. Where the replay is drawing: the framebuffer, its size in
  * pixels and samples, the picture's scale, and the GPU's drawing offset and

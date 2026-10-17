@@ -5,7 +5,10 @@
  * them. A submission keeps what drawing needs and the GTE's projection as
  * it was, in a ring the marker's handle indexes: frames recorded ahead of a
  * replay (a raised game speed) each keep their own. A handle the ring has
- * gone round since is not drawn.
+ * gone round since is not drawn. A submission also keeps its pose, a clip
+ * and how far in; an animated model's buffers are written again whenever
+ * the submission drawn has another pose than the last (mesh_model.c poses
+ * it on the CPU).
  *
  * Drawing reproduces RTPS: the model's vertex v, turned by `yaw`, scaled by
  * the fit and put at the feet, is c = R v + T through the submitted matrix,
@@ -41,11 +44,16 @@ typedef struct Model {
     GLuint *buffers;
     GLuint *textures;
     int uploaded;
+    /* An animated model's buffers hold one pose at a time: which (clip -1
+     * the rest pose), and the posed vertices it was written from. */
+    int shown_clip, shown_ms;
+    float **posed;
 } Model;
 
 typedef struct Submission {
     uint32_t handle; /* 0: none */
     int model;
+    int clip, ms; /* the pose: clip -1 the rest pose */
     float rotation[9]; /* column-major, for the shader */
     float translation[3];
     float h, ofx, ofy;
@@ -158,6 +166,11 @@ int MeshPass_Ready(void)
 
 uint32_t MeshPass_Submit(int id, const MeshPassMatrix *ls, int fade)
 {
+    return MeshPass_SubmitPosed(id, ls, fade, -1, 0);
+}
+
+uint32_t MeshPass_SubmitPosed(int id, const MeshPassMatrix *ls, int fade, int clip, int ms)
+{
     Model *model = model_at(id);
     Submission *at;
     uint32_t handle;
@@ -168,6 +181,8 @@ uint32_t MeshPass_Submit(int id, const MeshPassMatrix *ls, int fade)
     at = &ring[handle % RING];
     at->handle = handle;
     at->model = id;
+    at->clip = MeshModel_ClipLength(model->mesh, clip) > 0 ? clip : -1;
+    at->ms = at->clip >= 0 ? ms : 0;
     for (r = 0; r < 3; r++) {
         for (c = 0; c < 3; c++) at->rotation[c * 3 + r] = (float)ls->m[r][c] / 4096.0f;
         at->translation[r] = (float)ls->t[r];
@@ -177,6 +192,30 @@ uint32_t MeshPass_Submit(int id, const MeshPassMatrix *ls, int fade)
     at->ofy = control_fixed(25);
     at->opacity = 1.0f - (float)(fade < 0 ? 0 : fade > 255 ? 255 : fade) / 255.0f;
     return (MESH_PASS_MAGIC << 16) | handle;
+}
+
+int MeshPass_Clip(int id, const char *name)
+{
+    Model *model = model_at(id);
+    char copy[64];
+    size_t length;
+    if (!model || !name) return -1;
+    /* A mod's buffer, as MeshPass_Load's path. */
+    for (length = 0; length + 1 < sizeof(copy) && name[length]; length++) copy[length] = name[length];
+    copy[length] = 0;
+    return MeshModel_Clip(model->mesh, copy);
+}
+
+int MeshPass_ClipLength(int id, int clip)
+{
+    Model *model = model_at(id);
+    return model ? MeshModel_ClipLength(model->mesh, clip) : 0;
+}
+
+int MeshPass_ClipStrike(int id, int clip)
+{
+    Model *model = model_at(id);
+    return model ? MeshModel_ClipStrike(model->mesh, clip) : 0;
 }
 
 int MeshPass_IsMarker(uint32_t word)
@@ -211,6 +250,7 @@ int MeshPass_IsMarker(uint32_t word)
     X(PFNGLDELETEBUFFERSPROC, DeleteBuffers) \
     X(PFNGLBINDBUFFERPROC, BindBuffer) \
     X(PFNGLBUFFERDATAPROC, BufferData) \
+    X(PFNGLBUFFERSUBDATAPROC, BufferSubData) \
     X(PFNGLENABLEVERTEXATTRIBARRAYPROC, EnableVertexAttribArray) \
     X(PFNGLDISABLEVERTEXATTRIBARRAYPROC, DisableVertexAttribArray) \
     X(PFNGLVERTEXATTRIBPOINTERPROC, VertexAttribPointer) \
@@ -387,9 +427,11 @@ static void upload(Model *model)
     for (i = 0; i < mesh->part_count; i++) {
         gl_BindBuffer(GL_ARRAY_BUFFER, model->buffers[i]);
         gl_BufferData(GL_ARRAY_BUFFER, (GLsizeiptr)((size_t)mesh->parts[i].count * MESH_VERTEX_FLOATS * sizeof(float)),
-                      mesh->parts[i].vertices, GL_STATIC_DRAW);
+                      mesh->parts[i].vertices, mesh->animation ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     }
     gl_BindBuffer(GL_ARRAY_BUFFER, 0);
+    model->shown_clip = -1;
+    model->shown_ms = 0;
     gl_ActiveTexture(GL_TEXTURE0);
     for (i = 0; i < mesh->image_count; i++) {
         if (!mesh->images[i].rgba) continue;
@@ -407,6 +449,37 @@ static void upload(Model *model)
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     model->uploaded = 1;
+}
+
+/* Puts a submission's pose in the model's buffers when they hold another:
+ * its clip as far in as it was, or the rest pose. */
+static void show(Model *model, int clip, int ms)
+{
+    const MeshModel *mesh = model->mesh;
+    int i, posed = 0;
+    if (clip == model->shown_clip && (clip < 0 || ms == model->shown_ms)) return;
+    if (clip >= 0 && !model->posed) {
+        int whole = (model->posed = calloc((size_t)mesh->part_count, sizeof(*model->posed))) != NULL;
+        for (i = 0; whole && i < mesh->part_count; i++) {
+            model->posed[i] = malloc((size_t)mesh->parts[i].count * MESH_VERTEX_FLOATS * sizeof(float));
+            whole = model->posed[i] != NULL;
+        }
+        if (!whole && model->posed) {
+            for (i = 0; i < mesh->part_count; i++) free(model->posed[i]);
+            free(model->posed);
+            model->posed = NULL; /* no room: it stands */
+        }
+    }
+    if (clip >= 0 && model->posed) posed = MeshModel_Pose(mesh, clip, ms, model->posed);
+    for (i = 0; i < mesh->part_count; i++) {
+        gl_BindBuffer(GL_ARRAY_BUFFER, model->buffers[i]);
+        gl_BufferSubData(GL_ARRAY_BUFFER, 0,
+                         (GLsizeiptr)((size_t)mesh->parts[i].count * MESH_VERTEX_FLOATS * sizeof(float)),
+                         posed ? model->posed[i] : mesh->parts[i].vertices);
+    }
+    gl_BindBuffer(GL_ARRAY_BUFFER, 0);
+    model->shown_clip = posed ? clip : -1;
+    model->shown_ms = posed ? ms : 0;
 }
 
 /* A depth buffer the size of the target, with its samples. */
@@ -442,6 +515,7 @@ void MeshPass_Draw(uint32_t word, const MeshPassTarget *target)
     if (!start() || !depth_for(target)) return;
     if (!model->uploaded) upload(model);
     if (!model->buffers) return;
+    show(model, at->clip, at->ms);
 
     gl_BindFramebuffer(GL_FRAMEBUFFER, target->fbo);
     gl_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth);
