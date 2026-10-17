@@ -10,7 +10,9 @@
  *
  * A file with animations named idle, attack, hit, die and summon plays them
  * as field_models.c says, in the game's own time: through the row the
- * battle model would be playing, so nothing in the duel waits for them. */
+ * battle model would be playing, so nothing in the duel waits for them.
+ * Its attack's effects (a glow, a beam, a burst) are timed from the blow
+ * and aimed at the other monster, and stand in for the monster's own. */
 #include "glb_models.h"
 #include "pc/render/mesh_pass.h"
 #include <stdarg.h>
@@ -113,8 +115,19 @@ int GlbModels_ClipFrames(int model, int which)
     return 0;
 }
 
-u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permille)
+int GlbModels_HasEffects(int model)
 {
+    int i;
+    for (i = 0; model && i < known_count; i++) {
+        if (known[i].model == model) return MeshPass_ClipEffects(model, known[i].clip[GLB_ATTACK]) > 0;
+    }
+    return 0;
+}
+
+u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permille, int strike_ms,
+                     const int *target)
+{
+    MeshPassPose pose;
     int i, clip = -1, length, strike, ms;
     if (!model || !host->setting(host, "glb_models", 1)) return 0;
     for (i = 0; i < known_count; i++) {
@@ -137,5 +150,10 @@ u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permi
     } else {
         ms = length * permille / 1000;
     }
-    return MeshPass_SubmitPosed(model, (const MeshPassMatrix *)ls, fade, clip, ms);
+    pose.clip = clip;
+    pose.ms = ms;
+    pose.strike_ms = which == GLB_ATTACK ? strike_ms : MESH_PASS_NO_STRIKE;
+    pose.aimed = target != NULL;
+    for (i = 0; i < 3; i++) pose.target[i] = target ? target[i] : 0;
+    return MeshPass_SubmitPose(model, (const MeshPassMatrix *)ls, fade, &pose);
 }

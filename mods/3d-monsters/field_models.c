@@ -195,6 +195,8 @@ typedef struct {
     s32 commands[3]; /* its control modules' command words (effect_begin) */
     u32 packet_bytes; /* the most its packets have taken in one sort */
     int glb;       /* its glTF model in the mesh pass (glb_models.c), 0 for none */
+    int eye[3];    /* its body's middle in the camera's space, as last sorted */
+    unsigned eye_frame; /* the frame it was sorted in */
 } Monster;
 
 static const MemoriesModHost *host;
@@ -734,7 +736,8 @@ static void silence(u32 *from, const u32 *to)
 
 /* While the summon grows a monster (draw_frame): how far, per mille; -1 else. */
 static int summon_permille = -1;
-static void glb_pose(const ModelSlot *slot, int *which, int *permille);
+static void glb_pose(const Monster *monster, const ModelSlot *slot, int *which, int *permille, int *strike_ms,
+                     const int **target);
 
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
@@ -759,14 +762,24 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     table->point = 0;
     GsClearOt(0, 0, table);
     end = tags[0] & LINK_MASK; /* what entry 0 leads to: the table's tail */
+    /* Where its body is in the camera's space, for what is aimed at it. */
+    GsGetLsUnit(D_800F2C40[0].field_D18, &ls);
+    {
+        int axis;
+        for (axis = 0; axis < 3; axis++) {
+            monster->eye[axis] = ((ls.m[axis][0] * monster->raw_x + ls.m[axis][1] * monster->raw_y +
+                                   ls.m[axis][2] * monster->raw_z) >> 12) + ls.t[axis];
+        }
+    }
+    monster->eye_frame = frame;
     if (monster->glb) {
         /* Drawn by the mesh pass, through the matrix the root's polygons
          * have, posed as their row stands; 0 when it is not drawing (1x),
          * and the polygons are. */
-        int which, permille;
-        GsGetLsUnit(D_800F2C40[0].field_D18, &ls);
-        glb_pose(&D_800F2C40[0], &which, &permille);
-        marker = GlbModels_Marker(monster->glb, &ls, monster->fade, which, permille);
+        int which, permille, strike_ms;
+        const int *target;
+        glb_pose(monster, &D_800F2C40[0], &which, &permille, &strike_ms, &target);
+        marker = GlbModels_Marker(monster->glb, &ls, monster->fade, which, permille, strike_ms, target);
     }
     D_800E9D90[2] = table;
     func_800540B4(0);
@@ -1433,14 +1446,36 @@ static int battle_lost(int side)
 #define ATTACK_SPEED 200
 #define ATTACK_DRIFT 35           /* percent of the body's shift kept */
 
+/* The middle of the body of the monster `monster` fights, as last sorted
+ * (this frame or the one before): the other side's entry, a big card's
+ * (tags 1 and 2) or a fighter's on the field (3 and 4). NULL for none. */
+static const int *opponent_eye(const Monster *monster)
+{
+    int tag = monster->tag, other = (tag & 1) ? tag + 1 : tag - 1, i;
+    if (tag <= 0) {
+        return NULL;
+    }
+    for (i = 0; i < CACHE; i++) {
+        if (cache[i].card && cache[i].tag == other && cache[i].eye_frame + 1 >= frame) {
+            return cache[i].eye;
+        }
+    }
+    return NULL;
+}
+
 /* Which clip of a glTF model plays in place of the row the game's model
  * plays, and how far in (per mille): its attack row the attack, the hit row
  * (a destroyed monster's, held on its last frame until it goes) the death, a
  * blow withstood or guarded the hit, any other row the idle; and the summon
- * while the summon grows it. */
-static void glb_pose(const ModelSlot *slot, int *which, int *permille)
+ * while the summon grows it. The attack's effects are timed from the row's
+ * middle, where the blow lands (real milliseconds, a frame a VBlank), and
+ * aimed at the monster it fights. */
+static void glb_pose(const Monster *monster, const ModelSlot *slot, int *which, int *permille, int *strike_ms,
+                     const int **target)
 {
-    int row = slot->field_BF5, length = slot->field_750[row].max << 4;
+    int row = slot->field_BF5, length = slot->field_750[row].max << 4, step = slot->field_E0D ? slot->field_E0D : 1;
+    *strike_ms = GLB_NO_STRIKE;
+    *target = NULL;
     if (summon_permille >= 0) {
         *which = GLB_SUMMON;
         *permille = summon_permille;
@@ -1451,6 +1486,10 @@ static void glb_pose(const ModelSlot *slot, int *which, int *permille)
              : row == ROW_WITHSTAND || row == ROW_GUARD ? GLB_HIT
                                                         : GLB_IDLE;
     *permille = length <= 0 ? 0 : slot->field_E06 >= length ? 1000 : slot->field_E06 * 1000 / length;
+    if (*which == GLB_ATTACK && length > 0) {
+        *strike_ms = ((int)slot->field_E06 - length / 2) / step * 1000 / 60;
+        *target = opponent_eye(monster);
+    }
 }
 
 enum { CASE_DESTROYED = 1, CASE_BLOCKED, CASE_COUNTER, CASE_TIE, CASE_DIRECT };
@@ -2305,6 +2344,9 @@ static void effect_begin(Monster *attacker, Monster *defender)
 
     if (!tunable("effects", 1) || attacker->commands[attacker->position] < 0 || !bank || !effect_sheet_ready()) {
         return;
+    }
+    if (GlbModels_Drawn(attacker->glb) && GlbModels_HasEffects(attacker->glb)) {
+        return; /* its glTF model plays its own */
     }
     if (!module_held) {
         memcpy(module_saved, (const void *)(uintptr_t)MODULE_AREA, MODULE_SPAN);

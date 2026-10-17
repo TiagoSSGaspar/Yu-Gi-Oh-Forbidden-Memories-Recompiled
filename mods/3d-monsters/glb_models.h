@@ -18,10 +18,18 @@ int GlbModels_Drawn(int model);
 /* How many of the game's frames clip `which` lasts at its own speed; 0 when
  * the model has no such clip. */
 int GlbModels_ClipFrames(int model, int which);
+/* Whether its attack plays effects of its own (the monster's module, then,
+ * is not run). */
+int GlbModels_HasEffects(int model);
 /* The word to sort in place of the monster's polygons, drawn through `ls`
  * faded `fade` (0 opaque to 255 gone), playing clip `which` (GLB_*)
  * `permille` thousandths of the way through; 0 to draw the polygons. A clip
- * the model lacks plays its idle, and a model with no idle stands. */
-u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permille);
+ * the model lacks plays its idle, and a model with no idle stands. Its
+ * effects show `strike_ms` real milliseconds from the blow
+ * (GLB_NO_STRIKE: none), aimed at `target` in the camera's space (NULL:
+ * none that need one). */
+#define GLB_NO_STRIKE (-0x7fffffff)
+u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permille, int strike_ms,
+                     const int *target);
 
 #endif
