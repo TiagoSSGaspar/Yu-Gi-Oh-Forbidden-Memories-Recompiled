@@ -24,6 +24,7 @@
 #include "pc/audio/spu.h"
 #include "pc/debug/cheats.h"
 #include "pc/cards/cards.h"
+#include "pc/tower/tower.h"
 #include "pc/free_duel/duelists.h"
 #include "pc/cards/fusion_helper.h"
 #include "update_check.h"
@@ -156,6 +157,11 @@ static long test_copy_fail_at = -2;
 static int menu_dirty;
 static void save_window_image(void);
 static int window_shot_pending;
+/* The picture the last present showed from the OpenGL pass's textures
+ * (valid), which F12 reads back when asked, and not per frame: what area of
+ * the picture, or of which widescreen target's texture (0: the picture's).
+ * Cleared when a frame is shown from picture_pixels instead. */
+static struct { int valid; unsigned texture; int x, y, w, h; } pass_shown;
 
 /* Window pixels per density-independent pixel where the screen is touched
  * (Android: the display's densityDpi / 160, as the system has it now; SDL's
@@ -724,6 +730,27 @@ static void save_window_image(void)
 
 int HERE(Platform_CopyText)(const char *text) { return SDL_SetClipboardText(text); }
 
+/* F12 when the last present showed the OpenGL pass's picture: it lives in
+ * GPU textures, and picture_pixels holds nothing of it. */
+static void save_pass_picture(void)
+{
+    SDL_Surface *surface;
+    char path[1024];
+    uint32_t *pixels = malloc((size_t)pass_shown.w * (size_t)pass_shown.h * 4);
+    int read;
+    if (!pixels) return;
+    es_enter();
+    read = GlPicture_ReadShown(pass_shown.texture, pass_shown.x, pass_shown.y, pass_shown.w, pass_shown.h, pixels);
+    es_leave();
+    if (!read) {
+        fprintf(stderr, "memories-pc: screenshot: the OpenGL picture shown is gone\n");
+    } else if (screenshot_path(path, sizeof(path), "bmp")) {
+        surface = SDL_CreateSurfaceFrom(pass_shown.w, pass_shown.h, SDL_PIXELFORMAT_XRGB8888, pixels, pass_shown.w * 4);
+        save_surface(surface, path); /* the surface does not own the pixels */
+    }
+    free(pixels);
+}
+
 void Platform_Screenshot(int window_image)
 {
     SDL_Surface *surface;
@@ -733,6 +760,10 @@ void Platform_Screenshot(int window_image)
         /* Taken by the next show(), before its swap or present: after a
          * present the renderer's back buffer holds nothing defined. */
         window_shot_pending = 1;
+        return;
+    }
+    if (pass_shown.valid) {
+        save_pass_picture();
         return;
     }
     if (!screenshot_path(path, sizeof(path), "bmp")) return;
@@ -1454,6 +1485,7 @@ static int es_take_frame(void)
     if (!es_shown_last) {
         fprintf(stderr, "memories-pc: the OpenGL picture cannot be shown; the software GPU draws it\n");
         es_picture = 0;
+        pass_shown.valid = 0;
         es_enter(); /* its names are deleted in the renderer's context */
         GlPicture_Stop();
         es_leave();
@@ -1476,6 +1508,10 @@ static void draw_overlay(int *x, int *y, int *w, int *h)
         *h = layout.win_h;
         return;
     }
+    /* The mods' overlays go under the pad, so a mod's full-screen list does
+     * not hide where to tap; the port's HUD and the menu stay over both.
+     * Without the pad they keep their place in Hud_Draw. */
+    if (TouchPad_Shown()) Hud_DrawMods(&canvas);
     TouchPadArt_Draw(&canvas, &tx, &ty, &tw, &th); /* under the menu and the HUD */
     /* The save and deck slot menus keep between the pad's columns (they are
      * played with the pad), and below the bar while it shows (pushing the
@@ -2249,6 +2285,7 @@ static void reset_renderer(void)
     SDL_DestroyRenderer(renderer); /* and the textures */
     picture = overlay = es_shown = NULL;
     es_shown_last = 0;
+    pass_shown.valid = 0;
     picture_w = picture_h = 0;
     if (es_wanted) ask_for_es3();
     if (test_reset_fails) SDL_setenv_unsafe("MEMORIES_GL_PICTURE", "0", 1); /* the pass does not start again */
@@ -2261,6 +2298,7 @@ static void reset_renderer(void)
     if (!es_picture) { /* off, or not started again: the software GPU draws the picture */
         es_enter();
         GlPicture_Stop();
+        pass_shown.valid = 0;
         es_leave();
     }
     Menu_SetHdPicture(es_picture);
@@ -2367,7 +2405,18 @@ void HERE(Platform_ShowError)(const char *title, const char *message)
     Monitor_Shared()->error_shown = 1;
     if (!headless || !*headless || !strcmp(headless, "0")) {
         Monitor_Modal(1);
+#ifdef __ANDROID__
+        {
+            /* SDL_ShowSimpleMessageBox's one button, in the system's alert */
+            static const SDL_MessageBoxButtonData ok[] = {
+                {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "OK"}};
+            const SDL_MessageBoxData box = {SDL_MESSAGEBOX_ERROR, NULL, title, message, 1, ok, NULL};
+            int button;
+            Android_ShowMessageBox(&box, &button);
+        }
+#else
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, NULL);
+#endif
         Monitor_Modal(0);
     }
 }
@@ -2513,6 +2562,7 @@ static void finish_present(int w, int h)
         SDL_UpdateTexture(picture, NULL, picture_pixels, w * 4);
         es_shown_last = 0; /* this one shows instead of the pass's */
     }
+    pass_shown.valid = 0; /* F12 saves picture_pixels, which this frame filled */
     compose_menu_if_changed();
     show();
 }
@@ -2539,6 +2589,12 @@ int HERE(Platform_PresentPicture)(const uint32_t *pixels, int stride, int x, int
             pumped = 1;
             return 0;
         }
+        pass_shown.valid = 1;
+        pass_shown.texture = 0;
+        pass_shown.x = x;
+        pass_shown.y = y;
+        pass_shown.w = w;
+        pass_shown.h = h;
         compose_menu_if_changed();
         show();
         gl_pass_shown = 0;
@@ -2619,6 +2675,11 @@ int HERE(Platform_PresentWidePicture)(int x, int y, int w, int h, int wide_w, in
         pumped = 1;
         return 0;
     }
+    pass_shown.valid = 1;
+    pass_shown.texture = texture;
+    pass_shown.x = pass_shown.y = 0;
+    pass_shown.w = pw;
+    pass_shown.h = h * at_scale;
     compose_menu_if_changed();
     show();
     gl_pass_shown = 0;
@@ -2829,6 +2890,7 @@ void HERE(Platform_Frame)(unsigned frame)
     Cheats_Frame();
     Cards_Frame();
     Duelists_Frame();
+    Tower_Frame();
     Update_Frame();
     if (Menu_TakeChanged()) menu_dirty = 1;
     if (window) {

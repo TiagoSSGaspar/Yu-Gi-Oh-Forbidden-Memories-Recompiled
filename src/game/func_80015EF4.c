@@ -31,6 +31,12 @@
 #include "screen_projection.h"
 #include "ordering_tables.h"
 #include "func_80015EF4.h"
+#ifdef MEMORIES_PC
+#include "duel_card.h"
+#include "duel_card_layout.h"
+#include "pc/cards/card_layout_art.h"
+#include "pc/cards/cards.h"
+#endif
 
 #define CVECTOR_VIEW(color) ((CVECTOR *)(color))
 #define DISPLAY_OBJECT_BYTES(object) ((u8 *)(object))
@@ -172,6 +178,68 @@ void func_80015EF4(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color)
         sprite->b0 = DISPLAY_OBJECT_BYTES(obj)[0xE];
     }
 
+#ifdef MEMORIES_PC
+    /* Duel_DrawFieldCards primes this scratch primitive once before walking
+     * every card.  A previous custom field texture leaves bank bits in its
+     * tpage, whereas retail only ever uses bank 0.  Start every card from
+     * the retail page before deciding whether this particular card has an
+     * explicit field_image; otherwise a missing/failed image can inherit
+     * the prior card's bank texture. */
+    prim->tpage = (0x9E & 0xFF9F) | ((obj->attribute >> 23) & 0x60);
+
+    /* A style's own field texture (card_layout_art.h's
+     * CardLayoutArt_FieldFrameCell/FieldBackCell) replaces retail's
+     * Cards_FrameColor palette-row pick above outright: tpage/clut/u/v only,
+     * so the corners' already-rotated xy and already-lit rgb (RotColorDpq
+     * above) stay exactly what retail computed, and the custom texture
+     * rotates with them like any other face of this quad.
+     *
+     * The face is the one retail's own uv pick above shows: the back when
+     * the quad faces away (NormalClip), which a face-down card does (it is
+     * turned over) and a face-up one does for half of a turn. The style's
+     * field_back_image there, else retail's own back. */
+    {
+        int field_tpage, field_u, field_v, field_clut, field_w, field_h;
+        int card_id = ((DuelCardRecord *)record)->card_id;
+        /* The face the quad shows, as retail's uv pick above: its back
+         * (u 0x38, v 0x80) when it faces away -- face down, or a face-up
+         * card mid-turn. */
+        int face_down = NormalClip(*(PSXLONG *)&prim->x0, *(PSXLONG *)&prim->x1, *(PSXLONG *)&prim->x2) <= 0;
+        int got = face_down
+            ? CardLayoutArt_FieldBackCell(card_id, &field_tpage, &field_u, &field_v, &field_clut, &field_w,
+                                          &field_h)
+            : CardLayoutArt_FieldFrameCell(card_id, &field_tpage, &field_u, &field_v, &field_clut, &field_w,
+                                           &field_h);
+        if (got) {
+            prim->tpage = (u16)(field_tpage | ((obj->attribute >> 23) & 0x60));   /* the blend, as retail's */
+            prim->clut = (u16)field_clut;
+            prim->u0 = prim->u2 = (u8)field_u;
+            prim->u1 = prim->u3 = (u8)(field_u + field_w);
+            prim->v0 = prim->v1 = (u8)field_v;
+            prim->v2 = prim->v3 = (u8)(field_v + field_h);
+        } else {
+            /* Neither cell applies to this card (no style at all, or a
+             * face-down card with no field_back_image): the retail base was
+             * restored before this block, so only its face-down palette-row
+             * correction remains. */
+            if (face_down && Cards_FrameColor(card_id) >= 0) {
+                /* No style back_image to fall back to and face down: retail's
+                 * own monster/magic/trap/ritual rows (0-3) read the same bytes
+                 * at this mirrored-back uv regardless of row, but
+                 * Cards_FrameColor's own extra rows (func_80024C1C.c, 4+ for a
+                 * style's own hand_color) are a PC-port addition, baked into
+                 * obj->icon_variant once at creation and never revisited for
+                 * face state -- that row's own palette is only ever meant to be
+                 * seen face up, so whatever happens to sit at this mirrored uv
+                 * there (confirmed live: a wrong color, not retail's own grey)
+                 * is not a real asset to preserve. Row 0 (plain monster) is
+                 * retail's own neutral face-down look, with no accent to leak
+                 * the card's styled identity through its back. */
+                prim->clut = (0xF1 << 6) | 0x10;
+            }
+        }
+    }
+#endif
     depth[0] = (depth[4] + depth[5]
                           + depth[6] + depth[7]) / 4 >> 2;
     tab = D_800E9D90;

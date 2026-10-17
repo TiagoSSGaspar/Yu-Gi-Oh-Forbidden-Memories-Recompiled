@@ -836,16 +836,33 @@ def write_sdk(build, target="i386"):
     # What this game lends a mod, for build_mod.py's check beside the game:
     # exports.<target>.txt, and for a 32-bit game also exports.txt, the name
     # SDKs had before the 64-bit targets (check_mod_abi.py reads it).
+    # Only this build's own: tools/pc/package.py adds the other targets'
+    # lists to a release's SDK from their own builds of the same tree.
     import build_mod
     names = "".join(name + "\n" for name in sorted(build_mod.provided(build, target)))
-    for listed in [f"exports.{target}.txt"] + (["exports.txt"] if target == "i386" else []):
+    own = [f"exports.{target}.txt"] + (["exports.txt"] if target == "i386" else [])
+    for listed in own:
         with open(f"{sdk}/{listed}", "w") as handle:
             handle.write(names)
-    if target != "i386" and os.path.exists(f"{sdk}/exports.txt"):
-        os.remove(f"{sdk}/exports.txt")   # a 32-bit build's, in a folder reused for this one
+    for path in glob.glob(f"{sdk}/exports*.txt"):
+        if os.path.basename(path) not in own:
+            os.remove(path)   # another target's, in a folder reused for this one
     stale = f"{build}/include"   # the lone modapi.h copy from before the SDK
     if os.path.isdir(stale):
         shutil.rmtree(stale)
+
+def source_stamp():
+    """The tree a build was made from, written to <build>/source: the
+    commit, and a digest of the changes to tracked files when there are
+    any. tools/pc/package.py packs another target's export list into a
+    release's SDK only from a build with this one's stamp. "unknown" outside
+    a git checkout, which matches nothing."""
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+        changes = subprocess.run(["git", "diff", "HEAD", "--binary"], capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return head + (f" changes {hashlib.sha256(changes).hexdigest()[:16]}" if changes else "") if head else "unknown"
 
 VERSION_PATTERN = r"v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?"
 
@@ -928,6 +945,12 @@ def main():
                         "tmp/pc/win32" if WINDOWS and sys.platform != "win32" else
                         f"tmp/pc/android-{ANDROID_ABI}" if ANDROID else "tmp/pc/game32")
     options = parser.parse_args()
+    # Forward slashes, as build.py on Windows hands over str(Path) with
+    # backslashes: the object paths below are this folder plus "/obj/...",
+    # and the Android build's `nm -A` check matches llvm-nm's listing against
+    # them, where a backslash comes back doubled ("tmp\\pc\\x/obj/...").
+    if os.sep == "\\":
+        options.build = options.build.replace("\\", "/")
     # Android's GLES has none of desktop GL's fixed function, which the
     # present pass and sdl.c's GL presenter call: that path is never taken
     # there (Platform_HasDesktopGL), and gl_desktop_none.c stands in for it.
@@ -1150,7 +1173,11 @@ def main():
         # the file each symbol came from at the head of its line.
         weaken, objects = {}, {obj(s) for s in game}
         for line in run([NM, "-A", "-g", "--defined-only", *sorted(objects)]).splitlines():
-            path, _, rest = line.partition(":")
+            # The file, then ":" and the address (GNU nm writes no space after
+            # the colon, llvm-nm one): the last such colon, since a Windows
+            # path's drive has one too.
+            found = re.match(r"(.*):\s*[0-9A-Fa-f]+\s", line)
+            path, rest = (found.group(1), line[found.end(1) + 1:]) if found else (line, "")
             if path not in objects:
                 sys.exit(f"{NM} -A named an object the build does not know: {line}")
             if rest.split() and c_name(rest.split()[-1]) in set_overridden:
@@ -1313,7 +1340,7 @@ def main():
              *[obj(s) for s in NATIVE + game], f"{options.build}/stubs.o", guest_branches, f"{options.build}/mod_exports.o",
              version, f"{options.build}/section_markers.o", *resources,
              f"{WIN32_DEPS}/sdl/lib/libSDL3.dll.a", "-lopengl32", f"{WIN32_DEPS}/lib/libfreetype.a",
-             f"{WIN32_DEPS}/lib/libpng16.a", f"{WIN32_DEPS}/lib/libzs.a", "-ldbghelp", "-lwinhttp", "-lws2_32", "-static", "-lpthread"])
+             f"{WIN32_DEPS}/lib/libpng16.a", f"{WIN32_DEPS}/lib/libzs.a", "-ldbghelp", "-lwinhttp", "-lws2_32", "-lwinmm", "-static", "-lpthread"])
         shutil.copy(f"{WIN32_DEPS}/sdl/bin/SDL3.dll", options.build)
     elif ANDROID:
         # The game is libgame.so, linked at ANDROID_GAME_BASE; libmain.so,
@@ -1405,6 +1432,8 @@ def main():
         commit = "unknown"
     with open(f"{options.build}/commit", "w") as handle:
         handle.write(commit + "\n")
+    with open(f"{options.build}/source", "w") as handle:
+        handle.write(source_stamp() + "\n")
     if ANDROID:
         # The APK carries this build's id, commit and symbol table (save
         # states, crash reports) and what the desktop games have beside

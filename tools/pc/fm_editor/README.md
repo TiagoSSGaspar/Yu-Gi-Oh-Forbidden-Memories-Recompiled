@@ -39,8 +39,18 @@ where the pictures and links below work.
 
 1. **Get the editor.** Each release from
    [Releases](https://github.com/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases)
-   carries it as `fm-editor-<version>-windows.zip` and
-   `fm-editor-<version>-linux.tar.gz`. Unpack it where you unpacked the game:
+   carries it as `fm-editor-<version>-windows.zip`,
+   `fm-editor-<version>-linux.tar.gz` and `fm-editor-<version>-macos-arm64.zip`.
+   On Apple Silicon, unpack and open `fm-editor.app`; Python and Tk are included.
+   The app is ad-hoc signed, not notarized, so macOS may refuse the first
+   open: open **System Settings > Privacy & Security** and press **Open
+   Anyway** (the game's own steps are in
+   [notes/macos-build.md](../../../notes/macos-build.md); right-click >
+   **Open** only works on older macOS). Move the app out of Downloads with
+   Finder first: a quarantined app opened where it was unzipped runs from a
+   temporary copy (App Translocation) and cannot see the folder beside it.
+   Keep `game/` in the folder that holds `fm-editor.app`, not inside it.
+   Unpack it where you unpacked the game:
    `fm-editor.exe` (with `fm-editor.pkg` and `fm-editor-files/`, which stay
    together) or `fm-editor` lands beside `memories-pc.exe` or `memories-pc`.
    From the source, run `python tools/pc/fm_editor`
@@ -59,6 +69,7 @@ where the pictures and links below work.
    applied or not saved yet. **Ctrl+Z** undoes.
 5. **Save it into the game.** **File > Export mod...** and choose the game's
    mods folder: `Documents\My Games\YFM Re-Decomp\mods` on Windows,
+   `~/Library/Application Support/YFM Re-Decomp/mods` on macOS,
    `~/.local/share/YFM Re-Decomp/mods` on Linux (the dialog opens there when
    it exists). The editor makes a folder named after the mod's id in it. From
    then on **File > Save** (Ctrl+S) writes that same folder.
@@ -235,6 +246,7 @@ The tabs, left to right:
 | [Values](#values) | the game's numbers: LP, the ATK/DEF cap, magic cards' numbers, deck copies, rank score, starchips |
 | [Guardian Stars](#guardian-stars) | the stars' names and icons, new stars 11 to 15, every matchup |
 | [Packs](#packs) | card packs sold for starchips on the Password screen |
+| [Tower](#tower) | a run of duels in the title's second menu: floors, rules, rewards, story, when it opens, duelists of the tower's alone |
 | [Mod info](#mod-info) | the mod's id, name, version, author, description and settings |
 | [Conflicts](#conflicts) | what the game would refuse, and where other installed mods change the same things |
 
@@ -543,9 +555,12 @@ face goes to that duelist, ◀ ▶ turn the page), **Name and place...** (its
 name, id, base and slot), **Unlock, play, ranks...** (when the grid shows
 it, how it plays, how a duel against it is scored) and
 **Picture...**/**Disc's face** (below). The list's **Status** column says
-what a duelist has of its own (`face`, `locked`, `plays`, `ranks`...).
+what a duelist has of its own (`face`, `bust`, `locked`, `plays`, `ranks`...).
 
-Then, per opponent (the mod's own as well as the disc's), its **Pools**: **Deck**, **S/A-POW drops**, **B/C/D
+Under the header, two pages: its **Pools** and its **Bust** (below; the
+header's **Bust** button turns to it).
+
+Per opponent (the mod's own as well as the disc's), its **Pools**: **Deck**, **S/A-POW drops**, **B/C/D
 drops** and **S/A-TEC drops**: each card's weight, its chance, the retail
 weight, and the total against 2048 (**Scale to 2048 (100%)** scales a pool
 back to 2048 the way the port does). **Add a card...**, **Weight**/**Set**,
@@ -616,6 +631,52 @@ are, and its deck may be a **Fixed deck** too; they are saved in
   shown greyed) or five [threshold, change] pairs of its own, the last
   threshold "above".
 
+#### The bust: the large character
+
+The **Bust** page is the duelist's large character, the one the campaign's
+dialogue and a tower's stories stand on the box ([`bust`](../../../notes/more-duelists.md#bust--the-large-character)),
+with named expressions. Down the left, its expressions in the order the game
+numbers them (the default first, `(default)`), with the frames each has;
+**Add...** (a PNG with clear parts, and its name), **Rename...** (or a
+double-click), **Remove**, **Default**, and ▲ ▼ to order the rest. In the
+middle, the screen at the console's 320 x 240 with the chosen expression
+standing where the game stands it (its middle over the **left** or **right**
+side's place, its bottom on the box, a picture over 256 x 256 shrunk to fit),
+as its **Picture**, **Talk 1**, **Talk 2** or **Blink**: a talking or blink
+frame drawn over the picture, as the game draws it; under it, the room the
+picture leaves its frames' changes (a 256 x 256 one leaves none: it cannot
+talk or blink; [the size rule](../../../notes/more-duelists.md#bust--the-large-character)). On the right,
+**Picture...** changes it, **Talking...** adds a frame of the mouth open (up
+to four), **No talk** takes the last away, **Blink...** and **No blink** the
+eyes shut, **No bust** the whole bust. An expression without a talking frame
+does not speak, without a blink frame does not blink. The Tower tab's stories follow
+the page: renaming an expression renames it where a story names it (the
+floor's `opponent` too), removing one turns those to the default (said under
+the page), and an order or default that changes what a story's number shows
+is said, since a number follows the order and a name does not.
+
+For one of the disc's duelists the bust is written on its replacement and
+only **adds** expressions a tower's stories may name; the campaign keeps its
+character. **The campaign's character too** (`replace_bust`) makes it the
+campaign's: it asks first, and the line under it says what it changes
+(every scene that shows that character, and the other duelists that are the
+same character: Seto's is Seto 2nd's and Seto 3rd's too). An added
+duelist's bust is its own wherever a story shows it.
+
+The pictures are saved in `busts/<id>/` (`<expression>.png`,
+`<expression>-talk1.png`, `<expression>-blink.png`); a bust read from a mod
+keeps its own paths. A bust one of whose pictures cannot be read is kept as
+written, its files as they are (Save As carries them), and the page does not
+edit it until they are mended. Taking a bust out removes its pictures from
+the mod, but not one something else shows too (a tower story's picture, say).
+Conflicts says what the game would read otherwise (a
+frame of another size than the default's, which it stretches; a default that
+is none of them; a fifth expression on, which comes in as another character;
+frames that change more than the picture leaves room for, and what the game
+then leaves out;
+`replace_bust` on a duelist the campaign shows as nobody). A bust needs mod
+API 17.
+
 What it writes is the shortest form that says the same (`{"search": 12}`
 for byte 0 alone), and an entry's own while it still reads the same; a key
 of these the game does not read stays as written. The header says what is
@@ -627,8 +688,8 @@ rule the game does not have).
 
 ### UI
 
-Four pages, picked at the top: **Title screen**, **Menus**, **Duel** and
-**Duel board**. The first three are the screen as the game draws it, from
+Five pages, picked at the top: **Title screen**, **Menus**, **Duel**,
+**Frames** and **Duel board**. The first three are the screen as the game draws it, from
 your own disc (the title's pictures are in `DATA/SU.MRG`, the duel's in
 `WA_MRG.MRG`; nothing of the game's art is kept with the editor), as big as
 the window leaves room for (a whole number of times the game's 320 x 240, so
@@ -639,15 +700,15 @@ moved by dragging it -- its place in the form follows as you drag -- or by
 the arrow keys once the picture has been clicked (Shift: 8 pixels); under
 the picture is where the mouse is, in the game's pixels. On the Duel page
 the mouse wheel sizes it. What the pages write is the mod's `"title"`,
-`"menu"` and `"ui"` ([the title screen](../../../notes/modding.md#the-title-screen),
+`"menu"`, `"ui"` and `"card_layout"` ([the title screen](../../../notes/modding.md#the-title-screen),
 [the title's menus](../../../notes/modding.md#the-titles-menus), [the duel's
-pictures](../../../notes/modding.md#the-duels-pictures)); a PNG you choose is
-put in the mod's `ui/` folder.
+pictures](../../../notes/modding.md#the-duels-pictures)); screen PNGs go in
+`ui/`, while frame PNGs go in `frames/`.
 
 **Hold: the game's** shows the page as the game has it while the button is
 held down: before and after. **Revert to retail...** puts the whole tab back
-(it takes out the mod's `"title"`, `"menu"` and `"ui"`, the duel board's
-textures and tints, and the PNGs in `ui/` nothing names any more), **Revert
+(it takes out the mod's `"title"`, `"menu"`, `"ui"` and `"card_layout"`, the duel board's
+textures and tints, and PNGs nothing names any more), **Revert
 page** one page; both say what is lost first, and **Edit > Undo** brings it
 back in one step. A thing's own **Back to the game's** puts that one back. A
 color that multiplies (every "Color" but a line of words' and the color
@@ -723,6 +784,29 @@ that the game leaves out).
   with the mod's board), the hand's five cards in their frames with ATK and
   DEF, and the card bar's name, stats and icons for the card the cursor is
   on.
+
+* **Frames**: creates and edits a `card_layout.frame_styles` style visually.
+  Choose a style, then an asset slot (front/back, hand, field, Library icon,
+  digits, stat captions or type captions) or a card-view element. The front
+  preview is a game-scale card viewer: drag title, art, stars, attribute,
+  values and captions; use the wheel or width/height fields where the game
+  permits a size; and hide any movable element. The **Hand** category has its
+  own 52x60 preview and independently edits the hand artwork, ATK/DEF digit
+  rows, and their sword/shield markers; field and Library images belong to
+  their respective game screens. The assignment panel can set a global,
+  card-kind, printed-type, or specific-card style. Its **Reset to retail**
+  buttons remove the selected assignment: a cleared card falls through to
+  type, a cleared type falls through to kind, then global, and a cleared global
+  default reaches retail. The printed-type
+  list contains every game type, including Beast-Warrior, Winged Beast, Sea
+  Serpent, and the Magic/Trap/Ritual/Equip types. Choosing a specific card
+  also changes the preview artwork to that card before assigning anything.
+  The first style becomes the
+  layout's default; enable its `full_bleed` setting in-game to see custom
+  frame art.
+  The frame keys need mod API 18 (a style's images, `hand`, parts and
+  `hide`, `default_styles`, a card's `frame_style`): Save raises `min_api`
+  to it, so a game of v0.3.0 refuses the mod rather than draw the retail frame.
 
 Colors are the game's: a tint multiplies, so it can only darken what is
 there. The pictures are the console's size here; the game draws a PNG of
@@ -932,13 +1016,18 @@ off), **Deck and Trunk** (copies of a card in a deck, copies the Trunk
 keeps), **Rank** (the score a duel starts at, what an Exodia win and a win
 by the opponent's empty deck add), **Rewards** (the starchips a win gives at
 S to D, 0 to 1000 each: past 8 the results screen shows one starchip with
-"xN" beside it; a new game's starchips, the most the save holds) and **Records and
+"xN" beside it; a new game's starchips, the most the save holds; **Cards a
+win deals**, 1 to 99, which locks the player's Game > Card drops at that
+number while the mod is applied, its grey value `player` the player's own
+choice, [card drops](../../../notes/card-drops.md#a-mod-that-sets-it), mod
+API 13) and **Records and
 2P** (the two-player LP choice and the records), and **Starting LP by
 duelist**: a table of duelists with the LP each side starts with against
 them (the disc's, or one the mod adds, by its name; choose a duelist, type **You** and **Duelist**, **Set**; **Remove**).
 Each row shows the game's own value in grey (an empty field is it), turns
 blue when the mod changes it, has ↺ to put the game's back, and a line that
-says what it does with the range the game keeps; a value past that range
+says what it does with the range the game keeps (resting the pointer on
+Cards a win deals shows what the lock does); a value past that range
 turns its name red, with the reason under the groups, and the game holds it
 at the most it keeps or shows. **Reset all to the game's** empties every
 field.
@@ -1058,6 +1147,58 @@ The file is still inspected for the mod's required API on save. If it cannot
 be read, Conflicts reports an error and Mod info says compatibility is
 incomplete; fix the file before sharing the mod.
 
+### Tower
+
+A mod's `"tower"` ([Tower mode](../../../notes/tower-mode.md)): one more
+button in the title's second menu, a run of duels the save climbs. Check
+**This mod has a tower** to give the mod one (a floor against Simon Muran to
+start from); unchecked, the mod has none. **How to build a tower...** opens
+the tab's own guide, step by step, and **Start from an example** fills in a
+small working tower of three floors (stories, a reward, an unlock) to change.
+Help > **Tower mode** opens the notes with every key. Resting the pointer on
+the options below says what each does.
+
+- **The tower:** its name, the menu button's words (`TOWER` without),
+  its music, when it opens (**always**, **after_ending**, or **conditions**:
+  beat, wins, story, hold, copies, and **and the ending seen**), what a
+  loss does (**checkpoint** or **restart**), its default **Scene**, and
+  **Draw the character not speaking darker**.
+- **The rules of the run:** **Leaving** (**resume**: come back where you
+  were; **checkpoint** or **restart**: the climb goes back, and no save keeps
+  a floor past it), **Cards a win** (1-99 cards a won tower duel gives,
+  whatever Game > Card drops says; **player** follows that setting), **Allow
+  save states in the tower** and **Allow cheats in the tower** (unticked: none
+  of them while the player is in it).
+- **Stage:** writes a story's bracketed lines (`[scene: ...]`, `[left:
+  ...]`, `[right: ...]`, `[pan: ...]`) into the story last clicked, with
+  pictures of the disc's scenes and characters made from your game files.
+  Its last row picks a duelist with a bust (the Duelists tab's **Bust**) and
+  one of its expressions, and **Bust** writes `[left: Ghost expression
+  angry]` (an expression's name with a space is in quotes); its picture
+  shows beside.
+- **Story:** what is told before the first climb, at the top and after a
+  loss. A line is a page or more of the box; `@left:`, `@right:` or
+  `@Seto: ...` says who speaks, `#8: ...` adds one of the campaign's 25
+  portraits, `@none: ...` nobody's.
+- **The tower's own duelists:** the mod's added duelists (from the Duelists
+  tab); a checked one is hidden in Free Duel until the tower lets it out
+  (`"tower_only"`).
+- **Floors**, bottom first: **Add floor**, **Remove**, **Up**, **Down**. The
+  selected floor: its opponent, field, both sides' starting LP (empty: the
+  usual), **No fusions**, **No equips**, **Checkpoint**, **Unlock this
+  opponent in Free Duel when beaten** (ticked by itself for a tower-only
+  opponent), the reward (cards, starchips, and **Also unlocks**: more
+  duelists picked from the list, **Add** / **Remove last**), its deck (a card
+  a line, `Card x3`, forty in all, or empty for the opponent's own) and its
+  lines before the duel and after a win.
+
+The line above the form lists what the game would leave out or read
+otherwise (the same as Conflicts' **Tower** area), an expression a duelist's
+bust does not have among them (the floor's `opponent` checked against that
+floor's duelist), a number past the bust's, and a name too long. A tower needs mod API 14 (17 with a story's
+bust expression: by name, or a number past 3), which Mod info then shows and the save writes as `min_api`. What the form
+cannot show (a key of a later game) is kept as written.
+
 ### Mod info
 
 ![The Mod info tab](../../../docs/screenshots/fm-editor/mod-info.png)
@@ -1106,8 +1247,9 @@ but probably not what you meant.
 
 **I saved the mod but nothing changed in the game.** The game reads mods
 when it starts. Check three things: the mod's folder is in a mods folder the
-game reads (`Documents\My Games\YFM Re-Decomp\mods`, `~/.local/share/YFM Re-Decomp/mods`,
-or `mods/` beside the game; **File > Export mod...** puts it there), it is
+game reads (`Documents\My Games\YFM Re-Decomp\mods`,
+`~/Library/Application Support/YFM Re-Decomp/mods` on macOS,
+`~/.local/share/YFM Re-Decomp/mods`, or `mods/` beside the game; **File > Export mod...** puts it there), it is
 ticked in **Game > Mods** (F10 shows the menu bar), and the game was
 restarted after the save. The Mods window lists the mod even when it cannot
 load it, and says why.
@@ -1191,7 +1333,12 @@ in the File menu.
 The editor looks for the game where the port does: `MEMORIES_DISC`, the disc
 the port was last pointed at (`disc-path.txt` in the user directory),
 `game/` beside the program, the program's folder, `game/` in the user
-directory, and `./game`. It takes a raw `.bin` image (the one the port runs
+directory, and `./game`. The program's folder (`disc.program_dir()`) is the
+executable's, except for the macOS app, where it is the folder holding
+`fm-editor.app`. The user directory is the port's (`disc.user_dir()`):
+`MEMORIES_USER_DIR`, else `Documents\My Games\YFM Re-Decomp` on Windows,
+`~/Library/Application Support/YFM Re-Decomp` on macOS, and
+`$XDG_DATA_HOME` or `~/.local/share` on Linux. It takes a raw `.bin` image (the one the port runs
 from), an ISO, or a folder holding `SLUS_014.11` and `DATA/WA_MRG.MRG`.
 
 What it reads (layouts in `gamedata.py`):
@@ -1316,7 +1463,10 @@ record are shown as retail fusions and marked.
   `duelists/<id>.json`. An entry holds `copy` (or `replace`), `name`, `slot`
   and `portrait` as the tab has them and every other key as written; one
   that says what it said when read is written as it was. A face is
-  `portraits/<id>.png` (or the path its `"portrait"` names). An added
+  `portraits/<id>.png` (or the path its `"portrait"` names). A bust is
+  `"bust"` and `"replace_bust"` in the entry, its pictures under
+  `busts/<id>/` (or the paths it was read with; one whose pictures could not
+  be read is written as it was). An added
   duelist's pools are its own files, `decks/<id>.json` and
   `drops/<id>.json`, written against its base's disc pools (which the game
   edits for it) and only when they differ; a disc duelist's go in mod.json's
@@ -1448,7 +1598,7 @@ mod's own code and tables (the addresses of its code move from mod to mod):
 | `Duel_CheckEquip` steps 94 bytes and tests a bit per monster (A6) | every equip card's monsters from the bitmaps, with the records per monster some add and the monsters no equip takes. Records of monsters or magic used as equips are reported: the port's equips take equip cards only |
 | a ritual table that is mostly not recipes (A13) | rituals removed |
 | `Duel_ShuffleDeck` deals counts of copies up to 40 (A4) | `decks` with `"fixed": true`: what that shuffle deals from each pool |
-| the prize draw jumps to a loop that calls `addiu -bias; sra shift` (A1, A2) | the drop pools decoded; the number of prizes goes to the report and the mod's `README.txt` (set Game > Card drops to it; `mod.json` has no key) |
+| the prize draw jumps to a loop that calls `addiu -bias; sra shift` (A1, A2) | the drop pools decoded; the number of prizes is written as `"limits": {"card_drops": n}` (1 to 99), which locks Game > Card drops at it while the mod is applied, and goes to the report and the mod's `README.txt` |
 | `Duel_AwardCard` caps the chest and pays starchips (A3) | `chest_overflow` |
 | the terrain table, or `Duel_GetTerrainBoost` reading a table of its own (A9) | `terrain_bonus` with `"replace"` |
 | `Duel_SelectAttackTrap` rewritten, thresholds as u16 (A8) | `trap_thresholds` |
@@ -1595,13 +1745,20 @@ with `--print` shows the `mod.json` the editor would write for it.
 
 builds the editor with no Python needed to run it. On Windows that is
 `tmp/pc/fm-editor/fm-editor/`: `fm-editor.exe`, `fm-editor.pkg` and the
-`fm-editor-files/` folder, which stay together. Elsewhere it is one file,
+`fm-editor-files/` folder, which stay together. On macOS it is
+`tmp/pc/fm-editor/fm-editor.app` (ARM64); on Linux it is one file,
 `tmp/pc/fm-editor/fm-editor`. Put them beside `memories-pc.exe` and the
-editor finds the game's `game/` folder there. Build outputs never go in git.
+editor finds the game's `game/` folder there (for the Mac app, beside
+`fm-editor.app`). Build outputs never go in git.
 Windows gets no one-file build because virus scanners took it for a dropper.
+The Mac bundle uses PyInstaller's ad-hoc signature and is not notarized: a
+downloaded copy needs **Open Anyway** in System Settings > Privacy &
+Security the first time (right-click > **Open** on older macOS), and moving
+out of Downloads with Finder so it is not run from a translocated copy.
 
-Each release carries it as `fm-editor-<version>-windows.zip` and
-`fm-editor-<version>-linux.tar.gz` (`.github/workflows/pc-release.yml`):
+Each release carries it as `fm-editor-<version>-windows.zip`,
+`fm-editor-<version>-linux.tar.gz` and `fm-editor-<version>-macos-arm64.zip`
+(`.github/workflows/pc-release.yml`):
 unpack it where the game's archive was unpacked, and `fm-editor.exe` with
 its files (or `fm-editor`) lands beside the game's program. The Linux one is built on
 Debian 11, like the game, and brings its own Python and Tk. Running it from
@@ -1617,7 +1774,7 @@ This runs the packaged editor's `self-test --output <report.json>`: synthetic
 game files, every tab and UI page, a card and art edit, export and reopen.
 It requires a working display and fails on Tk callback errors; it needs no ROM.
 Windows writes its result to JSON because the windowed executable has no console.
-Both release platforms run this before uploading their archives; Linux's normal
+All release platforms run this before uploading their archives; Linux's normal
 CI runs the editor suite with Xvfb so GUI tests execute too.
 
 These checks verify the editor and its packaging. The live-game checks below
@@ -1887,7 +2044,7 @@ installed in `folders`, in the order the game would load them with the
 player's Load order from the port's settings file (`MEMORIES_SETTINGS`, else
 the user directory's `settings.txt`). `validate.mod_folders(project)` is
 where the game finds mods: `MEMORIES_MODS_DIR` when set, else the mods
-beside the game (`validate.shipped_folder()`: beside the editor's program,
+beside the game (`validate.shipped_folder()`: beside the editor's program (`disc.program_dir()`),
 beside the game files the port was last pointed at, or the source tree's
 `mods/`) and the user directory's `mods`; and the folder the mod was opened
 from, which is this mod whatever its id now. Every installed mod counts,

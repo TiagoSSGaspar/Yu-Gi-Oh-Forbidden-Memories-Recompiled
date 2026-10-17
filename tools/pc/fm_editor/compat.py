@@ -19,15 +19,17 @@ from pathlib import Path
 from .gamedata import FRAME_COLOR_NAMES, TYPE_MAGIC
 from .model import type_named
 
-HOST_API = 12
+HOST_API = 18
 
 # The release each mod API first shipped in, for the hints. An API past the
 # last listed is newer than every release.
-RELEASES = {9: "v0.2.0", 10: "v0.2.1-preview.1"}
+RELEASES = {9: "v0.2.0", 10: "v0.2.1-preview.1", 11: "v0.3.0", 12: "v0.3.0"}
 
 # tables.c read_limits: what v0.2.1-preview.1 and older know.
 OLD_LIMITS = ("stats", "attack", "defense", "life_points", "two_player", "starchips", "chest", "free_duel_record",
               "two_player_record")
+# The values a game of API 12 and older leaves out.
+API_13_LIMITS = ("card_drops",)
 
 
 def release_text(api: int) -> str:
@@ -100,6 +102,15 @@ def _has_key(value, key: str) -> bool:
         return key in value or any(_has_key(item, key) for item in value.values())
     if isinstance(value, list):
         return any(_has_key(item, key) for item in value)
+    return False
+
+
+def _has_action(value, action: str) -> bool:
+    """Whether any object in value, at any depth, has "action": action."""
+    if isinstance(value, dict):
+        return value.get("action") == action or any(_has_action(item, action) for item in value.values())
+    if isinstance(value, list):
+        return any(_has_action(item, action) for item in value)
     return False
 
 
@@ -186,10 +197,101 @@ def features(manifest: dict, project=None) -> list:
             add(11, "a ritual of other than three tributes")
     limits = manifest.get("limits")
     if isinstance(limits, dict):
-        newer = sorted(key for key in limits if key not in OLD_LIMITS)
+        newer = sorted(key for key in limits if key not in OLD_LIMITS and key not in API_13_LIMITS)
         if newer:
             add(11, "the values " + ", ".join(newer))
+    # --- API 13 -------------------------------------------------------------
+    if isinstance(limits, dict) and "card_drops" in limits:
+        add(13, "the cards a win deals locked (\"limits\" \"card_drops\")")
+    # --- API 14 -------------------------------------------------------------
+    if "tower" in manifest:
+        add(14, "a tower (\"tower\")")
+    for entry in _entries(manifest.get("duelists")) + _roster_files(project):
+        if "tower_only" in entry:
+            add(14, "a duelist of the tower's alone (\"tower_only\")")
+        if isinstance(entry.get("unlock"), dict) and "tower" in entry["unlock"]:
+            add(14, "a duelist's \"unlock\" \"tower\"")
+    for part in (title, menu):
+        if _has_action(part, "tower"):
+            add(14, "a menu item's action \"tower\"")
+    # --- API 15 -------------------------------------------------------------
+    if "card_types" in manifest:
+        add(15, "custom card types (\"card_types\")")
+    # --- API 16 -------------------------------------------------------------
+    if "attributes" in manifest:
+        add(16, "mod-defined card attributes (\"attributes\")")
+    # --- API 17 -------------------------------------------------------------
+    for entry in _entries(manifest.get("duelists")) + _roster_files(project):
+        if "bust" in entry:
+            add(17, "a duelist's bust (\"bust\")")
+        if "replace_bust" in entry:
+            add(17, "a disc duelist's bust in the campaign (\"replace_bust\")")
+    if _named_expression(manifest.get("tower")):
+        add(17, "a story's character by its bust's expression (\"expression\": a name, or a number past 3)")
+    # --- API 18 -------------------------------------------------------------
+    for entry in _entries(manifest.get("cards")):
+        if "frame_style" in entry:
+            add(18, "a card's own frame style (\"frame_style\")")
+    for what in _frame_features(manifest.get("card_layout")):
+        add(18, what)
     return out
+
+
+# card_layout keys a game of API 17 or older never reads. What API 11 reads
+# stays at 11: frame_styles' image, hand_color, width and height, frame_for,
+# default_style, and the layout's own art, attribute, spell, atk, def, stars
+# and digits.
+_LAYOUT_KEYS_18 = ("default_styles", "atk_label", "dfd_label", "type_label")
+_STYLE_KEYS_18 = ("hand_image", "field_image", "field_back_image", "back_image", "library_icon", "hand",
+                  "full_bleed", "atk_label", "dfd_label", "type_label", "digits", "title", "stars", "attribute",
+                  "spell", "art", "atk", "def")
+_PART_KEYS_18 = ("hide", "hidden", "show", "color")
+
+
+def _frame_features(layout) -> list:
+    """What a card_layout uses that the frame styles added (mod API 18), each
+    said once."""
+    if not isinstance(layout, dict):
+        return []
+    found = [f"the card layout's \"{key}\"" for key in _LAYOUT_KEYS_18 if key in layout]
+    styles = layout.get("frame_styles")
+    for style in (styles.values() if isinstance(styles, dict) else ()):
+        if isinstance(style, dict):
+            found += [f"a frame style's \"{key}\"" for key in _STYLE_KEYS_18 if key in style]
+    digits = layout.get("digits")
+    if isinstance(digits, dict) and ("atk" in digits or "def" in digits):
+        found.append("the digits' own \"atk\" and \"def\" places")
+    found += [f"a card part's \"{key}\"" for key in _PART_KEYS_18 if _has_key(layout, key)]
+    return list(dict.fromkeys(found))
+
+
+def _roster_files(project) -> list:
+    """The duelists the mod keeps in files of their own (duelists/<id>.json,
+    or the file mod.json's "duelists" names), as they will be written: the
+    manifest's list does not show them."""
+    from . import roster
+    if project is None:
+        return []
+    return [roster.entry(e, False) for e in roster.entries(project) if e.origin != "manifest"]
+
+
+def _named_expression(value) -> bool:
+    """Whether a tower's stories ask for a side's bust expression in a form
+    the game of API 17 takes (tower_config.c read_cast): {"duelist": ...,
+    "expression": a name of 1-31 bytes, or a number past 3 (to 15)}, without
+    "character" or "image". A form it turns down ({"character": n,
+    "expression": "x"}, a name with an image, one too long) needs nothing
+    newer: validate says it is left out."""
+    if isinstance(value, dict):
+        expression = value.get("expression")
+        if "duelist" in value and "character" not in value and "image" not in value and (
+                (isinstance(expression, str) and 0 < len(expression.encode("utf-8")) <= 31) or
+                (isinstance(expression, int) and not isinstance(expression, bool) and 4 <= expression <= 15)):
+            return True
+        return any(_named_expression(v) for v in value.values())
+    if isinstance(value, list):
+        return any(_named_expression(v) for v in value)
+    return False
 
 
 def required(manifest: dict, project=None) -> tuple:

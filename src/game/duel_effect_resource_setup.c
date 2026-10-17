@@ -150,7 +150,11 @@ path_a:
     entry->field_36 = 0;
 
 shared_tail:
+#ifdef MEMORIES_PC
+    entry->field_3B = (u8)Cards_Attribute(card_id);
+#else
     entry->field_3B = (u8)(gDuel_abCardLevelAttr[card_id] >> 4);
+#endif
     entry->field_3A = (u8)(gDuel_abCardLevelAttr[card_id] & 0xF);
     entry->field_3C = 0;
 
@@ -183,7 +187,7 @@ shared_tail:
          * that configures no frame image at all for this card's kind
          * (notes/modding.md's "art and stats floating with no backing at
          * all") hides it immediately, since nothing will ever cover it. */
-        !CardLayout_Get(CARD_LAYOUT_FRAME).visible && !*CardLayout_FramePath() ? 0 : 2
+        !CardLayout_Part(CARD_LAYOUT_FRAME).visible && !*CardLayout_FramePath() ? 0 : 2
 #else
         2
 #endif

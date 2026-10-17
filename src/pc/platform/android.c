@@ -58,11 +58,14 @@
 #include <linux/ashmem.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
+#include <sys/system_properties.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <jni.h>
 #include "pc/guest/state.h"
@@ -276,7 +279,7 @@ int Platform_SelectDisc(char *path, size_t size, char *why, size_t why_size)
         SDL_IOStream *stream;
         FILE *file;
         memset(&pick, 0, sizeof(pick));
-        if (!SDL_ShowMessageBox(&welcome, &button)) {
+        if (!Android_ShowMessageBox(&welcome, &button)) {
             snprintf(why, why_size, "Could not open ROM setup: %s", SDL_GetError());
             result = -1;
             break;
@@ -472,6 +475,40 @@ static int four_gigabytes(void)
 }
 #endif
 
+/* printf onto a growing text (*text NULL at first; NULL again, and nothing
+ * more added, once memory ran out). */
+static void add_detail(char **text, size_t *used, size_t *room, const char *format, ...)
+{
+    va_list arguments;
+    int length;
+    for (;;) {
+        if (!*text && *used) return; /* out of memory earlier */
+        if (*text) {
+            va_start(arguments, format);
+            length = vsnprintf(*text + *used, *room - *used, format, arguments);
+            va_end(arguments);
+            if (length < 0) return;
+            if ((size_t)length < *room - *used) {
+                *used += (size_t)length;
+                return;
+            }
+        }
+        {
+            size_t wanted = *room ? *room * 2 : 16384;
+            char *grown = realloc(*text, wanted);
+            if (!grown) {
+                free(*text);
+                *text = NULL;
+                *used = 1;
+                return;
+            }
+            if (!*text) grown[0] = '\0';
+            *text = grown;
+            *room = wanted;
+        }
+    }
+}
+
 int Platform_GuestMemoryHelp(char *why, size_t size)
 {
     const char *failed = Memories_GuestMapError();
@@ -486,9 +523,82 @@ int Platform_GuestMemoryHelp(char *why, size_t size)
         return 1;
     }
 #endif
-    snprintf(why, size, "The game could not set up the memory it runs in on this device: %s.\n\n"
-             "Please report it with the app's log (adb logcat -s memories).",
-             *failed ? failed : "the reason is in the log");
+    {
+        /* What the player sees (a screenshot of it is enough to go on) and
+         * the report Share and Save hand out, with the process's mappings
+         * below 4 GB, where the guest's fixed ranges are: who holds them
+         * (an app's Java runtime, notes/pc-build.md "Android arm64") is the
+         * whole question. */
+        const char *occupants = Memories_GuestMapOccupants();
+        char maker[PROP_VALUE_MAX], model[PROP_VALUE_MAX], release[PROP_VALUE_MAX], heap[PROP_VALUE_MAX];
+        char limit[PROP_VALUE_MAX], uffd[PROP_VALUE_MAX], message[900], text[512], range[48], holder[200];
+        char lead[300], facts[480];
+        char version[sizeof(((struct utsname *)0)->release)];
+        struct utsname kernel;
+        int refuses = Memories_KernelRefusesTakenRange(), shown, start_skip = 0, name_at = 0, parsed;
+        unsigned low = 0, high = 0;
+        size_t used = 0, room = 0;
+        char *details = NULL;
+        FILE *maps;
+#define PROPERTY(name, out) (out[0] = '\0', __system_property_get(name, out), out[0] ? out : "?")
+        if (uname(&kernel)) {
+            snprintf(kernel.release, sizeof(kernel.release), "?");
+            snprintf(kernel.machine, sizeof(kernel.machine), "?");
+        }
+        /* Short: the system's box does not scroll in landscape, and its
+         * buttons sit under the text. The kernel's version without its
+         * build suffix; of the first holder ("80000000-80200000 rw-p
+         * [anon:dalvik-free list large object space]") its range and name. */
+        snprintf(version, sizeof(version), "%.*s", (int)strcspn(kernel.release, "-"), kernel.release);
+        parsed = sscanf(failed, "the addresses from 0x%x to 0x%x", &low, &high) == 2;
+        snprintf(range, sizeof(range), "0x%08X-0x%08X", low, high);
+        snprintf(holder, sizeof(holder), "%.*s", (int)strcspn(occupants, "\n"), occupants);
+        if (sscanf(holder, "%*x-%*x%n %*s %n", &start_skip, &name_at) >= 0 && start_skip > 0 && name_at > 0 &&
+            (size_t)name_at < strlen(holder)) {
+            const char *name = holder + name_at;
+            size_t length = strlen(name);
+            if (!strncmp(name, "[anon:", 6) && length > 7 && name[length - 1] == ']') name += 6, length -= 7;
+            snprintf(text, sizeof(text), "%.*s %.*s", start_skip, holder, (int)length, name);
+            snprintf(holder, sizeof(holder), "%s", text);
+        }
+        /* A range that something holds, or another failure (no shared
+         * memory for the game's RAM, a refused mapping), told as it is. */
+        if (parsed && strstr(failed, "already holds"))
+            snprintf(lead, sizeof(lead), "%s already uses memory this game needs (%s).",
+                     strstr(occupants, "dalvik") ? "Android's Java runtime" : "Something else in the app", range);
+        else
+            snprintf(lead, sizeof(lead), "The game could not set up its memory: %s.",
+                     *failed ? failed : "the reason is in the report");
+        snprintf(facts, sizeof(facts), "%s %s, Android %s, Linux %s, heap %s\nHeld by %s",
+                 PROPERTY("ro.product.manufacturer", maker), PROPERTY("ro.product.model", model),
+                 PROPERTY("ro.build.version.release", release), version, PROPERTY("dalvik.vm.heapsize", heap),
+                 holder[0] ? holder : "nothing found there now");
+        snprintf(message, sizeof(message), "%s\nPlease tap Share and send the report to us on Discord or GitHub.\n\n%s",
+                 lead, facts);
+        add_detail(&details, &used, &room, "failed step: %s\n", *failed ? failed : "(none recorded)");
+        add_detail(&details, &used, &room, "kernel: %s %s; MAP_FIXED_NOREPLACE %s\n", kernel.release,
+                   kernel.machine, refuses > 0 ? "known (4.17+)"
+                                   : refuses == 0 ? "not known (before 4.17: taken as a hint)" : "not probed");
+        add_detail(&details, &used, &room, "dalvik.vm.heapsize %s, heapgrowthlimit %s, enable_uffd_gc %s\n", heap,
+                   PROPERTY("dalvik.vm.heapgrowthlimit", limit), PROPERTY("ro.dalvik.vm.enable_uffd_gc", uffd));
+        add_detail(&details, &used, &room, "held by:\n%s", occupants[0] ? occupants : "(nothing found there now)\n");
+        add_detail(&details, &used, &room, "\nthe process's mappings below 4 GB (/proc/self/maps):\n");
+        if ((maps = fopen("/proc/self/maps", "r")) != NULL) {
+            unsigned long long start;
+            while (fgets(text, sizeof(text), maps))
+                if (sscanf(text, "%llx-", &start) == 1 && start < 0x100000000ull)
+                    add_detail(&details, &used, &room, "%s", text);
+            fclose(maps);
+        }
+#undef PROPERTY
+        shown = Android_OfferStartupReport("The game cannot start", message,
+                                           details ? details : "(no memory for the details)");
+        free(details);
+        if (shown) return 0;
+        /* No box with buttons (a scripted run, or none could be shown):
+         * the caller's error box, whose text is all there is. */
+        snprintf(why, size, "%s\nPlease send a screenshot of this to us on Discord or GitHub.\n\n%s", lead, facts);
+    }
     return 1;
 }
 
@@ -499,6 +609,14 @@ static int java_failed(JNIEnv *env)
     (*env)->ExceptionDescribe(env);
     (*env)->ExceptionClear(env);
     return 1;
+}
+
+/* A JNI call's result, good when it is not NULL and no exception is
+ * pending: the exception is looked for even when the call gave NULL (a
+ * failed call does both), so none is left pending for the next call. */
+static int java_ok(JNIEnv *env, const void *value)
+{
+    return !java_failed(env) && value != NULL;
 }
 
 /* Starts Restart.java's activity (a process of its own) with this process's
@@ -520,7 +638,7 @@ static int start_restart_activity(void)
     }
     /* Each call is checked before the next: a JNI call with an exception
      * pending aborts the process under CheckJNI. */
-#define CHECKED(value) ((value) && !java_failed(env))
+#define CHECKED(value) java_ok(env, (const void *)(value))
     if (CHECKED(intent_class = (*env)->FindClass(env, "android/content/Intent")) &&
         CHECKED(make = (*env)->GetMethodID(env, intent_class, "<init>", "()V")) &&
         CHECKED(set_class = (*env)->GetMethodID(env, intent_class, "setClassName",
@@ -567,6 +685,102 @@ int Platform_RestartGame(void)
     int result = 0;
     Memories_OnHostStack(restart_on_host, &result); /* JNI: never from the game stack */
     return result;
+}
+
+/* --- message boxes, through MessageBox.java (platform.h) -------------- */
+
+typedef struct {
+    const SDL_MessageBoxData *data;
+    int button;
+    int shown;
+} JavaBox;
+
+/* The box in the system's alert (MessageBox.show): box->shown stays 0 when
+ * it could not be, and SDL's is shown instead. */
+static void java_box(void *argument)
+{
+    JavaBox *box = argument;
+    const SDL_MessageBoxData *data = box->data;
+    JNIEnv *env = (JNIEnv *)SDL_GetAndroidJNIEnv();
+    jobject activity = env ? (jobject)SDL_GetAndroidActivity() : NULL;
+    jclass activity_class = NULL, loader_class = NULL, string_class = NULL, found = NULL;
+    jmethodID get_loader = NULL, load = NULL, show = NULL;
+    jobject loader = NULL;
+    jstring name = NULL, title = NULL, message = NULL;
+    jobjectArray texts = NULL;
+    jintArray ids = NULL, flags = NULL;
+    jint id[3], flag[3];
+    int i, ok;
+    if (!activity) return;
+    if (data->numbuttons < 1 || data->numbuttons > 3 || (*env)->PushLocalFrame(env, 24) < 0) {
+        java_failed(env);
+        (*env)->DeleteLocalRef(env, activity);
+        return;
+    }
+    for (i = 0; i < data->numbuttons; i++) {
+        id[i] = data->buttons[i].buttonID;
+        flag[i] = (jint)data->buttons[i].flags;
+    }
+    /* MessageBox is the app's: a thread native code attached finds only the
+     * system's classes with FindClass, so it comes through the activity's
+     * class loader, as HdDownload does. */
+#define CHECKED(value) java_ok(env, (const void *)(value))
+    ok = CHECKED(activity_class = (*env)->GetObjectClass(env, activity)) &&
+         CHECKED(get_loader = (*env)->GetMethodID(env, activity_class, "getClassLoader", "()Ljava/lang/ClassLoader;")) &&
+         CHECKED(loader = (*env)->CallObjectMethod(env, activity, get_loader)) &&
+         CHECKED(loader_class = (*env)->GetObjectClass(env, loader)) &&
+         CHECKED(load = (*env)->GetMethodID(env, loader_class, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;")) &&
+         CHECKED(name = (*env)->NewStringUTF(env, "org.yfmredecomp.game.MessageBox")) &&
+         CHECKED(found = (jclass)(*env)->CallObjectMethod(env, loader, load, name)) &&
+         CHECKED(show = (*env)->GetStaticMethodID(env, found, "show",
+                                                  "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;"
+                                                  "[Ljava/lang/String;[I[I)I")) &&
+         CHECKED(string_class = (*env)->FindClass(env, "java/lang/String")) &&
+         CHECKED(title = (*env)->NewStringUTF(env, data->title ? data->title : "")) &&
+         CHECKED(message = (*env)->NewStringUTF(env, data->message ? data->message : "")) &&
+         CHECKED(texts = (*env)->NewObjectArray(env, data->numbuttons, string_class, NULL)) &&
+         CHECKED(ids = (*env)->NewIntArray(env, data->numbuttons)) &&
+         CHECKED(flags = (*env)->NewIntArray(env, data->numbuttons));
+    for (i = 0; ok && i < data->numbuttons; i++) {
+        jstring text = NULL;
+        ok = CHECKED(text = (*env)->NewStringUTF(env, data->buttons[i].text ? data->buttons[i].text : ""));
+        if (ok) {
+            (*env)->SetObjectArrayElement(env, texts, i, text);
+            ok = !java_failed(env);
+        }
+    }
+#undef CHECKED
+    if (ok) {
+        (*env)->SetIntArrayRegion(env, ids, 0, data->numbuttons, id);
+        (*env)->SetIntArrayRegion(env, flags, 0, data->numbuttons, flag);
+        ok = !java_failed(env);
+    }
+    if (ok) {
+        jint chosen = (*env)->CallStaticIntMethod(env, found, show, activity, title, message, texts, ids, flags);
+        if (!java_failed(env) && chosen != -2) {
+            box->button = (int)chosen;
+            box->shown = 1;
+        }
+    } else {
+        fprintf(stderr, "memories-pc: MessageBox.java could not show the box: SDL's instead\n");
+    }
+    (*env)->PopLocalFrame(env, NULL);
+    (*env)->DeleteLocalRef(env, activity);
+}
+
+int Android_ShowMessageBox(const SDL_MessageBoxData *data, int *button)
+{
+    JavaBox box;
+    box.data = data;
+    box.button = -1;
+    box.shown = 0;
+    Memories_OnHostStack(java_box, &box); /* JNI: never from the game stack */
+    if (!box.shown) return SDL_ShowMessageBox(data, button);
+    /* as SDL_ShowMessageBox does: a key held when the box came up is let
+     * go, not left down in SDL's state */
+    SDL_ResetKeyboard();
+    if (button) *button = box.button;
+    return 1;
 }
 
 /* --- the HD pack's download (hd_pack.h), through Java ------------------- */

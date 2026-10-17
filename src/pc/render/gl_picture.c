@@ -28,6 +28,7 @@
 #include "gl_picture.h"
 #include "soft_gpu.h"
 #include "texture_pack.h"
+#include "pc/cards/card_layout.h"
 #include "pc/text/hd_text.h"
 #include "pc/platform/settings.h"
 #include "pc/compat/signal.h"
@@ -427,7 +428,9 @@ static const char *vertex_source =
  * page: page x, page y, palette x, palette y. mode: depth, blend mode, bank.
  * window: mask x, mask y, offset x, offset y in texels, as soft_gpu.c has
  * them. pass: 0 every fragment, 1 the opaque ones, 2 the semi-transparent.
- * op 1: VRAM into the picture. op 2: the scratch copy into the picture. */
+ * op 1: VRAM into the picture. op 2: the scratch copy into the picture.
+ * Flag 128: a full-bleed card title, whose HD atlas ink is white instead of
+ * the retail title CLUT's black. */
 static const char *fragment_source =
 #ifdef __APPLE__
     "#version 150\n"
@@ -570,7 +573,12 @@ static const char *fragment_source =
     /* HD text (hd_text.h): the index from the glyph's picture, through the
      * glyph's palette as ever. */
     "            ivec2 at = clamp(ivec2(floor(vec2(ub, vb) * float(scale))), ivec2(0), textureSize(glyphs, 0) - 1);\n"
-    "            word = word_at(page.z + int(texelFetch(glyphs, at, 0).r), page.w);\n"
+    "            uint ink = texelFetch(glyphs, at, 0).r;\n"
+    "            word = word_at(page.z + int(ink), page.w);\n"
+    "            if ((flags & 128) != 0) {\n"
+    "                uint level = ink == 0u ? 0u : (8u - min(ink, 7u)) * 31u / 7u;\n"
+    "                word = level | (level << 5u) | (level << 10u);\n"
+    "            }\n"
     /* A capture (SoftGpu_Capture): a 16-bit texel there keeps its word,
      * which says whether it is transparent and semi-transparent, and takes
      * its color from the picture the game read it from. */
@@ -1343,8 +1351,10 @@ static size_t polygon(const uint32_t *words, size_t count)
         }
     } else if (!(flags & 16) && textured && hd_text && state.depth == 0 && !state.bank) {
         /* A card's title plate, whole or a piece of the turning card. */
-        int atlas_u, atlas_v, title_u, title_v;
-        if (HdText_Title(state.page_x, state.page_y, v[0].u, v[0].v, scale, &atlas_u, &atlas_v, &title_u, &title_v)) {
+        int atlas_u, atlas_v, title_u, title_v, title_card;
+        if (HdText_TitleCard(state.page_x, state.page_y, v[0].u, v[0].v, scale, &atlas_u, &atlas_v, &title_u, &title_v,
+                         &title_card)) {
+            if (CardLayout_TitleStyled(title_card)) flags |= 128;
             for (i = 0; i < vertices_n; i++) {
                 v[i].u = atlas_u + v[i].u - title_u;
                 v[i].v = atlas_v + v[i].v - title_v;
@@ -1462,8 +1472,10 @@ static size_t rectangle(const uint32_t *words, size_t count)
         }
     }
     if (w && h && textured && hd_text && state.depth == 0 && !state.bank) {
-        int atlas_u, atlas_v, title_u, title_v;
-        if (HdText_Title(state.page_x, state.page_y, base.u, base.v, scale, &atlas_u, &atlas_v, &title_u, &title_v)) {
+        int atlas_u, atlas_v, title_u, title_v, title_card;
+        if (HdText_TitleCard(state.page_x, state.page_y, base.u, base.v, scale, &atlas_u, &atlas_v, &title_u, &title_v,
+                         &title_card)) {
+            if (CardLayout_TitleStyled(title_card)) flags |= 128;
             state.pack = 0;
             block(base.x * scale, base.y * scale, w * scale, h * scale, atlas_u + base.u - title_u,
                   atlas_v + base.v - title_v, atlas_u + base.u - title_u + w, atlas_v + base.v - title_v + h, &base,
@@ -2759,6 +2771,52 @@ int GlPicture_Read(int x, int y, int w, int h, uint32_t *out)
         for (i = 0; i < w; i++) {
             const uint8_t *p = rgba + ((size_t)j * w + i) * 4;
             out[(size_t)j * w + i] = ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | p[2];
+        }
+    }
+    free(rgba);
+    return 1;
+}
+
+int GlPicture_ReadShown(unsigned wide_texture, int x, int y, int w, int h, uint32_t *out)
+{
+    GLuint read = 0;
+    int from_w = 0, from_h = 0, t, i, j, x0, y0, x1, y1;
+    uint8_t *rgba;
+    if (!on || scale < 2 || w <= 0 || h <= 0 || !out) return 0;
+    if (!wide_texture) {
+        read = picture_fbo;
+        from_w = SOFT_GPU_WIDTH * scale;
+        from_h = SOFT_GPU_HEIGHT * scale;
+        picture_resolve_pixels(x, y, w, h);
+    }
+    for (t = 0; !read && t < WIDE_TARGETS; t++) {
+        if (wide[t].fbo && wide[t].texture == wide_texture) {
+            wide_resolve(&wide[t]);
+            read = wide[t].fbo;
+            from_w = wide[t].width;
+            from_h = wide[t].height;
+        }
+    }
+    if (!read) return 0;
+    /* What lies inside the texture; past its edges the presenter's clamp to
+     * edge shows the edge pixels, so the picture saved has them too. */
+    x0 = x < 0 ? 0 : x;
+    y0 = y < 0 ? 0 : y;
+    x1 = x + w < from_w ? x + w : from_w;
+    y1 = y + h < from_h ? y + h : from_h;
+    if (x1 <= x0 || y1 <= y0) return 0;
+    rgba = malloc((size_t)(x1 - x0) * (size_t)(y1 - y0) * 4);
+    if (!rgba) return 0;
+    gl_BindFramebuffer(GL_READ_FRAMEBUFFER, read);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadPixels(x0, y0, x1 - x0, y1 - y0, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+    gl_BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    for (j = 0; j < h; j++) {
+        int sy = y + j < y0 ? y0 : y + j >= y1 ? y1 - 1 : y + j;
+        for (i = 0; i < w; i++) {
+            int sx = x + i < x0 ? x0 : x + i >= x1 ? x1 - 1 : x + i;
+            const uint8_t *p = rgba + ((size_t)(sy - y0) * (size_t)(x1 - x0) + (size_t)(sx - x0)) * 4;
+            out[(size_t)j * (size_t)w + (size_t)i] = ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | p[2];
         }
     }
     free(rgba);

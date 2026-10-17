@@ -68,8 +68,9 @@ editors write, is fine):
 | `equip_bonus_default` | what an equip adds when no `equips` entry sets its bonus, below |
 | `trap_thresholds` | the attack each of the six attack traps stops, below |
 | `passwords` | each card's password and starchip price on the Password screen, below |
-| `limits` | the numbers the game caps (ATK and DEF, life points, starchips, the chest, the records), below |
+| `limits` | the numbers the game caps (ATK and DEF, life points, starchips, the chest, the records) and the cards a won duel deals (`card_drops`), below |
 | `guardian_stars` | the stars' names and icons, stars 11 to 15, and what each star gets against each other, below |
+| `attributes` | the six retail attribute names, and new monster attributes from the port's attribute bank, below |
 | `card_text_colors` | the color a card's name, description and guardian star are written in on its details, below |
 | `palette_ramps` | the game's eight text color ramps, and ramps of the mod's own for its code to draw with, below |
 | `starter` | the forty cards a new game begins with, one deck or a list of them, below |
@@ -114,7 +115,13 @@ checked as well, when it starts.
 |---|---|---|
 | 9 or less | v0.2.0 | everything not listed below; added cards, duelists, starter pools, packs, the title's menus |
 | 10 | v0.2.1-preview.1 | `card_text_colors`; a card's `monster_effects` or `trap_threshold`; an equip's `bonus_attack`/`bonus_defense`; a pack's `image_style`; an added card (`copy`) of another kind than its base (a monster made a magic card, a magic card a monster or a trap), or whose `model` or `effect` is a card's name; the `MEMORIES_EVENT_MONSTER` event |
-| 11 | the release after v0.2.1-preview.1 | `assets`, `ui`, `card_layout`, `palette_ramps`; a card's `tags`, or a `frame` of `Gold`, `Green`, `Pink` or `Blue`; a monster effect's `for_each`; `{"remove": "all"}` in `fusions`; a ritual of other than three tributes, or with `tributes_from` `hand` or `both`; the title's `images`, a `scale` in `title` or `menu`; the `limits` `deck_copies`, `swords_turns`, `crush_card`, `spellbinding_circle`, `shadow_spell`, `rank_score`, `starchip_prize` and `new_game_starchips` |
+| 11 | v0.3.0 | `assets`, `ui`, `card_layout`, `palette_ramps`; a card's `tags`, or a `frame` of `Gold`, `Green`, `Pink` or `Blue`; a monster effect's `for_each`; `{"remove": "all"}` in `fusions`; a ritual of other than three tributes, or with `tributes_from` `hand` or `both`; the title's `images`, a `scale` in `title` or `menu`; the `limits` `deck_copies`, `swords_turns`, `crush_card`, `spellbinding_circle`, `shadow_spell`, `rank_score`, `starchip_prize` and `new_game_starchips` |
+| 13 | the release after v0.3.0 | the `limits` `card_drops`, a lock on the cards a won duel deals ([card drops](card-drops.md#a-mod-that-sets-it)) |
+| 14 | the release after v0.3.0 | `tower`; a duelist's `tower_only`, or `unlock` `tower`; a menu item's action `tower` ([Tower mode](tower-mode.md)) |
+| 15 | the release after v0.3.0 | `card_types`: renamed retail types, new monster types and their per-type icons |
+| 16 | the release after v0.3.0 | mod-defined card attributes (`attributes`) |
+| 17 | the release after v0.3.0 | a duelist's `bust` or `replace_bust`; a tower story's `"expression"` by name ([More duelists](more-duelists.md#bust--the-large-character)) |
+| 18 | the release after v0.3.0 | the card frames' keys ([Frame styles](#frame-styles-and-the-rules-that-pick-them)): a card's `frame_style`; `card_layout`'s `default_styles`, `atk_label`, `dfd_label` and `type_label`; in a `frame_styles` entry `hand`, `hand_image`, `field_image`, `field_back_image`, `back_image`, `library_icon`, `full_bleed`, `atk_label`, `dfd_label`, `type_label`, `digits`, or a part of its own (`title`, `stars`, `attribute`, `spell`, `art`, `atk`, `def`); a `hide`, `hidden`, `show` or `color` on a card part; `digits`' own `atk` and `def` |
 
 The FM Editor writes `min_api` on save as the lowest one of these that has
 everything the mod uses, never lowering one written higher, and its Mod
@@ -126,7 +133,8 @@ A mod written by hand should do the same. A release that adds a mod.json
 feature an older game would leave out raises `MEMORIES_MOD_API`
 (`src/pc/mods/mod_types.h`), lists the feature here and in `compat.py`,
 and keeps every lower `min_api` loading.
-When tagging the first API 11 release, replace the unreleased description in
+API 12 (v0.3.0 too) added no mod.json feature, only a code mod's sounds.
+When tagging the first release past v0.3.0, replace the unreleased descriptions in
 the table and add that tag to `compat.RELEASES`; do not assign an unchosen
 release number in advance.
 
@@ -830,7 +838,7 @@ Each item -- button or entry -- may have:
 |---|---|
 | `label` | its words, drawn on a frame in the entries' own look: dark in an olive rim, and red and orange with green letters while the cursor is on it. At most 31 letters, in the serif the card names are set in (Times; the system's sans without it) |
 | `image`, `selected_image` | a PNG drawn instead, and another while the cursor is on it. Without `selected_image` the one picture is drawn darker while the cursor is elsewhere. Sized as the title's pictures are: `width` and `height`, one of them and the PNG's shape, or the PNG's own size divided by the smallest whole number that brings it to 32 rows or fewer -- so a picture drawn at 4 times the entries' 28 rows comes out their size. At most 256 x 64 |
-| `action` | what choosing it does: an entry's name (what that entry does), `back`, `notice`, `quit`, `debug_menu`, `event` or `none`. An entry does its own unless given one; a button without one does nothing, or shows its `notice` |
+| `action` | what choosing it does: an entry's name (what that entry does), `back`, `notice`, `quit`, `debug_menu`, `event`, `none` or `tower`. An entry does its own unless given one; a button without one does nothing, or shows its `notice` |
 | `notice` | the words of a `notice` action's box: text, or `{"title", "text"}` |
 | `value` | a number handed to a code mod with `event` |
 | `hide`, `x`, `y`, `tint` | as the title's entries: left out, moved from the middle (160), its middle's place, its colors multiplied |
@@ -850,6 +858,7 @@ The actions:
 | `debug_menu` | the game's own debug menu |
 | `event` | nothing but a code mod's `MEMORIES_EVENT_MENU` (below); a buzz when no mod takes it |
 | `none` | a buzz |
+| `tower` | the [tower](tower-mode.md) of the mod that has one, in the second menu only; dimmed and a buzz while its `unlock` does not hold. The tower's mod gets a button for it of its own, `"<mod>:tower"` |
 
 An action a menu cannot take -- `campaign` in the first, say -- is noted
 beside the mod and does nothing. The items drawn by the port (the ones
@@ -944,19 +953,14 @@ some of them out, with a `"card_layout"` object, no code needed:
 ```json
 "card_layout": {
     "frame_styles": {
-        "gold":   {"image": "anime_frame_monster.png", "hand_color": "gold"},
+        "gold":   {"image": "anime_frame_monster.png", "hand_image": "anime_hand_monster.png", "library_icon": "anime_library_monster.png", "hand_color": "gold"},
         "green":  {"image": "anime_frame_magic.png",   "hand_color": "green"},
         "pink":   {"image": "anime_frame_trap.png",    "hand_color": "pink"},
         "orange": {"image": "anime_frame_orange.png",  "hand_color": "orange"}
     },
-    "frame_for": [
-        {"class": "ritual_spell",   "style": "green"},
-        {"class": "effect_monster", "style": "orange"},
-        {"class": "spell",          "style": "green"},
-        {"class": "equip",          "style": "green"},
-        {"class": "trap",           "style": "pink"},
-        {"class": "monster",        "style": "gold"}
-    ],
+    "default_styles": {
+        "kinds": {"monster": "gold", "magic": "green", "equip": "green", "ritual": "green", "trap": "pink"}
+    },
     "default_style": "gold",
     "art": {"x": 3, "y": 3, "width": 134, "height": 139},
     "attribute": {"x": 114, "y": 149},
@@ -976,15 +980,70 @@ out entirely, though, and it inherits retail's title-plate spot -- now
 covered by full-bleed's bigger art -- so it ends up hidden; giving it a
 position in the stat band keeps it clear of `art`'s own rect.
 
+A full-bleed style may retain the card's ordinary, localized name with
+`"title": {"x": 12, "y": 14}` inside that `frame_styles` entry. Its
+coordinates are from the frame's top-left; without this object, full-bleed
+frames leave the retail name sprite out.
+
+Any movable card part can be left out with `"hide": true`: `title`, `art`,
+`attribute` (or a spell style's `spell.icon`), `stars`, `atk` and `def`
+(their numeric values), or `atk_label` and `dfd_label` (their captions).
+For example, `"atk": {"hide": true}` leaves the ATK caption but hides its
+value, while `"atk_label": {"hide": true}` does the reverse. `"hidden":
+true` and `"show": false` are accepted aliases. Put the flag in a frame
+style to affect only that style, or at the top level to affect every style
+that does not supply its own part.
+The large card frame itself is not hideable: `full_bleed` replaces the retail
+plate with the style's frame image, while a fallback style keeps the retail
+plate.
+
+`atk`/`def`/`stars`/`attribute` (and `spell`'s `icon`) also move a card drawn
+in a *fallback* style (`full_bleed` off, retail's own frame and title plate
+still on screen) -- a mod can nudge where the stock stat boxes sit without
+opting into a whole custom frame image. Only `width`/`height` on `art` and
+`attribute` (the stretch into a full-bleed frame's own cutout) stay
+full-bleed-only: a fallback style has no custom art there to stretch into.
+
+Each of those four keys also takes a `"color"`, `{"r", "g", "b"}` (0-255,
+128 is retail's own color, unchanged -- the GPU's own neutral vertex-color
+multiply): a filter over whatever the element already draws, not an
+independent paint over it, so it still dims and fades with the rest of the
+card. `"atk": {"x": 38, "y": 179, "color": {"r": 255, "g": 96, "b": 96}}`
+reddens just the ATK number, retail position and all.
+
 `digits` (optional) replaces the ATK/DFD numbers with the mod's own while the
 layout is on: `{"image": "digits.png", "width": 10, "height": 12, "step": 10}`.
+Put it inside a `frame_styles` entry to use that image only for cards wearing
+that style; a top-level `card_layout.digits` remains the shared fallback for
+styles without one.
+Each frame style may also supply static stat captions independently:
+`"atk_label": {"image": "atk.png", "x": 12, "y": 171, "width": 18,
+"height": 8}` and `"dfd_label": {...}`. These are ordinary transparent
+PNGs drawn over that style's frame, before the dynamic number glyphs. Their
+`x`/`y` are offsets from the frame's top-left; `width`/`height` (16x8 if left
+out) are their on-card size. They are style-only, so no label can leak onto
+another frame style.
+A non-monster card (magic, trap, ritual or equip) also carries retail's own
+"[Normal Magic Card]"/"[Trap Card]"/"[Ritual Magic Card]"/"[Equip Magic
+Card]" caption; `type_label` replaces or hides it, one entry a kind:
+`"type_label": {"trap": {"image": "trap.png", "x": 12, "y": 35, "width": 56,
+"height": 16}, "equip": {"hide": true}}`. `magic`/`ritual` follow the same
+shape. Unlike `atk_label`/`dfd_label` this one still has an effect with no
+`image` of its own: `"type_label": {"ritual": {"hide": true}}` on its own
+silences retail's own built-in caption, useful even for a position-only
+layout with no replacement frame image at all.
 The image is a strip of 5 x 4 cells of 40 x 48 texels: digit d in column
 `d % 5` and row `d / 5`, and the same ten greyed two rows further down
-(200 x 192; `tools/pc/card_digits.py` draws one from a font). The greyed ones
+(200 x 192 texels; the PNG can be any size, read in proportion, and
+should have power-of-two sides such as 256 x 256 so OpenGL draws it at Internal 2x
+and up; `tools/pc/card_digits.py` draws one from a font). The greyed ones
 are the stat the attack screen dims, which keeps the card's own box and the
 mod's font. `width`/`height` are one digit's size on the card, `step` the
 distance between two digits' left edges (default `width`). Each number is
-centred on its `atk`/`def` point. Left out, the retail digits are drawn.
+centred on its own `digits.atk`/`digits.def` point: `"digits": { ...,
+"atk": {"x": 108, "y": 169}, "def": {"x": 108, "y": 184} }`.
+Older style/layout-level `atk`/`def` entries remain a fallback. Left out,
+the retail digits are drawn.
 `hd_assets_pack.py` copies `tools/pc/hd_recipes/anime_digits.png` in for the HD
 mod (`--digit-font <ttf>` draws a new one).
 
@@ -994,18 +1053,29 @@ up to 12 stars at a fixed 9px each, and `func_80028B08.c` centres however
 many a card has around this point so a wide row never runs past the frame.
 
 Retail draws a small frame with a title plate, the card's picture at its
-own fixed size, and ATK/DEF stacked under a separate plaque -- none of
-which `"card_layout"` can change on its own. What it does is answer a mod's
-own `full_bleed` setting (a `bool` the mod declares, as every setting is):
-while that setting is on, the frame and title plate are left out, and the
-rest move to the place given, in the same pixel neighbourhood retail draws
-them in (`x`/`y`, with `width`/`height` on `art` and `attribute` stretching
-the picture there instead of drawing it at its own size). Any key left out
--- the whole object included -- keeps retail's own place; a mod that only
-sets `full_bleed` and gives no positions gets retail's own layout with
-nothing hidden, which is a no-op, not a half-finished look. The description
-box is always shown -- its own backdrop panel is on screen either way, so
-there is nothing to gain by leaving its text out.
+own fixed size, and ATK/DEF stacked under a separate plaque. A mod's own
+`full_bleed` setting (a `bool` the mod declares, as every setting is)
+answers whether the frame and title plate stay on screen: while it is on,
+both are left out and `art`/`attribute`'s `width`/`height` stretch the
+picture into the custom frame's own cutout instead of drawing it at its own
+size, and `atk`/`def`'s point becomes each box's own *centre* rather than
+retail's stacked top-left anchor. `full_bleed` off keeps retail's frame,
+title plate and corner-anchored stat boxes, but every element still moves
+and tints to the place and color given -- the two are independent: a mod
+can recolor or nudge the stock boxes without a custom frame image, or go
+full custom without moving a single box from where retail already put it.
+Any key left out -- the whole object included -- keeps retail's own place
+and color; a mod that only sets `full_bleed` and gives no positions gets
+retail's own layout with nothing hidden, which is a no-op, not a
+half-finished look. The description box is always shown -- its own
+backdrop panel is on screen either way, so there is nothing to gain by
+leaving its text out.
+
+For `art` specifically, once an `art` object is present, its omitted fields
+use retail's art rectangle (`x: 19`, `y: 50`, `width: 102`, `height: 96`).
+This makes a position-only override such as `"art": {"y": 84}` valid: it
+keeps the retail size and X position while moving the picture down. Leave
+the whole `art` object out to keep the unmodified retail art draw path.
 
 ### Frame styles and the rules that pick them
 
@@ -1013,10 +1083,13 @@ A card is drawn in a frame **style**: a picture and the color its small card
 wears in the hand, together, so the card view and the hand can never
 disagree. Three keys say it:
 
-- `frame_styles`: name -> `{"image", "hand_color", "width", "height"}`.
+- `frame_styles`: name -> `{"image", "hand_image", "field_image", "field_back_image", "back_image",
+  "library_icon", "hand_color", "hand", "width", "height", "full_bleed"}`.
   `image` is relative to the mod's directory, as a `title` mod's pictures
   are, drawn as one textured quad behind everything else, at `width`/`height`
-  (140x196 with neither given). `hand_color` (the older spelling
+  (140x196 with neither given). A frame may be smaller, but its dimensions
+  are capped at 140x196 so it cannot cover the Library name bar or Deck
+  Builder information panel. `hand_color` (the older spelling
   `hand_colour` is still read; `hand_color` wins when a style has both)
   is one of the disc's six frame
   colors, `gold`, `green`, `pink`, `blue`, `purple` or `orange` (the colors
@@ -1025,13 +1098,78 @@ disagree. Three keys say it:
   as you like; a style named for a color (`gold`, ...) is also what a card
   whose own `frame` (a cards mod's, [Frame color](more-cards.md#frame-color))
   is that color wears.
+  `hand_image`, when present, is a PNG reduced to the 52x60 sprite for that
+  style's flat duel-hand and flat field-card frame. Its artwork is drawn under the game's own card
+  art, stats and markers. `field_image` independently replaces the face-up
+  3D field-card frame (the same 52x60 size); without it, that card keeps its
+  retail image. `field_back_image` (52x60) replaces the face-down back in the
+  hand and on the field. A hand card that is raised, flipped or played turns
+  and scales with the game's own projection, and so do these two pictures
+  and the `hand` overlays below. `back_image` is the card back the card
+  viewer shows: the side the card opens on, until it has turned to its
+  front (only the back -- the front stays the style's `image`, or retail's
+  plate without one or with `full_bleed` off). The picture is reduced to
+  the style's `width`/`height` (the frame box above, so 140x196 at most),
+  and the viewer keeps retail's own 144x200 card back on screen -- its
+  size, slide and turn -- with each part of it showing the same part of the
+  picture.
+  Without those images, the corresponding retail card back is drawn.
+  Its optional `hand` object independently places the overlays on that same
+  52x60 card: `art`, `atk`, `def`, `atk_label` and `dfd_label`. Each accepts
+  `x`, `y`, `width`, `height` and `hide` just like the larger card-viewer
+  elements. Coordinates are kept within -128 to 128 and dimensions within
+  1 to 128, so malformed JSON cannot wrap the duel renderer's geometry.
+  Five-digit values draw five cells across; keep `x + 5 * width` inside the
+  52-pixel card when the row must not extend past its edge. `atk_label` and `dfd_label` are the hand's sword and shield
+  markers, not the literal `ATK`/`DFD` text used by the big card. Leave the
+  whole object out to keep the retail hand draw path exactly as it is.
+
+  ```json
+  "hand": {
+    "art":       {"x": 6,  "y": 6,  "width": 40, "height": 32},
+    "atk_label": {"x": 5,  "y": 40, "width": 8,  "height": 8},
+    "atk":       {"x": 14, "y": 40, "width": 8,  "height": 8},
+    "dfd_label": {"x": 5,  "y": 48, "width": 8,  "height": 8},
+    "def":       {"x": 14, "y": 48, "width": 8,  "height": 8}
+  }
+  ```
+  `library_icon` is a PNG reduced to the Library grid's 12x14
+  cell; without it, the grid uses the style's `hand_color` palette row.
+  `full_bleed` defaults on for a style with an `image`; set it to `false`
+  for a palette-only fallback style, so cards that do not select a custom
+  image keep the retail full-card frame.
+- A card entry's `"frame_style"` may name any style directly. It is the
+  strongest choice; the full order is explicit card style, printed type,
+  kind, a style named for the card's six-color `"frame"`, the first
+  `frame_for` rule that applies, `default_style`, then retail. This lets a
+  cards mod opt into a new frame without using a tag as an implementation
+  detail. `null` clears an inherited named style.
 - `frame_for`: a list of rules, the first that applies to a card wins. A rule
   says `"style"` and, to limit it, any of `"class"` (what the card is, below),
   `"tag"` (one of the card's [`tags`](more-cards.md#tags)) and `"setting"` (a
   `bool` the mod declares: the rule counts only while it is on, which is how a
   player gets a sub-option in the Mods window). A rule that names none applies
-  to every card.
-- `default_style`: the style of a card no rule picks (`gold` if left out).
+  to every card. Released layouts (Forbidden Memories HD) use these rules;
+  `default_styles` below wins over them.
+- `default_styles`: defaults for cards that have no explicit card style. Its optional
+  `kinds` object assigns a style to `monster`, `effect_monster`, `magic`
+  (also accepted as `spell`), `equip`, `ritual` (also `ritual_spell`) or
+  `trap`. `monster` includes ordinary and effect monsters unless the latter
+  has its more-specific `effect_monster` entry. Its optional `types` object
+  assigns a style by the card's printed type: `Dragon`, `Zombie`,
+  `Spellcaster`, `Magic`, `Trap`, `Ritual`, `Equip`, and every other type the
+  card editor accepts. A type default wins over a kind default because it is
+  more specific.
+
+  ```json
+  "default_styles": {
+    "kinds": {"monster": "normal", "magic": "spell", "trap": "trap"},
+    "types": {"Dragon": "xyz", "Zombie": "undead", "Equip": "equip"}
+  }
+  ```
+
+- `default_style`: the style of a card no more-specific assignment picks. It
+  is the final mod fallback after `default_styles`; omit it to keep retail.
 
 The class of a card is worked out by the engine from its type and its
 `monster_effects`, never written by a mod: `monster`, `effect_monster`,
@@ -1042,15 +1180,12 @@ and DEF.
 
 Forbidden Memories HD follows the anime: a ritual spell is **green**, in the card
 view and in the hand. Give the build a ritual picture (`--anime-frame-ritual`)
-and it adds the style `blue` and the sub-option "Ritual spells: own frame" (off).
-To keep ritual spells blue by default, put that rule's `"setting"` on and
-declare its `default` as `1`, or delete the rule above it. A mod that adds
-god monsters tags them (`"tags": ["god"]`) and adds a style and a rule for the
-tag, before the class rules:
+and assign its `blue` style through `default_styles.kinds.ritual`. A mod that
+adds god monsters can assign its named style directly in that card's entry:
 
 ```json
 "frame_styles": { "god": {"image": "god_frame.png", "hand_color": "purple"} },
-"frame_for": [ {"tag": "god", "style": "god"} ]
+"cards": [ {"replace": 1, "frame_style": "god"} ]
 ```
 
 An older layout with a `frame` per kind (`monster`, `magic`, `trap`, `ritual`,
@@ -1271,7 +1406,9 @@ the attack each attack trap springs on.
 sets what the Password screen takes for a card and what it costs;
 `"all": {"password": "card number", "starchips_percent": 10}` does every card.
 `"limits": {"stats": 30000, "life_points": 16000}` raises the ATK and DEF cap
-and the life points a duel starts with; `limits` also sets how far healing
+and the life points a duel starts with, and `"limits": {"card_drops": 5}`
+makes every won duel deal 5 cards whatever the player set in Game > Card
+drops ([card drops](card-drops.md#a-mod-that-sets-it)); `limits` also sets how far healing
 goes, each side's and each duelist's LP, the two-player LP choice, the most
 starchips, the chest and the Free Duel record, up to what the game keeps
 them in (32767 for ATK, DEF and LP), and the duel's numbers take a fifth
@@ -1288,6 +1425,90 @@ opponents' names, and how the rules combine. Like cards, they need a restart.
 The [FM Editor](../tools/pc/fm_editor/README.md) (`python tools/pc/fm_editor`)
 reads these tables and the cards out of the player's own game files and
 writes a mod folder whose `mod.json` holds only what was changed.
+
+## Card Types: names and new monster types
+
+`card_types` is the type registry. It works like Guardian Stars: it gives a
+stable numeric field a human name, so cards and rule tables may use the name.
+Existing IDs retain their game behaviour; a mod may rename any of them. The
+type bank has IDs `24` through `255` for new monster types. Every new type is
+stored beside the disc's five-bit field; untouched original routines receive
+the Dragon monster encoding as a safe compatibility value, while framework
+rules and the custom-type renderers use the banked identity. The port-owned
+terrain, equip, ritual, fusion and monster-effect paths use the banked type.
+An original routine that reads the packed retail field directly still treats a
+custom type as Dragon; mods that need to change one of those retail-only
+effects must provide its rule or hook.
+
+```json
+"card_types": {
+    "types": [
+        {"id": 0, "name": "Wyrm"},
+        {"id": 20, "name": "Spell"},
+        {"id": 24, "name": "Cyberse", "icon": "icons/cyberse.png"}
+    ]
+},
+"cards": [
+    {"copy": "Blue-Eyes White Dragon", "id": "codec-dragon", "name": "Codec Dragon", "type": "Cyberse"}
+],
+"terrain_bonus": {"Forest": {"Cyberse": 300}}
+```
+
+`id` is `0` through `23` to rename a retail type, or `24` through `255` to
+declare a new one. IDs `20` Magic, `21` Trap, `22` Ritual and `23` Equip keep
+their mechanics even when renamed. A new ID is always a monster: it can be
+used for a card's `type`, terrain bonuses, equip targets and bonuses, ritual
+requirements, and monster-effect filters just like the twenty retail monster
+types (all but `255`, which a monster effect's `type` filter cannot name). It gets the ordinary monster frame. An optional `icon` is a relative
+PNG path inside the mod; it draws only for that custom type in the card
+viewer, deck/list, trade and duel interfaces. It is placed in a dedicated
+sprite bank, so it never replaces `assets/monster_type/dragon.png` or the
+icon of any retail Dragon. Its own palette is used, and its PNG supplies the
+HD image where HD rendering is active.
+
+Type IDs are stored in the loaded card tables, so changing an existing ID's name does
+not convert cards. Later active mods replace an earlier name for the same ID.
+A card or rule may use either its numeric ID or its currently declared name;
+the original retail spelling remains an alias after a retail type is renamed,
+so existing rule mods keep working.
+Names are case- and punctuation-insensitive and must be unique across retail
+and custom types; a colliding declaration is rejected. The game warns when a
+display name drops unsupported glyphs; manifests still refer to the original
+UTF-8 name.
+Use `card_types` and set `"min_api": 15`.
+
+## Attributes: names and new attributes
+
+Cards keep their attribute in four bits. The game uses `Light`, `Dark`,
+`Earth`, `Water`, `Fire` and `Wind` (ids 0 through 5); ids 6 and 7 are
+reserved by its magic/trap presentation. A mod can rename the retail six and
+declare new monster attributes, ids 8 through 255. The names can then be
+used everywhere a card attribute is accepted: cards, an equip's `bonus_if`,
+and a monster effect's attribute filter.
+
+```json
+"attributes": {
+    "attributes": [
+        {"id": 0, "name": "Radiant"},
+        {"id": 8, "name": "Metal", "icon": "icons/metal.png"},
+        {"id": 9, "name": "Void"}
+    ]
+},
+"cards": [
+    {"replace": "Blue-eyes White Dragon", "attribute": "Metal"}
+]
+```
+
+Later mods replace a name for the same id. Attribute ids are deliberately
+fixed in a mod: cards and rule tables keep the nibble, so changing an id's
+meaning changes every card that uses it. Names need at least one letter or
+number and cannot normalize to a numeric attribute id (so `8-` is not a
+valid name). Every declared attribute may
+also give `icon` a PNG to draw it from the attribute texture bank. Custom
+attribute icons always use the PNG's palette and scale through the texture
+pack at the game's internal resolution. Give it a numeric id in hand-written
+mods when sharing with older tools that do not yet know its name.
+Use `attributes` and set `"min_api": 16`.
 
 ## Guardian Stars: names, icons, new stars and matchups
 
@@ -1417,6 +1638,36 @@ so a character can be added without touching a mod.
 [More duelists](more-duelists.md) has every property, what each folder holds,
 how weights, unlocks, the AI row and the rank score work, and the disc layouts
 the whole thing rests on.
+
+## The tower: a run of duels
+
+A mod's `"tower"` puts one more button in the title's second menu: a run of
+duels, its floors, each an opponent with a field, a deck, starting LP and
+rules of its own (no fusions, no equips, held by the game's own checks for the
+player and the CPU alike), a reward, and lines of story told as the campaign
+tells its own: in its stone-framed box over a scene picture, with up to two of
+its large characters on top (the disc's, or PNGs of the mod's). It opens always, after the save has
+seen the ending, or on the duelists' unlock conditions; a loss goes back to
+the last checkpoint or to the first floor; a save keeps the climb. A duelist a
+mod adds may be the tower's alone (`"tower_only"`), let out into Free Duel by a
+won floor, and any duelist's `unlock` may ask for a floor won (`"tower"`).
+
+```json
+"tower": {
+    "name": "The Shadow Tower",
+    "unlock": "after_ending",
+    "floors": [
+        {"duelist": "Simon Muran", "checkpoint": true, "reward": {"cards": ["Kuriboh"]},
+         "before": {"scene": "throne room", "lines": ["Show me what you have learned."]}},
+        {"duelist": "Seto", "field": "Dark", "no_fusions": true, "life_points": {"opponent": 4000}}
+    ]
+}
+```
+
+A mod with a tower asks for `"min_api": 14`. [Tower mode](tower-mode.md) has
+every key, the scenes and characters a story may use, what the player sees,
+where the progress is kept and how the screen is drawn.
+
 ## Starter decks: what a new game begins with
 
 A mod may write down the forty cards a new game starts with, in place of the
@@ -1671,7 +1922,9 @@ reads its x86-64 object with the same loader (ELF64, the Windows x64
 calling convention); one that has only the 32-bit object stays off there
 with "needs a 64-bit build of this mod" in the Mods window; the arm64
 Android game reads its AArch64 object the same way, and one without it
-stays off with "needs an Android build of this mod". A mod ships
+stays off with "needs an Android build of this mod". Both notes end with
+how to make the missing object: rebuild the mod with `build_mod.py` using
+clang ([Building one](#building-one)). A mod ships
 whichever objects it has beside its `mod.json`; `"library": "card-tweaks"`
 (or `"card-tweaks.o"`) names all of them, and `"libraries": {"x86_64-windows":
 "other.o"}` names one target's file outright. Mod authors supporting every
@@ -1708,7 +1961,7 @@ the player's settings file as `mod.<id>.<key>`, and read from
 `MEMORIES_MOD_<ID>_<KEY>` first when that is set; a key is letters, digits,
 `_` and `-`, and `order` is the manager's), `disc_file_start`/
 `disc_read`, `pad`, and from mod API 2 `now_us` (a clock) and `map_fixed`
-(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`).
+(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`). API 14 adds no entry or event either; it marks the [tower](tower-mode.md)'s mod.json features, API 17 a duelist's [bust](more-duelists.md#bust--the-large-character), and API 18 the [card frames](#frame-styles-and-the-rules-that-pick-them)'s keys.
 A mod that uses an entry newer than API 1 should refuse to start when
 `host->api` is older.
 
@@ -1777,7 +2030,13 @@ same with no mod hooking anything (the smoke screenshots are unchanged).
   is the line's middle), `host->text_width` measures it and `host->fill`
   blends a rectangle in. It is drawn at the window's resolution over the
   game picture, under the port's save menu, and only while the mod is
-  applied.
+  applied. While the on-screen touch controls show (a phone, or View >
+  Touch controls), it is drawn under them too, so a full-screen panel
+  never hides where to tap; then the port's HUD (frame rate, fusion
+  helper, rank meter) and the menu bar are over it as well. With no touch
+  controls nothing else changes. The pad's buttons stay see-through, and
+  a mod has no way yet to ask where they are (see "Touch pad's free span"
+  in [PC build](pc-build.md)).
 * **Save slots.** The events `MEMORIES_EVENT_SLOT_SAVE` and
   `MEMORIES_EVENT_SLOT_LOAD` (after only) say that the running game was
   saved to, or loaded from, slot `a` (from 0); `b` is the slot's token and
@@ -1802,14 +2061,33 @@ object per target. Beside a released game the same script is
 `sdk/tools/build_mod.py`, and it builds against `sdk/include` there. The
 release's `sdk/` also carries `extract_images.py` and `upscale_pack.py` in
 `sdk/tools`, the example mods in `sdk/examples/mods`, and this note with
-`mod-api-3.md` and `more-cards.md` in `sdk/notes`. It needs
-clang (on Windows, the llvm-mingw clang; it builds the Linux object format
-there too) or, on Linux, gcc with 32-bit support. clang is used only with
-lld beside it or on PATH. With clang it builds all three ELF targets unless
-`--target` names some; the 64-bit ones also need `llvm-objcopy` (looked for
-beside clang and beside the file a `clang` link points to, then on PATH and
-in llvm-mingw), and without it the script builds the `i386` object alone
-and says so. gcc builds the `i386` object only. `./build-pc.sh` builds
+`mod-api-3.md` and `more-cards.md` in `sdk/notes`.
+
+What it needs:
+
+| Targets | Tools |
+|---|---|
+| all three | clang, with `ld.lld` beside it or on PATH, and `llvm-objcopy` (beside clang, beside the file a `clang` link points to, or on PATH) |
+| `i386` only | the above, or on Linux gcc with 32-bit support |
+
+The simplest way to have all three is the toolchain the game itself is built
+with, [llvm-mingw 20260922](https://github.com/mstorsjo/llvm-mingw/releases/tag/20260922):
+on Windows `llvm-mingw-20260922-ucrt-x86_64.zip` (its clang builds the Linux
+and Android object formats too), on Linux x86-64
+`llvm-mingw-20260922-ucrt-ubuntu-22.04-x86_64.tar.xz`. Unpack it and put its
+`bin` folder on PATH, or set `MEMORIES_MOD_CC` to its `clang`. On Linux the
+distribution's packages do as well: `clang`, `lld` and `llvm` (which has
+`llvm-objcopy`), e.g. `sudo apt install clang lld llvm`. The 64-bit games
+are built with clang 21 or later (clang 12 miscompiles their 4-byte
+pointers, and the versions between are not verified), so prefer a clang
+that new for the 64-bit objects.
+
+With clang, lld and llvm-objcopy it builds all three ELF targets unless
+`--target` names some. Without one of them it builds the `i386` object
+alone (with gcc, or a clang that has lld), then says which of the three is
+missing, that only the 32-bit object was built, and where to get
+llvm-mingw; with none at all it builds nothing and says the same. A 64-bit
+target named with `--target` without them builds nothing. `./build-pc.sh` builds
 every directory under `mods/` this way, once, and copies the same file into
 both games' `mods/` directories. The script keeps what it builds in
 `tmp/pc/mod-build` (beside `sdk/`, or in the repository), under a key of the
@@ -1820,7 +2098,9 @@ any time.
 A mod reaches the game directly. Its undefined names are bound when it is
 loaded, against a table compiled into the game (`mod_exports.c`, generated
 by `tools/pc/build_game32.py`; beside a game, its SDK's
-`exports.<target>.txt`). The table holds every game function and
+`exports.<target>.txt`, one for each target, so every object the SDK's
+`build_mod.py` builds is checked, not only the one for the game beside it).
+The table holds every game function and
 variable, every guest variable pinned to its retail address, and the
 port's own globals. That is what makes something like 3D Monsters possible:
 it borrows the model loader, the software GPU's texture banks and the duel's
