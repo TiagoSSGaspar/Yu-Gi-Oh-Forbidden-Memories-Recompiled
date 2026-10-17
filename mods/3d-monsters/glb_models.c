@@ -94,6 +94,25 @@ void GlbModels_Fit(int model, int card, const MATRIX *ls, int height, int x, int
     }
 }
 
+int GlbModels_Drawn(int model)
+{
+    return model && host->setting(host, "glb_models", 1) && MeshPass_Ready();
+}
+
+#define GAME_RATE 60 /* the duel's frames a second: one a VBlank */
+
+int GlbModels_ClipFrames(int model, int which)
+{
+    int i, clip;
+    if (!model || which < 0 || which >= GLB_CLIPS) return 0;
+    for (i = 0; i < known_count; i++) {
+        if (known[i].model != model) continue;
+        clip = known[i].clip[which];
+        return clip < 0 ? 0 : (MeshPass_ClipLength(model, clip) * GAME_RATE + 999) / 1000;
+    }
+    return 0;
+}
+
 u32 GlbModels_Marker(int model, const MATRIX *ls, int fade, int which, int permille)
 {
     int i, clip = -1, length, strike, ms;

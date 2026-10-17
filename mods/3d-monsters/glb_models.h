@@ -13,6 +13,11 @@ int GlbModels_Load(int card);
 void GlbModels_Fit(int model, int card, const MATRIX *ls, int height, int x, int y, int z);
 /* The clips a model can play, by the names its file gives them. */
 enum { GLB_IDLE, GLB_ATTACK, GLB_HIT, GLB_DIE, GLB_SUMMON, GLB_CLIPS };
+/* Whether `model` is drawn in place of its monster's polygons now. */
+int GlbModels_Drawn(int model);
+/* How many of the game's frames clip `which` lasts at its own speed; 0 when
+ * the model has no such clip. */
+int GlbModels_ClipFrames(int model, int which);
 /* The word to sort in place of the monster's polygons, drawn through `ls`
  * faded `fade` (0 opaque to 255 gone), playing clip `which` (GLB_*)
  * `permille` thousandths of the way through; 0 to draw the polygons. A clip

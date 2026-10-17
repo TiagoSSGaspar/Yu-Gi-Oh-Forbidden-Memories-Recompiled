@@ -2956,8 +2956,23 @@ static void draw_frame(void)
     }
     for (i = 0; i < count; i++) {
         Summon *summon = &summons[standing[i].summon];
-        int share = MODEL_FIXED_ONE, fade = 0, lifted = lift();
-        if (summoning && summon->elapsed < (unsigned)frames) {
+        Monster *monster = standing[i].monster;
+        int share = MODEL_FIXED_ONE, fade = 0, lifted = lift(), clip = 0;
+        if (summoning && GlbModels_Drawn(monster->glb)) {
+            clip = GlbModels_ClipFrames(monster->glb, GLB_SUMMON);
+        }
+        summon_permille = -1;
+        if (clip) {
+            /* A glTF model with a summon of its own comes in by it: whole
+             * where it stands, fading in over the summon's frames while
+             * its clip plays at its own speed. */
+            if (summon->elapsed < (unsigned)frames) {
+                fade = 255 - 255 * (int)summon->elapsed / frames;
+            }
+            if (summon->elapsed < (unsigned)clip) {
+                summon_permille = (int)(summon->elapsed * 1000 / (unsigned)clip);
+            }
+        } else if (summoning && summon->elapsed < (unsigned)frames) {
             int progress = (int)(summon->elapsed * MODEL_FIXED_ONE / (unsigned)frames);
             int grown = eased(progress);
             share = SUMMON_FROM + (MODEL_FIXED_ONE - SUMMON_FROM) * grown / MODEL_FIXED_ONE;
@@ -2966,11 +2981,8 @@ static void draw_frame(void)
         }
         share = share * board_share / MODEL_FIXED_ONE;
         lifted = lifted * board_share / MODEL_FIXED_ONE;
-        summon_permille = summoning && summon->elapsed < (unsigned)frames
-                              ? (int)(summon->elapsed * 1000 / (unsigned)frames)
-                              : -1;
-        draw_monster(standing[i].monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted,
-                     standing[i].at, height);
+        draw_monster(monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted, standing[i].at,
+                     height);
         summon_permille = -1;
         if (summon->elapsed < 0xFFFFu) {
             summon->elapsed++;
