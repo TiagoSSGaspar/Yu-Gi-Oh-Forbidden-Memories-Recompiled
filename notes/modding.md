@@ -11,7 +11,7 @@ mod's `.zip` through the system's file picker
 
 | Directory | What is in it |
 |---|---|
-| `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `yamyi-mods`, `drop-missing-cards`) |
+| `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `extra-hand-plays`, `yamyi-mods`, `drop-missing-cards`) |
 | `mods/` in the user directory | mods the player installed |
 
 The user directory is where everything the player owns lives: settings,
