@@ -24,21 +24,44 @@ starts after the last play.
   extra hand the player may press **START** to skip the remaining plays
   and go to the field. START does nothing in the first hand, and does
   nothing while cards are marked for a fusion.
-- No cards are drawn between plays. The remaining cards are moved to the
-  left of the hand, as the draw does at a turn start.
+- No cards are drawn between plays, unless another mod asks for some
+  (Modern rules' Pot of Greed). The remaining cards are moved to the left
+  of the hand, as the draw does at a turn start.
 - The hand does not come back when it is empty, or once either side is out
   of life points.
 - The Swords of Revealing Light countdown, the turn count, monster "draw"
   effects and the per-turn used marks happen once per turn, not once per
   hand.
 - The CPU plays every extra hand it is given, through its own hand script
-  (or AI Hard Mode's planner). In an extra hand it chooses only from the
-  cards it holds. The original script reads the next deck cards from
-  snapshot slot 16, which is only correct with five cards in hand, so
-  upcoming deck cards are not offered in an extra hand. The first hand of
-  each turn keeps the opponent's normal deck access.
+  (or AI Hard Mode's planner). With fewer than five cards in hand it
+  chooses only from the cards it holds. The original script reads the next
+  deck cards from snapshot slot 16, which is only correct with five cards
+  in hand, so upcoming deck cards are not offered then. A full hand keeps
+  the opponent's normal deck access.
 - End-of-duel rank statistics count every play. For example, face-down
   plays and fusions add up as they would over separate turns.
+
+## For other mods
+
+The mod provides a table that other mods find as `extra-hand-plays:api`
+(`extra_hand_plays.h`). A mod that uses it lists `extra-hand-plays` under
+`requires`. [Modern rules](../modern-rules/README.md) uses it. The table
+offers:
+
+- `set_turn_draws`: how many cards a turn draws, instead of the disc's
+  refill to five.
+- `bonus_hand(draws)`: after the card being played resolves, the hand comes
+  up again with `draws` cards drawn into it. A bonus hand does not count
+  against the plays per turn.
+- `queued(side)`: how many drawn cards are still waiting for room.
+
+When a turn draws fewer cards than the hand has room for, or a hand is
+rebuilt with draws, this mod deals the cards itself. It follows the draw
+resolution's own loop, but puts each card into the first empty slot
+instead of the last ones, so the hand stays packed to the left. Cards
+that do not fit wait. They are drawn into the next hand, and the player's
+hand shows how many are waiting. Drawing with no cards left in the deck
+loses the duel, as at a turn's draw.
 
 ## How it works
 
@@ -51,12 +74,13 @@ draw:
 - runs the game's own first step, which compacts the hand, spawns its cards
   and slides the hand panel in;
 - undoes the turn-level work (Swords countdown, turn count, used marks);
-- skips the draw resolution and goes straight to the hand state.
+- skips the draw resolution and goes straight to the hand state, or deals
+  the cards asked for first (above).
 
 The hand state then runs unchanged for the player or the CPU.
 
-The retail hand state assumes five cards, so the mod covers a short hand
-while one is up:
+The retail hand state assumes five cards, so the mod covers any hand
+with fewer, extra or not:
 
 - it colours only the occupied slots on the idle step's first frame;
 - it replaces `func_8001B8B8` (dimming) with a copy that skips empty slots;
@@ -67,8 +91,9 @@ START sets the hand panel's slide-out, the same way the hand state does for
 a magic card used from it. The panel releases its cursor and cards on the
 way out, and the field starts when it is gone.
 
-The mod's state (plays this turn, a rebuild in progress) is five bytes. It
-is registered with the host, so save states keep it.
+The mod's state (plays and hands this turn, a rebuild or deal in progress,
+bonus hands, each side's waiting cards) is a few bytes, with no pointers.
+It is registered with the host, so save states keep it.
 
 ## Build and checks
 

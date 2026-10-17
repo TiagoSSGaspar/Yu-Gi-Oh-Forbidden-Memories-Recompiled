@@ -1,0 +1,181 @@
+/* Compile for i386: the Modern rules mod's turn draws, fusion-chain guard,
+ * Pot of Greed effect and the CPU's use of it, against stand-ins for the
+ * game and for Extra hand plays' table. */
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include "../../mods/modern-rules/modern_rules.c"
+
+u16 gDuel_wSceneStateFlags;
+u8 D_8009B174;
+u8 D_8009B1D5;
+s8 D_8009B360[2];
+u8 D_800E9F10[DUEL_SELECTION_SIDE_SIZE * 2];
+DuelSideState D_800E9FF0[2];
+DuelHandSlot D_800EA030[HAND_SIZE];
+DuelCardRecord D_801A7AD8[DUEL_CARD_RECORD_COUNT];
+u8 D_800907CC[2 * HAND_SIZE + 2] = {0, 1, 2, 3, 4, 0x80, 0x81, 0x82, 0x83, 0x84};
+u8 D_801A8000[16], D_801A9800[16];
+AiScriptState gAiScript_State;
+u8 gDuel_bEffectState;
+u8 gDuel_bQuitDialogState;
+u16 gInput_wPad1Pressed;
+unsigned char D_800EAE88[12];
+
+#define POT 800
+static int sounds, seen_pressed, bonus_draws, bonus_calls, applied_flag = 1;
+static ExtraHandTurnDraws registered;
+static MemoriesModCallback subscribed;
+
+/* Cards 1 + 2 fuse into 3; 3 + 4 into 5; 6 equips onto any monster. */
+s32 Duel_CheckFusion(s32 a, s32 b)
+{
+    if ((a == 1 && b == 2) || (a == 2 && b == 1)) return 3;
+    if ((a == 3 && b == 4) || (a == 4 && b == 3)) return 5;
+    return 0;
+}
+s32 Duel_CheckEquip(s32 equip, s32 monster) { return equip == 6 && monster != 6 ? monster : 0; }
+void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
+void DuelScene_UpdateHandActions(void) { seen_pressed = gInput_wPad1Pressed; }
+s32 AiScript_Run(void) { D_800EAE88[0] = 13; D_800EAE88[6] = 2; return 1; }
+
+static void set_turn_draws(ExtraHandTurnDraws fn) { registered = fn; }
+static void bonus_hand(int draws) { bonus_calls++; bonus_draws += draws; }
+static int queued(int side) { (void)side; return 0; }
+static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued};
+
+static int fake_setting(const MemoriesModHost *h, const char *key, int fallback) { (void)h; (void)key; return fallback; }
+static int fake_applied(const MemoriesModHost *h) { (void)h; return applied_flag; }
+static int fake_card_id(const MemoriesModHost *h, const char *identity)
+{
+    (void)h; return !strcmp(identity, POT_IDENTITY) ? POT : 0;
+}
+static void *fake_find(const MemoriesModHost *h, const char *name)
+{
+    (void)h; return !strcmp(name, "extra-hand-plays:api") ? (void *)&fake_api : 0;
+}
+static int fake_subscribe(const MemoriesModHost *h, unsigned event, int priority, MemoriesModCallback fn)
+{
+    (void)h; (void)priority; assert(event == MEMORIES_EVENT_EFFECT); subscribed = fn; return 1;
+}
+static int fake_hook(const MemoriesModHost *h, void *fn, void *replacement, void **previous)
+{
+    (void)h; assert(replacement); *previous = fn; return 1;
+}
+static void fake_log(const MemoriesModHost *h, const char *format, ...) { (void)h; (void)format; }
+
+/* The player's hand: card ids by slot, marks in pick order (0 unmarked). */
+static void deal(const int *ids, const int *marks)
+{
+    DuelSelectionRecord *side = (DuelSelectionRecord *)D_800E9F10;
+    int i, marked = 0;
+    for (i = 0; i < HAND_SIZE; i++) {
+        D_800E9FF0[0].hand[i] = ids[i] ? (s8)i : -1;
+        D_801A7AD8[i].card_id = (s16)ids[i];
+        D_800EA030[i].active_09 = (u8)marks[i];
+        marked += marks[i] != 0;
+    }
+    side->field_15 = (u8)marked;
+}
+static int confirm(void)
+{
+    gInput_wPad1Pressed = PAD_BUTTON_CROSS;
+    seen_pressed = -1;
+    sounds = 0;
+    hand();
+    assert(gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+    return seen_pressed == PAD_BUTTON_CROSS;
+}
+
+int main(void)
+{
+    MemoriesModHost h = {0};
+    MemoriesMod mod = {0};
+    MemoriesModEvent event;
+    h.api = 4; h.setting = fake_setting; h.applied = fake_applied; h.card_id = fake_card_id;
+    h.find = fake_find; h.subscribe = fake_subscribe; h.hook = fake_hook; h.log = fake_log;
+    assert(MemoriesModInit(&h, &mod) && registered && subscribed);
+
+    /* One card a turn, five on a side's first turn; the disc's when removed. */
+    assert(registered(0, 1, 5) == 5 && registered(1, 1, 5) == 5);
+    assert(registered(0, 2, 1) == 1 && registered(1, 9, 3) == 1);
+    applied_flag = 0;
+    assert(registered(0, 4, 2) == -1);
+    applied_flag = 1;
+
+    /* The player's confirm of marked cards. */
+    D_8009B1D5 = 0;
+    D_8009B360[0] = -1;
+    gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
+    D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
+    {
+        static const int fuse_twice[5] = {1, 2, 4, 9, 0}, fuse_marks[5] = {1, 2, 3, 0, 0};
+        static const int equip_after[5] = {1, 2, 6, 0, 0}, equip_marks[5] = {1, 2, 3, 0, 0};
+        static const int equip_first[5] = {6, 7, 0, 0, 0}, equip_first_marks[5] = {1, 2, 0, 0, 0};
+        static const int broken[5] = {1, 2, 9, 4, 0}, broken_marks[5] = {1, 2, 3, 4, 0};
+        static const int order[5] = {2, 4, 1, 0, 0}, order_marks[5] = {1, 2, 3, 0, 0};
+        static const int single[5] = {9, 1, 2, 0, 0}, single_marks[5] = {0, 1, 0, 0, 0};
+        deal(fuse_twice, fuse_marks);                   /* 1+2 -> 3, 3+4 -> 5 */
+        assert(confirm() && sounds == 0);
+        deal(equip_after, equip_marks);                 /* the fusion, then an equip on it */
+        assert(confirm());
+        deal(equip_first, equip_first_marks);           /* an equip onto the monster after it */
+        assert(confirm());
+        deal(broken, broken_marks);                     /* 3 + 9 would throw one away */
+        assert(!confirm() && sounds == 1);
+        deal(order, order_marks);                       /* 2 + 4 do not fuse, whatever comes after */
+        assert(!confirm());
+        deal(single, single_marks);                     /* one marked card is not a chain */
+        assert(confirm());
+        /* Only the player's idle hand is guarded. */
+        deal(broken, broken_marks);
+        D_8009B360[0] = 1;
+        assert(confirm());
+        D_8009B360[0] = -1;
+        D_8009B174 = 4 | HAND_STEP_DONE;
+        assert(confirm());
+        D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
+    }
+
+    /* Pot of Greed: the use's first handler asks for a bonus hand with two
+     * draws; both handlers are taken from the retail dispatcher; other cards
+     * and the per-frame update are left alone. */
+    memset(&event, 0, sizeof event);
+    event.type = MEMORIES_EVENT_EFFECT; event.phase = MEMORIES_BEFORE; event.a = POT;
+    subscribed(&event);
+    assert(event.handled && bonus_calls == 1 && bonus_draws == 2);
+    memset(&event, 0, sizeof event);
+    event.phase = MEMORIES_BEFORE; event.a = POT; event.b = 1;
+    subscribed(&event);
+    assert(event.handled && bonus_calls == 1);
+    memset(&event, 0, sizeof event);
+    event.phase = MEMORIES_BEFORE; event.a = POT; event.c = 1;
+    subscribed(&event);
+    assert(!event.handled);
+    memset(&event, 0, sizeof event);
+    event.phase = MEMORIES_BEFORE; event.a = 343;
+    subscribed(&event);
+    assert(!event.handled && bonus_calls == 1);
+
+    /* The CPU uses a Pot of Greed in hand first: its packed hand slot. */
+    {
+        static const int ids[5] = {1, 0, 7, POT, 2}, none[5] = {0, 0, 0, 0, 0};
+        static const int without[5] = {1, 7, 2, 0, 0};
+        D_8009B1D5 = 0;
+        gAiScript_State.script_base = D_801A8000;
+        gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
+        deal(ids, none);
+        assert(run() == 1 && D_800EAE88[0] == AI_HAND_SLOT_FIRST + 2 && D_800EAE88[6] == 0);
+        deal(without, none);
+        assert(run() == 1 && D_800EAE88[0] == 13 && D_800EAE88[6] == 2);
+        deal(ids, none);
+        gAiScript_State.script_base = D_801A9800;     /* the field script keeps its own */
+        assert(run() == 1 && D_800EAE88[0] == 13);
+    }
+
+    printf("Modern rules: turn draws, fusion guard, Pot of Greed and the CPU's use of it passed\n");
+    return 0;
+}
