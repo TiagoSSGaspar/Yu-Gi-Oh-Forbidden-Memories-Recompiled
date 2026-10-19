@@ -348,6 +348,23 @@ int main(void)
     to_hand();
     assert(S.plays == 3 && D_800EA030[2].object && !D_800EA030[3].object);
 
+    /* A panel move that never ends does not hold the hand back for good. */
+    plays_setting = 2;
+    new_turn(0, 0);
+    to_hand();
+    D_800E9FF0[0].hand[0] = -1;
+    gDuel_wSceneStateFlags = STATE_FIELD;
+    D_8009B162 = 3;
+    for (int frame = 0; frame < SETTLE_FRAMES; frame++) {
+        step_field();
+        assert(gDuel_wSceneStateFlags == STATE_FIELD);
+    }
+    step_field();
+    assert(gDuel_wSceneStateFlags == STATE_DRAW && fields == 0);
+    D_8009B162 = 0;
+    to_hand();                                 /* the extra hand comes up */
+    assert(S.hands == 2);
+
     /* Another mod's turn draws: one card, into the first empty slot. */
     assert(provided && provided->version == EXTRA_HAND_API_VERSION);
     provided->set_turn_draws(draw_one);

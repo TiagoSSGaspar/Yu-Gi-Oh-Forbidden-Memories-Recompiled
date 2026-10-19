@@ -79,6 +79,7 @@ extern u8 gDuel_bQuitDialogState;
 #define PAD_RIGHT 0x2000
 #define DRAWN 0x4000           /* the draw resolution's every card is out */
 #define DRAW_GAP 8             /* frames between drawn cards, as retail */
+#define SETTLE_FRAMES 30       /* half a second */
 #define SLIDING_CARD_TAG 1     /* DisplayObject_FindAllocatedByTag: a card still sliding in */
 
 static const MemoriesModHost *host;
@@ -99,6 +100,7 @@ static struct {
     u8 custom;    /* the draw resolution running is this mod's */
     u8 to_draw;   /* cards it has still to draw */
     u8 queued[2]; /* each side's drawn cards that did not fit, still owed */
+    u8 settle;    /* frames waited for a panel move before a hand comes back */
 } S;
 
 static ExtraHandTurnDraws turn_draws;
@@ -149,8 +151,14 @@ static void field(void)
 {
     int bonus;
     if (!(gDuel_wSceneStateFlags & STATE_STARTED) && ((bonus = bonus_play()) || another_play())) {
-        /* Let a panel or camera move still running settle first. */
-        if (D_8009B162) return;
+        /* Let a panel or camera move still running settle first, for a
+         * while: the field state itself starts over one (it sets its own),
+         * and one left running for good must not hold the hand back. */
+        if (D_8009B162 && S.settle < SETTLE_FRAMES) {
+            S.settle++;
+            return;
+        }
+        S.settle = 0;
         if (bonus) {
             S.bonus--;
             S.in_bonus = 1;
@@ -417,7 +425,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->api = 4;
     mod->overlay = draw_hint;
     mod->overlay_signature = hint_signature;
-    return host->register_state(host, &S, sizeof S, 2) &&
+    return host->register_state(host, &S, sizeof S, 3) &&
         host->provide(host, "api", (void *)&api) &&
         host->hook(host, (void *)DuelScene_UpdateDrawPhase, (void *)draw, &original_draw) &&
         host->hook(host, (void *)DuelScene_UpdateDrawResolution, (void *)resolution, &original_resolution) &&
