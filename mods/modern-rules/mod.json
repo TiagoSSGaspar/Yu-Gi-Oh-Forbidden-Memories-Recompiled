@@ -1,0 +1,53 @@
+{
+  "id": "modern-rules",
+  "name": "Modern rules",
+  "version": "0.1.0",
+  "author": "DecompRecomp",
+  "description": "Rules from the later games: one card drawn a turn after the opening five, no card lost to a fusion that does not work, and Pot of Greed (draw two). Needs Extra hand plays.",
+  "min_api": 9,
+  "game": "slus_01411",
+  "library": "modern-rules",
+  "enabled": false,
+  "restart": true,
+  "requires": [{"id": "extra-hand-plays", "min_version": "0.2.0"}],
+  "after": ["ai-hard-mode"],
+  "settings": [
+    {
+      "key": "draw_one",
+      "label": "Draw one card a turn",
+      "type": "bool",
+      "default": 1,
+      "description": "Each side opens with five cards, then draws one a turn (none on the first turn). Off refills the hand to five each turn, as on the disc."
+    },
+    {
+      "key": "fusion_guard",
+      "label": "Keep cards a fusion cannot use",
+      "type": "bool",
+      "default": 1,
+      "description": "Confirming marked cards that would not all fuse or equip in that order is refused, so no card is thrown away. Applies to the player."
+    },
+    {
+      "key": "pot_of_greed",
+      "label": "Pot of Greed draws two",
+      "type": "bool",
+      "default": 1,
+      "description": "Using Pot of Greed draws two cards and brings the hand back up. Cards that do not fit in the hand wait for the next draw. The CPU uses it too."
+    }
+  ],
+  "cards": [
+    {
+      "id": "pot-of-greed",
+      "copy": "Sparks",
+      "name": "Pot of Greed",
+      "art": "images/pot_of_greed.png",
+      "description": "Draw two cards from\nyour deck.",
+      "card_effects_mode": "replace",
+      "drops": true,
+      "opponents": true,
+      "password": "55144522"
+    }
+  ],
+  "passwords": {
+    "modern-rules:pot-of-greed": {"starchips": 300}
+  }
+}
