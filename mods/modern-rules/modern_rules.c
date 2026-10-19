@@ -7,10 +7,12 @@
  *   side's first turn, which is the opening hand: the side that goes first
  *   draws nothing more that turn, the other is already at the five slots.
  * - No card lost to a fusion: while the player confirms two or more marked
- *   cards, the chain they make is checked step by step as placement plays
- *   it (Fusion_Step in src/pc/cards/fusion.c): each next card must fuse
- *   with what is in hand so far, or one of the two must equip the other.
- *   A chain with a step that would throw a card away is refused.
+ *   cards, or puts cards onto one of their monsters, the chain they make is
+ *   checked step by step as placement plays it (Fusion_Step in
+ *   src/pc/cards/fusion.c): each next card must fuse with what is made so
+ *   far, or one of the two must equip the other. A chain with a step that
+ *   would throw a card away is refused, so a monster on the field is never
+ *   replaced by one that does not fuse with it.
  * - Pot of Greed, a card of this mod's manifest: using it draws two cards
  *   into a bonus hand; what does not fit waits for the next draw. The CPU
  *   uses one as soon as it holds it. */
@@ -19,6 +21,8 @@
 #include "game/card_constants.h"
 #include "game/duel_card.h"
 #include "game/duel_card_checks.h"
+#include "game/duel_card_layout.h"
+#include "game/duel_card_pick_cursor.h"
 #include "game/duel_grid.h"
 #include "game/duel_hand.h"
 #include "game/duel_scene_state.h"
@@ -44,6 +48,9 @@ extern unsigned char D_800EAE88[];
 #define STATE_LOOKING 0x4000
 #define HAND_IDLE 1
 #define HAND_STEP_DONE 0x80
+#define HAND_PLACING 4           /* the player's hand state, picking a field zone */
+#define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
+#define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
 #define AI_SELECTION_SIZE 12
 #define AI_HAND_SLOT_FIRST 11
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
@@ -79,34 +86,67 @@ static int turn_draws(int side, int turn, int room)
     return turn <= 1 ? room : 1;
 }
 
-/* Whether the marked cards, in the order they were marked, make a chain
- * placement plays through without throwing one away. */
-static int chain_keeps_every_card(void)
+/* One step of a chain as placement plays it: a fusion, or one card
+ * equipping the other; 0 when the step would throw a card away. */
+static int step(int current, int next)
 {
-    int pick, slot, current = 0, next, result;
+    int result;
+    if (!current) return next;
+    if ((result = Duel_CheckFusion(current, next)) != 0) return result;
+    if (Duel_CheckEquip(next, current)) return current;
+    if (Duel_CheckEquip(current, next)) return next;
+    return 0;
+}
+
+/* Whether the cards going down, in order -- `first` (a field monster they
+ * go onto, or 0), then the marked cards in the order they were marked, or
+ * the card under the cursor when none is marked -- make a chain placement
+ * plays through without throwing one away. */
+static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
+{
+    int pick, slot, current = first, next;
+    if (side->field_15 == 0) {
+        next = hand_card((s8)side->field_0E);
+        return next && step(current, next);
+    }
     for (pick = 1; pick <= HAND_SIZE; pick++) {
         for (slot = 0; slot < HAND_SIZE && D_800EA030[slot].active_09 != pick; slot++) { }
         if (slot == HAND_SIZE) break;
-        next = hand_card(slot);
-        if (!next) return 0;
-        if (!current) { current = next; continue; }
-        if ((result = Duel_CheckFusion(current, next)) != 0) current = result;
-        else if (Duel_CheckEquip(next, current)) { }
-        else if (Duel_CheckEquip(current, next)) current = next;
-        else return 0;
+        if (!(next = hand_card(slot)) || !(current = step(current, next))) return 0;
     }
     return 1;
 }
 
-/* State 4: refuse the confirm of a chain that would lose a card. */
+/* The monster of the player's own that the field cursor is on, or 0. */
+static int monster_under_cursor(void)
+{
+    DuelCardRecord *card;
+    if (D_8009B1B4->row != MONSTER_ROW) return 0;
+    card = &D_801A7AD8[D_800907D8[D_8009B1B4->row * DUEL_FIELD_ROW_SIZE + D_8009B1B4->col +
+                                  D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]];
+    return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
+}
+
+/* State 4, for the player: refuse a confirm that would lose a card. In the
+ * hand, two or more marked cards that do not all fuse or equip in order;
+ * on the field, cards put onto one of the player's monsters that do not
+ * fuse with it or equip it -- the original game puts them down in its
+ * place and throws it away. */
 static void hand(void)
 {
     DuelSelectionRecord *side = (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
     u16 pressed = gInput_wPad1Pressed;
-    if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 &&
+    int step_kind = D_8009B174 & 0xF, refuse = 0, monster;
+    if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
-        (D_8009B174 & 0xF) == HAND_IDLE && (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState &&
-        (pressed & PAD_BUTTON_CONFIRM_MASK) && side->field_15 >= 2 && !chain_keeps_every_card()) {
+        (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
+        if (step_kind == HAND_IDLE)
+            refuse = side->field_15 >= 2 && !chain_keeps_every_card(side, 0);
+        else if (step_kind == HAND_PLACING && !(D_8009B174 & HAND_PLACING_MOVING) &&
+                 (monster = monster_under_cursor()) != 0)
+            refuse = !chain_keeps_every_card(side, monster);
+    }
+    if (refuse) {
         SD_SEPlayFull(REFUSED_SOUND);
         gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
         ((void (*)(void))original_hand)();

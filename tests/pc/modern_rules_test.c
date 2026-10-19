@@ -24,6 +24,11 @@ u8 gDuel_bEffectState;
 u8 gDuel_bQuitDialogState;
 u16 gInput_wPad1Pressed;
 unsigned char D_800EAE88[12];
+DuelCardPickCursor *D_8009B1B4;
+/* Side 0's grid: rows of five, the monsters (row 2) on records 5-9. */
+u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+static DuelCardPickCursor field_cursor;
 
 #define POT 800
 static int sounds, seen_pressed, bonus_draws, bonus_calls, applied_flag = 1;
@@ -98,6 +103,7 @@ int main(void)
     h.api = 4; h.setting = fake_setting; h.applied = fake_applied; h.card_id = fake_card_id;
     h.find = fake_find; h.subscribe = fake_subscribe; h.hook = fake_hook; h.log = fake_log;
     assert(MemoriesModInit(&h, &mod) && registered && subscribed);
+    D_8009B1B4 = &field_cursor;              /* on the opponent's row: nothing to check */
 
     /* One card a turn, five on a side's first turn; the disc's when removed. */
     assert(registered(0, 1, 5) == 5 && registered(1, 1, 5) == 5);
@@ -140,6 +146,46 @@ int main(void)
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
     }
 
+    /* Putting cards onto one of the player's monsters (a full monster row,
+     * or by choice): they must fuse with it or equip it. */
+    {
+        static const int hand_ids[5] = {2, 4, 9, 6, 0}, none[5] = {0, 0, 0, 0, 0};
+        static const int two[5] = {0, 1, 0, 0, 0};
+        DuelSelectionRecord *side = (DuelSelectionRecord *)D_800E9F10;
+        D_8009B1B4 = &field_cursor;
+        D_8009B174 = HAND_PLACING | HAND_STEP_DONE;
+        D_801A7AD8[7].flags = DUEL_CARD_FLAG_OCCUPIED;
+        D_801A7AD8[7].card_id = 1;               /* monster 1 at row 2, column 2 */
+        field_cursor.row = MONSTER_ROW;
+        field_cursor.col = 2;
+        deal(hand_ids, none);
+        side->field_0E = 0;                      /* 2 onto 1: they fuse */
+        assert(confirm());
+        side->field_0E = 3;                      /* 6 equips onto 1 */
+        assert(confirm());
+        side->field_0E = 2;                      /* 9 would take 1's place */
+        assert(!confirm() && sounds == 1);
+        deal(hand_ids, two);                     /* 1 + 4 do not fuse */
+        side->field_15 = 2;
+        D_800EA030[1].active_09 = 1;
+        D_800EA030[0].active_09 = 2;             /* marked 4, then 2 */
+        assert(!confirm());
+        D_800EA030[0].active_09 = 1;
+        D_800EA030[1].active_09 = 2;             /* 1 + 2 -> 3, 3 + 4 -> 5 */
+        assert(confirm());
+        side->field_15 = 0;
+        side->field_0E = 2;
+        field_cursor.col = 3;                    /* an empty zone */
+        assert(confirm());
+        field_cursor.col = 2;
+        field_cursor.row = 3;                    /* the spell row is not checked */
+        assert(confirm());
+        field_cursor.row = MONSTER_ROW;
+        D_8009B174 = HAND_PLACING | HAND_STEP_DONE | HAND_PLACING_MOVING;
+        assert(confirm());                       /* the cursor is still moving */
+        D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
+    }
+
     /* Pot of Greed: the use's first handler asks for a bonus hand with two
      * draws; both handlers are taken from the retail dispatcher; other cards
      * and the per-frame update are left alone. */
@@ -176,6 +222,6 @@ int main(void)
         assert(run() == 1 && D_800EAE88[0] == 13);
     }
 
-    printf("Modern rules: turn draws, fusion guard, Pot of Greed and the CPU's use of it passed\n");
+    printf("Modern rules: turn draws, fusion guard on the hand and the field, Pot of Greed and the CPU's use of it passed\n");
     return 0;
 }

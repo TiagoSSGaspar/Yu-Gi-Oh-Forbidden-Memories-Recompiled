@@ -13,7 +13,7 @@ plus these rules. With more plays, both apply.
 | Setting | Behavior |
 |---|---|
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The opening five are the first turn's draw, so the side that goes first draws nothing more that turn. Off refills the hand to five each turn, as on the disc. |
-| Keep cards a fusion cannot use | When the player confirms two or more marked cards, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. |
+| Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it. |
 | Pot of Greed draws two | Using Pot of Greed draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
 
 ## Rules
@@ -26,9 +26,12 @@ plus these rules. With more plays, both apply.
 - **Fusion chains.** Cards are played in the order they were marked, as in
   the original game. Each next card must either fuse with the card the
   chain has made so far, or one of the two must equip the other. Chains of
-  several fusions work: A + B make C, then C + D make E. A monster placed
-  onto one of the player's monsters is the original game's play and is not
-  checked. The CPU picks its own chains and is not checked either.
+  several fusions work: A + B make C, then C + D make E. Cards put onto one
+  of the player's monsters start the chain from that monster. In the
+  original game a card that does not fuse with it takes its place and the
+  monster is thrown away, even with all five zones full; that is refused.
+  An empty zone, and the spell and trap row, are not checked. The CPU picks
+  its own plays and is not checked.
 - **Pot of Greed.** A Magic card, played from the hand face up, or set and
   activated later. It is won in duels and dealt to opponents in place of
   Sparks, and sold on the Password screen for 300 StarChips (password
