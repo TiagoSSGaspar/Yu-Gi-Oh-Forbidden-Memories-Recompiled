@@ -9,8 +9,15 @@
   "library": "modern-rules",
   "enabled": false,
   "restart": true,
-  "requires": [{"id": "extra-hand-plays", "min_version": "0.2.0"}],
-  "after": ["ai-hard-mode"],
+  "requires": [
+    {
+      "id": "extra-hand-plays",
+      "min_version": "0.2.0"
+    }
+  ],
+  "after": [
+    "ai-hard-mode"
+  ],
   "settings": [
     {
       "key": "draw_one",
@@ -32,6 +39,16 @@
       "type": "bool",
       "default": 1,
       "description": "Using Pot of Greed draws two cards and brings the hand back up. Cards that do not fit in the hand wait for the next draw. The CPU uses it too."
+    },
+    {
+      "key": "test_copies",
+      "label": "Pot of Greed copies for testing",
+      "type": "int",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "description": "Keeps this many Pot of Greed in your trunk and deck together, so the card can be tried out. 0 turns it off. To be removed once testing is done."
     }
   ],
   "cards": [
@@ -48,6 +65,8 @@
     }
   ],
   "passwords": {
-    "modern-rules:pot-of-greed": {"starchips": 300}
+    "modern-rules:pot-of-greed": {
+      "starchips": 300
+    }
   }
 }

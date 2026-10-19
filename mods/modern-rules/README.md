@@ -14,6 +14,7 @@ plus these rules. With more plays, both apply.
 |---|---|
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The opening five are the first turn's draw, so the side that goes first draws nothing more that turn. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it. |
+| Pot of Greed copies for testing | 0–3, default 3. Keeps that many Pot of Greed in the player's trunk and deck together, topping the trunk up about once a second while a save is loaded (not while Build Deck or a duel's deck screen is open). 0 turns it off. Meant only for trying the card out, and to be removed after. |
 | Pot of Greed draws two | Using Pot of Greed draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
 
 ## Rules
