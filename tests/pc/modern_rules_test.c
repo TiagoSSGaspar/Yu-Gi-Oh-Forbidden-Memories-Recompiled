@@ -57,16 +57,30 @@ s32 Duel_CheckFusion(s32 a, s32 b)
 s32 Duel_CheckEquip(s32 equip, s32 monster) { return equip == 6 && monster != 6 ? monster : 0; }
 void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
 void DuelScene_UpdateHandActions(void) { seen_pressed = gInput_wPad1Pressed; }
-s32 AiScript_Run(void) { D_800EAE88[0] = 13; D_800EAE88[6] = 2; return 1; }
+/* The CPU's hand decision the stand-in script makes: picks, then [6] the
+ * zone (1-5 the monster zones), [8] face down. */
+static unsigned char ai_choice[12] = {13, 0, 0, 0, 0, 0, 2};
+s32 AiScript_Run(void) { memcpy(D_800EAE88, ai_choice, 12); return 1; }
+AiActiveCard gDuel_aActiveCards[80];
+s32 gDuel_adwCardStats[900];
+static int passes, guard_setting = 1, optional_setting = 1;
 
 static void set_turn_draws(ExtraHandTurnDraws fn) { registered = fn; }
 static void bonus_hand(int draws) { bonus_calls++; bonus_draws += draws; }
 static int queued(int side) { (void)side; return 0; }
 static ExtraHandOptionalPlay registered_optional;
 static void set_optional_play(ExtraHandOptionalPlay fn) { registered_optional = fn; }
-static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play};
+static void pass_hand(void) { passes++; }
+static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
+                                      pass_hand};
 
-static int fake_setting(const MemoriesModHost *h, const char *key, int fallback) { (void)h; (void)key; return fallback; }
+static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
+{
+    (void)h;
+    if (!strcmp(key, "fusion_guard")) return guard_setting;
+    if (!strcmp(key, "optional_play")) return optional_setting;
+    return fallback;
+}
 static int fake_applied(const MemoriesModHost *h) { (void)h; return applied_flag; }
 static int fake_card_id(const MemoriesModHost *h, const char *identity)
 {
@@ -249,6 +263,60 @@ int main(void)
         assert(run() == 1 && D_800EAE88[0] == 13);
     }
 
+    /* The CPU is held to the same rule as the player: cards it puts onto
+     * one of its monsters must fuse with it or equip it, and a chain from
+     * its hand must not throw a card away. Its zone moves to one that
+     * keeps every card; with none, it plays no card (playing is optional). */
+    {
+        static const int field_ids[5] = {7, 7, 1, 7, 7};
+        static const int no_pot[5] = {1, 7, 2, 0, 0}, none[5] = {0, 0, 0, 0, 0};
+        int i;
+        D_8009B1D5 = 0;
+        deal(no_pot, none);                                /* no Pot of Greed to use first */
+        gAiScript_State.script_base = D_801A8000;
+        gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
+        gDuel_adwCardStats[6 - 1] = CARD_TYPE_EQUIP << CARD_STAT_TYPE_SHIFT;
+        gDuel_adwCardStats[POT - 1] = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+        for (i = 5; i < 10; i++) D_801A7AD8[i].flags = 0;
+        D_801A7AD8[7].flags = DUEL_CARD_FLAG_OCCUPIED;     /* monster 1, column 2 */
+        D_801A7AD8[7].card_id = 1;
+        gDuel_aActiveCards[11].card_id = 9;
+        gDuel_aActiveCards[12].card_id = 2;
+        gDuel_aActiveCards[13].card_id = 6;
+        gDuel_aActiveCards[16].card_id = 4;              /* a deck card the script may pick */
+        memset(ai_choice, 0, sizeof ai_choice);
+        ai_choice[0] = 11; ai_choice[6] = 3; ai_choice[8] = 1;
+        assert(run() == 1 && D_800EAE88[0] == 11 && D_800EAE88[6] == 1);   /* 9 onto 1: to column 0 */
+        ai_choice[0] = 12;
+        assert(run() == 1 && D_800EAE88[6] == 3);                          /* 2 onto 1 fuses: kept */
+        ai_choice[0] = 12; ai_choice[1] = 16;
+        assert(run() == 1 && D_800EAE88[1] == 16 && D_800EAE88[6] == 3);   /* 1+2 -> 3, 3+4 -> 5 */
+        ai_choice[0] = 12; ai_choice[1] = 11; ai_choice[6] = 1;
+        assert(run() == 1 && D_800EAE88[0] == 12 && D_800EAE88[1] == 0);   /* 2 + 9 break: 2 alone */
+        ai_choice[0] = 13; ai_choice[1] = 0; ai_choice[6] = 1;
+        assert(run() == 1 && D_800EAE88[6] == 3);                          /* an equip needs a monster */
+        for (i = 0; i < 5; i++) {                                          /* a full monster row */
+            D_801A7AD8[5 + i].flags = DUEL_CARD_FLAG_OCCUPIED;
+            D_801A7AD8[5 + i].card_id = (s16)field_ids[i];
+        }
+        ai_choice[0] = 12; ai_choice[6] = 1;
+        assert(run() == 1 && D_800EAE88[6] == 3);                          /* onto the 1 it fuses with */
+        ai_choice[0] = 11;
+        passes = 0;
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 0);           /* 9 fits nowhere: no card */
+        optional_setting = 0;                                              /* a play is required */
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 11 && D_800EAE88[6] == 1);
+        optional_setting = 1;
+        guard_setting = 0;
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 11 && D_800EAE88[6] == 1);
+        guard_setting = 1;
+        ai_choice[0] = AI_ENEMY_SLOT_FIRST + 4;                            /* not its card: left alone */
+        assert(run() == 1 && D_800EAE88[0] == AI_ENEMY_SLOT_FIRST + 4 && D_800EAE88[6] == 1);
+        for (i = 5; i < 10; i++) D_801A7AD8[i].flags = 0;
+        memset(ai_choice, 0, sizeof ai_choice);
+        ai_choice[0] = 13; ai_choice[6] = 2;
+    }
+
     /* For testing: trunk and deck together keep three Pot of Greed. */
     mod_frame = mod.frame;
     assert(mod_frame);
@@ -267,6 +335,6 @@ int main(void)
     frames(TEST_CHECK_FRAMES);
     assert(pot_trunk == 0);
 
-    printf("Modern rules: optional play, turn draws, fusion guard on the hand and the field, Pot of Greed and the CPU's use of it, test copies passed\n");
+    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Pot of Greed and the CPU's use of it, test copies passed\n");
     return 0;
 }

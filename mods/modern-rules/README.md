@@ -14,7 +14,7 @@ plus these rules. With more plays, both apply.
 |---|---|
 | Playing a card is optional | START in the first hand of a turn plays no card and goes to the field, as in the later games. Without it, a full monster row with nothing that fuses would leave the player no legal play, since a monster can no longer be replaced. |
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five. Off refills the hand to five each turn, as on the disc. |
-| Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it. |
+| Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. |
 | Pot of Greed copies for testing | 0–3, default 3. Keeps that many Pot of Greed in the player's trunk and deck together, topping the trunk up about once a second while a save is loaded (not while Build Deck or a duel's deck screen is open). 0 turns it off. Meant only for trying the card out, and to be removed after. |
 | Pot of Greed draws two | Using Pot of Greed draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
 
@@ -32,8 +32,12 @@ plus these rules. With more plays, both apply.
   of the player's monsters start the chain from that monster. In the
   original game a card that does not fuse with it takes its place and the
   monster is thrown away, even with all five zones full; that is refused.
-  An empty zone, and the spell and trap row, are not checked. The CPU picks
-  its own plays and is not checked.
+  An empty zone, and the spell and trap row, are not checked.
+- **The CPU** is held to the same rule. When its choice would throw a card
+  away, its cards go to an empty zone, or onto a monster they fuse with or
+  equip; a chain that breaks is played as far as it keeps every card. With
+  no such zone it plays no card, when playing a card is optional (with that
+  setting off, its own choice stands).
 - **Pot of Greed.** A Magic card, played from the hand face up, or set and
   activated later. It is won in duels and dealt to opponents in place of
   Sparks, and sold on the Password screen for 300 StarChips (password
@@ -56,7 +60,10 @@ mod uses it in three places:
   CPU decides its play again in the bonus hand that follows. The manifest
   loads this mod after AI Hard Mode, so it also wraps that mod's planner.
 
-The fusion check wraps the hand state (`DuelScene_UpdateHandActions`). It
+The fusion check wraps the hand state (`DuelScene_UpdateHandActions`) for
+the player, and the CPU's hand decision (`AiScript_Run`, the picks and zone
+in `D_800EAE88`) for the CPU, which passes through Extra hand plays'
+`pass_hand` when it has no play left. It
 plays every step the way placement does (`Fusion_Step` in
 `src/pc/cards/fusion.c`), through `Duel_CheckFusion` and `Duel_CheckEquip`,
 so fusion and equip tables and mods are respected.

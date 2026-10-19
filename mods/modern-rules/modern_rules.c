@@ -14,7 +14,8 @@
  *   src/pc/cards/fusion.c): each next card must fuse with what is made so
  *   far, or one of the two must equip the other. A chain with a step that
  *   would throw a card away is refused, so a monster on the field is never
- *   replaced by one that does not fuse with it.
+ *   replaced by one that does not fuse with it. The CPU's hand decision is
+ *   held to the same rule: its cards go where none is lost, or it passes.
  * - Pot of Greed, a card of this mod's manifest: using it draws two cards
  *   into a bonus hand; what does not fit waits for the next draw. The CPU
  *   uses one as soon as it holds it. While the card is being tried out, a
@@ -58,7 +59,10 @@ extern unsigned char D_800EAE88[];
 #define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
 #define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
 #define AI_SELECTION_SIZE 12
-#define AI_HAND_SLOT_FIRST 11
+#define AI_PICKS 5               /* D_800EAE88[0..4]: the cards, in the order they go down */
+#define AI_ZONE 6                /* D_800EAE88[6]: the zone, 1-5 the monster row's columns */
+#define AI_HAND_SLOT_FIRST 11    /* snapshot slots: 11-15 the hand, 16 up the upcoming deck */
+#define AI_ENEMY_SLOT_FIRST 56
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
 #define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry */
 #define POT_DRAWS 2
@@ -105,6 +109,8 @@ static int optional_play(void)
     return host->applied(host) && setting("optional_play", 1);
 }
 
+static int kind(int id) { return (gDuel_adwCardStats[id - 1] >> CARD_STAT_TYPE_SHIFT) & CARD_STAT_TYPE_MASK; }
+
 /* One step of a chain as placement plays it: a fusion, or one card
  * equipping the other; 0 when the step would throw a card away. */
 static int step(int current, int next)
@@ -136,14 +142,18 @@ static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
     return 1;
 }
 
+/* The monster in column `col` of the side's own monster row, or 0. */
+static int monster_at(int col)
+{
+    DuelCardRecord *card = &D_801A7AD8[D_800907D8[MONSTER_ROW * DUEL_FIELD_ROW_SIZE + col +
+                                                   D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]];
+    return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
+}
+
 /* The monster of the player's own that the field cursor is on, or 0. */
 static int monster_under_cursor(void)
 {
-    DuelCardRecord *card;
-    if (D_8009B1B4->row != MONSTER_ROW) return 0;
-    card = &D_801A7AD8[D_800907D8[D_8009B1B4->row * DUEL_FIELD_ROW_SIZE + D_8009B1B4->col +
-                                  D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]];
-    return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
+    return D_8009B1B4->row == MONSTER_ROW ? monster_at(D_8009B1B4->col) : 0;
 }
 
 /* State 4, for the player: refuse a confirm that would lose a card. In the
@@ -175,26 +185,90 @@ static void hand(void)
     ((void (*)(void))original_hand)();
 }
 
-/* The CPU's hand decision: a Pot of Greed in hand is used first, face up,
- * on its own. The retail script (or AI Hard Mode) decides again in the
- * bonus hand that follows. */
-static s32 run(void)
+/* A Pot of Greed in the CPU's hand is used first, face up, on its own: 1
+ * when its decision became that. The retail script (or AI Hard Mode)
+ * decides again in the bonus hand that follows. */
+static int use_pot(void)
 {
-    s32 result = ((s32 (*)(void))original_run)();
     int slot, kept = 0, id = pot();
-    if (!result || id <= 0 || !setting("pot_of_greed", 1) || gAiScript_State.script_base != D_801A8000 ||
-        (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
-        return result;
+    if (id <= 0 || !setting("pot_of_greed", 1)) return 0;
     /* The CPU's snapshot numbers the cards in hand from slot 11, packed. */
     for (slot = 0; slot < HAND_SIZE; slot++) {
         if (D_800E9FF0[D_8009B1D5].hand[slot] < 0) continue;
         if (hand_card(slot) == id) {
             memset(D_800EAE88, 0, AI_SELECTION_SIZE);
             D_800EAE88[0] = (unsigned char)(AI_HAND_SLOT_FIRST + kept);
-            break;
+            return 1;
         }
         kept++;
     }
+    return 0;
+}
+
+/* Whether `ids`, going down in order after `first` (a monster they go onto,
+ * or 0), play through without throwing one away. An equip alone needs a
+ * monster to go onto. */
+static int keeps_every_card(int first, const int *ids, int count)
+{
+    int i, current = first;
+    if (!first && count == 1 && kind(ids[0]) == CARD_TYPE_EQUIP) return 0;
+    for (i = 0; i < count; i++)
+        if (!(current = step(current, ids[i]))) return 0;
+    return 1;
+}
+
+/* The zone (D_800EAE88[6]) the first `count` picks can go to without a
+ * card thrown away: the one chosen if they keep every card there, else an
+ * empty zone, else a monster they fuse with or equip; 0 for none. */
+static int zone_for(const int *ids, int count, int col)
+{
+    int i;
+    if (keeps_every_card(monster_at(col), ids, count)) return D_800EAE88[AI_ZONE];
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++)
+        if (!monster_at(i) && keeps_every_card(0, ids, count)) return i + 1;
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++)
+        if (monster_at(i) && keeps_every_card(monster_at(i), ids, count)) return i + 1;
+    return 0;
+}
+
+/* The CPU's hand decision, held to the rule the player's confirm is held
+ * to. Cards put onto one of its monsters must fuse with it or equip it, and
+ * a chain must not throw a card away: the cards go to a zone where the
+ * whole chain keeps every card, else the longest first part of it does (the
+ * rest stay in hand). With no such zone the CPU plays no card, when playing
+ * is optional; when it is not, its own choice stands. The picks are the
+ * CPU's snapshot slots; a magic card used, or one set in the spell and trap
+ * row, is not checked, as for the player. */
+static void hold_cpu_to_rule(void)
+{
+    int ids[AI_PICKS], count, col, zone, n;
+    for (count = 0; count < AI_PICKS && D_800EAE88[count]; count++) {
+        int slot = D_800EAE88[count];
+        if (slot < AI_HAND_SLOT_FIRST || slot >= AI_ENEMY_SLOT_FIRST) return;
+        if ((ids[count] = gDuel_aActiveCards[slot].card_id) <= 0) return;
+    }
+    if (!count || (count == 1 && kind(ids[0]) >= CARD_TYPE_MAGIC && kind(ids[0]) != CARD_TYPE_EQUIP)) return;
+    col = D_800EAE88[AI_ZONE] >= 6 ? D_800EAE88[AI_ZONE] - 6 : D_800EAE88[AI_ZONE] - 1;
+    if (col < 0 || col >= DUEL_FIELD_ROW_SIZE) return;
+    for (n = count; n >= 1; n--) {
+        if ((zone = zone_for(ids, n, col)) != 0) {
+            memset(D_800EAE88 + n, 0, AI_PICKS - n);
+            D_800EAE88[AI_ZONE] = (unsigned char)zone;
+            return;
+        }
+    }
+    if (!optional_play() || api->version < 3) return;
+    memset(D_800EAE88, 0, AI_SELECTION_SIZE);
+    api->pass_hand();
+}
+
+/* The CPU's hand decision: a Pot of Greed first; then the fusion rule. */
+static s32 run(void)
+{
+    s32 result = ((s32 (*)(void))original_run)();
+    if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
+        return result;
+    if (!use_pot() && setting("fusion_guard", 1)) hold_cpu_to_rule();
     return result;
 }
 
