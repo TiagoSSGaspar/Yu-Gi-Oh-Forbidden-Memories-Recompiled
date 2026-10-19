@@ -58,7 +58,7 @@ extern unsigned char D_800EAE88[];
 #define AI_SELECTION_SIZE 12
 #define AI_HAND_SLOT_FIRST 11
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
-#define POT_IDENTITY "modern-rules:pot-of-greed"
+#define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry */
 #define POT_DRAWS 2
 #define TEST_COPIES_MAX 3
 #define TEST_CHECK_FRAMES 60      /* how often the trunk is looked at */
@@ -66,15 +66,16 @@ extern unsigned char D_800EAE88[];
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
 static void *original_hand, *original_run;
-static int pot_card = -1;
+static int pot_card;
 
 static int setting(const char *key, int fallback)
 {
     return host->setting(host, key, fallback);
 }
+/* Asked again until it answers: the card tables are built after Init. */
 static int pot(void)
 {
-    if (pot_card < 0) pot_card = host->card_id(host, POT_IDENTITY);
+    if (pot_card <= 0) pot_card = host->card_id(host, POT_IDENTITY);
     return pot_card;
 }
 static int hand_card(int slot)
