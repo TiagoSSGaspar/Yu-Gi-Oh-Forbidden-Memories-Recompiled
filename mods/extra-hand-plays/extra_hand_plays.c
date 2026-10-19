@@ -58,7 +58,9 @@
 #include "pc/mods/modapi.h"
 #include "unmatched.h"
 #include "extra_hand_plays.h"
+#include <string.h>
 
+void DuelScene_UpdateStartup(void);
 void DuelScene_UpdateDrawPhase(void);
 void DuelScene_UpdateDrawResolution(void);
 void DuelScene_UpdateHandActions(void);
@@ -83,7 +85,7 @@ extern u8 gDuel_bQuitDialogState;
 #define SLIDING_CARD_TAG 1     /* DisplayObject_FindAllocatedByTag: a card still sliding in */
 
 static const MemoriesModHost *host;
-static void *original_draw, *original_resolution, *original_hand, *original_field;
+static void *original_startup, *original_draw, *original_resolution, *original_hand, *original_field;
 static void *original_dim, *original_window;
 
 /* No pointers: kept in save states (register_state). */
@@ -172,6 +174,15 @@ static void field(void)
     ((void (*)(void))original_field)();
 }
 
+/* State 1, the duel's start: nothing carries over from the last duel. The
+ * side that goes first is dealt its hand from here, without the draw that
+ * resets a turn. */
+static void startup(void)
+{
+    if (!(gDuel_wSceneStateFlags & STATE_STARTED)) memset(&S, 0, sizeof S);
+    ((void (*)(void))original_startup)();
+}
+
 /* How many of `total` wanted cards fit; the rest wait. */
 static void plan_draws(int total)
 {
@@ -206,8 +217,16 @@ static void draw(void)
         ((void (*)(void))original_draw)();
         /* The draw has counted the turn and packed the hand. */
         want = turn_draws ? turn_draws(D_8009B1D5, side->rank.turns_taken, HAND_SIZE - hand_count()) : -1;
-        if (want < 0) S.queued[D_8009B1D5] = 0;   /* the disc's refill to five */
-        else plan_draws(want + S.queued[D_8009B1D5]);
+        if (want >= 0) {
+            plan_draws(want + S.queued[D_8009B1D5]);
+        } else {
+            /* The disc's refill to five. A hand still full (a turn ended
+             * with START, playing nothing) has none to draw, which the
+             * retail draw resolution cannot do: it deals past the fifth
+             * slot until the deck runs out. */
+            S.queued[D_8009B1D5] = 0;
+            if (hand_count() == HAND_SIZE) plan_draws(0);
+        }
         return;
     }
     swords = side->swords_turns_remaining;
@@ -427,6 +446,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->overlay_signature = hint_signature;
     return host->register_state(host, &S, sizeof S, 3) &&
         host->provide(host, "api", (void *)&api) &&
+        host->hook(host, (void *)DuelScene_UpdateStartup, (void *)startup, &original_startup) &&
         host->hook(host, (void *)DuelScene_UpdateDrawPhase, (void *)draw, &original_draw) &&
         host->hook(host, (void *)DuelScene_UpdateDrawResolution, (void *)resolution, &original_resolution) &&
         host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&

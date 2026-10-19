@@ -30,6 +30,10 @@ starts after the last play.
   of the hand, as the draw does at a turn start.
 - The hand does not come back when it is empty, or once either side is out
   of life points.
+- A turn that starts with a full hand (the last one ended with START,
+  playing nothing) draws nothing.
+- Nothing carries over from one duel to the next: plays, bonus hands and
+  waiting cards start again at zero.
 - The Swords of Revealing Light countdown, the turn count, monster "draw"
   effects and the per-turn used marks happen once per turn, not once per
   hand.

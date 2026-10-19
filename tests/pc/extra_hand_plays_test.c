@@ -69,6 +69,8 @@ void DuelScene_UpdateDrawPhase(void)
     D_8009B162 = 2;
 }
 void DuelScene_UpdateDrawResolution(void) { resolutions++; gDuel_wSceneStateFlags = STATE_HAND; }
+static int startups;
+void DuelScene_UpdateStartup(void) { startups++; }
 void DuelScene_UpdateHandActions(void)
 {
     int i;
@@ -143,7 +145,7 @@ static int draw_one(int side, int turn, int room)
 }
 static MemoriesModHost fake_host;
 typedef void (*Step)(void);
-static Step step_draw, step_resolution, step_hand, step_field;
+static Step step_startup, step_draw, step_resolution, step_hand, step_field;
 static void (*step_dim)(DuelSelectionRecord *);
 static s32 (*step_window)(void);
 
@@ -195,6 +197,7 @@ int main(void)
     fake_host.register_state = fake_state;
     fake_host.provide = fake_provide;
     assert(MemoriesModInit(&fake_host, &mod));
+    step_startup = (Step)startup;
     step_draw = (Step)draw; step_resolution = (Step)resolution;
     step_hand = (Step)hand; step_field = (Step)field;
     step_dim = dim; step_window = window;
@@ -424,6 +427,32 @@ int main(void)
         step_resolution();
     }
     assert(gDuel_wSceneStateFlags == 0xC && gDuel_bWinnerSide == 0);
+
+    /* The disc's refill, on a turn that starts with a full hand (the last
+     * one was skipped with START, playing nothing): nothing to draw. The
+     * retail draw resolution would deal past the fifth slot. */
+    provided->set_turn_draws(0);
+    new_turn(0, 0);
+    D_800E9FF0[0].deck_draw_cursor = 12;
+    to_hand();
+    assert(resolutions == 0 && D_800E9FF0[0].deck_draw_cursor == 12 && hand_count() == HAND_SIZE);
+
+    /* A new duel starts with nothing left over from the last one: the side
+     * that goes first never passes through the draw, which resets a turn. */
+    S.queued[0] = 2; S.queued[1] = 1; S.bonus = 1; S.bonus_draws = 2; S.plays = 2; S.hands = 3;
+    S.pending = S.done = S.custom = 1; S.to_draw = 3; S.settle = 4;
+    gDuel_wSceneStateFlags = 1;
+    startups = 0;
+    step_startup();
+    assert(startups == 1);
+    {
+        static const u8 zero[sizeof S];
+        assert(!memcmp(&S, zero, sizeof S));
+    }
+    S.queued[0] = 1;                           /* its later frames leave the turn alone */
+    gDuel_wSceneStateFlags = 1 | STATE_STARTED;
+    step_startup();
+    assert(startups == 2 && S.queued[0] == 1);
 
     printf("Extra hand plays: rebuilt hands, limits, sides, START, CPU window, optional first play, turn draws, bonus hands and queued draws passed\n");
     return 0;

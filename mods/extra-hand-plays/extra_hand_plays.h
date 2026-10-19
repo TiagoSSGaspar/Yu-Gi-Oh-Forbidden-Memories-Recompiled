@@ -5,9 +5,10 @@
  * extra-hand-plays under "requires", so it is applied and initialized
  * first. */
 
-/* How many cards `side` draws at the start of its turn `turn` (counting
- * from 1), with `room` empty hand slots; -1 leaves the disc's refill to
- * five. Asked once a turn; the cards that do not fit wait (queued). */
+/* How many cards `side` draws at the start of its turn `turn` (its
+ * turns_taken: the duel's first turn has no draw and is not counted), with
+ * `room` empty hand slots; -1 leaves the disc's refill to five. Asked once
+ * a turn; the cards that do not fit wait (queued). */
 typedef int (*ExtraHandTurnDraws)(int side, int turn, int room);
 
 /* Whether the side whose turn it is may skip its first hand (START), so
