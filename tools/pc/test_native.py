@@ -162,6 +162,7 @@ def main():
             [
                 "tests/pc/state_native_memory_test.c",
                 "src/pc/guest/translated_state_memory.c",
+                "src/pc/guest/translated_state_symbols.c",
                 "src/pc/guest/translated_runtime.c",
                 "src/pc/guest/state_io.c",
                 "src/pc/memory.c",
@@ -206,6 +207,12 @@ def main():
         (
             "control-protocol",
             ["tests/pc/control_protocol_test.c", "src/pc/debug/control_protocol.c"],
+            [],
+            [None],
+        ),
+        (
+            "symbols",
+            ["tests/pc/symbols_test.c", "src/pc/debug/symbols.c", "src/pc/compat/fs.c"],
             [],
             [None],
         ),

@@ -6,8 +6,9 @@ Called by build_game32.py --target android-<abi> after the link; it can also
 be run on its own: package_android.py <build dir> <abi>. Uses only the JDK
 (javac) and the Android SDK's own tools, no Gradle: SDL's Java shell
 (org.libsdl.app, from the same SDL release as libSDL3.so; build_android_deps.py)
-and the game's restart activity (src/pc/platform/android/Restart.java, in a
-process of its own) are compiled against the SDK's android.jar and dexed with d8, aapt2 links the
+and the game's own Java (src/pc/platform/android/*.java: the restart activity,
+in a process of its own, and the first run's document picker, among others)
+are compiled against the SDK's android.jar and dexed with d8, aapt2 links the
 manifest, the native libraries go in lib/<abi>/, and the APK is aligned
 (zipalign) and signed (apksigner). The key is the release key named by the
 environment (signing_key(): MEMORIES_ANDROID_KEYSTORE and its passwords,
@@ -15,7 +16,9 @@ which are never printed or put on a command line), else a debug key kept
 under tmp/, never in the repository; either way the signer's certificate
 (DN, SHA-256) is printed and checked with apksigner verify. The activity is SDL's own SDLActivity: it loads libSDL3.so
 and libmain.so and calls SDL_main (src/pc/platform/android_loader.c), which
-loads libgame.so at its link address. The build's id, commit and symbol
+loads libgame.so: the arm64 app's translated game wherever the system puts
+it, a fixed game (--android-memory fixed, android-x86) at its link address.
+The build's id, commit and symbol
 table go in assets/build/, and the shipped mods and language packs under
 assets/build/files/ with their list in build/files.txt
 (src/pc/platform/android.c unpacks them).
@@ -107,6 +110,14 @@ MANIFEST = f"""<?xml version="1.0" encoding="utf-8"?>
         </activity>
         <activity android:name="org.yfmredecomp.game.Restart" android:exported="false"
             android:process=":restart" android:excludeFromRecents="true" android:noHistory="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- The first run's document picker (DiscPicker.java): a task of its
+             own (SDLActivity is singleInstance), its own affinity so that
+             starting it afresh clears only its own task, kept out of the
+             recent apps (the game's entry is the one to come back to). -->
+        <activity android:name="org.yfmredecomp.game.DiscPicker" android:exported="false"
+            android:taskAffinity="{PACKAGE}.disc" android:excludeFromRecents="true"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <provider android:name="org.yfmredecomp.game.ReportProvider"
@@ -405,7 +416,8 @@ def package(build, abi, library, game, assets):
     os.makedirs(os.path.join(work, "dex"))
     # SDL's Java shell, from the SDL release libSDL3.so was built from, and
     # the game's own (JAVA): the activity that restarts it (Restart.java), the
-    # HD pack's download (HdDownload.java) and the crash report's
+    # first run's document picker (DiscPicker.java), the HD pack's download
+    # (HdDownload.java), the message boxes and the crash report's
     # ReportProvider.
     sources = sorted(glob.glob(os.path.join(build_android_deps.OUT, "java", "**", "*.java"), recursive=True))
     sources += sorted(glob.glob(os.path.join(JAVA, "*.java")))
@@ -454,5 +466,8 @@ if __name__ == "__main__":
         build_id = handle.read().strip()
     assets = {"build/buildid": os.path.join(build, "buildid"), "build/commit": os.path.join(build, "commit"),
               f"build/symbols/{build_id}.txt": os.path.join(build, "symbols", f"{build_id}.txt")}
+    variables = os.path.join(build, "symbols", f"{build_id}.vars.txt")
+    if os.path.exists(variables):   # the control channel's names; the translated game has none
+        assets[f"build/symbols/{build_id}.vars.txt"] = variables
     assets.update(program_files(build, ("mods", "languages")))
     package(build, sys.argv[2], os.path.join(build, "libmain.so"), os.path.join(build, "libgame.so"), assets)

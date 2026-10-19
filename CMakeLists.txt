@@ -147,13 +147,17 @@ if(BUILD_TESTING)
     add_executable(memories_entry_layout_test tests/pc/entry_layout_test.c src/pc/text/entry_layout.c)
     add_executable(memories_state_remap_test tests/pc/state_remap_test.c src/pc/guest/state_remap.c)
     add_executable(memories_state_io_test tests/pc/state_io_test.c src/pc/guest/state_io.c)
+    add_executable(memories_translated_state_symbols_test tests/pc/translated_state_symbols_test.c
+                   src/pc/guest/translated_state_symbols.c)
     add_executable(memories_control_protocol_test tests/pc/control_protocol_test.c src/pc/debug/control_protocol.c)
     add_executable(memories_control_net_test tests/pc/control_net_test.c src/pc/debug/control_net.c)
+    add_executable(memories_symbols_test tests/pc/symbols_test.c src/pc/debug/symbols.c src/pc/compat/fs.c)
     if(WIN32)
         target_link_libraries(memories_control_net_test PRIVATE ws2_32)
     endif()
     foreach(target memories_deck_shop_test memories_entry_layout_test memories_state_remap_test
-            memories_state_io_test memories_control_protocol_test memories_control_net_test)
+            memories_state_io_test memories_control_protocol_test memories_control_net_test memories_symbols_test
+            memories_translated_state_symbols_test)
         target_include_directories(${target} PRIVATE src)
         if(NOT MSVC)
             target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -167,8 +171,11 @@ if(BUILD_TESTING)
     add_test(NAME pc_entry_layout COMMAND memories_entry_layout_test)
     add_test(NAME pc_state_remap COMMAND memories_state_remap_test)
     add_test(NAME pc_state_io COMMAND memories_state_io_test)
+    # Save states across translated builds: carried right or refused.
+    add_test(NAME pc_translated_state_symbols COMMAND memories_translated_state_symbols_test)
     add_test(NAME pc_control_protocol COMMAND memories_control_protocol_test)
     add_test(NAME pc_control_net COMMAND memories_control_net_test)
+    add_test(NAME pc_symbols COMMAND memories_symbols_test)
     set_tests_properties(pc_control_net PROPERTIES TIMEOUT 15)
     add_executable(memories_fusion_test tests/pc/fusion_test.c src/pc/cards/fusion.c)
     target_include_directories(memories_fusion_test PRIVATE src)
@@ -726,6 +733,24 @@ if(BUILD_TESTING)
         target_compile_options(memories_text_listing_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_text_listing COMMAND memories_text_listing_test)
+    # The duel results screens' names (View > Opponent's name for COM) when a
+    # translation has result strings of its own: translation.c is included,
+    # with the rest stubbed.
+    add_executable(memories_results_names_test tests/pc/results_names_test.c src/pc/text/listing.c
+                   src/pc/text/utf8.c)
+    target_include_directories(memories_results_names_test PRIVATE src)
+    target_compile_definitions(memories_results_names_test PRIVATE MEMORIES_PC)
+    if(NOT WIN32)
+        target_compile_options(memories_results_names_test PRIVATE -m32)
+        target_link_options(memories_results_names_test PRIVATE -m32)
+    else()
+        target_compile_options(memories_results_names_test PRIVATE -mno-ms-bitfields)
+    endif()
+    if(MEMORIES_SANITIZERS)
+        target_compile_options(memories_results_names_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(memories_results_names_test PRIVATE -fsanitize=address,undefined)
+    endif()
+    add_test(NAME pc_results_names COMMAND memories_results_names_test)
     add_executable(memories_menu_cut_test tests/pc/menu_cut_test.c src/pc/text/menu_cut.c)
     target_include_directories(memories_menu_cut_test PRIVATE src)
     if(NOT MSVC)
@@ -835,6 +860,18 @@ if(BUILD_TESTING)
         target_compile_options(memories_texture_pack_test PRIVATE -Wall -Wextra -Werror)
     endif()
     add_test(NAME pc_texture_pack COMMAND memories_texture_pack_test)
+    # The card frames' bank pictures (card_layout_art.c) against the real texture pack:
+    # the card-viewer back per style, and pictures read again after a mod change.
+    add_executable(memories_card_layout_art_test tests/pc/card_layout_art_test.c src/pc/render/texture_pack.c
+        src/pc/mods/json.c src/pc/platform/paths.c ${memories_platform_support})
+    target_compile_definitions(memories_card_layout_art_test PRIVATE _POSIX_C_SOURCE=200809L)
+    target_include_directories(memories_card_layout_art_test PRIVATE src)
+    target_link_libraries(memories_card_layout_art_test PRIVATE memories_pc_core PNG::PNG Threads::Threads)
+    if(NOT MSVC)
+        # -Wno-comment: card_layout_art.c writes "*w/*h" inside a comment.
+        target_compile_options(memories_card_layout_art_test PRIVATE -Wall -Wextra -Wno-comment -Werror)
+    endif()
+    add_test(NAME pc_card_layout_art COMMAND memories_card_layout_art_test)
     # A mod's .zip into the mods folder (src/pc/mods/import.c, the Android
     # Mods panel's Import): layouts, what counts as code, Replace, and the
     # .zip files refused before anything is written.
@@ -1004,6 +1041,18 @@ if(Python3_Interpreter_FOUND)
         # the llvm-mingw it points to (no compiler needed).
         add_test(NAME pc_build_mod_toolchain
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_build_mod_toolchain.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # The SDK's one-click build (tools/pc/sdk): the pins the launchers carry,
+        # the embeddable Python's sys.path, and both launchers run on a fake SDK with
+        # archives made in the test (nothing downloaded, no compiler started).
+        add_test(NAME pc_sdk_launchers
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_sdk_launchers.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # The guest pass an SDK ships (tools/pc/build_sdk_guest_ir.py): its
+        # pin, the check of an LLVM archive, and package.py's use of it
+        # (synthetic archives, nothing downloaded, no compiler started).
+        add_test(NAME pc_build_sdk_guest_ir
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_build_sdk_guest_ir.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
         # check_mod_abi.py unpacks only the release packages whose sha256
         # mod_compat.txt pins (synthetic packages, nothing downloaded).

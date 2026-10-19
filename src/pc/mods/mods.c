@@ -82,6 +82,7 @@ typedef struct {
     int initialized;
     int data_prepared;
     int broken;                  /* it failed to load; it cannot be applied */
+    int removed;                 /* its folder was deleted while the game runs (Mods_Forget) */
     int *runtime_options;
     unsigned sequence;
     unsigned code_hash;
@@ -126,6 +127,7 @@ static int disc_file_count, disc_layout_frozen, preparing_data;
 static Mod mods[MODS_MAX];
 static int mod_count;
 static unsigned activation_sequence;
+static unsigned change_count;   /* Mods_Changes */
 static int scanned;
 static int shut_down;   /* Mods_Shutdown has run: no mod code is called again */
 
@@ -1220,6 +1222,27 @@ static int library_present(const Mod *mod)
     fclose(file);
     return 1;
 }
+
+#if defined(__ANDROID__) && defined(MEMORIES_TRANSLATED)
+/* Whether the mod has the object the fixed-memory Android game loaded
+ * (<library>.aarch64.o where this game's is <library>.aarch64-translated.o). */
+static int old_android_object(const Mod *mod)
+{
+    static const char ours[] = "." OBJECT_LOADER_TARGET ".o";
+    char path[PATH_MAX_];
+    size_t length = strlen(mod->library);
+    FILE *file;
+    if (length <= sizeof(ours) - 1 || strcmp(mod->library + length - (sizeof(ours) - 1), ours)) return 0;
+    if (snprintf(path, sizeof(path), "%s/%.*s.aarch64.o", mod->directory, (int)(length - (sizeof(ours) - 1)),
+                 mod->library) >= (int)sizeof(path)) {
+        return 0;
+    }
+    file = fopen(path, "rb");
+    if (!file) return 0;
+    fclose(file);
+    return 1;
+}
+#endif
 #endif
 
 static int load_library(Mod *mod)
@@ -1746,6 +1769,7 @@ static void activate_once(int index, int on)
 {
     Mod *mod = &mods[index];
     if (on == mod->active) return;
+    change_count++;   /* before it can fail: a rollback is a change too */
     if (on) {
         int option_count = Mods_OptionCount(index);
         if (option_count && !mod->runtime_options) {
@@ -1776,7 +1800,15 @@ static void activate_once(int index, int on)
 #if !(defined(__APPLE__) && defined(__aarch64__) && defined(MEMORIES_TRANSLATED))
         if (strcmp(OBJECT_LOADER_TARGET, "i386") && !mod->broken && mod->library[0] && !mod->object.image &&
             !mod->object.native_handle && !library_present(mod)) {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(MEMORIES_TRANSLATED)
+            /* A mod made for the fixed-memory game has <library>.aarch64.o:
+             * the same code mod, which needs building again for this one. */
+            note(mod, old_android_object(mod) ? "was built for the fixed-memory Android game: ask the mod's author to "
+                                                "rebuild it (build_mod.py --target aarch64-translated); it has no %s"
+                                              : "needs an Android build of this mod: it has no %s (ask the mod's "
+                                                "author to rebuild it with build_mod.py --target aarch64-translated)",
+                 mod->library);
+#elif defined(__ANDROID__)
             note(mod, "needs an Android build of this mod: it has no %s (rebuild it with build_mod.py using clang)",
                  mod->library);
 #else
@@ -1896,6 +1928,27 @@ int Mods_Discover(const char *directory, int *later)
     say("%s: found in %s", mods[index].id, directory);
     return index;
 }
+
+int Mods_Forget(int index)
+{
+    char key[256];
+    if (!at(index) || !untouched(&mods[index])) return -1;
+    /* Off, in the settings too: a mod with this id imported later starts
+     * off, as any new one does. Its order and option values stay, so an
+     * updated version comes back with the player's choices. The slot stays
+     * (events and state are keyed by index); the list leaves it out. */
+    if (setting_key(key, sizeof(key), mods[index].id, NULL)) Settings_SetNamed(key, 0);
+    mods[index].enabled = 0;
+    mods[index].failed = 0;
+    mods[index].broken = 1;
+    mods[index].removed = 1;
+    mods[index].status[0] = '\0';
+    mods[index].warnings[0] = '\0';
+    Mods_OverlapsForget();
+    say("%s: removed", mods[index].id);
+    return 0;
+}
+int Mods_Removed(int index) { return at(index) && mods[index].removed; }
 
 void Mods_Load(void)
 {
@@ -2167,6 +2220,8 @@ int Mods_HasCode(int index) { return at(index) && Manifest_HasCode(Mods_Manifest
 unsigned Mods_CodeHash(int index) { return at(index) ? mods[index].code_hash : 0; }
 
 unsigned Mods_Sequence(int index) { return at(index) ? mods[index].sequence : 0; }
+
+unsigned Mods_Changes(void) { return change_count; }
 
 void Mods_OptionChanged(int index, int option)
 {

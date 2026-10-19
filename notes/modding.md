@@ -4,8 +4,8 @@ A mod is a directory, not part of the game executable. The release ships its
 own mods that way, and anyone else's mod is installed the same way: drop the
 directory in, restart, apply it in **Game > Mods**. On Android, where there
 is no folder to drop it in, **Import mod...** in the Mods panel takes the
-mod's `.zip` through the system's file picker
-([Mod manager](mods-window.md)).
+mod's `.zip` through the system's file picker, and **Remove** deletes one
+that is off or does not load any more ([Mod manager](mods-window.md)).
 
 ## Where mods live
 
@@ -1261,8 +1261,27 @@ retail's own constants, byte for byte. The frame texture is decoded once
 into a VRAM bank by `src/pc/cards/card_layout_art.c`, the same shape
 `src/pc/cards/star_icons.c` and `src/pc/text/glyphs.c` use for theirs,
 re-decoding whenever `CardLayout_FramePath` answers a different file --
-which a kind change already does, nothing further to invalidate. The
-manifest key itself is checked by `tests/pc/card_layout_test.c`.
+which a kind change already does.
+
+**What a reload refreshes.** The pictures are kept by path, and a path says
+nothing of the file behind it. Turning a mod off and on again in the Mods
+window (Apply each time: an Apply that changes nothing is not a reload)
+drops everything `card_layout_art.c` kept of them -- the decoded frames, the
+hand/field/back/Library/caption sprites, the digit strip and the texture
+pack's decoded PNGs it kept unused, spares of earlier styles included
+(`TexturePack_BankImagesForgetSpare`) -- and the next draw reads the files
+again (`CardLayoutArt_Clear`, which every cell function runs by itself when
+`Mods_Changes` has moved). Turning *any* mod on or off counts, not only a
+`card_layout` one, and resets these caches once; the next hand or duel after
+it decodes the styles on screen again, a one-time hitch. So editing `frames/*.png` in place and switching
+the mod off and on shows the new pictures with no restart; editing them
+while the mod stays on shows them at the next launch or reload, and with no
+`card_layout` mod nothing is ever dropped. The card viewer's `back_image`
+keeps one HD sprite at a time, so going from a style with a small back to one
+with a larger back and returning shows each style's own picture over its
+whole box. The manifest key itself is checked by
+`tests/pc/card_layout_test.c`; the pictures' lifetime by
+`tests/pc/card_layout_art_test.c`.
 
 ## The duel's pictures
 
@@ -1910,7 +1929,8 @@ by `build_mod.py`:
 |---|---|---|
 | `i386` | `<library>.o` | the 32-bit Linux and Windows games |
 | `x86_64-windows` | `<library>.x86_64-windows.o` | the 64-bit Windows game (`-windows-x64.zip`) |
-| `aarch64` | `<library>.aarch64.o` | the arm64 Android game |
+| `aarch64-translated` | `<library>.aarch64-translated.o` | the Android app (the translated arm64 game; see [Android code mods](#android-code-mods-aarch64-translated)) |
+| `aarch64` | `<library>.aarch64.o` | the fixed-memory arm64 Android game (v0.3.0 and before; now only `build_game32.py --android-memory fixed`); built only with `--target aarch64` |
 | `macos` | `<library>.dylib` | the macOS ARM64 game; built only with `--target macos` (see [Native macOS ARM64 code mods](#native-macos-arm64-code-mods)) |
 
 The `i386` object runs on both 32-bit games: both are 32-bit x86 code with
@@ -1920,11 +1940,14 @@ reads the file with its own loader
 the system's, so the container is the same too. The 64-bit Windows game
 reads its x86-64 object with the same loader (ELF64, the Windows x64
 calling convention); one that has only the 32-bit object stays off there
-with "needs a 64-bit build of this mod" in the Mods window; the arm64
-Android game reads its AArch64 object the same way, and one without it
-stays off with "needs an Android build of this mod". Both notes end with
-how to make the missing object: rebuild the mod with `build_mod.py` using
-clang ([Building one](#building-one)). A mod ships
+with "needs a 64-bit build of this mod" in the Mods window; the Android app
+reads its `aarch64-translated` object the same way, and one without it
+stays off with "needs an Android build of this mod" (or, when the mod has
+only the old `.aarch64.o` of the fixed-memory game, "was built for the
+fixed-memory Android game: rebuild this mod"). The notes end with how to
+make the missing object: rebuild the mod with `build_mod.py`
+([Building one](#building-one)), or with nothing installed, the SDK's
+`build-mod.bat` ([One click](#one-click-build-a-mod-with-nothing-installed)). A mod ships
 whichever objects it has beside its `mod.json`; `"library": "card-tweaks"`
 (or `"card-tweaks.o"`) names all of them, and `"libraries": {"x86_64-windows":
 "other.o"}` names one target's file outright. Mod authors supporting every
@@ -2049,11 +2072,109 @@ same with no mod hooking anything (the smoke screenshots are unchanged).
   `srand`, which give the same numbers on Linux and Windows and leave the
   game's own random numbers (and so its duels) alone.
 
+### One click: build a mod with nothing installed
+
+No Python and no compiler? The release's `sdk` folder has a script that
+fetches what it needs once and builds every object your mod needs, the
+Android one included.
+
+**Windows.** 64-bit Windows 10 version 1803 (April 2018) or newer, or 11.
+Unpack the release and open its `sdk` folder. Drag your mod's
+folder (the one with `mod.json` and the `.c` files) onto `build-mod.bat`.
+Or double-click `build-mod.bat`, drag the folder into the window when it
+asks, and press Enter. When it ends, its last lines say which objects
+(`<library>.o`, `<library>.x86_64-windows.o`,
+`<library>.aarch64-translated.o`) were built, next to your mod's files and
+ready to play or to send, and which were not, and why. The window waits for a
+key when it was opened by a double-click. A release downloaded with a browser
+carries its mark of coming from the internet, and Windows SmartScreen may ask
+once when you start `build-mod.bat` ("More info", then "Run anyway"); the
+zip's *Properties*, *Unblock* before unpacking avoids the question. Windows 11
+for ARM runs the x64 downloads through its own emulation (not tested). If the
+folder you unpacked into has accents or another alphabet in its path, or a very
+long one, move it to something like `C:\yfm-sdk`: `tar` cannot unpack there.
+
+**Linux.** `sdk/build-mod.sh my-mod`. It needs `python3` (3.8 or newer),
+`curl` or `wget`, and `tar` with `xz`, on x86-64 with glibc 2.34 or newer and
+the libstdc++ of GCC 11 or newer (Ubuntu 22.04, Debian 12, Fedora 35 or
+newer): llvm-mingw's Linux build is made on Ubuntu 22.04 and its `clang`
+asks for exactly that (read from the version names in the program, not run
+on older systems). On Debian 11 or Ubuntu 20.04 the script says that `clang`
+does not start; use a clang 23 of your own through `MEMORIES_SDK_TOOLCHAIN`.
+
+**The first run downloads, once.** The files go into `sdk/toolchain/` beside
+the script, and nothing is installed or changed anywhere else on the
+computer (no registry, no PATH). Delete the folder to remove them; the next
+run fetches them again. After the first run it works offline.
+
+| What | Size | From | Windows | Linux |
+|---|---|---|---|---|
+| llvm-mingw 20260922 (clang, `ld.lld`, `llvm-objcopy`: the toolchain the game is built with) | 191 MB Windows (750 MB unpacked), 84 MB Linux (630 MB unpacked) | github.com/mstorsjo/llvm-mingw | yes | yes |
+| Python 3.14.8, the embeddable package | 13 MB | python.org | yes | no (your `python3`) |
+
+Each download is checked against a SHA-256 written in the script itself
+(and in `sdk/toolchain-pins.json`, which says the same) before it is unpacked,
+and unpacked with the programs Windows and Linux come with (`curl`, `tar` and
+`certutil` on Windows; `curl`, `tar` and `sha256sum` on Linux). The scripts
+are plain text. They run no PowerShell, decode nothing and download one file
+for each tool; the antivirus program that dislikes an unsigned `clang.exe`
+or `python.exe` after the download is the one to tell that you trust it
+(both are the projects' own releases, and the hash proves it).
+
+**If the hash is wrong** the script says `the SHA-256 of the download is
+wrong`, prints both hashes and the address, deletes the file and unpacks
+nothing. Run it again: a download cut short or changed on the way shows up
+like this. If it repeats, do not use the file; download it from the address
+in a browser and put it in `sdk/toolchain/downloads/` (the next run checks it
+and uses it), or use your own tools (below), and tell us. Offline, the same
+folder is where a file copied from another computer goes. Some company
+proxies and firewalls inspect HTTPS and either change the file (the hash
+catches that) or make `curl` stop at its certificate or revocation checks
+before a byte arrives: the script only accepts `https` addresses and does
+not switch those checks off, so the answer there is the browser download, or
+asking whoever runs the network.
+
+**Your own tools** (nothing is downloaded for what you name):
+
+| Variable | Meaning |
+|---|---|
+| `MEMORIES_SDK_PYTHON` | the Python to run `build_mod.py` with (any 3.8 or newer) |
+| `MEMORIES_SDK_TOOLCHAIN` | a folder with `clang`, `ld.lld` and `llvm-objcopy` in it, or in its `bin` (a llvm-mingw you unpacked yourself) |
+| `MEMORIES_SDK_NOPAUSE` | `1`: do not wait for a key at the end (a script that starts the `.bat`, or a terminal that runs it through `cmd /c`, would wait too) |
+
+A clang from your Linux distribution (`sudo apt install clang lld llvm`)
+builds the `i386` and `x86_64-windows` objects but not the Android one:
+the SDK's guest pass is built against LLVM 23 and the clang that writes the
+IR must be of the same LLVM major ([Android code
+mods](#android-code-mods-aarch64-translated)). The script's own download is
+llvm-mingw's clang 23, which does it.
+
+Anything after the folder goes to `build_mod.py`
+(`build-mod.bat my-mod --target i386`; `--out` keeps the objects elsewhere),
+and `build-mod.bat --setup` only fetches the tools, then stops. Running
+`build_mod.py` yourself, as below, is the same build.
+
+*For the SDK's maintainers.* The pins are in `tools/pc/sdk/toolchain-pins.json`
+and written again in the two scripts (a batch file cannot read JSON);
+`test_sdk_launchers.py` keeps them the same and `test_build_mod_toolchain.py`
+keeps them the toolchain the game is built with (`fetch_tools.py`,
+`build_win32_deps.py`). The Windows Python is the embeddable package, which
+starts in isolated mode (`python3xx._pth`): the script's folder is not on
+`sys.path`, so `build_mod.py` puts its own folder there before it imports
+its siblings, and the launcher leaves the `._pth` as it came. `package.py`
+ships the three files in every desktop SDK (`test_package.py` requires
+them), and the release workflow's `sdk-one-click` job runs each launcher on
+the packed SDK on a clean runner with only the operating system on PATH
+(`tools/pc/check_one_click.py` checks what came out); `build-mod.bat` also
+goes to VirusTotal with the shipped programs
+([pc-release.md](pc-release.md#virustotal)).
+
 ### Building one
 
 ```sh
-python3 tools/pc/build_mod.py my-mod            # my-mod/<library>.o, .x86_64-windows.o, .aarch64.o
+python3 tools/pc/build_mod.py my-mod            # my-mod/<library>.o, .x86_64-windows.o, .aarch64-translated.o
 python3 tools/pc/build_mod.py my-mod --target i386   # one target only
+python3 tools/pc/build_mod.py my-mod --target aarch64-translated   # the Android app's only
 ```
 
 `build_mod.py` compiles every `.c` in the directory and merges them into one
@@ -2067,13 +2188,16 @@ What it needs:
 
 | Targets | Tools |
 |---|---|
-| all three | clang, with `ld.lld` beside it or on PATH, and `llvm-objcopy` (beside clang, beside the file a `clang` link points to, or on PATH) |
+| `i386`, `x86_64-windows` | clang, with `ld.lld` beside it or on PATH, and `llvm-objcopy` (beside clang, beside the file a `clang` link points to, or on PATH) |
+| `aarch64-translated` | the same, with a clang **of the same LLVM as the guest pass**, `memories-guest-ir`, which a release's SDK carries (built for llvm-mingw's clang 23: [Android code mods](#android-code-mods-aarch64-translated)); left out with what is missing when not named |
 | `i386` only | the above, or on Linux gcc with 32-bit support |
 
-The simplest way to have all three is the toolchain the game itself is built
-with, [llvm-mingw 20260922](https://github.com/mstorsjo/llvm-mingw/releases/tag/20260922):
+The simplest way to have the i386 and x86_64-windows objects is the
+toolchain the game itself is built with, [llvm-mingw 20260922](https://github.com/mstorsjo/llvm-mingw/releases/tag/20260922):
 on Windows `llvm-mingw-20260922-ucrt-x86_64.zip` (its clang builds the Linux
-and Android object formats too), on Linux x86-64
+object format too; it is clang 23, which the guest pass in the SDK is built
+for, so it also builds the Android object: [Android code
+mods](#android-code-mods-aarch64-translated)), on Linux x86-64
 `llvm-mingw-20260922-ucrt-ubuntu-22.04-x86_64.tar.xz`. Unpack it and put its
 `bin` folder on PATH, or set `MEMORIES_MOD_CC` to its `clang`. On Linux the
 distribution's packages do as well: `clang`, `lld` and `llvm` (which has
@@ -2358,6 +2482,90 @@ Existing x86 objects do not run on ARM64; other source mods still need
 compilation and individual validation. The optional `test_arm64_life_points.py` runner checks separate
 player/opponent LP, campaign/free-duel scope, both sound timings, sound
 disabled and fresh-process save-state replay against a supplied source mod.
+
+## Android code mods (aarch64-translated)
+
+The Android app's game is the translated one (since 2026-10, [pc-build.md,
+"Android arm64"](pc-build.md#android-arm64)): guest memory has no fixed host
+address, so a mod's code goes through the same guest pass as the game's
+own, as on macOS, and comes out as an ELF object the game's own loader
+reads (`<library>.aarch64-translated.o`; an Android app cannot load a
+library from the mods folder). `build_mod.py` builds it by default with
+the other two objects, or alone:
+
+```sh
+python3 tools/pc/build_mod.py my-mod --target aarch64-translated
+```
+
+Each `.c` goes to LLVM IR at `-O0` with the translated game's flags
+(`--target=aarch64-linux-android24`, `MEMORIES_TRANSLATED`, `-fwrapv`,
+`-ffp-contract=off`, freestanding, the SDK's C library), its names are
+renamed as the game's are (the game's aliases, `rand`/`srand` to the mods'
+own generator, the C library calls that take pointers to the runtime's
+wrappers), the game functions it calls are checked against the game's
+`mod_signatures.json`, and the guest pass translates it with the game's
+pinned data (`mod_translation.json`) and a registration routine for the
+mod's globals. The units are compiled at `-O2 -fPIC` and merged with
+`MemoriesModRegisterGlobals` and `MemoriesModUnregisterGlobals`, which the
+loader calls before `MemoriesModInit` and when it frees the mod. The C
+library lends the pointer-free math directly; everything else comes from
+the game's export table.
+
+What it needs, besides `ld.lld` and `llvm-objcopy`:
+
+* **A clang of the same LLVM as the guest pass.** The clang writes the IR the
+  pass reads and compiles the IR the pass writes back, and LLVM reads the IR
+  of its own version or an older one, never a newer: the pass cannot read a
+  newer clang's IR, and an older clang cannot be counted on to read the
+  pass's. Only the same LLVM does both. A release's SDK carries a pass built
+  against LLVM 23, the LLVM of its toolchain's clang (llvm-mingw 20260922):
+  that clang, and no other, goes with it (the Android NDK r29's clang 21 does
+  not, nor does a distribution's 18). A pass built from a source checkout is
+  built against the game's own LLVM 21.1.8 and wants a clang 21: the NDK's
+  (`build_mod.py` takes it when `ANDROID_NDK_ROOT` or `ANDROID_NDK_HOME` names
+  one), not llvm-mingw's 23. `MEMORIES_MOD_CC` names the compiler outright.
+  `memories-guest-ir --llvm-major` prints which LLVM a pass is built against.
+  At your own risk, `MEMORIES_MOD_ALLOW_OTHER_CLANG=1` also takes an older
+  clang (never a newer), with a warning, for a modder who knows their clang
+  reads what the pass writes; the pass's own LLVM is still preferred. Apple's
+  clang numbers its versions its own way, so `build_mod.py` cannot compare
+  it: it tries it, and if the IR does not parse it says so and points to
+  Homebrew's LLVM clang.
+* **The guest pass**, `memories-guest-ir`. Every release's SDK carries it in
+  its `tools` folder (`memories-guest-ir.exe` in the Windows SDK), where
+  `build_mod.py` looks: a Windows modder needs the SDK and its llvm-mingw
+  (the toolchain above) and nothing to build. The game itself is still
+  translated with LLVM 21; the game and a mod meet through the game's
+  tables (below), not through a compiler version. In a source checkout it
+  is built with `python tools/pc/llvm_guest.py`, which prints the file's
+  path (it fetches the official LLVM 21.1.8 release on Linux and macOS; on
+  Windows `MEMORIES_GUEST_LLVM` names an LLVM 21.1.8 build and
+  `MEMORIES_GUEST_CXX` its C++ compiler); `MEMORIES_GUEST_IR` names any
+  pass. In a checkout, `--target aarch64-translated` builds it when LLVM 21
+  is already there; no mod build downloads anything.
+* **The game's tables**: `mod_translation.json` and `mod_signatures.json`
+  with the export list, from the Android game build
+  (`tmp/pc/android-arm64-v8a`, or `--game`) or the SDK, which carries them
+  in every release.
+
+Without one of them, a build that does not name the target leaves the
+Android object out and says which is missing; one that names it stops
+there. A mod made for the fixed-memory Android game (`.aarch64.o`) is
+refused by the app with "was built for the fixed-memory Android game:
+rebuild this mod", also when renamed: the object's `.memories.abi` tag
+names its target.
+
+A mod that stores the address of one of its own functions in a 4-byte
+game slot (a callback table, a field of a game record) is not refused at
+load: the game stops when the store runs, with "unregistered native pointer
+cannot fit guest storage", as on macOS. Its functions are host code above
+4 GB, and only the game's own have guest addresses. Replace or wrap a game
+function through the hooks API instead ([Replacing or wrapping a game
+function](#replacing-or-wrapping-a-game-function-api-4)), and keep the
+mod's own callbacks in the mod's own (8-byte) pointers. The rules of [Native macOS ARM64 code
+mods](#native-macos-arm64-code-mods) hold here too: the game's annotated
+headers for guest records, no constructors, TLS or assembly. The loader
+puts the object above 4 GB, where no host address passes for a guest one.
 
 ## Palette ramps
 

@@ -11,6 +11,9 @@
  *     hash              FNV-1a of all of VRAM, as MEMORIES_FRAME_HASHES writes it
  *     peek ADDR LEN     LEN bytes (decimal) of guest memory at ADDR (hex)
  *     poke ADDR HEX     write the bytes HEX spells at ADDR (hex)
+ *                       ADDR may be @NAME[+OFF] (OFF hex): the game variable
+ *                       NAME wherever this build keeps it, which for the
+ *                       game's small data is not its retail address
  *     save PATH         a save state
  *     load PATH         resume a save state
  *     info              frame, VBlank, mode, build id
@@ -53,6 +56,9 @@ typedef struct {
     const char *path; /* shot, save, load: inside the parsed line; jump: the target */
     int opponent;     /* jump */
     const char *deck; /* jump: NULL when not given */
+    /* After v0.3.0's fields (tools/pc/mod_compat.txt): */
+    const char *symbol; /* peek, poke: the variable's name when ADDR was @NAME (inside the line); else NULL */
+    uint32_t offset;  /* peek, poke: the +OFF after @NAME */
 } ControlCommand;
 
 /* Parse one line (without its newline; a trailing '\r' is ignored). `data`
