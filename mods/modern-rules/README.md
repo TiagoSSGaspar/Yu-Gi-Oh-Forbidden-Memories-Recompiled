@@ -13,7 +13,7 @@ plus these rules. With more plays, both apply.
 | Setting | Behavior |
 |---|---|
 | Playing a card is optional | START in the first hand of a turn plays no card and goes to the field, as in the later games. Without it, a full monster row with nothing that fuses would leave the player no legal play, since a monster can no longer be replaced. |
-| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The opening five are the first turn's draw, so the side that goes first draws nothing more that turn. Off refills the hand to five each turn, as on the disc. |
+| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it. |
 | Pot of Greed copies for testing | 0–3, default 3. Keeps that many Pot of Greed in the player's trunk and deck together, topping the trunk up about once a second while a save is loaded (not while Build Deck or a duel's deck screen is open). 0 turns it off. Meant only for trying the card out, and to be removed after. |
 | Pot of Greed draws two | Using Pot of Greed draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
@@ -47,7 +47,8 @@ dealing cards into the first empty slots. It provides a table,
 `extra-hand-plays:api` (`mods/extra-hand-plays/extra_hand_plays.h`). This
 mod uses it in three places:
 
-- It sets the turn draws: 5 on a side's first turn, 1 after.
+- It sets the turn draws: 5 on a side's first draw (nothing drawn yet),
+  1 after.
 - It answers Pot of Greed's use, through the card-effect event, with a
   bonus hand that draws two.
 - It wraps the CPU's hand decision (`AiScript_Run`). When the CPU holds a

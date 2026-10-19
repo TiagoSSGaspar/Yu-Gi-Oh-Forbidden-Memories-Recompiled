@@ -125,8 +125,15 @@ int main(void)
     assert(!registered_optional());
     applied_flag = 1;
 
-    /* One card a turn, five on a side's first turn; the disc's when removed. */
-    assert(registered(0, 1, 5) == 5 && registered(1, 1, 5) == 5);
+    /* One card a turn after the opening five; the disc's when removed. The
+     * opening is a side's draw with nothing drawn yet: the side that goes
+     * first has its five dealt before the duel's first turn, which has no
+     * draw and is not counted, so its next turn is still counted as 1. */
+    assert(registered(1, 1, 5) == 5);
+    D_800E9FF0[0].deck_draw_cursor = 5;
+    assert(registered(0, 1, 3) == 1);
+    D_800E9FF0[0].deck_draw_cursor = 6;
+    D_800E9FF0[1].deck_draw_cursor = 5;
     assert(registered(0, 2, 1) == 1 && registered(1, 9, 3) == 1);
     applied_flag = 0;
     assert(registered(0, 4, 2) == -1);

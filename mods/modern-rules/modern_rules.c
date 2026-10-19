@@ -4,9 +4,10 @@
  * turn draws and brings the hand back up, and this one says how many and
  * when, through the table it provides (extra_hand_plays.h).
  * - Playing a card is optional: START ends the first hand too.
- * - One card a turn: the turn draws are 1, or a full hand of five on each
- *   side's first turn, which is the opening hand: the side that goes first
- *   draws nothing more that turn, the other is already at the five slots.
+ * - One card a turn: the turn draws are 1, or the opening five on a side's
+ *   first draw. The side that goes first is dealt its five before the
+ *   duel's first turn, which has no draw; the other side's first draw is
+ *   its five.
  * - No card lost to a fusion: while the player confirms two or more marked
  *   cards, or puts cards onto one of their monsters, the chain they make is
  *   checked step by step as placement plays it (Fusion_Step in
@@ -86,12 +87,15 @@ static int hand_card(int slot)
     return D_800E9FF0[D_8009B1D5].hand[slot] >= 0 ? D_801A7AD8[record].card_id : 0;
 }
 
-/* Turn draws for Extra hand plays: one a turn after the opening five. */
+/* Turn draws for Extra hand plays: one a turn after the opening five. The
+ * opening is a side's draw with nothing drawn yet, not its first counted
+ * turn: the side that goes first has its five dealt before the duel's first
+ * turn, which has no draw and does not count. */
 static int turn_draws(int side, int turn, int room)
 {
-    (void)side;
+    (void)turn;
     if (!host->applied(host) || !setting("draw_one", 1)) return -1;
-    return turn <= 1 ? room : 1;
+    return D_800E9FF0[side].deck_draw_cursor == 0 ? room : 1;
 }
 
 /* Playing a card is optional: with a full field and nothing that fuses, a
