@@ -10,7 +10,13 @@
  * five. Asked once a turn; the cards that do not fit wait (queued). */
 typedef int (*ExtraHandTurnDraws)(int side, int turn, int room);
 
-#define EXTRA_HAND_API_VERSION 1
+/* Whether the side whose turn it is may skip its first hand (START), so
+ * that playing a card is optional. Asked while that hand is up. */
+typedef int (*ExtraHandOptionalPlay)(void);
+
+/* 1: the first three entries; 2: set_optional_play. New entries only go at
+ * the end, so check version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 2
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -22,6 +28,10 @@ typedef struct {
     void (*bonus_hand)(int draws);
     /* Cards drawn for `side` that did not fit in its hand, still owed. */
     int (*queued)(int side);
+    /* Version 2: playing a card in the first hand of a turn becomes
+     * optional while `fn` says so; NULL makes it required again, as on the
+     * disc. One mod sets it. */
+    void (*set_optional_play)(ExtraHandOptionalPlay fn);
 } ExtraHandApi;
 
 #endif

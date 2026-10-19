@@ -20,8 +20,9 @@
  * - the CPU's swap of upcoming deck cards into the hand (func_8001BAF0)
  *   assumes the deck starts at snapshot slot 16, which only holds for five
  *   cards: its hand window is held to the cards actually in hand.
- * START in an extra hand slides it away as the hand state does for a card
- * used from it, and goes on to the field.
+ * START in an extra hand -- or in the first, when another mod makes playing
+ * a card optional -- slides it away as the hand state does for a card used
+ * from it, and goes on to the field.
  *
  * Other mods drive the same machinery through the table this mod provides
  * as "extra-hand-plays:api" (extra_hand_plays.h): how many cards a turn
@@ -101,6 +102,7 @@ static struct {
 } S;
 
 static ExtraHandTurnDraws turn_draws;
+static ExtraHandOptionalPlay optional_play;
 
 static int setting(const char *key, int fallback, int low, int high)
 {
@@ -119,6 +121,9 @@ static DuelSelectionRecord *hand_record(void)
     return (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
 }
 static int extra_hand(void) { return S.hands >= 2; }
+/* START may end the hand: in an extra one, or in the first when another mod
+ * makes playing a card optional. */
+static int skippable(void) { return extra_hand() || (optional_play && optional_play()); }
 static int lp_left(void)
 {
     return D_800E9FF0[0].life_points.signed_value && D_800E9FF0[1].life_points.signed_value;
@@ -287,7 +292,7 @@ static int skip(DuelSelectionRecord *side)
         }
         return 1;
     }
-    if (!extra_hand() || !human() || (D_8009B174 & 0xF) != HAND_IDLE || !(D_8009B174 & HAND_STEP_DONE) ||
+    if (!skippable() || !human() || (D_8009B174 & 0xF) != HAND_IDLE || !(D_8009B174 & HAND_STEP_DONE) ||
         (gDuel_wSceneStateFlags & STATE_LOOKING) || side->field_15 != 0 || gDuel_bEffectState ||
         gDuel_bQuitDialogState || !(gInput_wPad1Pressed & PAD_BUTTON_START))
         return 0;
@@ -366,7 +371,8 @@ static void bonus_hand(int draws)
     S.bonus_draws = (u8)(S.bonus_draws + draws > 255 ? 255 : S.bonus_draws + draws);
 }
 static int queued(int side) { return side == 0 || side == 1 ? S.queued[side] : 0; }
-static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued};
+static void set_optional_play(ExtraHandOptionalPlay fn) { optional_play = fn; }
+static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play};
 
 static void line(const char *text, int row)
 {
@@ -389,7 +395,7 @@ static unsigned hint_signature(void)
 {
     unsigned shown = 0;
     if (!hand_idle()) return 0;
-    if (setting("hint", 1, 0, 1) && extra_hand() && !S.done) shown |= 1;
+    if (setting("hint", 1, 0, 1) && skippable() && !S.done) shown |= 1;
     return shown | (unsigned)S.queued[D_8009B1D5] << 1;
 }
 static void draw_hint(void)
@@ -397,7 +403,7 @@ static void draw_hint(void)
     unsigned shown = hint_signature();
     char text[48];
     int row = 0;
-    if (shown & 1) line("Extra hand: START to skip", row++);
+    if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++);
     if (shown >> 1) {
         snprintf(text, sizeof text, "%u card%s waiting to be drawn", shown >> 1, shown >> 1 == 1 ? "" : "s");
         line(text, row);

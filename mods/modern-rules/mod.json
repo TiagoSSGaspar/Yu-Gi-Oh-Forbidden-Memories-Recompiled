@@ -12,13 +12,20 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.2.0"
+      "min_version": "0.3.0"
     }
   ],
   "after": [
     "ai-hard-mode"
   ],
   "settings": [
+    {
+      "key": "optional_play",
+      "label": "Playing a card is optional",
+      "type": "bool",
+      "default": 1,
+      "description": "START in the first hand of a turn plays no card and goes on to the field, as in the later games. Without it a full field with nothing that fuses would leave no legal play."
+    },
     {
       "key": "draw_one",
       "label": "Draw one card a turn",

@@ -1,7 +1,7 @@
 {
   "id": "extra-hand-plays",
   "name": "Extra hand plays",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "DecompRecomp",
   "description": "Play more than one card from the hand each turn. After a play the hand comes back up; the player may skip the rest with START. The CPU plays its extra cards through its own hand script.",
   "min_api": 4,

@@ -134,6 +134,8 @@ static int fake_provide(const MemoriesModHost *h, const char *name, void *pointe
 {
     (void)h; assert(!strcmp(name, "api")); provided = pointer; return 1;
 }
+static int optional;
+static int optional_answer(void) { return optional; }
 static int draw_one(int side, int turn, int room)
 {
     (void)side; (void)room;
@@ -279,6 +281,29 @@ int main(void)
     step_hand();
     assert(!S.skipping);
     gInput_wPad1Pressed = 0;
+    /* Unless another mod makes playing a card optional: then START ends the
+     * first hand too, and no other hand follows this turn. */
+    provided->set_optional_play(optional_answer);
+    optional = 1;
+    new_turn(0, 0);
+    to_hand();
+    gInput_wPad1Pressed = PAD_BUTTON_START;
+    step_hand();
+    gInput_wPad1Pressed = 0;
+    assert(S.skipping && S.done && D_8009B162 == PANEL_SLIDE_OUT);
+    D_8009B162 = 0;
+    step_hand();
+    assert(gDuel_wSceneStateFlags == STATE_FIELD);
+    step_field();
+    assert(fields == 1);
+    optional = 0;
+    new_turn(0, 0);
+    to_hand();
+    gInput_wPad1Pressed = PAD_BUTTON_START;
+    step_hand();
+    gInput_wPad1Pressed = 0;
+    assert(!S.skipping);
+    provided->set_optional_play(0);
 
     /* "Player only" leaves the CPU at one play; an empty hand ends it too;
      * so does a side out of life points; 1 is the original game. */
@@ -383,6 +408,6 @@ int main(void)
     }
     assert(gDuel_wSceneStateFlags == 0xC && gDuel_bWinnerSide == 0);
 
-    printf("Extra hand plays: rebuilt hands, limits, sides, START, CPU window, turn draws, bonus hands and queued draws passed\n");
+    printf("Extra hand plays: rebuilt hands, limits, sides, START, CPU window, optional first play, turn draws, bonus hands and queued draws passed\n");
     return 0;
 }

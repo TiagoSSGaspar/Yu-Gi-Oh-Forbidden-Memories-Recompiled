@@ -3,6 +3,7 @@
  * Built on Extra hand plays, which it requires: that mod deals the cards a
  * turn draws and brings the hand back up, and this one says how many and
  * when, through the table it provides (extra_hand_plays.h).
+ * - Playing a card is optional: START ends the first hand too.
  * - One card a turn: the turn draws are 1, or a full hand of five on each
  *   side's first turn, which is the opening hand: the side that goes first
  *   draws nothing more that turn, the other is already at the five slots.
@@ -91,6 +92,13 @@ static int turn_draws(int side, int turn, int room)
     (void)side;
     if (!host->applied(host) || !setting("draw_one", 1)) return -1;
     return turn <= 1 ? room : 1;
+}
+
+/* Playing a card is optional: with a full field and nothing that fuses, a
+ * hand may have no legal play once a monster can no longer be replaced. */
+static int optional_play(void)
+{
+    return host->applied(host) && setting("optional_play", 1);
 }
 
 /* One step of a chain as placement plays it: a fusion, or one card
@@ -226,6 +234,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         return 0;
     }
     api->set_turn_draws(turn_draws);
+    if (api->version >= 2) api->set_optional_play(optional_play);
     return host->subscribe(host, MEMORIES_EVENT_EFFECT, 0, effect) &&
         host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run);

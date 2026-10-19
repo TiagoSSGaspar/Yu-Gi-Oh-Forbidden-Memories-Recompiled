@@ -62,7 +62,9 @@ s32 AiScript_Run(void) { D_800EAE88[0] = 13; D_800EAE88[6] = 2; return 1; }
 static void set_turn_draws(ExtraHandTurnDraws fn) { registered = fn; }
 static void bonus_hand(int draws) { bonus_calls++; bonus_draws += draws; }
 static int queued(int side) { (void)side; return 0; }
-static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued};
+static ExtraHandOptionalPlay registered_optional;
+static void set_optional_play(ExtraHandOptionalPlay fn) { registered_optional = fn; }
+static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play};
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback) { (void)h; (void)key; return fallback; }
 static int fake_applied(const MemoriesModHost *h) { (void)h; return applied_flag; }
@@ -116,6 +118,12 @@ int main(void)
     h.find = fake_find; h.subscribe = fake_subscribe; h.hook = fake_hook; h.log = fake_log;
     assert(MemoriesModInit(&h, &mod) && registered && subscribed);
     D_8009B1B4 = &field_cursor;              /* on the opponent's row: nothing to check */
+
+    /* Playing a card is optional while the mod is applied. */
+    assert(registered_optional && registered_optional());
+    applied_flag = 0;
+    assert(!registered_optional());
+    applied_flag = 1;
 
     /* One card a turn, five on a side's first turn; the disc's when removed. */
     assert(registered(0, 1, 5) == 5 && registered(1, 1, 5) == 5);
@@ -252,6 +260,6 @@ int main(void)
     frames(TEST_CHECK_FRAMES);
     assert(pot_trunk == 0);
 
-    printf("Modern rules: turn draws, fusion guard on the hand and the field, Pot of Greed and the CPU's use of it, test copies passed\n");
+    printf("Modern rules: optional play, turn draws, fusion guard on the hand and the field, Pot of Greed and the CPU's use of it, test copies passed\n");
     return 0;
 }

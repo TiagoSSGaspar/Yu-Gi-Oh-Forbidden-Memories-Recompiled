@@ -22,7 +22,8 @@ starts after the last play.
 
 - The first play of a turn is required, as in the original game. In an
   extra hand the player may press **START** to skip the remaining plays
-  and go to the field. START does nothing in the first hand, and does
+  and go to the field. START does nothing in the first hand, unless
+  another mod makes playing a card optional (Modern rules does), and does
   nothing while cards are marked for a fusion.
 - No cards are drawn between plays, unless another mod asks for some
   (Modern rules' Pot of Greed). The remaining cards are moved to the left
@@ -54,6 +55,8 @@ offers:
   up again with `draws` cards drawn into it. A bonus hand does not count
   against the plays per turn.
 - `queued(side)`: how many drawn cards are still waiting for room.
+- `set_optional_play` (version 2): while the function it is given says so,
+  START also ends the first hand of a turn, so playing a card is optional.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
