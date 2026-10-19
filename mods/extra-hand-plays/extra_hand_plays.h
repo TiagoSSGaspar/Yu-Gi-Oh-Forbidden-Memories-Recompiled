@@ -15,9 +15,9 @@ typedef int (*ExtraHandTurnDraws)(int side, int turn, int room);
  * that playing a card is optional. Asked while that hand is up. */
 typedef int (*ExtraHandOptionalPlay)(void);
 
-/* 1: the first three entries; 2: set_optional_play. New entries only go at
- * the end, so check version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 2
+/* 1: the first three entries; 2: set_optional_play; 3: pass_hand. New
+ * entries only go at the end, so check version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 3
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -33,6 +33,12 @@ typedef struct {
      * optional while `fn` says so; NULL makes it required again, as on the
      * disc. One mod sets it. */
     void (*set_optional_play)(ExtraHandOptionalPlay fn);
+    /* Version 3: the side whose turn it is plays no card from the hand now
+     * up, as START does for the player: the hand slides away, the field
+     * starts and no other hand follows this turn. For the CPU, called from
+     * inside its hand script (AiScript_Run) with its decision emptied
+     * (D_800EAE88 all zero). Does nothing outside a hand. */
+    void (*pass_hand)(void);
 } ExtraHandApi;
 
 #endif

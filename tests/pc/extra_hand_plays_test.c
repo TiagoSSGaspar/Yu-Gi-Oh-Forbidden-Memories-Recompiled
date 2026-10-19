@@ -437,6 +437,29 @@ int main(void)
     to_hand();
     assert(resolutions == 0 && D_800E9FF0[0].deck_draw_cursor == 12 && hand_count() == HAND_SIZE);
 
+    /* Another mod passes for the CPU (version 3), from inside its hand
+     * script: the hand slides away as START's does, then the field, and no
+     * other hand comes this turn. Outside a hand it does nothing. */
+    assert(provided->version >= 3);
+    plays_setting = 3;
+    new_turn(1, 1);
+    to_hand();
+    provided->pass_hand();
+    assert(S.skipping && S.done && D_8009B162 == PANEL_SLIDE_OUT);
+    assert(D_8009B1B4 == (DuelCardPickCursor *)hand_record());
+    hands = 0;
+    step_hand();
+    assert(hands == 0 && gDuel_wSceneStateFlags == (STATE_HAND | STATE_STARTED));
+    D_8009B162 = 0;
+    step_hand();
+    assert(gDuel_wSceneStateFlags == STATE_FIELD);
+    step_field();
+    assert(fields == 1 && !S.pending);
+    S.skipping = S.done = 0;
+    provided->pass_hand();
+    assert(!S.skipping && !S.done && D_8009B162 == 0);
+    plays_setting = 2;
+
     /* A new duel starts with nothing left over from the last one: the side
      * that goes first never passes through the draw, which resets a turn. */
     S.queued[0] = 2; S.queued[1] = 1; S.bonus = 1; S.bonus_draws = 2; S.plays = 2; S.hands = 3;

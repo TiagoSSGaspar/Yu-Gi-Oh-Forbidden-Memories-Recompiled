@@ -61,6 +61,9 @@ offers:
 - `queued(side)`: how many drawn cards are still waiting for room.
 - `set_optional_play` (version 2): while the function it is given says so,
   START also ends the first hand of a turn, so playing a card is optional.
+- `pass_hand` (version 3): the side whose turn it is plays no card from the
+  hand now up, as START does for the player. For the CPU it is called from
+  inside its hand script, with the decision emptied.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw

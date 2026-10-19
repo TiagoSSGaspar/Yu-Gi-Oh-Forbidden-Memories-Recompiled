@@ -307,9 +307,18 @@ static void resolution(void)
     else ((void (*)(void))original_resolution)();
 }
 
-/* START in an extra hand: what the hand state does for a card used from
- * it (its step 5), minus the card -- the panel slides away with the cursor
- * and the cards on it, then the field. */
+/* What the hand state does for a card used from it (its step 5), minus the
+ * card: the panel slides away with the cursor and the cards on it; skip()
+ * then starts the field. No other hand follows this turn. */
+static void slide_away(DuelSelectionRecord *side)
+{
+    S.skipping = 1;
+    S.done = 1;
+    D_8009B1B4 = (DuelCardPickCursor *)side;
+    D_8009B162 = PANEL_SLIDE_OUT;
+}
+
+/* START in an extra hand, or a pass: the field once the panel is gone. */
 static int skip(DuelSelectionRecord *side)
 {
     if (S.skipping) {
@@ -323,10 +332,7 @@ static int skip(DuelSelectionRecord *side)
         (gDuel_wSceneStateFlags & STATE_LOOKING) || side->field_15 != 0 || gDuel_bEffectState ||
         gDuel_bQuitDialogState || !(gInput_wPad1Pressed & PAD_BUTTON_START))
         return 0;
-    S.skipping = 1;
-    S.done = 1;
-    D_8009B1B4 = (DuelCardPickCursor *)side;
-    D_8009B162 = PANEL_SLIDE_OUT;
+    slide_away(side);
     return 1;
 }
 
@@ -399,7 +405,14 @@ static void bonus_hand(int draws)
 }
 static int queued(int side) { return side == 0 || side == 1 ? S.queued[side] : 0; }
 static void set_optional_play(ExtraHandOptionalPlay fn) { optional_play = fn; }
-static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play};
+static void pass_hand(void)
+{
+    if ((gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) != (STATE_HAND | STATE_STARTED) || S.skipping)
+        return;
+    slide_away(hand_record());
+}
+static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
+                                 pass_hand};
 
 static void line(const char *text, int row)
 {
