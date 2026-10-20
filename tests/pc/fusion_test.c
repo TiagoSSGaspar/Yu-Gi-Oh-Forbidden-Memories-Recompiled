@@ -36,9 +36,10 @@ static void init(void)
 
 int main(void)
 {
-    FusionCard hand[5], out;
+    FusionCard hand[10], out; /* Extra hand plays' most */
     FusionLine selected, best, route;
-    int pick[] = {4, 0, 2, 1, 3};
+    int pick[] = {4, 0, 2, 1, 3}, i;
+    memset(hand, 0, sizeof(hand));
     init();
     recipe(1, 2, 723); recipe(723, 3, 724);
     cards[723].attack = 2000; cards[724].attack = 3000;
@@ -145,6 +146,30 @@ int main(void)
     hand[0] = card(1); hand[1] = card(301); hand[2] = hand[3] = hand[4] = (FusionCard){0};
     Fusion_Plan(&split, hand, NULL, 0, 1, &selected, &best);
     assert(best.card.id == 1 && Fusion_Defense(best.card) == 2500);
+    /* A hand past five (Extra hand plays): every slot is a material, and a
+     * line still takes at most five cards, as at most five are marked. */
+    init(); recipe(4, 5, 723); cards[723].attack = 2500;
+    memset(hand, 0, sizeof(hand)); hand[0] = card(1); hand[6] = card(4); hand[8] = card(5);
+    Fusion_Plan(&rules, hand, NULL, 0, 0, &selected, &best);
+    assert(best.card.id == 723 && best.count == 2 && best.slots[0] == 6 && best.slots[1] == 8);
+    assert(Fusion_Toward(&rules, hand, NULL, 0, best.card, &route) == 1 && route.slots[0] == 6);
+    pick[0] = 8;
+    Fusion_Plan(&rules, hand, pick, 1, 0, &selected, &best);
+    assert(selected.count == 1 && selected.card.id == 5 && best.card.id == 723);
+    init();
+    memset(hand, 0, sizeof(hand));
+    for (i = 0; i < 10; i++) hand[i] = card(1 + i);
+    for (i = 0; i + 1 < 10; i++) {
+        recipe(i ? 722 + i : 1, 2 + i, 723 + i);
+        cards[723 + i].attack = 2000 + 100 * i;
+    }
+    Fusion_Plan(&rules, hand, NULL, 0, 0, &selected, &best);
+    assert(best.count == FUSION_CHAIN && best.card.id == 722 + FUSION_CHAIN - 1);
+    /* The route to a pair keeps to five cards too, past longer lines. */
+    recipe(9, 10, 790); cards[790].attack = 5000;
+    Fusion_Plan(&rules, hand, NULL, 0, 0, &selected, &best);
+    assert(best.card.id == 790 && best.count == 2);
+    assert(Fusion_Toward(&rules, hand, NULL, 0, best.card, &route) == 1 && route.count == 2 && route.slots[0] == 8);
     puts("fusion planner: passed");
     return 0;
 }
