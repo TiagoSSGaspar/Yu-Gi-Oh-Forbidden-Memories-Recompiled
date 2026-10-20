@@ -33,12 +33,46 @@ static struct {
     int card_x[FUSION_HAND], card_y[FUSION_HAND];
     char name[256], current_name[256];
 } view;
+/* What the plan in `view` was made from: a ten-card hand's search is long,
+ * so it is made again only when the hand, the picks or the caps change. */
+static struct {
+    int made;
+    FusionCard hand[FUSION_HAND];
+    int prefix[FUSION_CHAIN], picked, caps[2], status;
+} planned;
+static const void *(*hand_slot)(int index);
+
+void FusionHelper_SetHand(const void *(*slot)(int index)) { hand_slot = slot; }
+static const DuelHandSlot *hand_at(int slot)
+{
+    if (hand_slot) return (const DuelHandSlot *)hand_slot(slot);
+    return slot < HAND_SIZE ? &D_800EA030[slot] : NULL;
+}
 
 void FusionHelper_Viewport(int x, int y, int w, int h)
 { viewport.x = x; viewport.y = y; viewport.w = w; viewport.h = h; }
 
 void FusionHelper_GetViewport(int *x, int *y, int *w, int *h)
 { *x = viewport.x; *y = viewport.y; *w = viewport.w; *h = viewport.h; }
+
+/* The rules asked of each pair once per plan: the search asks the same
+ * pairs over and over, and each answer is a walk through the tables. */
+#define MEMO_SIZE 1024
+static struct { int kind, a, b, result; } memo[MEMO_SIZE];
+static int remember(int kind, int a, int b, int (*rule)(int, int))
+{
+    unsigned i = ((unsigned)a * 2654435761u ^ (unsigned)b * 40503u ^ (unsigned)kind) & (MEMO_SIZE - 1), n;
+    for (n = 0; n < MEMO_SIZE; n++, i = (i + 1) & (MEMO_SIZE - 1)) {
+        if (!memo[i].kind) {
+            memo[i].kind = kind; memo[i].a = a; memo[i].b = b; memo[i].result = rule(a, b);
+            return memo[i].result;
+        }
+        if (memo[i].kind == kind && memo[i].a == a && memo[i].b == b) return memo[i].result;
+    }
+    return rule(a, b);
+}
+static int fusion_rule(int a, int b) { return remember(1, a, b, CardRules_Fusion); }
+static int equip_rule(int equipment, int monster) { return remember(2, equipment, monster, CardRules_Equip); }
 
 static FusionCard card(int id)
 {
@@ -85,20 +119,25 @@ static void bonuses(int equipment, int monster, int modifier, int defense_modifi
 
 static void update(void)
 {
-    static const FusionRules rules = {card, CardRules_Fusion, CardRules_Equip, NULL, bonuses};
+    static const FusionRules rules = {card, fusion_rule, equip_rule, NULL, bonuses};
     FusionCard hand[FUSION_HAND] = {{0}};
-    int prefix[FUSION_HAND] = {-1, -1, -1, -1, -1};
-    int slot, picked = 0, count = 0, side = D_8009B1D5;
-    memset(&view, 0, sizeof(view));
+    int prefix[FUSION_CHAIN] = {-1, -1, -1, -1, -1};
+    int slot, picked = 0, count = 0, side = D_8009B1D5, made = planned.made;
+    view.visible = view.unsupported = view.picked = view.status = 0;
+    memset(view.card_x, 0, sizeof(view.card_x));
+    memset(view.card_y, 0, sizeof(view.card_y));
+    planned.made = 0;
     if (!Settings_Get(SET_FUSION_HELPER) || (D_8009B26C & 31) != 3 || D_8009B26E != 0x81 ||
         (gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) != 4 ||
         (D_8009B174 & 15) != 1 || side > 1 || D_8009B360[side] >= 0 || gDuel_bEffectState ||
         gDuel_wCardEffectFlags || gDuel_bQuitDialogState) return;
     for (slot = 0; slot < FUSION_HAND; slot++) {
-        const DuelHandSlot *pick = &D_800EA030[slot];
-        const DisplayObject *object = (const DisplayObject *)pick->object;
+        const DuelHandSlot *pick = hand_at(slot);
+        const DisplayObject *object;
         const DuelCardRecord *record;
         int index;
+        if (!pick) break;
+        object = (const DisplayObject *)pick->object;
         if (!object) continue;
         /* The object's actual record also works for side 2 and moved hands. */
         index = object->field_6A;
@@ -113,7 +152,7 @@ static void update(void)
         count++;
         if (pick->child) {
             int order = pick->active_09;
-            if (order < 1 || order > FUSION_HAND || prefix[order - 1] >= 0) return;
+            if (order < 1 || order > FUSION_CHAIN || prefix[order - 1] >= 0) return;
             prefix[order - 1] = slot;
             picked++;
         }
@@ -129,14 +168,27 @@ static void update(void)
         Hooks_IsHooked((const void *)DuelScene_UpdateCardPlacement) || Hooks_IsHooked((const void *)Duel_GetTerrainBoost) ||
         Hooks_IsHooked((const void *)Duel_CalcCardStats);
     if (view.unsupported) return;
+    view.picked = picked;
+    planned.made = 1;
+    if (made && planned.picked == picked && planned.caps[0] == Tables_StatCap(0) &&
+        planned.caps[1] == Tables_StatCap(1) && !memcmp(planned.hand, hand, sizeof(hand)) &&
+        !memcmp(planned.prefix, prefix, sizeof(prefix))) {
+        view.status = planned.status;
+        return;
+    }
+    memcpy(planned.hand, hand, sizeof(hand));
+    memcpy(planned.prefix, prefix, sizeof(prefix));
+    planned.picked = picked;
+    planned.caps[0] = Tables_StatCap(0);
+    planned.caps[1] = Tables_StatCap(1);
+    memset(memo, 0, sizeof(memo));
     {
         FusionLine none, ahead;
-        Fusion_SetCaps(Tables_StatCap(0), Tables_StatCap(1));
+        Fusion_SetCaps(planned.caps[0], planned.caps[1]);
         Fusion_Plan(&rules, hand, NULL, 0, 0, &none, &view.target);
         Fusion_Plan(&rules, hand, prefix, picked, 0, &view.current, &ahead);
     }
-    view.picked = picked;
-    view.status = Fusion_Toward(&rules, hand, prefix, picked, view.target.card, &view.route);
+    view.status = planned.status = Fusion_Toward(&rules, hand, prefix, picked, view.target.card, &view.route);
     name(view.target.card.id, view.name);
     name(view.current.card.id, view.current_name);
 }
@@ -163,6 +215,16 @@ enum { FIELD_BOX_LEFT = 13, FIELD_BOX_TOP = 24, HAND_CARD_WIDTH = 47 };
 static int screen_x(int x)
 { return viewport.x + viewport.w / 2 + (x - 160) * viewport.w / (Platform_Widescreen() ? 426 : 320); }
 static int screen_y(int y) { return viewport.y + y * viewport.h / 240; }
+
+/* Where a hand card stops showing: its right edge, or, in a hand laid out
+ * overlapped (Extra hand plays), where the next card begins. */
+static int shown_right(int slot)
+{
+    int k, right = view.card_x[slot] + HAND_CARD_WIDTH;
+    for (k = 0; k < FUSION_HAND; k++)
+        if (view.card_x[k] > view.card_x[slot] && view.card_x[k] < right) right = view.card_x[k];
+    return right;
+}
 
 static void describe(char *out, size_t size, const char *label, const char *card_name, FusionCard card)
 {
@@ -228,7 +290,7 @@ void FusionHelper_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
         for (i = view.picked; i < view.route.count; i++) {
             char number[8];
             int slot = view.route.slots[i], size = badge + badge / 2;
-            int bx = screen_x(view.card_x[slot] + HAND_CARD_WIDTH - 3) - size;
+            int bx = screen_x(shown_right(slot) - 3) - size;
             int by = screen_y(view.card_y[slot] + 5);
             int right = *x + *w, bottom = *y + *h;
             if (!*w) { *x = bx; *y = by; right = bx; bottom = by; }
