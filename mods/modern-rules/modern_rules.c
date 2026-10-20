@@ -4,17 +4,21 @@
  * turn draws and brings the hand back up, and this one says how many and
  * when, through the table it provides (extra_hand_plays.h).
  * - Playing a card is optional: START ends the first hand too.
- * - One card a turn: the turn draws are 1, or the opening five on a side's
- *   first draw. The side that goes first is dealt its five before the
- *   duel's first turn, which has no draw; the other side's first draw is
- *   its five.
+ * - One card a turn: the turn draws are 1, or the opening five and the
+ *   turn's card on a side's first draw. The side that goes first is dealt
+ *   its five before the duel's first turn, which has no draw; the other
+ *   side's first draw is its five and one. The hand holds up to ten, and a
+ *   side ending its turn with more than the hand limit (six) discards down
+ *   to it.
  * - No card lost to a fusion: while the player confirms two or more marked
  *   cards, or puts cards onto one of their monsters, the chain they make is
  *   checked step by step as placement plays it (Fusion_Step in
  *   src/pc/cards/fusion.c): each next card must fuse with what is made so
  *   far, or one of the two must equip the other. A chain with a step that
  *   would throw a card away is refused, so a monster on the field is never
- *   replaced by one that does not fuse with it. The CPU's hand decision is
+ *   replaced by one that does not fuse with it. An equip used from the
+ *   field must equip the monster the player puts it onto (or fuse with it),
+ *   which the disc would throw away otherwise. The CPU's hand decision is
  *   held to the same rule: its cards go where none is lost, or it passes.
  * - Pot of Greed, a card of this mod's manifest: using it draws two cards
  *   into a bonus hand; what does not fit waits for the next draw. The CPU
@@ -45,11 +49,13 @@
 #include <string.h>
 
 void DuelScene_UpdateHandActions(void);
+void DuelScene_UpdateFieldActions(void);
 extern u8 gDuel_bEffectState;
 extern u8 gDuel_bQuitDialogState;
 extern unsigned char D_800EAE88[];
 
 #define STATE_HAND 4
+#define STATE_FIELD 5
 #define STATE_MASK 0xF
 #define STATE_STARTED 0x8000
 #define STATE_LOOKING 0x4000
@@ -58,6 +64,11 @@ extern unsigned char D_800EAE88[];
 #define HAND_PLACING 4           /* the player's hand state, picking a field zone */
 #define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
 #define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
+#define SPELL_ROW 3              /* and of its magic and trap cards */
+#define FIELD_TARGETING 6        /* the player's field state: the monster an equip from the field goes onto */
+#define FIELD_TARGET_LEAVING 0x40 /* its cursor going back to the field (circle) */
+#define FIELD_CURSOR_RECORD 2    /* the side's selection records: the field cursor, */
+#define TARGET_CURSOR_RECORD 3   /* the cursor picking the equip's monster */
 #define AI_SELECTION_SIZE 12
 #define AI_PICKS 5               /* D_800EAE88[0..4]: the cards, in the order they go down */
 #define AI_ZONE 6                /* D_800EAE88[6]: the zone, 1-5 the monster row's columns */
@@ -66,12 +77,15 @@ extern unsigned char D_800EAE88[];
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
 #define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry */
 #define POT_DRAWS 2
+#define OPENING_HAND 5
+#define HAND_MAX 10
+#define HAND_LIMIT 6
 #define TEST_COPIES_MAX 3
 #define TEST_CHECK_FRAMES 60      /* how often the trunk is looked at */
 
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
-static void *original_hand, *original_run;
+static void *original_hand, *original_run, *original_field;
 static int pot_card;
 
 static int setting(const char *key, int fallback)
@@ -84,22 +98,42 @@ static int pot(void)
     if (pot_card <= 0) pot_card = host->card_id(host, POT_IDENTITY);
     return pot_card;
 }
+/* The hand of the side whose turn it is, slot by slot: every slot through
+ * Extra hand plays (version 4), the five on the disc's otherwise. */
+static int hand_slots(void) { return api->version >= 4 ? api->hand_slots() : HAND_SIZE; }
 static int hand_card(int slot)
 {
-    int order = D_800907CC[slot + D_8009B1D5 * HAND_SIZE];
-    int record = order & 0x80 ? (order & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : order;
+    int order, record;
+    if (api->version >= 4) return api->hand_card(slot);
+    order = D_800907CC[slot + D_8009B1D5 * HAND_SIZE];
+    record = order & 0x80 ? (order & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : order;
     return D_800E9FF0[D_8009B1D5].hand[slot] >= 0 ? D_801A7AD8[record].card_id : 0;
 }
+static int hand_mark(int slot) { return api->version >= 4 ? api->hand_mark(slot) : D_800EA030[slot].active_09; }
 
-/* Turn draws for Extra hand plays: one a turn after the opening five. The
+static int draw_one(void) { return host->applied(host) && setting("draw_one", 1); }
+
+/* Turn draws for Extra hand plays: one a turn after the opening. The
  * opening is a side's draw with nothing drawn yet, not its first counted
  * turn: the side that goes first has its five dealt before the duel's first
- * turn, which has no draw and does not count. */
+ * turn, which has no draw and does not count; the other side draws its five
+ * and its turn's card. With the hand held to five (Extra hand plays older
+ * than 0.5.0) the opening is what fits. */
 static int turn_draws(int side, int turn, int room)
 {
     (void)turn;
-    if (!host->applied(host) || !setting("draw_one", 1)) return -1;
-    return D_800E9FF0[side].deck_draw_cursor == 0 ? room : 1;
+    if (!draw_one()) return -1;
+    if (D_800E9FF0[side].deck_draw_cursor != 0) return 1;
+    return api->version >= 4 ? OPENING_HAND + 1 : room;
+}
+
+/* Up to ten cards in hand, kept to the hand limit at the end of a turn. */
+static void hand_limits(int side, int *max, int *keep)
+{
+    (void)side;
+    if (!draw_one()) return;
+    *max = HAND_MAX;
+    *keep = setting("hand_limit", HAND_LIMIT);
 }
 
 /* Playing a card is optional: with a full field and nothing that fuses, a
@@ -135,8 +169,9 @@ static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
         return next && step(current, next);
     }
     for (pick = 1; pick <= HAND_SIZE; pick++) {
-        for (slot = 0; slot < HAND_SIZE && D_800EA030[slot].active_09 != pick; slot++) { }
-        if (slot == HAND_SIZE) break;
+        int slots = hand_slots();
+        for (slot = 0; slot < slots && hand_mark(slot) != pick; slot++) { }
+        if (slot == slots) break;
         if (!(next = hand_card(slot)) || !(current = step(current, next))) return 0;
     }
     return 1;
@@ -146,6 +181,14 @@ static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
 static int monster_at(int col)
 {
     DuelCardRecord *card = &D_801A7AD8[D_800907D8[MONSTER_ROW * DUEL_FIELD_ROW_SIZE + col +
+                                                   D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]];
+    return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
+}
+
+/* The card in column `col` of the side's own magic and trap row, or 0. */
+static int spell_at(int col)
+{
+    DuelCardRecord *card = &D_801A7AD8[D_800907D8[SPELL_ROW * DUEL_FIELD_ROW_SIZE + col +
                                                    D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]];
     return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
 }
@@ -185,6 +228,31 @@ static void hand(void)
     ((void (*)(void))original_hand)();
 }
 
+/* State 5, for the player: an equip used from the field goes onto a monster
+ * the player picks, and the disc puts the two down as a chain, equip first;
+ * one that neither equips that monster nor fuses with it is thrown away.
+ * The pick is refused instead. */
+static void field(void)
+{
+    DuelSelectionRecord *records = (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
+    DuelSelectionRecord *spell = &records[FIELD_CURSOR_RECORD], *target = &records[TARGET_CURSOR_RECORD];
+    u16 pressed = gInput_wPad1Pressed;
+    int equip, monster;
+    if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
+        (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
+        (D_8009B174 & 0xF) == FIELD_TARGETING && !(D_8009B174 & FIELD_TARGET_LEAVING) && !gDuel_bEffectState &&
+        !gDuel_bQuitDialogState && spell->row == SPELL_ROW && (equip = spell_at(spell->col)) != 0 &&
+        kind(equip) == CARD_TYPE_EQUIP && target->row == MONSTER_ROW && (monster = monster_at(target->col)) != 0 &&
+        !step(equip, monster)) {
+        SD_SEPlayFull(REFUSED_SOUND);
+        gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
+        ((void (*)(void))original_field)();
+        gInput_wPad1Pressed = pressed;
+        return;
+    }
+    ((void (*)(void))original_field)();
+}
+
 /* A Pot of Greed in the CPU's hand is used first, face up, on its own: 1
  * when its decision became that. The retail script (or AI Hard Mode)
  * decides again in the bonus hand that follows. */
@@ -192,9 +260,10 @@ static int use_pot(void)
 {
     int slot, kept = 0, id = pot();
     if (id <= 0 || !setting("pot_of_greed", 1)) return 0;
-    /* The CPU's snapshot numbers the cards in hand from slot 11, packed. */
-    for (slot = 0; slot < HAND_SIZE; slot++) {
-        if (D_800E9FF0[D_8009B1D5].hand[slot] < 0) continue;
+    /* The CPU's snapshot numbers the cards in hand from slot 11, packed:
+     * the five, then those past the fifth. */
+    for (slot = 0; slot < (api->version >= 4 ? 2 * HAND_SIZE : HAND_SIZE); slot++) {
+        if (!hand_card(slot)) continue;
         if (hand_card(slot) == id) {
             memset(D_800EAE88, 0, AI_SELECTION_SIZE);
             D_800EAE88[0] = (unsigned char)(AI_HAND_SLOT_FIRST + kept);
@@ -313,7 +382,9 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     }
     api->set_turn_draws(turn_draws);
     if (api->version >= 2) api->set_optional_play(optional_play);
+    if (api->version >= 4) api->set_hand_limits(hand_limits);
     return host->subscribe(host, MEMORIES_EVENT_EFFECT, 0, effect) &&
         host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
+        host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run);
 }

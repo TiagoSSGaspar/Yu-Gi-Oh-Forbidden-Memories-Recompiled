@@ -1,9 +1,9 @@
 {
   "id": "modern-rules",
   "name": "Modern rules",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "DecompRecomp",
-  "description": "Rules from the later games: one card drawn a turn after the opening five, no card lost to a fusion that does not work, and Pot of Greed (draw two). Needs Extra hand plays.",
+  "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, no card lost to a fusion that does not work, and Pot of Greed (draw two). Needs Extra hand plays.",
   "min_api": 9,
   "game": "slus_01411",
   "library": "modern-rules",
@@ -12,7 +12,7 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.4.0"
+      "min_version": "0.5.0"
     }
   ],
   "after": [
@@ -31,7 +31,17 @@
       "label": "Draw one card a turn",
       "type": "bool",
       "default": 1,
-      "description": "Each side opens with five cards, then draws one a turn (none on the first turn). Off refills the hand to five each turn, as on the disc."
+      "description": "Each side opens with five cards, then draws one a turn (none on the first turn of the side that goes first). The hand holds up to ten. Off refills the hand to five each turn, as on the disc."
+    },
+    {
+      "key": "hand_limit",
+      "label": "Hand limit at the end of a turn",
+      "type": "int",
+      "default": 6,
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "description": "With one card drawn a turn: a side ending its turn with more cards discards down to this many. The player picks them; the CPU throws away its weakest. 0 turns the limit off."
     },
     {
       "key": "fusion_guard",

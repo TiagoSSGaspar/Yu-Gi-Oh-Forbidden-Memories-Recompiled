@@ -54,9 +54,14 @@ s32 Duel_CheckFusion(s32 a, s32 b)
     if ((a == 3 && b == 4) || (a == 4 && b == 3)) return 5;
     return 0;
 }
-s32 Duel_CheckEquip(s32 equip, s32 monster) { return equip == 6 && monster != 6 ? monster : 0; }
+s32 Duel_CheckEquip(s32 equip, s32 monster)
+{
+    if (equip == 8) return monster == 1 ? monster : 0;      /* 8 equips 1 only */
+    return equip == 6 && monster != 6 ? monster : 0;
+}
 void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
 void DuelScene_UpdateHandActions(void) { seen_pressed = gInput_wPad1Pressed; }
+void DuelScene_UpdateFieldActions(void) { seen_pressed = gInput_wPad1Pressed; }
 /* The CPU's hand decision the stand-in script makes: picks, then [6] the
  * zone (1-5 the monster zones), [8] face down. */
 static unsigned char ai_choice[12] = {13, 0, 0, 0, 0, 0, 2};
@@ -71,14 +76,29 @@ static int queued(int side) { (void)side; return 0; }
 static ExtraHandOptionalPlay registered_optional;
 static void set_optional_play(ExtraHandOptionalPlay fn) { registered_optional = fn; }
 static void pass_hand(void) { passes++; }
+/* The hand past the fifth card, as Extra hand plays keeps it: ids and marks
+ * of slots 6 to 10. */
+static int extra_ids[5], extra_marks[5], slot_count = HAND_SIZE;
+static ExtraHandLimits registered_limits;
+static void set_hand_limits(ExtraHandLimits fn) { registered_limits = fn; }
+static int hand_slots_api(void) { return slot_count; }
+static int hand_card_api(int slot)
+{
+    if (slot >= HAND_SIZE) return extra_ids[slot - HAND_SIZE];
+    return D_800E9FF0[D_8009B1D5].hand[slot] >= 0 ? D_801A7AD8[slot].card_id : 0;
+}
+static int hand_mark_api(int slot) { return slot >= HAND_SIZE ? extra_marks[slot - HAND_SIZE] : D_800EA030[slot].active_09; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                      pass_hand};
+                                      pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api};
+static int limit_setting = 6, draw_one_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
 {
     (void)h;
     if (!strcmp(key, "fusion_guard")) return guard_setting;
     if (!strcmp(key, "optional_play")) return optional_setting;
+    if (!strcmp(key, "hand_limit")) return limit_setting;
+    if (!strcmp(key, "draw_one")) return draw_one_setting;
     return fallback;
 }
 static int fake_applied(const MemoriesModHost *h) { (void)h; return applied_flag; }
@@ -139,11 +159,12 @@ int main(void)
     assert(!registered_optional());
     applied_flag = 1;
 
-    /* One card a turn after the opening five; the disc's when removed. The
+    /* One card a turn after the opening; the disc's when removed. The
      * opening is a side's draw with nothing drawn yet: the side that goes
      * first has its five dealt before the duel's first turn, which has no
-     * draw and is not counted, so its next turn is still counted as 1. */
-    assert(registered(1, 1, 5) == 5);
+     * draw and is not counted, so its next turn is still counted as 1; the
+     * other side's opening is its five and its turn's card. */
+    assert(registered(1, 1, 10) == 6);
     D_800E9FF0[0].deck_draw_cursor = 5;
     assert(registered(0, 1, 3) == 1);
     D_800E9FF0[0].deck_draw_cursor = 6;
@@ -152,6 +173,24 @@ int main(void)
     applied_flag = 0;
     assert(registered(0, 4, 2) == -1);
     applied_flag = 1;
+
+    /* Up to ten in hand, six kept at the end of a turn; the disc's five and
+     * no limit without one card a turn. */
+    {
+        int max = HAND_SIZE, keep = 0;
+        assert(registered_limits);
+        registered_limits(0, &max, &keep);
+        assert(max == 10 && keep == 6);
+        limit_setting = 0;
+        registered_limits(1, &max, &keep);
+        assert(max == 10 && keep == 0);
+        limit_setting = 6;
+        draw_one_setting = 0;
+        max = HAND_SIZE; keep = 0;
+        registered_limits(0, &max, &keep);
+        assert(max == HAND_SIZE && keep == 0 && registered(0, 2, 1) == -1);
+        draw_one_setting = 1;
+    }
 
     /* The player's confirm of marked cards. */
     D_8009B1D5 = 0;
@@ -177,6 +216,22 @@ int main(void)
         assert(!confirm());
         deal(single, single_marks);                     /* one marked card is not a chain */
         assert(confirm());
+        /* Past the fifth card: marks on slots 6 to 10 count in their order. */
+        {
+            static const int five[5] = {9, 9, 9, 9, 9}, unmarked[5] = {0, 0, 0, 0, 0};
+            deal(five, unmarked);
+            slot_count = 8;
+            extra_ids[0] = 2; extra_ids[1] = 1; extra_ids[2] = 4;
+            extra_marks[1] = 1; extra_marks[0] = 2; extra_marks[2] = 3;  /* 1 + 2 -> 3, 3 + 4 -> 5 */
+            ((DuelSelectionRecord *)D_800E9F10)->field_15 = 3;
+            assert(confirm() && sounds == 0);
+            extra_marks[2] = 0;
+            D_800EA030[4].active_09 = 3;                                 /* 3 + 9 throws one away */
+            assert(!confirm() && sounds == 1);
+            memset(extra_ids, 0, sizeof extra_ids);
+            memset(extra_marks, 0, sizeof extra_marks);
+            slot_count = HAND_SIZE;
+        }
         /* Only the player's idle hand is guarded. */
         deal(broken, broken_marks);
         D_8009B360[0] = 1;
@@ -227,6 +282,55 @@ int main(void)
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
     }
 
+    /* An equip used from the field (the field state's step 6, the monster it
+     * goes onto): it must equip that monster, or fuse with it -- the disc
+     * throws it away otherwise. The field cursor is on the equip, in the
+     * spell row; the target cursor on one of the player's monsters. */
+    {
+        DuelSelectionRecord *spell = (DuelSelectionRecord *)D_800E9F10 + 2;
+        DuelSelectionRecord *target = (DuelSelectionRecord *)D_800E9F10 + 3;
+        int i;
+        for (i = 5; i < 15; i++) D_801A7AD8[i].flags = 0;
+        gDuel_adwCardStats[8 - 1] = CARD_TYPE_EQUIP << CARD_STAT_TYPE_SHIFT;
+        D_801A7AD8[11].flags = DUEL_CARD_FLAG_OCCUPIED;   /* equip 8 at row 3, column 1 */
+        D_801A7AD8[11].card_id = 8;
+        D_801A7AD8[7].flags = DUEL_CARD_FLAG_OCCUPIED;    /* monster 1 at row 2, column 2 */
+        D_801A7AD8[7].card_id = 1;
+        D_801A7AD8[8].flags = DUEL_CARD_FLAG_OCCUPIED;    /* monster 9 at column 3 */
+        D_801A7AD8[8].card_id = 9;
+        spell->row = 3; spell->col = 1;
+        target->row = MONSTER_ROW; target->col = 2;
+        D_8009B1D5 = 0;
+        D_8009B360[0] = -1;
+        gDuel_wSceneStateFlags = STATE_FIELD | STATE_STARTED;
+        D_8009B174 = FIELD_TARGETING;
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS;
+        sounds = 0;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS && sounds == 0);            /* 8 equips 1 */
+        target->col = 3;
+        field();
+        assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);  /* not 9 */
+        guard_setting = 0;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        guard_setting = 1;
+        D_8009B360[0] = 1;                                                  /* the CPU's own path */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        D_8009B360[0] = -1;
+        D_801A7AD8[11].card_id = 2;                                         /* not an equip */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        D_801A7AD8[11].card_id = 8;
+        D_8009B174 = FIELD_TARGETING | FIELD_TARGET_LEAVING;               /* going back */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
+        gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
+        for (i = 5; i < 15; i++) D_801A7AD8[i].flags = 0;
+    }
+
     /* Pot of Greed: the use's first handler asks for a bonus hand with two
      * draws; both handlers are taken from the retail dispatcher; other cards
      * and the per-frame update are left alone. */
@@ -261,6 +365,15 @@ int main(void)
         deal(ids, none);
         gAiScript_State.script_base = D_801A9800;     /* the field script keeps its own */
         assert(run() == 1 && D_800EAE88[0] == 13);
+        /* Past the fifth card: numbered after the five in the snapshot. */
+        {
+            static const int full[5] = {1, 7, 2, 7, 1};
+            deal(full, none);
+            gAiScript_State.script_base = D_801A8000;
+            extra_ids[0] = 7; extra_ids[1] = POT;
+            assert(run() == 1 && D_800EAE88[0] == AI_HAND_SLOT_FIRST + 6);
+            memset(extra_ids, 0, sizeof extra_ids);
+        }
     }
 
     /* The CPU is held to the same rule as the player: cards it puts onto
