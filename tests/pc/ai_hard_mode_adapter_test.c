@@ -45,7 +45,27 @@ s32 Duel_CalcGuardianStarMatchup(s32 attacker, s32 defender)
 s32 Duel_CheckFusion(s32 a, s32 b) { (void)a; (void)b; return 0; }
 s32 Duel_CheckEquip(s32 a, s32 b) { (void)a; (void)b; return 0; }
 s32 Duel_CheckRitual(DuelRitualResult *out, s32 id) { (void)out; (void)id; return 0; }
-void func_80028220(void) { }
+/* The snapshot as func_80027DF8 lists it after a side's field: the held
+ * cards, the deck left, then an empty record. Side 0 is whose turn it is. */
+static void export_snapshot(void)
+{
+    int side;
+    for (side = 0; side < 2; side++) {
+        int who = D_8009B1D5 ^ side, i, n = 0;
+        AiActiveCard *out = &gDuel_aActiveCards[11 + side * 55];
+        for (i = 0; i < 5; i++)
+            if (D_800E9FF0[who].hand[i] >= 0) {
+                out[n].card_id = gDuel_aDeckCardRecords[D_800E9FF0[who].hand[i]].id;
+                out[n++].deck_index = 0;
+            }
+        for (i = D_800E9FF0[who].deck_draw_cursor; i < 40; i++) {
+            out[n].card_id = gDuel_aDeckCardRecords[who * 40 + i].id;
+            out[n++].deck_index = gDuel_aDeckCardRecords[who * 40 + i].deck_index;
+        }
+        out[n].card_id = 0;
+    }
+}
+void func_80028220(void) { export_snapshot(); }
 void AiScript_Init(u8 *script)
 {
     memset(&gAiScript_State,0,sizeof(gAiScript_State));
@@ -121,6 +141,7 @@ static void reset(void)
     spawned = released = original_calls = hidden_lookups = 0;
     ai_card = ai_value = 0;
     hidden_mode = deck_mode = 0; retail_hand = 1;
+    func_80028220();
     initialize(D_801A8000);
 }
 
@@ -147,8 +168,8 @@ int main(void)
     deck_mode = 1; assert(window() == 5);
     deck_mode = 2; custom_window = 999; assert(window() == 20);
     D_800E9FF0[1].deck_draw_cursor = 39; assert(window() == 6);
-    gDuel_aActiveCards[17].card_id = 500;
-    initialize(D_801A8000); assert(!gDuel_aActiveCards[17].card_id);
+    func_80028220(); assert(!gDuel_aActiveCards[17].card_id && gDuel_aActiveCards[18].card_id);  /* left over */
+    initialize(D_801A8000); assert(gDuel_aActiveCards[16].card_id && !gDuel_aActiveCards[18].card_id);
     D_800E9FF0[1].hand[4] = -1; assert(window() == 4);
 
     reset(); hidden_mode = 1;
@@ -196,6 +217,24 @@ int main(void)
     assert(gDuel_aDeckCardRecords[42].deck_index == 42 && gDuel_aDeckCardRecords[50].deck_index == 50);
     assert(gDuel_aDeckCardRecords[44].id == 52 && spawned == 2 && released == 2);
     assert(((DuelCardDisplayObject *)D_800EA030[2].object)->out_x == 40);
+
+    /* A hand past five (Extra hand plays): the snapshot holds the five, the
+     * cards past them, then the one card left in the deck. A pick of the
+     * last held card is swapped in, and nothing real is cleared. */
+    reset();
+    D_800E9FF0[1].deck_draw_cursor = 39;
+    for (i = 0; i < 8; i++) {
+        gDuel_aActiveCards[11 + i].card_id = (s16)(41 + i);
+        gDuel_aActiveCards[11 + i].deck_index = (u8)(40 + i);
+    }
+    gDuel_aActiveCards[19].card_id = 0;                   /* the end of the list */
+    gDuel_aActiveCards[20].card_id = 500;                 /* left over */
+    initialize(D_801A8000);
+    assert(gDuel_aActiveCards[18].card_id == 48 && !gDuel_aActiveCards[20].card_id);
+    D_800EAE88[0] = 17;
+    swap_selection();
+    assert(D_800EAE88[0] >= 11 && D_800EAE88[0] < 16 && spawned == 1);
+    assert(gDuel_aDeckCardRecords[40 + D_800EAE88[0] - 11].id == 47);
 
     reset(); gDuel_aActiveCards[11].card_id = 10;
     assert(run() == 1 && D_800EAE88[0] == 11 && !original_calls);
