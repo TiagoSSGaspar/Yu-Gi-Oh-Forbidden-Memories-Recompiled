@@ -15,9 +15,15 @@ typedef int (*ExtraHandTurnDraws)(int side, int turn, int room);
  * that playing a card is optional. Asked while that hand is up. */
 typedef int (*ExtraHandOptionalPlay)(void);
 
-/* 1: the first three entries; 2: set_optional_play; 3: pass_hand. New
- * entries only go at the end, so check version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 3
+/* How many cards `side` may hold (`*max`, 5 to 10) and keep at the end of
+ * its turn (`*keep`, 0 for no limit). Both come in at the disc's: 5 and 0.
+ * Asked whenever they are needed. */
+typedef void (*ExtraHandLimits)(int side, int *max, int *keep);
+
+/* 1: the first three entries; 2: set_optional_play; 3: pass_hand; 4: the
+ * hand past five cards. New entries only go at the end, so check version
+ * before calling a later one. */
+#define EXTRA_HAND_API_VERSION 4
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -39,6 +45,17 @@ typedef struct {
      * inside its hand script (AiScript_Run) with its decision emptied
      * (D_800EAE88 all zero). Does nothing outside a hand. */
     void (*pass_hand)(void);
+    /* Version 4: the hand limits, or NULL for the disc's. One mod sets it.
+     * Past five cards the hand is laid out overlapped, and the player picks
+     * from all of it; the CPU's hand script sees the cards past the fifth
+     * ahead of the upcoming deck. */
+    void (*set_hand_limits)(ExtraHandLimits limits);
+    /* The hand of the side whose turn it is, slot by slot (0 up): how many
+     * slots it has, the card in one (0 empty) and its place in the order
+     * the player marked cards in (0 unmarked). */
+    int (*hand_slots)(void);
+    int (*hand_card)(int slot);
+    int (*hand_mark)(int slot);
 } ExtraHandApi;
 
 #endif

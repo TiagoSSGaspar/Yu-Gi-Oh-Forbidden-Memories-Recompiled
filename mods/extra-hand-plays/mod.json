@@ -1,23 +1,23 @@
 {
   "id": "extra-hand-plays",
   "name": "Extra hand plays",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "DecompRecomp",
-  "description": "Play more than one card from the hand each turn. After a play the hand comes back up; the player may skip the rest with START. The CPU plays its extra cards through its own hand script.",
+  "description": "Play magic, trap and equip cards freely each turn, and up to five monsters. After a play the hand comes back up; the player may skip the rest with START. The CPU plays its extra cards through its own hand script. Lets another mod hold up to ten cards in hand.",
   "min_api": 4,
   "game": "slus_01411",
   "library": "extra-hand-plays",
   "enabled": false,
   "settings": [
     {
-      "key": "plays",
-      "label": "Hand plays per turn",
+      "key": "monsters",
+      "label": "Monsters per turn",
       "type": "int",
-      "default": 2,
+      "default": 1,
       "min": 1,
       "max": 5,
       "step": 1,
-      "description": "How many times a turn the hand comes up. A fusion or a card used from the hand counts as one play. 1 is the original game."
+      "description": "How many monsters a turn may put down from the hand; a fusion counts as one. Magic, trap and equip cards are not counted: the hand comes back while it holds one. 1 is the anime's rule."
     },
     {
       "key": "sides",
@@ -35,7 +35,7 @@
       "label": "Show skip hint",
       "type": "bool",
       "default": 1,
-      "description": "While an extra hand is up for the player, say that START skips it."
+      "description": "While an extra hand is up for the player, say that START skips it, and when the turn's monsters are spent."
     }
   ]
 }

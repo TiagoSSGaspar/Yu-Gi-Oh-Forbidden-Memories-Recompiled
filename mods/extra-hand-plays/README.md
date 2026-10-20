@@ -1,22 +1,22 @@
 # Extra hand plays
 
 An optional API 4 code mod for SLUS_01411. Enable **Extra hand plays** in the
-Mods window. It ships disabled; with it off, or with **Hand plays per turn**
-at 1, turns run as on the disc.
+Mods window. It ships disabled; with it off, turns run as on the disc.
 
 After a card is played from the hand, the hand comes back up for another
-play, up to the configured number of plays per turn. A fusion, an equip or a
-magic card used from the hand counts as one play, as it does in the original
-game. The field phase (attacks, position changes, activating set cards)
-starts after the last play.
+play. As in the anime, a turn may put down one monster (the setting allows
+up to five), and any number of magic, trap and equip cards. A fusion counts
+as one monster, and so does a monster put onto one already on the field.
+The field phase (attacks, position changes, activating set cards) starts
+after the last play.
 
 ## Options
 
 | Setting | Behavior |
 |---|---|
-| Hand plays per turn | 1–5, default 2. 1 is the original game. |
-| Applies to | Both sides, the player only, or the CPU only. |
-| Show skip hint | While an extra hand is up for the player, a line says that START skips it. |
+| Monsters per turn | 1–5, default 1. Magic, trap and equip cards are not counted. |
+| Applies to | Both sides, the player only, or the CPU only. The other side plays one card a turn, as on the disc. |
+| Show skip hint | While an extra hand is up for the player, a line says that START skips it, and another says when the turn's monsters are spent. |
 
 ## Rules
 
@@ -28,6 +28,10 @@ starts after the last play.
 - No cards are drawn between plays, unless another mod asks for some
   (Modern rules' Pot of Greed). The remaining cards are moved to the left
   of the hand, as the draw does at a turn start.
+- Once the turn's monsters are down, the hand comes back while it holds a
+  card that is not a monster. Confirming a monster then, alone or marked
+  with other cards, is refused with the cancel sound. A CPU decision that
+  plays a monster then ends its hands for the turn.
 - The hand does not come back when it is empty, or once either side is out
   of life points.
 - A turn that starts with a full hand (the last one ended with START,
@@ -45,6 +49,28 @@ starts after the last play.
   the opponent's normal deck access.
 - End-of-duel rank statistics count every play. For example, face-down
   plays and fusions add up as they would over separate turns.
+
+## Hands past five
+
+The disc's hand has five slots. When another mod raises the limit
+(`set_hand_limits`, below; Modern rules does), the hand holds up to ten:
+
+- Past five cards, the hand is laid out overlapped across the width of
+  five, later cards over earlier ones and the card under the cursor over
+  all. The player walks, views, marks and plays every card as with five; at
+  most five cards are marked, as a fusion chain takes.
+- The CPU's hand script sees the cards past the fifth ahead of its upcoming
+  deck, numbered the way it numbers deck cards it may swap into the hand.
+  One it picks is swapped into the five by the game's own swap (or AI Hard
+  Mode's), so it always plays from the five.
+- At the end of a turn, a side holding more cards than the limit's `keep`
+  discards down to it. For the player the hand comes up on its panel: UP
+  marks a card to throw away, DOWN or circle takes the mark back, X or
+  square throws the marked cards away once there are as many as asked for.
+  The CPU throws away its weakest cards: monsters by their better stat,
+  any other card counted as 1500. The game has no graveyard; a discarded
+  card leaves the duel.
+- Exodia is assembled from every slot.
 
 ## For other mods
 
@@ -64,6 +90,11 @@ offers:
 - `pass_hand` (version 3): the side whose turn it is plays no card from the
   hand now up, as START does for the player. For the CPU it is called from
   inside its hand script, with the decision emptied.
+- `set_hand_limits` (version 4): how many cards a side may hold (5 to 10)
+  and keep at the end of its turn (0 for no limit).
+- `hand_slots`, `hand_card(slot)` and `hand_mark(slot)` (version 4): the
+  hand of the side whose turn it is, slot by slot, past the fifth too: how
+  many slots it has, the card in one and the order it was marked in.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
@@ -101,9 +132,24 @@ START sets the hand panel's slide-out, the same way the hand state does for
 a magic card used from it. The panel releases its cursor and cards on the
 way out, and the field starts when it is gone.
 
+Past five cards (`big_hand.c`), cards six to ten keep their deck indices
+beside the side's `hand[5]`, their slots on screen beside `D_800EA030`, and
+borrow the other side's five hand records, which nothing reads during the
+turn; they are cleared when the turn ends and when it begins. The five
+slots are always filled first. The player's hand state is a copy of the
+disc's player steps over every slot, used only past five cards, and the
+five-slot helpers it calls (the cursor, the pick number, the zone cursor,
+dimming) are taught the rest. The hand panel's own move lays the cards out
+and takes them along. `Duel_SetupCardRecord` adds 40 to a position below 40
+in a second-side record, so during the first side's turn a borrowed record
+is given its card 40 short. The end-of-turn discard (`discard.c`) runs
+before the turn switch (scene state 10).
+
 The mod's state (plays and hands this turn, a rebuild or deal in progress,
-bonus hands, each side's waiting cards) is a few bytes, with no pointers.
-It is registered with the host, so save states keep it.
+bonus hands, each side's waiting cards, the cards past the fifth and their
+slots) is registered with the host, so save states keep it. The slots hold
+guest pointers to their card objects, which a save state restores with the
+guest memory.
 
 ## Build and checks
 

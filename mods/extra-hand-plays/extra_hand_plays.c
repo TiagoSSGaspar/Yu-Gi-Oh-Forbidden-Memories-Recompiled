@@ -31,6 +31,8 @@
  * left; cards that do not fit wait, and are drawn into the next hand. */
 #include "types.h"
 #define AI_GET_HAND_SIZE_RETURNS_S32 /* Native override serves word-sized callers. */
+#define D_800EAE88_VISIBLE
+#define D_800EAE88_AS_BYTES
 #include "game/ai.h"
 #include "game/card_constants.h"
 #include "game/display_object.h"
@@ -46,6 +48,8 @@
 #include "game/func_8001B8B8.h"
 #include "game/card_constants.h"
 #include "game/display_object_helpers.h"
+#include "game/display_object_work_slots.h"
+#include "game/duel_action_lock.h"
 #include "game/duel_deck_card.h"
 #include "game/duel_draw_resolution.h"
 #include "game/duel_grid.h"
@@ -57,7 +61,7 @@
 #include "game/script_state.h"
 #include "pc/mods/modapi.h"
 #include "unmatched.h"
-#include "extra_hand_plays.h"
+#include "hand_internal.h"
 #include <string.h>
 
 void DuelScene_UpdateStartup(void);
@@ -75,6 +79,10 @@ extern u8 gDuel_bQuitDialogState;
 #define STATE_MASK 0xF
 #define STATE_STARTED 0x8000
 #define STATE_LOOKING 0x4000   /* the hand state's L2/R2 look at the field */
+#define STATE_PLACEMENT 7      /* placement, as the hand state starts it */
+#define CPU_HAND_STEP 2        /* the CPU's hand state: its script, then the cards */
+#define AI_HAND_SLOT_FIRST 11  /* the CPU's snapshot: 11-15 the hand */
+#define REFUSED_SOUND 8        /* the hand's cancel sound */
 #define HAND_IDLE 1            /* the player's hand state, walking the hand */
 #define HAND_STEP_DONE 0x80
 #define PANEL_SLIDE_OUT 8      /* D_8009B162: slide the panel away, releasing its cards */
@@ -83,27 +91,14 @@ extern u8 gDuel_bQuitDialogState;
 #define DRAW_GAP 8             /* frames between drawn cards, as retail */
 #define SETTLE_FRAMES 30       /* half a second */
 #define SLIDING_CARD_TAG 1     /* DisplayObject_FindAllocatedByTag: a card still sliding in */
+#define HIDDEN_Y 0x292         /* below the screen: where the draw makes the hand's cards */
+#define SLIDE_IN 0x140         /* a drawn card comes in from this far right (Duel_UpdateDrawCardSlide) */
 
 static const MemoriesModHost *host;
+const MemoriesModHost *ehp_host;
+EhpState ehp_state;
 static void *original_startup, *original_draw, *original_resolution, *original_hand, *original_field;
 static void *original_dim, *original_window;
-
-/* No pointers: kept in save states (register_state). */
-static struct {
-    u8 plays;     /* counted hand states begun this turn */
-    u8 hands;     /* every hand state begun this turn, bonus ones too */
-    u8 pending;   /* a hand state ran and the field has not started since */
-    u8 redraw;    /* the draw now running only rebuilds the hand */
-    u8 skipping;  /* START: the hand panel is sliding away */
-    u8 done;      /* skipped: no more hands this turn */
-    u8 bonus;     /* bonus hands asked for and not yet begun */
-    u8 in_bonus;  /* the hand being rebuilt is a bonus one: not counted */
-    u8 bonus_draws; /* cards the next bonus hand draws */
-    u8 custom;    /* the draw resolution running is this mod's */
-    u8 to_draw;   /* cards it has still to draw */
-    u8 queued[2]; /* each side's drawn cards that did not fit, still owed */
-    u8 settle;    /* frames waited for a panel move before a hand comes back */
-} S;
 
 static ExtraHandTurnDraws turn_draws;
 static ExtraHandOptionalPlay optional_play;
@@ -114,12 +109,7 @@ static int setting(const char *key, int fallback, int low, int high)
     return n < low ? low : n > high ? high : n;
 }
 static int human(void) { return D_8009B360[D_8009B1D5] < 0; }
-static int hand_count(void)
-{
-    int i, n = 0;
-    for (i = 0; i < HAND_SIZE; i++) n += D_800E9FF0[D_8009B1D5].hand[i] >= 0;
-    return n;
-}
+static int hand_count(void) { return Ehp_Count(D_8009B1D5); }
 static DuelSelectionRecord *hand_record(void)
 {
     return (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
@@ -133,13 +123,31 @@ static int lp_left(void)
     return D_800E9FF0[0].life_points.signed_value && D_800E9FF0[1].life_points.signed_value;
 }
 
+static int monster(int id)
+{
+    return id > 0 && ((gDuel_adwCardStats[id - 1] >> CARD_STAT_TYPE_SHIFT) & CARD_STAT_TYPE_MASK) < CARD_TYPE_MAGIC;
+}
+/* The monster plays a turn allows are spent: magic, trap and equip cards
+ * only from now on. */
+static int monsters_spent(void) { return S.monsters >= setting("monsters", 1, 1, 5); }
+/* A card the hand can still play: any while monsters may go down, else one
+ * that is not a monster. */
+static int playable_left(void)
+{
+    int slot;
+    for (slot = 0; slot < EHP_SLOTS; slot++)
+        if (Ehp_Get(D_8009B1D5, slot) >= 0 && (!monsters_spent() || !monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))))
+            return 1;
+    return 0;
+}
+
 static int another_play(void)
 {
     int sides = setting("sides", 0, 0, 2);
-    if (!S.pending || S.done || S.plays >= setting("plays", 2, 1, 5)) return 0;
+    if (!S.pending || S.done) return 0;
     if ((sides == 1 && !human()) || (sides == 2 && human())) return 0;
     if (gDuel_wSceneStateFlags != STATE_FIELD || gDuel_bEffectState || !lp_left()) return 0;
-    return hand_count() > 0;
+    return playable_left();
 }
 /* A bonus hand needs cards: in hand, or coming. */
 static int bonus_play(void)
@@ -179,14 +187,25 @@ static void field(void)
  * resets a turn. */
 static void startup(void)
 {
-    if (!(gDuel_wSceneStateFlags & STATE_STARTED)) memset(&S, 0, sizeof S);
+    if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
+        memset(&S, 0, sizeof S);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
     ((void (*)(void))original_startup)();
+}
+
+/* The panel is laid out for the hand as it will be once drawn. */
+static void lay_out(void)
+{
+    int max = Ehp_HandMax(), count = hand_count() + (S.custom ? S.to_draw : 0);
+    S.layout = (u8)(count > max ? max : count);
+    S.focus = 0;
 }
 
 /* How many of `total` wanted cards fit; the rest wait. */
 static void plan_draws(int total)
 {
-    int side = D_8009B1D5, room = HAND_SIZE - hand_count();
+    int side = D_8009B1D5, room = Ehp_HandMax() - hand_count();
     if (total > 255) total = 255;
     S.to_draw = (u8)(total < room ? total : room);
     S.queued[side] = (u8)(total - S.to_draw);
@@ -210,13 +229,18 @@ static void draw(void)
         ((void (*)(void))original_draw)();
         return;
     }
+    /* Cards past the fifth fill the five's gaps first; the rest are spawned
+     * beside the five, and the borrowed records start empty. */
+    Ehp_Pack(D_8009B1D5);
+    Ehp_ClearBorrowed(D_8009B1D5);
     if (!S.redraw) {
         int want;
-        S.plays = S.hands = S.pending = S.skipping = S.done = 0;
+        S.plays = S.hands = S.pending = S.skipping = S.done = S.monsters = 0;
         S.bonus = S.in_bonus = S.bonus_draws = S.custom = S.to_draw = 0;
         ((void (*)(void))original_draw)();
+        Ehp_SpawnExtras(HIDDEN_Y);
         /* The draw has counted the turn and packed the hand. */
-        want = turn_draws ? turn_draws(D_8009B1D5, side->rank.turns_taken, HAND_SIZE - hand_count()) : -1;
+        want = turn_draws ? turn_draws(D_8009B1D5, side->rank.turns_taken, Ehp_HandMax() - hand_count()) : -1;
         if (want >= 0) {
             plan_draws(want + S.queued[D_8009B1D5]);
         } else {
@@ -225,8 +249,9 @@ static void draw(void)
              * retail draw resolution cannot do: it deals past the fifth
              * slot until the deck runs out. */
             S.queued[D_8009B1D5] = 0;
-            if (hand_count() == HAND_SIZE) plan_draws(0);
+            if (hand_count() >= HAND_SIZE) plan_draws(0);
         }
+        lay_out();
         return;
     }
     swords = side->swords_turns_remaining;
@@ -235,6 +260,7 @@ static void draw(void)
         used[i] = D_801A7AD8[i].flags & DUEL_CARD_FLAG_USED_THIS_TURN;
     side->swords_turns_remaining = 0;
     ((void (*)(void))original_draw)();
+    Ehp_SpawnExtras(HIDDEN_Y);
     side->swords_turns_remaining = swords;
     side->rank.turns_taken = turns;
     for (i = 0; i < DUEL_CARD_RECORD_COUNT; i++) {
@@ -247,6 +273,7 @@ static void draw(void)
     }
     plan_draws(S.bonus_draws + S.queued[D_8009B1D5]);
     S.bonus_draws = 0;
+    lay_out();
 }
 
 /* The draw resolution's own loop (duel_draw_resolution.c) with each card
@@ -257,7 +284,7 @@ static void deal(void)
 {
     DuelSideState *side = D_8009B1C8;
     DisplayObject *object;
-    int slot, order, record;
+    int slot, record, max;
     if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
         gDuel_wSceneStateFlags |= STATE_STARTED;
         D_8009B1ED = 1;
@@ -274,21 +301,22 @@ static void deal(void)
             gDuel_wSceneStateFlags = 0xC;
             return;
         }
-        for (slot = 0; slot < HAND_SIZE && side->hand[slot] >= 0; slot++) { }
-        if (slot == HAND_SIZE) {
+        max = Ehp_HandMax();
+        for (slot = 0; slot < max && Ehp_Get(D_8009B1D5, slot) >= 0; slot++) { }
+        if (slot == max) {
             S.to_draw = 0;
             gDuel_wSceneStateFlags |= DRAWN;
             return;
         }
-        order = D_800907CC[slot + D_8009B1D5 * HAND_SIZE];
-        record = order & 0x80 ? (order & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : order;
-        Duel_SetupCardRecord(record, side->deck_draw_cursor);
-        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], slot * 60 + 0x14E, 0x92);
+        record = Ehp_Record(D_8009B1D5, slot);
+        Ehp_SetupRecord(record, D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor);
+        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], Ehp_LayoutX(slot, S.layout) + SLIDE_IN, 0x92);
         object->field_6C = 1;
         object->field_60 = 0xC;
         object->update = (DisplayObjectCallback)Duel_UpdateDrawCardSlide;
-        D_800EA030[slot].object = (u8 *)object;
-        side->hand[slot] = ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index;
+        Ehp_Slot(slot)->object = (u8 *)object;
+        Ehp_Arrange(slot);
+        Ehp_Set(D_8009B1D5, slot, ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index);
         side->deck_draw_cursor++;
         if (!--S.to_draw) gDuel_wSceneStateFlags |= DRAWN;
         SD_SEPlayFull(0xA);
@@ -297,7 +325,7 @@ static void deal(void)
     if (DisplayObject_FindAllocatedByTag(SLIDING_CARD_TAG)) return;
     S.custom = S.redraw = 0;
     gDuel_wSceneStateFlags = hand_count() ? STATE_HAND : STATE_FIELD;
-    if (hand_count() == HAND_SIZE && Duel_HasAllExodiaPieces()) gDuel_wSceneStateFlags = 0xE;
+    if (hand_count() >= HAND_SIZE && Duel_HasAllExodiaPieces()) gDuel_wSceneStateFlags = 0xE;
 }
 
 /* State 3. */
@@ -336,8 +364,8 @@ static int skip(DuelSelectionRecord *side)
     return 1;
 }
 
-/* State 4. */
-static void hand(void)
+/* State 4, under the monster plays: hand_state() runs it. */
+static void hand_state(void)
 {
     DuelSelectionRecord *side = hand_record();
     int count, i;
@@ -351,10 +379,16 @@ static void hand(void)
     } else if (skip(side)) {
         return;
     }
+    if ((gDuel_wSceneStateFlags & STATE_STARTED) && !(gDuel_wSceneStateFlags & STATE_LOOKING) && human() &&
+        Ehp_BigHand()) {
+        Ehp_HandActions(side);
+        return;
+    }
     count = hand_count();
     if (count >= HAND_SIZE || !(gDuel_wSceneStateFlags & STATE_STARTED) || !human() ||
         (D_8009B174 & 0xF) != HAND_IDLE) {
         ((void (*)(void))original_hand)();
+        if (!human()) Ehp_RefreshExtras();
         return;
     }
     /* The idle step's first frame colours all five slots: do it for the
@@ -370,15 +404,81 @@ static void hand(void)
     gInput_wPad1Repeat = repeat;
 }
 
-/* func_8001B8B8 with empty slots skipped. */
-static void dim(DuelSelectionRecord *side)
+/* Whether the cards the player's confirm would put down hold a monster: the
+ * marked ones, or the one under the cursor when none is marked. */
+static int confirm_has_monster(DuelSelectionRecord *side)
+{
+    int slot, slots = Ehp_BigHand() ? S.layout : HAND_SIZE;
+    if (side->field_15 == 0) return monster(Ehp_CardId(Ehp_Get(D_8009B1D5, (s8)side->field_0E)));
+    for (slot = 0; slot < slots; slot++)
+        if (Ehp_Slot(slot)->active_09 && monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))) return 1;
+    return 0;
+}
+
+/* Whether the cards just sent to placement (D_800E9EF0) put a monster
+ * from the hand down: one, a fusion of them, or one onto a field monster.
+ * A hand card's record is one of a side's first five, as placement tells. */
+static int placement_has_monster(void)
 {
     int i;
-    for (i = 0; i < HAND_SIZE; i++)
-        if (D_800EA030[i].active_09 == 0 && D_800EA030[i].object)
-            ((DisplayObject *)D_800EA030[i].object)->field_0C = DUEL_DISPLAY_COLOR_DIMMED;
-    if (side->field_15 == 0 && D_800EA030[(s8)side->field_0E].object)
-        ((DisplayObject *)D_800EA030[(s8)side->field_0E].object)->field_0C = DUEL_DISPLAY_COLOR_NORMAL;
+    for (i = 0; i < 7 && D_800E9EF0[i]; i++) {
+        int record = D_800E9EF0[i]->field_6A;
+        if (record % DUEL_CARD_SIDE_RECORD_COUNT < HAND_SIZE && monster(D_801A7AD8[record].card_id)) return 1;
+    }
+    return 0;
+}
+
+/* The CPU's decision, made this frame (AiScript_Run, then the swap into the
+ * five): its picks are hand slots 11-15. */
+static int decision_has_monster(void)
+{
+    int i;
+    for (i = 0; i < HAND_SIZE && D_800EAE88[i]; i++) {
+        int v = D_800EAE88[i];
+        if (v >= AI_HAND_SLOT_FIRST && v < AI_HAND_SLOT_FIRST + HAND_SIZE &&
+            monster(Ehp_CardId(D_8009B1C8->hand[v - AI_HAND_SLOT_FIRST])))
+            return 1;
+    }
+    return 0;
+}
+
+/* State 4. Monster plays: a turn may put down as many monsters as the
+ * setting says (a fusion is one), and any number of magic, trap and equip
+ * cards. Once the monsters are spent the hand still comes back while it
+ * holds another kind of card; the player's confirm of a monster is refused
+ * and the CPU passes when it picks one. */
+static void hand(void)
+{
+    DuelSelectionRecord *side = hand_record();
+    u16 pressed = gInput_wPad1Pressed, substate = *(u16 *)D_8009B20C;
+    int before = gDuel_wSceneStateFlags;
+    if ((before & (STATE_STARTED | STATE_LOOKING)) == STATE_STARTED && human() && monsters_spent() &&
+        (D_8009B174 & 0xF) == HAND_IDLE && (D_8009B174 & HAND_STEP_DONE) && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
+        !gDuel_bEffectState && !gDuel_bQuitDialogState && !S.skipping && confirm_has_monster(side)) {
+        SD_SEPlayFull(REFUSED_SOUND);
+        gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
+        hand_state();
+        gInput_wPad1Pressed = pressed;
+        return;
+    }
+    hand_state();
+    if ((gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == STATE_PLACEMENT && placement_has_monster())
+        S.monsters++;
+    if (!human() && (before & STATE_STARTED) && (D_8009B174 & 0xF) == CPU_HAND_STEP &&
+        (substate & 0x800F) == 0x8000 && (*(u16 *)D_8009B20C & 0xF) == 1 && monsters_spent() &&
+        decision_has_monster())
+        slide_away(side);
+}
+
+/* func_8001B8B8 over every slot, with empty ones skipped. */
+static void dim(DuelSelectionRecord *side)
+{
+    int i, count = Ehp_BigHand() ? S.layout : HAND_SIZE;
+    for (i = 0; i < count; i++)
+        if (Ehp_Slot(i)->active_09 == 0 && Ehp_Slot(i)->object)
+            ((DisplayObject *)Ehp_Slot(i)->object)->field_0C = DUEL_DISPLAY_COLOR_DIMMED;
+    if (side->field_15 == 0 && Ehp_Slot((s8)side->field_0E)->object)
+        ((DisplayObject *)Ehp_Slot((s8)side->field_0E)->object)->field_0C = DUEL_DISPLAY_COLOR_NORMAL;
 }
 
 /* The CPU's hand script searches the hand and then upcoming deck cards,
@@ -388,10 +488,13 @@ static void dim(DuelSelectionRecord *side)
 static s32 window(void)
 {
     s32 n = ((s32 (*)(void))original_window)();
-    int count = hand_count();
-    if (count >= HAND_SIZE || gAiScript_State.script_base != D_801A8000 ||
-        (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
+    int count = hand_count(), extras = Ehp_Extras(D_8009B1D5);
+    if (gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return n;
+    /* Past five, the snapshot has the cards past the fifth ahead of the
+     * deck: the window takes them in on top of what it looked at. */
+    if (extras) return (s8)(n + extras);
+    if (count >= HAND_SIZE) return n;
     return (s8)(n > count ? count : n);
 }
 
@@ -411,8 +514,15 @@ static void pass_hand(void)
         return;
     slide_away(hand_record());
 }
+static int hand_slots(void) { return Ehp_BigHand() ? S.layout : HAND_SIZE; }
+static int hand_card(int slot)
+{
+    if (slot < 0 || slot >= EHP_SLOTS) return 0;
+    return Ehp_CardId(Ehp_Get(D_8009B1D5, slot));
+}
+static int hand_mark(int slot) { return slot < 0 || slot >= EHP_SLOTS ? 0 : Ehp_Slot(slot)->active_09; }
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                 pass_hand};
+                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark};
 
 static void line(const char *text, int row)
 {
@@ -430,22 +540,33 @@ static int hand_idle(void)
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & 0xF) == HAND_IDLE;
 }
-/* Bit 0: the skip hint; bits 1 up: cards waiting to be drawn. */
+/* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2 up: cards
+ * waiting to be drawn. The discard: bit 31, with the cards still to mark. */
 static unsigned hint_signature(void)
 {
     unsigned shown = 0;
+    if (S.discard && human()) return 0x80000000u | S.discard_left;
     if (!hand_idle()) return 0;
     if (setting("hint", 1, 0, 1) && skippable() && !S.done) shown |= 1;
-    return shown | (unsigned)S.queued[D_8009B1D5] << 1;
+    if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
+    return shown | (unsigned)S.queued[D_8009B1D5] << 2;
 }
 static void draw_hint(void)
 {
     unsigned shown = hint_signature();
-    char text[48];
+    char text[64];
     int row = 0;
+    if (shown & 0x80000000u) {
+        unsigned left = shown & 0xFF;
+        snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
+        line(text, row++);
+        line("UP: mark   X: discard the marked cards", row);
+        return;
+    }
     if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++);
-    if (shown >> 1) {
-        snprintf(text, sizeof text, "%u card%s waiting to be drawn", shown >> 1, shown >> 1 == 1 ? "" : "s");
+    if (shown & 2) line("Monster played: magic, trap and equip cards only", row++);
+    if (shown >> 2) {
+        snprintf(text, sizeof text, "%u card%s waiting to be drawn", shown >> 2, shown >> 2 == 1 ? "" : "s");
         line(text, row);
     }
 }
@@ -453,11 +574,12 @@ static void draw_hint(void)
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
 {
     if (from->api < 4) return 0;
-    host = from;
+    host = ehp_host = from;
     mod->api = 4;
     mod->overlay = draw_hint;
     mod->overlay_signature = hint_signature;
-    return host->register_state(host, &S, sizeof S, 3) &&
+    memset(S.xhand, -1, sizeof S.xhand);
+    return host->register_state(host, &S, sizeof S, EHP_STATE_VERSION) &&
         host->provide(host, "api", (void *)&api) &&
         host->hook(host, (void *)DuelScene_UpdateStartup, (void *)startup, &original_startup) &&
         host->hook(host, (void *)DuelScene_UpdateDrawPhase, (void *)draw, &original_draw) &&
@@ -465,5 +587,6 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)func_8001B8B8, (void *)dim, &original_dim) &&
-        host->hook(host, (void *)Ai_GetHandSize, (void *)window, &original_window);
+        host->hook(host, (void *)Ai_GetHandSize, (void *)window, &original_window) &&
+        Ehp_Install() && Ehp_DiscardInstall();
 }
