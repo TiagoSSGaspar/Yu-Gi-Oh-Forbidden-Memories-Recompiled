@@ -46,6 +46,10 @@ requests another decision. It does not grant extra actions or create cards.
 Deck access selects existing upcoming cards and swaps displaced hand cards
 back into those deck positions. Windows are clamped to real available cards;
 stale snapshot tails are cleared before the original scripts can search them.
+The swap and the clearing count the cards the snapshot lists rather than
+working them out from the five and the deck, so a hand past five (Extra hand
+plays, which lists the cards past the fifth ahead of the deck and widens the
+window by them) keeps every card to the end of the deck.
 
 Hidden opponents are redacted before metadata lookup in the new planner.
 It knows an unknown card occupies a slot, but receives no card ID, stats,

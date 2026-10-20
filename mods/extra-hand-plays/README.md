@@ -131,7 +131,10 @@ with fewer, extra or not:
 - it colours only the occupied slots on the idle step's first frame;
 - it replaces `func_8001B8B8` (dimming) with a copy that skips empty slots;
 - it masks a cursor step right past the last card;
-- it holds the CPU's hand window (`Ai_GetHandSize`) to the cards in hand.
+- it holds the CPU's hand window (`Ai_GetHandSize`) to the cards in hand,
+  and widens it by the cards past the fifth. It loads after AI Hard Mode
+  (`after` in `mod.json`), so its window is the one asked first and AI
+  Hard Mode's deck access is widened as well.
 
 START sets the hand panel's slide-out, the same way the hand state does for
 a magic card used from it. The panel releases its cursor and cards on the

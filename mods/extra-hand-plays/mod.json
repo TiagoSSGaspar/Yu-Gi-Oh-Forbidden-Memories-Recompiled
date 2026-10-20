@@ -8,6 +8,9 @@
   "game": "slus_01411",
   "library": "extra-hand-plays",
   "enabled": false,
+  "after": [
+    "ai-hard-mode"
+  ],
   "settings": [
     {
       "key": "monsters",
