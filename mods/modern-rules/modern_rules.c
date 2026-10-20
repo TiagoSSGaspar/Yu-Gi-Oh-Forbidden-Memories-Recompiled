@@ -137,6 +137,13 @@ static int optional_play(void)
 {
     return host->applied(host) && setting("optional_play", 1);
 }
+/* The player's turn in phases, as in the GX games (Extra hand plays'
+ * set_phases): START opens a menu of the next phases, and Main Phase 2
+ * brings the hand back after the field. */
+static int gx_phases(void)
+{
+    return host->applied(host) && setting("gx_phases", 1);
+}
 
 static int kind(int id) { return (gDuel_adwCardStats[id - 1] >> CARD_STAT_TYPE_SHIFT) & CARD_STAT_TYPE_MASK; }
 
@@ -359,6 +366,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     api->set_turn_draws(turn_draws);
     if (api->version >= 2) api->set_optional_play(optional_play);
     if (api->version >= 4) api->set_hand_limits(hand_limits);
+    if (api->version >= 5) api->set_phases(gx_phases);
     return host->subscribe(host, MEMORIES_EVENT_EFFECT, 0, effect) &&
         host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&

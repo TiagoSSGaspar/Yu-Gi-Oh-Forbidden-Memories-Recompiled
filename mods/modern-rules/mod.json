@@ -1,9 +1,9 @@
 {
   "id": "modern-rules",
   "name": "Modern rules",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "author": "DecompRecomp",
-  "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, no card lost to a fusion that does not work, and Treasure Trickster, a spell that draws two. Needs Extra hand plays.",
+  "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, turn phases with a Main Phase 2 as in the GX games, no card lost to a fusion that does not work, and Treasure Trickster, a spell that draws two. Needs Extra hand plays.",
   "min_api": 9,
   "game": "slus_01411",
   "library": "modern-rules",
@@ -12,7 +12,7 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.5.0"
+      "min_version": "0.6.0"
     }
   ],
   "after": [
@@ -25,6 +25,13 @@
       "type": "bool",
       "default": 1,
       "description": "START in the first hand of a turn plays no card and goes on to the field, as in the later games. Without it a full field with nothing that fuses would leave no legal play."
+    },
+    {
+      "key": "gx_phases",
+      "label": "Phases like the GX games",
+      "type": "bool",
+      "default": 1,
+      "description": "START opens a menu of the next phases: from the hand (Main Phase 1) the Battle Phase or the End Phase; from the field the Main Phase 2, to play from the hand again after attacking, or the End Phase. The CPU plays as before."
     },
     {
       "key": "draw_one",

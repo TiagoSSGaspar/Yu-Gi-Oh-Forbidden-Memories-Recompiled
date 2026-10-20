@@ -76,9 +76,12 @@ static int hand_card_api(int slot)
     return D_800E9FF0[D_8009B1D5].hand[slot] >= 0 ? D_801A7AD8[slot].card_id : 0;
 }
 static int hand_mark_api(int slot) { return slot >= HAND_SIZE ? extra_marks[slot - HAND_SIZE] : D_800EA030[slot].active_09; }
+static ExtraHandPhases registered_phases;
+static void set_phases(ExtraHandPhases fn) { registered_phases = fn; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                      pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api};
-static int limit_setting = 6, draw_one_setting = 1;
+                                      pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
+                                      set_phases};
+static int limit_setting = 6, draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
 {
@@ -87,6 +90,7 @@ static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
     if (!strcmp(key, "optional_play")) return optional_setting;
     if (!strcmp(key, "hand_limit")) return limit_setting;
     if (!strcmp(key, "draw_one")) return draw_one_setting;
+    if (!strcmp(key, "gx_phases")) return phases_setting;
     return fallback;
 }
 static int fake_applied(const MemoriesModHost *h) { (void)h; return applied_flag; }
@@ -145,6 +149,16 @@ int main(void)
     assert(registered_optional && registered_optional());
     applied_flag = 0;
     assert(!registered_optional());
+    applied_flag = 1;
+
+    /* The turn in phases, as in the GX games, while the setting is on and
+     * the mod applied. */
+    assert(registered_phases && registered_phases());
+    phases_setting = 0;
+    assert(!registered_phases());
+    phases_setting = 1;
+    applied_flag = 0;
+    assert(!registered_phases());
     applied_flag = 1;
 
     /* One card a turn after the opening; the disc's when removed. The
@@ -418,6 +432,6 @@ int main(void)
         ai_choice[0] = 13; ai_choice[6] = 2;
     }
 
-    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Treasure Trickster and the CPU's use of it passed\n");
+    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Treasure Trickster and the CPU's use of it, phases passed\n");
     return 0;
 }
