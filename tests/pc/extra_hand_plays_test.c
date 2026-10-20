@@ -271,7 +271,7 @@ static void *fake_symbol(const MemoriesModHost *h, const char *name)
     return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
 }
 /* The overlay: a 1280x960 window at the port's scale 2; the hints' boxes. */
-static struct { int x, y, w, h; } boxes[8];
+static struct { int x, y, w, h; } boxes[16];
 static int box_count;
 static void fake_overlay_size(const MemoriesModHost *h, int *width, int *height, int *scale)
 { (void)h; *width = 1280; *height = 960; *scale = 2; }
@@ -280,24 +280,44 @@ static int fake_text_width(const MemoriesModHost *h, const char *text, int scale
 static void fake_fill(const MemoriesModHost *h, int x, int y, int w, int hh, uint32_t rgb, unsigned alpha)
 {
     (void)h; (void)rgb; (void)alpha;
-    assert(box_count < 8);
+    assert(box_count < 16);
     boxes[box_count].x = x; boxes[box_count].y = y; boxes[box_count].w = w; boxes[box_count++].h = hh;
 }
-static char texts[8][64];
-static int text_count;
+static char texts[12][64];
+static int text_count, text_middle[12];
 static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const char *text, uint32_t rgb, int scale)
 {
-    (void)h; (void)x; (void)middle; (void)rgb; (void)scale;
-    assert(text_count < 8);
+    (void)h; (void)x; (void)rgb; (void)scale;
+    assert(text_count < 12);
+    text_middle[text_count] = middle;
     snprintf(texts[text_count++], sizeof texts[0], "%s", text);
 }
 /* The overlay's lines this frame, after `mod_overlay` drew them. */
 static void (*mod_overlay)(void);
 static void overlay_lines(void) { box_count = text_count = 0; mod_overlay(); }
-static int drew(const char *text)
+static int drew_at(const char *text)
 {
     int i;
-    for (i = 0; i < text_count; i++) if (!strcmp(texts[i], text)) return 1;
+    for (i = 0; i < text_count; i++) if (!strcmp(texts[i], text)) return i;
+    return -1;
+}
+static int drew(const char *text) { return drew_at(text) >= 0; }
+/* The phase menu's panel: the biggest box drawn. */
+static int menu_box(void)
+{
+    int i, best = 0;
+    for (i = 1; i < box_count; i++) if (boxes[i].w * boxes[i].h > boxes[best].w * boxes[best].h) best = i;
+    return best;
+}
+/* A box inside the panel, narrower but more than half as wide, behind the
+ * text: the bar (the frame's sides are thin). */
+static int on_bar(const char *text)
+{
+    int i, p = menu_box(), y = text_middle[drew_at(text)];
+    for (i = 0; i < box_count; i++)
+        if (i != p && boxes[i].w < boxes[p].w && boxes[i].w > boxes[p].w / 2 && boxes[i].h > 4 && boxes[i].x > boxes[p].x &&
+            boxes[i].y < y && boxes[i].y + boxes[i].h > y)
+            return 1;
     return 0;
 }
 static int optional;
@@ -1010,17 +1030,28 @@ int main(void)
         D_8009B162 = 0; step_hand();
         assert(gDuel_wSceneStateFlags == STATE_TURN_SWITCH);
 
-        /* Nothing left to play (the monster is down, monsters only in hand):
-         * the field's menu has the End Phase alone, and a Main Phase 2 play
-         * ends the turn. */
+        /* As in the GX games a phase lasts until the player leaves it: with
+         * the turn's monster down and only monsters left, a play in Main
+         * Phase 1 or 2 still brings the hand back, and the field's menu
+         * offers Main Phase 2 while the hand holds a card. Only an empty
+         * hand ends Main Phase 2 at once; the field's menu then has the End
+         * Phase alone. */
         new_turn(0, 0);
         to_hand();
         S.monsters = 1;
-        assert(Ehp_PhaseItems(1, items) == 1 && items[0] == PHASE_END);
-        S.main2 = 2;
+        assert(Ehp_PhaseItems(1, items) == 2 && items[0] == PHASE_MAIN2);
         fields = 0;
         play(0);
+        assert(gDuel_wSceneStateFlags == STATE_DRAW && S.redraw && fields == 0);
+        to_hand();
+        S.main2 = 2;
+        play(0);
+        assert(gDuel_wSceneStateFlags == STATE_DRAW && S.redraw && fields == 0);
+        to_hand();
+        for (int i = 1; i < HAND_SIZE; i++) D_800E9FF0[0].hand[i] = -1;
+        play(0);
         assert(gDuel_wSceneStateFlags == STATE_TURN_SWITCH && fields == 0);
+        assert(Ehp_PhaseItems(1, items) == 1 && items[0] == PHASE_END);
         S.main2 = 0;
     }
 
@@ -1036,13 +1067,23 @@ int main(void)
         assert(drew("Main Phase 1   START: phases") && !drew("START: play no card this turn"));
         gInput_wPad1Pressed = PAD_BUTTON_START; step_hand(); gInput_wPad1Pressed = 0;
         overlay_lines();
-        assert(text_count == 3 && !strcmp(texts[0], "Main Phase 1   START: phases"));
-        assert(!strcmp(texts[1], "> Battle Phase") && !strcmp(texts[2], "  End Phase"));
+        /* The menu: a panel in the middle of the screen, as in the GX
+         * games, the phase on top, the entry under the cursor on a bar,
+         * the buttons at its foot. */
+        assert(drew("Main Phase 1   START: phases") && drew("Main Phase 1"));
+        assert(drew("Battle Phase") && drew("End Phase") && drew("X: select   O: back"));
+        {
+            int p = menu_box(), cx = boxes[p].x + boxes[p].w / 2, cy = boxes[p].y + boxes[p].h / 2;
+            assert(cx > 600 && cx < 680 && cy > 420 && cy < 540);
+            assert(boxes[p].y < text_middle[drew_at("Battle Phase")] &&
+                   boxes[p].y + boxes[p].h > text_middle[drew_at("X: select   O: back")]);
+        }
+        assert(on_bar("Battle Phase") && !on_bar("End Phase"));
         before = hint_signature();
         gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand(); gInput_wPad1Pressed = 0;
         assert(hint_signature() != before);
         overlay_lines();
-        assert(drew("  Battle Phase") && drew("> End Phase"));
+        assert(!on_bar("Battle Phase") && on_bar("End Phase"));
         gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); gInput_wPad1Pressed = 0;
         gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
         gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand(); gInput_wPad1Pressed = 0;

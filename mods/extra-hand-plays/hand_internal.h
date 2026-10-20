@@ -69,9 +69,6 @@ void Ehp_SetLimits(ExtraHandLimits fn);
 int Ehp_Install(void);
 int Ehp_CardId(int deck_index);
 
-/* extra_hand_plays.c */
-int Ehp_PlayableLeft(void);         /* the hand holds a card the turn may still play */
-
 /* phases.c: the player's turn in phases, as in the GX games (set_phases) */
 enum { PHASE_MAIN1 = 1, PHASE_BATTLE, PHASE_MAIN2, PHASE_END };
 void Ehp_SetPhases(ExtraHandPhases fn);

@@ -62,13 +62,17 @@ the player's turn runs in phases, as in the GX games:
 | Main Phase 2 | the hand again | End Phase |
 | End Phase | the discard down to the hand limit, then the other side's turn | |
 
-- UP and DOWN move the menu's cursor, X takes the phase under it, circle
-  or START close the menu. While it is open no button reaches the game.
-- The phase and the menu show under the strip at the top, where the hints
-  are.
-- Main Phase 2 is in the field's menu only while the hand holds a card
-  the turn may still play. A play in it that leaves nothing to play ends
-  the turn: there is no second Battle Phase.
+- The menu is a panel in the middle of the screen: the phase now on top,
+  the next phases under it. UP and DOWN move its bar, X takes the phase
+  under it, circle or START close the menu. While it is open no button
+  reaches the game. The phase's name also shows under the strip at the
+  top, where the hints are.
+- A Main Phase lasts until the player leaves it through the menu: after a
+  play the hand comes back while it holds a card, even when only monsters
+  are left once the turn's monster is down (confirming one is refused).
+  Only an empty hand moves on at once: to the field from Main Phase 1, to
+  the end of the turn from Main Phase 2 (there is no second Battle Phase).
+- Main Phase 2 is in the field's menu while the hand holds a card.
 - The turn's monster plays count across both Main Phases.
 - The field closes for Main Phase 2 as it does at the end of a turn; at
   the turn switch the hand comes back through the draw instead, with no

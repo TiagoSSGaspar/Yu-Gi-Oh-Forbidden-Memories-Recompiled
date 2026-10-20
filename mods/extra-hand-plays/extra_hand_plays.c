@@ -144,7 +144,6 @@ static int playable_left(void)
             return 1;
     return 0;
 }
-int Ehp_PlayableLeft(void) { return playable_left(); }
 
 static int another_play(void)
 {
@@ -152,7 +151,9 @@ static int another_play(void)
     if (!S.pending || S.done) return 0;
     if ((sides == 1 && !human()) || (sides == 2 && human())) return 0;
     if (gDuel_wSceneStateFlags != STATE_FIELD || gDuel_bEffectState || !lp_left()) return 0;
-    return playable_left();
+    /* In phases a Main Phase lasts until the player leaves it: the hand
+     * comes back while it holds a card, playable or not. */
+    return Ehp_Phases() ? hand_count() > 0 : playable_left();
 }
 /* A bonus hand needs cards: in hand, or coming. */
 static int bonus_play(void)
@@ -578,8 +579,14 @@ static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_h
  * lines 0-23), which the port's View > Fusion helper takes: between the
  * FIELD box and the life points, above the field. */
 #define HINT_RGB 0xFFFFFF
-#define MENU_PICKED_RGB 0xFFE060   /* the phase menu's entry under its cursor */
-#define MENU_OTHER_RGB 0xC0C0C0
+/* The phase menu's panel: dark blue, a gold frame, the entry under the
+ * cursor on a blue bar. */
+#define MENU_PANEL_RGB 0x101828
+#define MENU_FRAME_RGB 0xC8A040
+#define MENU_BAR_RGB 0x2F4FA0
+#define MENU_TITLE_RGB 0xF0C860
+#define MENU_PICKED_RGB 0xFFFFFF
+#define MENU_OTHER_RGB 0xA8B0C0
 static void line(const char *text, int row, uint32_t rgb)
 {
     int width, height, scale, w, top;
@@ -635,6 +642,49 @@ static unsigned hint_signature(void)
     if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
     return shown | (unsigned)S.queued[D_8009B1D5] << 2;
 }
+/* The phase menu, as in the GX games: a panel in the middle of the screen,
+ * the phase now on top, the next phases under it with the one under the
+ * cursor on a bar, the buttons at the foot. Its text is three times the
+ * hints' size, the foot's twice. */
+static void phase_menu(int phase)
+{
+    static const char foot[] = "X: select   O: back";
+    int width, height, scale, big, small, frame, items[2], n, i, w, row, pad, gap, x, y, panel_w, panel_h, top;
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    big = 3 * scale;
+    small = 2 * scale;
+    frame = 3 * scale;
+    n = Ehp_PhaseItems(phase == PHASE_BATTLE, items);
+    w = host->text_width(host, phase_names[phase], big);
+    for (i = 0; i < n; i++)
+        if (host->text_width(host, phase_names[items[i]], big) > w) w = host->text_width(host, phase_names[items[i]], big);
+    if (host->text_width(host, foot, small) > w) w = host->text_width(host, foot, small);
+    row = 16 * big;
+    pad = 14 * scale;
+    gap = 12 * scale;
+    panel_w = w + 4 * pad;
+    panel_h = pad + row + gap + n * row + gap + 12 * small + pad;
+    x = (width - panel_w) / 2;
+    y = (height - panel_h) / 2;
+    host->fill(host, x, y, panel_w, panel_h, MENU_PANEL_RGB, 240);
+    host->fill(host, x, y, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y + panel_h - frame, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    host->fill(host, x + panel_w - frame, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    top = y + pad;
+    host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[phase], big)) / 2, top + row / 2,
+                    phase_names[phase], MENU_TITLE_RGB, big);
+    host->fill(host, x + pad, top + row + gap / 2, panel_w - 2 * pad, scale, MENU_FRAME_RGB, 160);
+    top += row + gap;
+    for (i = 0; i < n; i++, top += row) {
+        if (i + 1 == S.menu) host->fill(host, x + pad / 2, top, panel_w - pad, row, MENU_BAR_RGB, 230);
+        host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[items[i]], big)) / 2, top + row / 2,
+                        phase_names[items[i]], i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB, big);
+    }
+    host->draw_text(host, x + (panel_w - host->text_width(host, foot, small)) / 2, top + gap + 6 * small, foot,
+                    MENU_OTHER_RGB, small);
+}
 static void draw_hint(void)
 {
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
@@ -650,13 +700,7 @@ static void draw_hint(void)
     if (phase) {
         snprintf(text, sizeof text, "%s   START: phases", phase_names[phase]);
         line(text, row++, HINT_RGB);
-        if (S.menu) {
-            int items[2], n = Ehp_PhaseItems(phase == PHASE_BATTLE, items), i;
-            for (i = 0; i < n; i++) {
-                snprintf(text, sizeof text, "%s%s", i + 1 == S.menu ? "> " : "  ", phase_names[items[i]]);
-                line(text, row++, i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB);
-            }
-        }
+        if (S.menu) phase_menu(phase);
     }
     if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++, HINT_RGB);
     if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);

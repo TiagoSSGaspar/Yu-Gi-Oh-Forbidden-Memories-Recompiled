@@ -21,13 +21,13 @@ void Ehp_SetPhases(ExtraHandPhases fn) { phases = fn; }
 int Ehp_Phases(void) { return phases && phases() && human(); }
 
 /* In a hand, the Battle Phase (from Main Phase 1 only) and the End Phase;
- * on the field, Main Phase 2 while the hand holds a card the turn may still
- * play, and the End Phase. */
+ * on the field, Main Phase 2 while the hand holds a card, and the End
+ * Phase. */
 int Ehp_PhaseItems(int field, int items[2])
 {
     int n = 0;
     if (field) {
-        if (Ehp_PlayableLeft()) items[n++] = PHASE_MAIN2;
+        if (Ehp_Count(D_8009B1D5) > 0) items[n++] = PHASE_MAIN2;
     } else if (S.main2 != 2) {
         items[n++] = PHASE_BATTLE;
     }
