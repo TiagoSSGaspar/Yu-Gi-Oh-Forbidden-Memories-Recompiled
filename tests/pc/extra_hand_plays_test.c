@@ -267,6 +267,21 @@ static void *fake_symbol(const MemoriesModHost *h, const char *name)
     (void)h;
     return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
 }
+/* The overlay: a 1280x960 window at the port's scale 2; the hints' boxes. */
+static struct { int x, y, w, h; } boxes[8];
+static int box_count;
+static void fake_overlay_size(const MemoriesModHost *h, int *width, int *height, int *scale)
+{ (void)h; *width = 1280; *height = 960; *scale = 2; }
+static int fake_text_width(const MemoriesModHost *h, const char *text, int scale)
+{ (void)h; return (int)strlen(text) * 6 * scale; }
+static void fake_fill(const MemoriesModHost *h, int x, int y, int w, int hh, uint32_t rgb, unsigned alpha)
+{
+    (void)h; (void)rgb; (void)alpha;
+    assert(box_count < 8);
+    boxes[box_count].x = x; boxes[box_count].y = y; boxes[box_count].w = w; boxes[box_count++].h = hh;
+}
+static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const char *text, uint32_t rgb, int scale)
+{ (void)h; (void)x; (void)middle; (void)text; (void)rgb; (void)scale; }
 static int optional;
 static int optional_answer(void) { return optional; }
 static int draw_one(int side, int turn, int room)
@@ -344,6 +359,8 @@ int main(void)
     fake_host.register_state = fake_state;
     fake_host.provide = fake_provide;
     fake_host.symbol = fake_symbol;
+    fake_host.overlay_size = fake_overlay_size; fake_host.text_width = fake_text_width;
+    fake_host.fill = fake_fill; fake_host.draw_text = fake_draw_text;
     assert(MemoriesModInit(&fake_host, &mod));
     assert(helper_hand && helper_hand(0) == &D_800EA030[0] && helper_hand(4) == &D_800EA030[4] && !helper_hand(5));
     for (int i = 0; i < 80; i++) deck[i].id = (s16)(100 + i);     /* monsters (their stats say type 0) */
@@ -873,6 +890,21 @@ int main(void)
         assert(!S.skipping && !S.done);
         deck[2].id = 102;
     }
+
+    /* The hints sit under the strip above the FIELD box (the picture's
+     * lines 0-23), where View > Fusion helper draws, centred between the
+     * FIELD box (to x 67) and the life points (from x 248). */
+    D_8009B1D5 = 0; D_8009B360[0] = -1;
+    S.discard = 1; S.discard_left = 1;
+    box_count = 0;
+    mod.overlay();
+    assert(box_count == 2);
+    for (int i = 0; i < box_count; i++) {
+        assert(boxes[i].y >= 960 * 24 / 240);
+        assert(boxes[i].x > 1280 * 67 / 320 && boxes[i].x + boxes[i].w < 1280 * 248 / 320);
+        assert(!i || boxes[i].y >= boxes[i - 1].y + boxes[i - 1].h);
+    }
+    S.discard = 0;
 
     printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper) passed\n");
     return 0;

@@ -524,13 +524,16 @@ static int hand_mark(int slot) { return slot < 0 || slot >= EHP_SLOTS ? 0 : Ehp_
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                  pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark};
 
+/* A hint row, centred under the strip above the FIELD box (the picture's
+ * lines 0-23), which the port's View > Fusion helper takes: between the
+ * FIELD box and the life points, above the field. */
 static void line(const char *text, int row)
 {
     int width, height, scale, w, top;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
     w = host->text_width(host, text, scale);
-    top = (36 + row * 24) * scale;
+    top = height * 26 / 240 + row * 24 * scale;
     host->fill(host, (width - w) / 2 - 8 * scale, top, w + 16 * scale, 20 * scale, 0x000000, 160);
     host->draw_text(host, (width - w) / 2, top + 10 * scale, text, 0xFFFFFF, scale);
 }

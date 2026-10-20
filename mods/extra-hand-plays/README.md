@@ -16,7 +16,7 @@ after the last play.
 |---|---|
 | Monsters per turn | 1–5, default 1. Magic, trap and equip cards are not counted. |
 | Applies to | Both sides, the player only, or the CPU only. The other side plays one card a turn, as on the disc. |
-| Show skip hint | While an extra hand is up for the player, a line says that START skips it, and another says when the turn's monsters are spent. |
+| Show skip hint | While an extra hand is up for the player, a line says that START skips it, and another says when the turn's monsters are spent. The lines sit centred under the strip at the top, which View > Fusion helper takes. |
 
 ## Rules
 
