@@ -1,7 +1,7 @@
 {
   "id": "modern-rules",
   "name": "Modern rules",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "DecompRecomp",
   "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, no card lost to a fusion that does not work, and Treasure Trickster, a spell that draws two. Needs Extra hand plays.",
   "min_api": 9,
@@ -64,6 +64,7 @@
       "copy": "Sparks",
       "name": "Treasure Trickster",
       "art": "images/treasure_trickster.png",
+      "thumbnail": "images/treasure_trickster_thumb.png",
       "description": "Draw two cards from\nyour deck.",
       "card_effects_mode": "replace",
       "drops": true,

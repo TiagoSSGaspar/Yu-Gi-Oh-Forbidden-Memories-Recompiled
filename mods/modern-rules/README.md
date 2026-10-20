@@ -50,7 +50,9 @@ come on top.
   up, or set and activated later. It is won in duels and dealt to
   opponents in place of Sparks, and sold on the Password screen for 300
   StarChips (password `55144522`). Its picture is the mod's own
-  (`images/treasure_trickster.png`). Its identity in saves is still
+  (`images/treasure_trickster.png`), with a close-up of the trickster's face
+  for the small picture the hand and field show
+  (`images/treasure_trickster_thumb.png`). Its identity in saves is still
   `modern-rules:pot-of-greed:1`, the card's first name, so copies saved
   under that name stay. Without the mod's code, for example with the
   setting off, it does nothing.
