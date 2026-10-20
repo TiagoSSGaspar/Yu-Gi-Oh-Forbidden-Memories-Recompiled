@@ -1,7 +1,7 @@
 {
   "id": "modern-rules",
   "name": "Modern rules",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "DecompRecomp",
   "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, no card lost to a fusion that does not work, and Pot of Greed (draw two). Needs Extra hand plays.",
   "min_api": 9,
@@ -56,16 +56,6 @@
       "type": "bool",
       "default": 1,
       "description": "Using Pot of Greed draws two cards and brings the hand back up. Cards that do not fit in the hand wait for the next draw. The CPU uses it too."
-    },
-    {
-      "key": "test_copies",
-      "label": "Pot of Greed copies for testing",
-      "type": "int",
-      "default": 3,
-      "min": 0,
-      "max": 3,
-      "step": 1,
-      "description": "Keeps this many Pot of Greed in your trunk and deck together, so the card can be tried out. 0 turns it off. To be removed once testing is done."
     }
   ],
   "cards": [

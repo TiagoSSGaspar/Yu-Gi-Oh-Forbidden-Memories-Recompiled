@@ -22,8 +22,7 @@
  *   held to the same rule: its cards go where none is lost, or it passes.
  * - Pot of Greed, a card of this mod's manifest: using it draws two cards
  *   into a bonus hand; what does not fit waits for the next draw. The CPU
- *   uses one as soon as it holds it. While the card is being tried out, a
- *   setting keeps the player's trunk and deck at three copies. */
+ *   uses one as soon as it holds it. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -38,11 +37,8 @@
 #define D_8009B360_AS_SIDE_ARRAY
 #include "game/duel_side_state.h"
 #include "game/input.h"
-#include "game/save_data.h"
 #include "game/script_state.h"
 #include "game/sound.h"
-#include "pc/cards/cards.h"
-#include "pc/debug/cheats.h"
 #include "pc/mods/modapi.h"
 #include "unmatched.h"
 #include "../extra-hand-plays/extra_hand_plays.h"
@@ -80,8 +76,6 @@ extern unsigned char D_800EAE88[];
 #define OPENING_HAND 5
 #define HAND_MAX 10
 #define HAND_LIMIT 6
-#define TEST_COPIES_MAX 3
-#define TEST_CHECK_FRAMES 60      /* how often the trunk is looked at */
 
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
@@ -351,30 +345,11 @@ static void effect(MemoriesModEvent *event)
     if (event->b == 0 && setting("pot_of_greed", 1)) api->bonus_hand(POT_DRAWS);
 }
 
-/* For trying the card out: with a save loaded, top the player's trunk up so
- * that trunk and deck hold `test_copies` Pot of Greed between them. Not
- * while a deck screen has the trunk copied out (Cheats_ChestOnScreen), as
- * the debug menu's card gifts do. */
-static void frame(void)
-{
-    static int frames;
-    unsigned char *trunk;
-    int wanted = setting("test_copies", TEST_COPIES_MAX), id = pot(), in_deck = 0, i;
-    if (++frames < TEST_CHECK_FRAMES) return;
-    frames = 0;
-    if (wanted <= 0 || id <= 0 || !Cheats_SaveLoaded() || Cheats_ChestOnScreen()) return;
-    if (wanted > TEST_COPIES_MAX) wanted = TEST_COPIES_MAX;
-    for (i = 0; i < DECK_SIZE; i++) in_deck += gDuel_awPlayerDeck[i] == id;
-    trunk = Cards_ChestSlot(gDuel_awPlayerDeck, id);
-    if (trunk && in_deck + *trunk < wanted) *trunk = (unsigned char)(wanted - in_deck);
-}
-
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
 {
     if (from->api < 4) return 0;
     host = from;
     mod->api = 4;
-    mod->frame = frame;
     api = (const ExtraHandApi *)host->find(host, "extra-hand-plays:api");
     if (!api || api->version < EXTRA_HAND_API_VERSION) {
         host->log(host, "modern-rules: Extra hand plays %s", api ? "is too old" : "is not loaded");

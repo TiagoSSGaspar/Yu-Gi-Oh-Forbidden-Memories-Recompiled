@@ -31,18 +31,6 @@ u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
 static DuelCardPickCursor field_cursor;
 
 #define POT 800
-static void (*mod_frame)(void);
-static void frames(int n) { while (n--) mod_frame(); }
-u16 gDuel_awPlayerDeck[DECK_SIZE + 40];
-static unsigned char pot_trunk;
-static int save_loaded = 1, chest_on_screen;
-int Cheats_SaveLoaded(void) { return save_loaded; }
-int Cheats_ChestOnScreen(void) { return chest_on_screen; }
-unsigned char *Cards_ChestSlot(void *state, int id)
-{
-    assert(state == gDuel_awPlayerDeck && id == POT);
-    return &pot_trunk;
-}
 static int sounds, seen_pressed, bonus_draws, bonus_calls, applied_flag = 1;
 static ExtraHandTurnDraws registered;
 static MemoriesModCallback subscribed;
@@ -430,24 +418,6 @@ int main(void)
         ai_choice[0] = 13; ai_choice[6] = 2;
     }
 
-    /* For testing: trunk and deck together keep three Pot of Greed. */
-    mod_frame = mod.frame;
-    assert(mod_frame);
-    frames(TEST_CHECK_FRAMES);
-    assert(pot_trunk == 3);
-    gDuel_awPlayerDeck[5] = POT;                  /* one went into the deck */
-    pot_trunk = 1;
-    frames(TEST_CHECK_FRAMES);
-    assert(pot_trunk == 2);
-    pot_trunk = 0;
-    chest_on_screen = 1;                          /* Build Deck has the trunk */
-    frames(TEST_CHECK_FRAMES);
-    assert(pot_trunk == 0);
-    chest_on_screen = 0;
-    save_loaded = 0;
-    frames(TEST_CHECK_FRAMES);
-    assert(pot_trunk == 0);
-
-    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Pot of Greed and the CPU's use of it, test copies passed\n");
+    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Pot of Greed and the CPU's use of it passed\n");
     return 0;
 }
