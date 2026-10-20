@@ -259,6 +259,14 @@ static int fake_provide(const MemoriesModHost *h, const char *name, void *pointe
 {
     (void)h; assert(!strcmp(name, "api")); provided = pointer; return 1;
 }
+/* The port's View > Fusion helper, found by name (fusion_helper.h). */
+static const void *(*helper_hand)(int index);
+static void set_helper_hand(const void *(*slot)(int index)) { helper_hand = slot; }
+static void *fake_symbol(const MemoriesModHost *h, const char *name)
+{
+    (void)h;
+    return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
+}
 static int optional;
 static int optional_answer(void) { return optional; }
 static int draw_one(int side, int turn, int room)
@@ -335,7 +343,9 @@ int main(void)
     fake_host.api = 4; fake_host.setting = fake_setting; fake_host.hook = fake_hook;
     fake_host.register_state = fake_state;
     fake_host.provide = fake_provide;
+    fake_host.symbol = fake_symbol;
     assert(MemoriesModInit(&fake_host, &mod));
+    assert(helper_hand && helper_hand(0) == &D_800EA030[0] && helper_hand(4) == &D_800EA030[4] && !helper_hand(5));
     for (int i = 0; i < 80; i++) deck[i].id = (s16)(100 + i);     /* monsters (their stats say type 0) */
     step_startup = (Step)startup;
     step_draw = (Step)draw; step_resolution = (Step)resolution;
@@ -639,6 +649,7 @@ int main(void)
     assert(D_800E9FF0[0].deck_draw_cursor == 11 && Ehp_Count(0) == 6 && Ehp_Extras(0) == 1);
     assert(S.xhand[0][0] == 10 && Ehp_Record(0, 5) == 15 && D_801A7AD8[15].data == (u8 *)&deck[10]);
     assert(S.layout == 6 && S.xslot[0].object && provided->hand_slots() == 6 && provided->hand_card(5) == 110);
+    assert(helper_hand(4) == &D_800EA030[4] && helper_hand(5) == &S.xslot[0] && !helper_hand(6));
     assert(Ehp_Record(1, 7) == 2);                       /* the second side borrows the first's */
     /* The next turn packs: gaps in the five fill from past the fifth, in order. */
     D_800E9FF0[0].hand[1] = D_800E9FF0[0].hand[3] = -1;
@@ -863,6 +874,6 @@ int main(void)
         deck[2].id = 102;
     }
 
-    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia) passed\n");
+    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper) passed\n");
     return 0;
 }

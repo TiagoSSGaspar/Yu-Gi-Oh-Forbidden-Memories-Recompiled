@@ -721,9 +721,21 @@ void Ehp_HandActions(DuelSelectionRecord *side)
     }
 }
 
+/* View > Fusion helper's hand (the port's pc/cards/fusion_helper.h): every
+ * slot, the five's and those past them, in the order they are laid out. */
+static const void *helper_slot(int index)
+{
+    int count = Ehp_BigHand() ? S.layout : HAND_SIZE;
+    return index >= 0 && index < count ? (const void *)Ehp_Slot(index) : NULL;
+}
+
 int Ehp_Install(void)
 {
     const MemoriesModHost *host = ehp_host;
+    void (*set_helper_hand)(const void *(*)(int));
+    /* Looked up by name, so a port without it loads the mod all the same. */
+    *(void **)&set_helper_hand = host->symbol(host, "FusionHelper_SetHand");
+    if (set_helper_hand) set_helper_hand(helper_slot);
     return host->hook(host, (void *)func_800235C0, (void *)panel, &original_panel) &&
         host->hook(host, (void *)func_8001B780, (void *)cursor, &original_cursor) &&
         host->hook(host, (void *)func_8001B7AC, (void *)mark, &original_mark) &&

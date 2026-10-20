@@ -71,6 +71,11 @@ The disc's hand has five slots. When another mod raises the limit
   any other card counted as 1500. The game has no graveyard; a discarded
   card leaves the duel.
 - Exodia is assembled from every slot.
+- The port's View > Fusion helper reads every slot, so it finds fusions
+  with the cards past the fifth too and numbers them where each card is
+  left showing. The mod hands it the slots through the port's
+  `FusionHelper_SetHand`, looked up by name: on a port without it the mod
+  loads all the same, and the helper sees the five.
 
 ## For other mods
 
