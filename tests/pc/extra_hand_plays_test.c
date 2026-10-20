@@ -283,8 +283,23 @@ static void fake_fill(const MemoriesModHost *h, int x, int y, int w, int hh, uin
     assert(box_count < 8);
     boxes[box_count].x = x; boxes[box_count].y = y; boxes[box_count].w = w; boxes[box_count++].h = hh;
 }
+static char texts[8][64];
+static int text_count;
 static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const char *text, uint32_t rgb, int scale)
-{ (void)h; (void)x; (void)middle; (void)text; (void)rgb; (void)scale; }
+{
+    (void)h; (void)x; (void)middle; (void)rgb; (void)scale;
+    assert(text_count < 8);
+    snprintf(texts[text_count++], sizeof texts[0], "%s", text);
+}
+/* The overlay's lines this frame, after `mod_overlay` drew them. */
+static void (*mod_overlay)(void);
+static void overlay_lines(void) { box_count = text_count = 0; mod_overlay(); }
+static int drew(const char *text)
+{
+    int i;
+    for (i = 0; i < text_count; i++) if (!strcmp(texts[i], text)) return 1;
+    return 0;
+}
 static int optional;
 static int optional_answer(void) { return optional; }
 static int phases_on;
@@ -367,6 +382,7 @@ int main(void)
     fake_host.overlay_size = fake_overlay_size; fake_host.text_width = fake_text_width;
     fake_host.fill = fake_fill; fake_host.draw_text = fake_draw_text;
     assert(MemoriesModInit(&fake_host, &mod));
+    mod_overlay = mod.overlay;
     assert(helper_hand && helper_hand(0) == &D_800EA030[0] && helper_hand(4) == &D_800EA030[4] && !helper_hand(5));
     for (int i = 0; i < 80; i++) deck[i].id = (s16)(100 + i);     /* monsters (their stats say type 0) */
     step_startup = (Step)startup;
@@ -1008,6 +1024,41 @@ int main(void)
         S.main2 = 0;
     }
 
+    /* On screen, in phases: the phase and START's use, then the menu under
+     * it, the entry under the cursor marked; the old skip hint is not shown.
+     * On the field, the Battle Phase alone. */
+    {
+        unsigned before;
+        phases_on = 1;
+        new_turn(0, 0);
+        to_hand();
+        overlay_lines();
+        assert(drew("Main Phase 1   START: phases") && !drew("START: play no card this turn"));
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand(); gInput_wPad1Pressed = 0;
+        overlay_lines();
+        assert(text_count == 3 && !strcmp(texts[0], "Main Phase 1   START: phases"));
+        assert(!strcmp(texts[1], "> Battle Phase") && !strcmp(texts[2], "  End Phase"));
+        before = hint_signature();
+        gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand(); gInput_wPad1Pressed = 0;
+        assert(hint_signature() != before);
+        overlay_lines();
+        assert(drew("  Battle Phase") && drew("> End Phase"));
+        gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); gInput_wPad1Pressed = 0;
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand(); gInput_wPad1Pressed = 0;
+        D_8009B162 = 0; step_hand();
+        step_field();
+        D_8009B174 = 3 | 0x80;
+        overlay_lines();
+        assert(text_count == 1 && drew("Battle Phase   START: phases"));
+        phases_on = 0;
+        new_turn(0, 0);
+        to_hand();
+        overlay_lines();
+        assert(drew("START: play no card this turn") && !drew("Main Phase 1   START: phases"));
+        phases_on = 1;
+    }
+
     /* The hints sit under the strip above the FIELD box (the picture's
      * lines 0-23), where View > Fusion helper draws, centred between the
      * FIELD box (to x 67) and the life points (from x 248). */
@@ -1023,6 +1074,6 @@ int main(void)
     }
     S.discard = 0;
 
-    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper) passed\n");
+    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper), phases (menu, Main Phase 2, on screen) passed\n");
     return 0;
 }

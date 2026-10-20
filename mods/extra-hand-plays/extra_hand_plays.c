@@ -577,7 +577,10 @@ static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_h
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the
  * FIELD box and the life points, above the field. */
-static void line(const char *text, int row)
+#define HINT_RGB 0xFFFFFF
+#define MENU_PICKED_RGB 0xFFE060   /* the phase menu's entry under its cursor */
+#define MENU_OTHER_RGB 0xC0C0C0
+static void line(const char *text, int row, uint32_t rgb)
 {
     int width, height, scale, w, top;
     host->overlay_size(host, &width, &height, &scale);
@@ -585,7 +588,7 @@ static void line(const char *text, int row)
     w = host->text_width(host, text, scale);
     top = height * 26 / 240 + row * 24 * scale;
     host->fill(host, (width - w) / 2 - 8 * scale, top, w + 16 * scale, 20 * scale, 0x000000, 160);
-    host->draw_text(host, (width - w) / 2, top + 10 * scale, text, 0xFFFFFF, scale);
+    host->draw_text(host, (width - w) / 2, top + 10 * scale, text, rgb, scale);
 }
 static int hand_idle(void)
 {
@@ -593,34 +596,73 @@ static int hand_idle(void)
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & 0xF) == HAND_IDLE;
 }
-/* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2 up: cards
- * waiting to be drawn. The discard: bit 31, with the cards still to mark. */
+static int field_idle(void)
+{
+    return human() && (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
+        (D_8009B174 & 0xF) == FIELD_IDLE;
+}
+static const char *const phase_names[] = {"", "Main Phase 1", "Battle Phase", "Main Phase 2", "End Phase"};
+/* The phase on screen, in phases: the hand's Main Phase or the field's
+ * Battle Phase; 0 for none. */
+static int phase_shown(void)
+{
+    if (!Ehp_Phases()) return 0;
+    if (field_idle()) return PHASE_BATTLE;
+    if (hand_idle()) return S.main2 == 2 ? PHASE_MAIN2 : PHASE_MAIN1;
+    return 0;
+}
+/* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2-9: cards
+ * waiting to be drawn; bits 16-18: the phase shown; 19-20: the phase
+ * menu's cursor, 21-22 its entries, 23-25 its first. The discard: bit 31,
+ * with the cards still to mark. */
 static unsigned hint_signature(void)
 {
     unsigned shown = 0;
+    int phase = phase_shown(), items[2];
     if (S.discard && human()) return 0x80000000u | S.discard_left;
-    if (!hand_idle()) return 0;
-    if (setting("hint", 1, 0, 1) && skippable() && !S.done) shown |= 1;
+    if (phase) {
+        shown = (unsigned)phase << 16;
+        if (S.menu) {
+            int n = Ehp_PhaseItems(phase == PHASE_BATTLE, items);
+            shown |= (unsigned)S.menu << 19 | (unsigned)n << 21 | (unsigned)items[0] << 23;
+        }
+        if (phase == PHASE_BATTLE) return shown;
+    } else if (!hand_idle()) {
+        return 0;
+    } else if (setting("hint", 1, 0, 1) && skippable() && !S.done) {
+        shown |= 1;
+    }
     if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
     return shown | (unsigned)S.queued[D_8009B1D5] << 2;
 }
 static void draw_hint(void)
 {
-    unsigned shown = hint_signature();
+    unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
+    int phase = shown >> 16 & 7, row = 0;
     char text[64];
-    int row = 0;
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
         snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
-        line(text, row++);
-        line("UP: mark   X: discard the marked cards", row);
+        line(text, row++, HINT_RGB);
+        line("UP: mark   X: discard the marked cards", row, HINT_RGB);
         return;
     }
-    if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++);
-    if (shown & 2) line("Monster played: magic, trap and equip cards only", row++);
-    if (shown >> 2) {
-        snprintf(text, sizeof text, "%u card%s waiting to be drawn", shown >> 2, shown >> 2 == 1 ? "" : "s");
-        line(text, row);
+    if (phase) {
+        snprintf(text, sizeof text, "%s   START: phases", phase_names[phase]);
+        line(text, row++, HINT_RGB);
+        if (S.menu) {
+            int items[2], n = Ehp_PhaseItems(phase == PHASE_BATTLE, items), i;
+            for (i = 0; i < n; i++) {
+                snprintf(text, sizeof text, "%s%s", i + 1 == S.menu ? "> " : "  ", phase_names[items[i]]);
+                line(text, row++, i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB);
+            }
+        }
+    }
+    if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++, HINT_RGB);
+    if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);
+    if (waiting) {
+        snprintf(text, sizeof text, "%u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
+        line(text, row, HINT_RGB);
     }
 }
 

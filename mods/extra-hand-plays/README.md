@@ -50,6 +50,31 @@ after the last play.
 - End-of-duel rank statistics count every play. For example, face-down
   plays and fusions add up as they would over separate turns.
 
+## Phases
+
+When another mod asks for them (`set_phases`, below; Modern rules does),
+the player's turn runs in phases, as in the GX games:
+
+| Phase | Where | START opens a menu with |
+|---|---|---|
+| Main Phase 1 | the hand | Battle Phase, End Phase |
+| Battle Phase | the field (attacks, positions, set cards) | Main Phase 2, End Phase |
+| Main Phase 2 | the hand again | End Phase |
+| End Phase | the discard down to the hand limit, then the other side's turn | |
+
+- UP and DOWN move the menu's cursor, X takes the phase under it, circle
+  or START close the menu. While it is open no button reaches the game.
+- The phase and the menu show under the strip at the top, where the hints
+  are.
+- Main Phase 2 is in the field's menu only while the hand holds a card
+  the turn may still play. A play in it that leaves nothing to play ends
+  the turn: there is no second Battle Phase.
+- The turn's monster plays count across both Main Phases.
+- The field closes for Main Phase 2 as it does at the end of a turn; at
+  the turn switch the hand comes back through the draw instead, with no
+  card drawn.
+- The CPU plays as before.
+
 ## Hands past five
 
 The disc's hand has five slots. When another mod raises the limit
@@ -100,6 +125,8 @@ offers:
 - `hand_slots`, `hand_card(slot)` and `hand_mark(slot)` (version 4): the
   hand of the side whose turn it is, slot by slot, past the fifth too: how
   many slots it has, the card in one and the order it was marked in.
+- `set_phases` (version 5): while the function it is given says so, the
+  player's turn runs in phases (above).
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
