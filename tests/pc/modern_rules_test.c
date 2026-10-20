@@ -418,6 +418,6 @@ int main(void)
         ai_choice[0] = 13; ai_choice[6] = 2;
     }
 
-    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Pot of Greed and the CPU's use of it passed\n");
+    printf("Modern rules: optional play, turn draws, fusion guard on the hand, the field and the CPU, Treasure Trickster and the CPU's use of it passed\n");
     return 0;
 }

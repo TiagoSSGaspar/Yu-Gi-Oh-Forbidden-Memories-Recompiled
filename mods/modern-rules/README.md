@@ -17,7 +17,7 @@ come on top.
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to ten cards. Off refills the hand to five each turn, as on the disc. |
 | Hand limit at the end of a turn | 0–10, default 6. With one card drawn a turn, a side ending its turn with more cards discards down to this many: the player picks them, the CPU throws away its weakest. 0 turns the limit off. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. An equip used from the field must equip the monster the player puts it onto. |
-| Pot of Greed draws two | Using Pot of Greed draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
+| Treasure Trickster draws two | Using Treasure Trickster draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
 
 ## Rules
 
@@ -45,11 +45,15 @@ come on top.
   equip; a chain that breaks is played as far as it keeps every card. With
   no such zone it plays no card, when playing a card is optional (with that
   setting off, its own choice stands).
-- **Pot of Greed.** A Magic card, played from the hand face up, or set and
-  activated later. It is won in duels and dealt to opponents in place of
-  Sparks, and sold on the Password screen for 300 StarChips (password
-  `55144522`). Its picture is this mod's own (`images/pot_of_greed.png`).
-  Without the mod's code, for example with the setting off, it does nothing.
+- **Treasure Trickster.** The mod's own card in Pot of Greed's part from
+  the later games: a Magic card that draws two, played from the hand face
+  up, or set and activated later. It is won in duels and dealt to
+  opponents in place of Sparks, and sold on the Password screen for 300
+  StarChips (password `55144522`). Its picture is the mod's own
+  (`images/treasure_trickster.png`). Its identity in saves is still
+  `modern-rules:pot-of-greed:1`, the card's first name, so copies saved
+  under that name stay. Without the mod's code, for example with the
+  setting off, it does nothing.
 
 ## How it works
 
@@ -61,10 +65,10 @@ mod uses it in three places:
 - It sets the turn draws: 6 on a side's first draw (nothing drawn yet:
   the five and the turn's card), 1 after; and the hand limits, ten held and
   six kept.
-- It answers Pot of Greed's use, through the card-effect event, with a
+- It answers Treasure Trickster's use, through the card-effect event, with a
   bonus hand that draws two.
 - It wraps the CPU's hand decision (`AiScript_Run`). When the CPU holds a
-  Pot of Greed, its decision becomes "use the Pot of Greed, face up". The
+  Treasure Trickster, its decision becomes "use it, face up". The
   CPU decides its play again in the bonus hand that follows. The manifest
   loads this mod after AI Hard Mode, so it also wraps that mod's planner.
 

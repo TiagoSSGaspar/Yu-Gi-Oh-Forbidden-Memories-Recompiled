@@ -26,7 +26,7 @@ after the last play.
   another mod makes playing a card optional (Modern rules does), and does
   nothing while cards are marked for a fusion.
 - No cards are drawn between plays, unless another mod asks for some
-  (Modern rules' Pot of Greed). The remaining cards are moved to the left
+  (Modern rules' Treasure Trickster). The remaining cards are moved to the left
   of the hand, as the draw does at a turn start.
 - Once the turn's monsters are down, the hand comes back while it holds a
   card that is not a monster. Confirming a monster then, alone or marked

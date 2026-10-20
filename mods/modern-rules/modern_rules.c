@@ -20,9 +20,10 @@
  *   field must equip the monster the player puts it onto (or fuse with it),
  *   which the disc would throw away otherwise. The CPU's hand decision is
  *   held to the same rule: its cards go where none is lost, or it passes.
- * - Pot of Greed, a card of this mod's manifest: using it draws two cards
- *   into a bonus hand; what does not fit waits for the next draw. The CPU
- *   uses one as soon as it holds it. */
+ * - Treasure Trickster, a card of this mod's manifest in Pot of Greed's
+ *   part from the later games: using it draws two cards into a bonus hand;
+ *   what does not fit waits for the next draw. The CPU uses one as soon as
+ *   it holds it. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -71,7 +72,7 @@ extern unsigned char D_800EAE88[];
 #define AI_HAND_SLOT_FIRST 11    /* snapshot slots: 11-15 the hand, 16 up the upcoming deck */
 #define AI_ENEMY_SLOT_FIRST 56
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
-#define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry */
+#define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry; the id is the card's first name, kept for saves */
 #define POT_DRAWS 2
 #define OPENING_HAND 5
 #define HAND_MAX 10
@@ -247,7 +248,7 @@ static void field(void)
     ((void (*)(void))original_field)();
 }
 
-/* A Pot of Greed in the CPU's hand is used first, face up, on its own: 1
+/* A Treasure Trickster in the CPU's hand is used first, face up, on its own: 1
  * when its decision became that. The retail script (or AI Hard Mode)
  * decides again in the bonus hand that follows. */
 static int use_pot(void)
@@ -325,7 +326,7 @@ static void hold_cpu_to_rule(void)
     api->pass_hand();
 }
 
-/* The CPU's hand decision: a Pot of Greed first; then the fusion rule. */
+/* The CPU's hand decision: a Treasure Trickster first; then the fusion rule. */
 static s32 run(void)
 {
     s32 result = ((s32 (*)(void))original_run)();
@@ -335,7 +336,7 @@ static s32 run(void)
     return result;
 }
 
-/* Pot of Greed's effect: the card's use asks for a bonus hand that draws.
+/* Treasure Trickster's effect: the card's use asks for a bonus hand that draws.
  * Both of the use's handler calls (b 0 and 1) are taken; the per-frame
  * update (c 1) is left alone, since no retail effect was started. */
 static void effect(MemoriesModEvent *event)
