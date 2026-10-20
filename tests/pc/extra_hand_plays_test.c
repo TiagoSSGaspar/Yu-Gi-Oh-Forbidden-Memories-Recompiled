@@ -22,6 +22,9 @@
 #undef human
 #undef hand_record
 #undef lp_left
+#define human phases_human
+#include "../../mods/extra-hand-plays/phases.c"
+#undef human
 
 u16 gDuel_wSceneStateFlags;
 u16 D_8009B162;
@@ -284,6 +287,8 @@ static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const ch
 { (void)h; (void)x; (void)middle; (void)text; (void)rgb; (void)scale; }
 static int optional;
 static int optional_answer(void) { return optional; }
+static int phases_on;
+static int phases_answer(void) { return phases_on; }
 static int draw_one(int side, int turn, int room)
 {
     (void)side; (void)room;
@@ -889,6 +894,60 @@ int main(void)
         step_hand();
         assert(!S.skipping && !S.done);
         deck[2].id = 102;
+    }
+
+    /* Phases (set_phases): START in a hand opens the phase menu, which
+     * holds the hand state while open; UP/DOWN move, circle closes, X takes.
+     * Main Phase 1 goes to the Battle Phase (the field) or the End Phase
+     * (the turn switch, with no field). Off, START slides the hand away at
+     * once; the CPU never gets the menu. */
+    {
+        int items[2];
+        provided->set_hand_limits(0);
+        memset(S.xhand, -1, sizeof S.xhand);
+        S.queued[0] = S.queued[1] = 0;
+        phases_on = 1;
+        optional = 1;
+        provided->set_optional_play(optional_answer);
+        provided->set_phases(phases_answer);
+        new_turn(0, 0);
+        to_hand();
+        side = hand_record();
+        side->field_15 = 0;
+        hands = 0;
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        assert(S.menu == 1 && !S.skipping && hands == 0);
+        assert(Ehp_PhaseItems(0, items) == 2 && items[0] == PHASE_BATTLE && items[1] == PHASE_END);
+        gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand(); assert(S.menu == 2);
+        gInput_wPad1Pressed = PAD_DIRECTION_UP; step_hand(); assert(S.menu == 1);
+        gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); assert(S.menu == 0 && !S.skipping);
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand();
+        gInput_wPad1Pressed = 0;
+        assert(!S.menu && S.skipping && !S.to_end && D_8009B162 == PANEL_SLIDE_OUT && hands == 0);
+        D_8009B162 = 0; step_hand();
+        assert(gDuel_wSceneStateFlags == STATE_FIELD);
+
+        new_turn(0, 0);
+        to_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand();
+        gInput_wPad1Pressed = 0;
+        assert(S.skipping && S.to_end);
+        D_8009B162 = 0; step_hand();
+        assert(gDuel_wSceneStateFlags == STATE_TURN_SWITCH && !S.to_end);
+
+        phases_on = 0;
+        new_turn(0, 0);
+        to_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand(); gInput_wPad1Pressed = 0;
+        assert(!S.menu && S.skipping);
+        phases_on = 1;
+        new_turn(1, 1);
+        assert(!Ehp_Phases());
+        new_turn(0, 0);
+        assert(Ehp_Phases());
     }
 
     /* The hints sit under the strip above the FIELD box (the picture's

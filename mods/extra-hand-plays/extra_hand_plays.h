@@ -20,10 +20,14 @@ typedef int (*ExtraHandOptionalPlay)(void);
  * Asked whenever they are needed. */
 typedef void (*ExtraHandLimits)(int side, int *max, int *keep);
 
+/* Whether the player's turn runs in phases, as in the GX games. Asked
+ * while the player's hand or field is up. */
+typedef int (*ExtraHandPhases)(void);
+
 /* 1: the first three entries; 2: set_optional_play; 3: pass_hand; 4: the
- * hand past five cards. New entries only go at the end, so check version
- * before calling a later one. */
-#define EXTRA_HAND_API_VERSION 4
+ * hand past five cards; 5: set_phases. New entries only go at the end, so
+ * check version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 5
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -56,6 +60,14 @@ typedef struct {
     int (*hand_slots)(void);
     int (*hand_card)(int slot);
     int (*hand_mark)(int slot);
+    /* Version 5: the player's turn in phases while `fn` says so. START
+     * opens a menu of the next phases instead of ending the hand or the
+     * turn: Main Phase 1 (the hand) goes to the Battle Phase (the field) or
+     * the End Phase; the Battle Phase to Main Phase 2 (the hand again) or
+     * the End Phase; Main Phase 2 to the End Phase. The CPU plays as
+     * before. NULL goes back to START ending the hand or the turn. One mod
+     * sets it. */
+    void (*set_phases)(ExtraHandPhases fn);
 } ExtraHandApi;
 
 #endif

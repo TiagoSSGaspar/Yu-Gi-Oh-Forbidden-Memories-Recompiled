@@ -11,7 +11,7 @@
 
 #define EHP_EXTRA 5                 /* slots past the fifth: the other side's five hand records */
 #define EHP_SLOTS (HAND_SIZE + EHP_EXTRA)
-#define EHP_STATE_VERSION 4
+#define EHP_STATE_VERSION 5
 
 /* No host pointers: kept in save states (register_state). The slots' objects
  * are guest pointers, which a save state restores with the guest memory. */
@@ -34,6 +34,9 @@ typedef struct {
     u8 discard;   /* the end-of-turn discard's step (discard.c), 0 when none runs */
     u8 discard_left; /* cards still to mark for it */
     u8 focus;     /* the slot brought to the front, + 1; 0 for none */
+    u8 main2;     /* phases (phases.c): 0 Main Phase 1 or the field; 1 Main Phase 2 asked for, the field closing; 2 in Main Phase 2 */
+    u8 menu;      /* the phase menu: 0 closed, else 1 + the entry under its cursor */
+    u8 to_end;    /* the hand slides away into the End Phase, not the field */
     s8 xhand[2][EHP_EXTRA]; /* each side's cards past the fifth: combined deck indices, packed, -1 empty */
     DuelHandSlot xslot[EHP_EXTRA]; /* the side's slots past the fifth on screen, as D_800EA030 for the five */
 } EhpState;
@@ -65,6 +68,16 @@ void Ehp_HandActions(DuelSelectionRecord *side); /* the player's hand state for 
 void Ehp_SetLimits(ExtraHandLimits fn);
 int Ehp_Install(void);
 int Ehp_CardId(int deck_index);
+
+/* extra_hand_plays.c */
+int Ehp_PlayableLeft(void);         /* the hand holds a card the turn may still play */
+
+/* phases.c: the player's turn in phases, as in the GX games (set_phases) */
+enum { PHASE_MAIN1 = 1, PHASE_BATTLE, PHASE_MAIN2, PHASE_END };
+void Ehp_SetPhases(ExtraHandPhases fn);
+int Ehp_Phases(void);               /* the player's turn runs in phases now */
+int Ehp_PhaseItems(int field, int items[2]); /* the menu's entries, for the hand (0) or the field (1) */
+int Ehp_PhaseMenu(int field);       /* 0 nothing, -1 the menu holds the buttons this frame, else the phase taken */
 
 /* discard.c */
 int Ehp_Discard(void);              /* the end-of-turn discard, before the turn switch: 1 while it runs */

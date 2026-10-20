@@ -80,6 +80,7 @@ extern u8 gDuel_bQuitDialogState;
 #define STATE_STARTED 0x8000
 #define STATE_LOOKING 0x4000   /* the hand state's L2/R2 look at the field */
 #define STATE_PLACEMENT 7      /* placement, as the hand state starts it */
+#define STATE_TURN_SWITCH 0xA  /* the end of the turn: the discard, then the other side's */
 #define CPU_HAND_STEP 2        /* the CPU's hand state: its script, then the cards */
 #define AI_HAND_SLOT_FIRST 11  /* the CPU's snapshot: 11-15 the hand */
 #define REFUSED_SOUND 8        /* the hand's cancel sound */
@@ -140,6 +141,7 @@ static int playable_left(void)
             return 1;
     return 0;
 }
+int Ehp_PlayableLeft(void) { return playable_left(); }
 
 static int another_play(void)
 {
@@ -237,6 +239,7 @@ static void draw(void)
         int want;
         S.plays = S.hands = S.pending = S.skipping = S.done = S.monsters = 0;
         S.bonus = S.in_bonus = S.bonus_draws = S.custom = S.to_draw = 0;
+        S.main2 = S.menu = S.to_end = 0;
         ((void (*)(void))original_draw)();
         Ehp_SpawnExtras(HIDDEN_Y);
         /* The draw has counted the turn and packed the hand. */
@@ -346,22 +349,38 @@ static void slide_away(DuelSelectionRecord *side)
     D_8009B162 = PANEL_SLIDE_OUT;
 }
 
-/* START in an extra hand, or a pass: the field once the panel is gone. */
+/* START in an extra hand, or a pass: the field once the panel is gone --
+ * or, in phases, the End Phase when the menu took it. With phases the
+ * menu decides, and holds the hand state while it is open. */
 static int skip(DuelSelectionRecord *side)
 {
+    int item;
     if (S.skipping) {
         if (D_8009B162 == 0) {
             S.skipping = 0;
-            gDuel_wSceneStateFlags = STATE_FIELD;
+            gDuel_wSceneStateFlags = S.to_end ? STATE_TURN_SWITCH : STATE_FIELD;
+            S.to_end = 0;
         }
         return 1;
     }
     if (!skippable() || !human() || (D_8009B174 & 0xF) != HAND_IDLE || !(D_8009B174 & HAND_STEP_DONE) ||
         (gDuel_wSceneStateFlags & STATE_LOOKING) || side->field_15 != 0 || gDuel_bEffectState ||
-        gDuel_bQuitDialogState || !(gInput_wPad1Pressed & PAD_BUTTON_START))
+        gDuel_bQuitDialogState) {
+        S.menu = 0;
         return 0;
-    slide_away(side);
-    return 1;
+    }
+    if (!Ehp_Phases()) {
+        if (!(gInput_wPad1Pressed & PAD_BUTTON_START)) return 0;
+        slide_away(side);
+        return 1;
+    }
+    item = Ehp_PhaseMenu(0);
+    if (item == PHASE_BATTLE || item == PHASE_END) {
+        S.to_end = item == PHASE_END;
+        slide_away(side);
+        return 1;
+    }
+    return item < 0;
 }
 
 /* State 4, under the monster plays: hand_state() runs it. */
@@ -522,7 +541,7 @@ static int hand_card(int slot)
 }
 static int hand_mark(int slot) { return slot < 0 || slot >= EHP_SLOTS ? 0 : Ehp_Slot(slot)->active_09; }
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark};
+                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark, Ehp_SetPhases};
 
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the
