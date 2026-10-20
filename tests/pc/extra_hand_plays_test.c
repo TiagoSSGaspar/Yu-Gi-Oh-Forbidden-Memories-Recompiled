@@ -950,6 +950,64 @@ int main(void)
         assert(Ehp_Phases());
     }
 
+    /* The Battle Phase: START on the idle field opens the menu, which holds
+     * the field state. Main Phase 2 closes the field as START does (step
+     * 0xB); at the turn switch the hand comes back through the draw instead,
+     * with the turn's monsters kept, and its menu has the End Phase only.
+     * Main Phase 2 shows only while a card can be played; a play that
+     * leaves none ends the turn, with no field after it. */
+    {
+        int items[2];
+        phases_on = 1;
+        new_turn(0, 0);
+        to_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand();
+        gInput_wPad1Pressed = 0;
+        D_8009B162 = 0; step_hand();
+        assert(gDuel_wSceneStateFlags == STATE_FIELD);
+        step_field();
+        assert(gDuel_wSceneStateFlags == (STATE_FIELD | STATE_STARTED));
+        D_8009B174 = 3 | 0x80;                             /* the player walks the field */
+        fields = 0;
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_field();
+        assert(S.menu == 1 && fields == 0);
+        assert(Ehp_PhaseItems(1, items) == 2 && items[0] == PHASE_MAIN2 && items[1] == PHASE_END);
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_field();
+        gInput_wPad1Pressed = 0;
+        assert(!S.menu && S.main2 == 1 && D_8009B174 == 0xB && fields == 0);
+        step_field();
+        assert(fields == 1);                               /* the field closes itself */
+        S.monsters = 1;
+        gDuel_wSceneStateFlags = STATE_TURN_SWITCH;
+        switches = 0;
+        turn_switch();
+        assert(switches == 0 && gDuel_wSceneStateFlags == STATE_DRAW && S.redraw && S.main2 == 2);
+        resolutions = 0;
+        to_hand();
+        assert(resolutions == 0 && S.monsters == 1 && S.main2 == 2);
+        assert(Ehp_PhaseItems(0, items) == 1 && items[0] == PHASE_END);
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
+        gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand();
+        gInput_wPad1Pressed = 0;
+        assert(S.to_end);
+        D_8009B162 = 0; step_hand();
+        assert(gDuel_wSceneStateFlags == STATE_TURN_SWITCH);
+
+        /* Nothing left to play (the monster is down, monsters only in hand):
+         * the field's menu has the End Phase alone, and a Main Phase 2 play
+         * ends the turn. */
+        new_turn(0, 0);
+        to_hand();
+        S.monsters = 1;
+        assert(Ehp_PhaseItems(1, items) == 1 && items[0] == PHASE_END);
+        S.main2 = 2;
+        fields = 0;
+        play(0);
+        assert(gDuel_wSceneStateFlags == STATE_TURN_SWITCH && fields == 0);
+        S.main2 = 0;
+    }
+
     /* The hints sit under the strip above the FIELD box (the picture's
      * lines 0-23), where View > Fusion helper draws, centred between the
      * FIELD box (to x 67) and the life points (from x 248). */

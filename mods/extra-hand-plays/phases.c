@@ -8,7 +8,10 @@
 #include "hand_internal.h"
 #define D_8009B360_AS_SIDE_ARRAY
 #include "game/duel_side_state.h"
+#include "game/duel_scene_state.h"
 #include "game/input.h"
+
+#define STATE_DRAW 2
 
 static ExtraHandPhases phases;
 
@@ -55,4 +58,18 @@ int Ehp_PhaseMenu(int field)
     item = items[S.menu - 1];
     S.menu = 0;
     return item;
+}
+
+/* Main Phase 2 comes back through the field's own end of turn: its START
+ * step closes the field, and here, at the turn switch, the scene goes to
+ * the draw instead, which rebuilds the hand as after a play (S.redraw: no
+ * card drawn, nothing of the turn's undone). */
+int Ehp_MainTwo(void)
+{
+    if (S.main2 != 1) return 0;
+    S.main2 = 2;
+    S.done = S.skipping = S.pending = 0;
+    S.redraw = 1;
+    gDuel_wSceneStateFlags = STATE_DRAW;
+    return 1;
 }

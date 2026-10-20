@@ -78,6 +78,7 @@ void Ehp_SetPhases(ExtraHandPhases fn);
 int Ehp_Phases(void);               /* the player's turn runs in phases now */
 int Ehp_PhaseItems(int field, int items[2]); /* the menu's entries, for the hand (0) or the field (1) */
 int Ehp_PhaseMenu(int field);       /* 0 nothing, -1 the menu holds the buttons this frame, else the phase taken */
+int Ehp_MainTwo(void);              /* the turn switch after the field closed for Main Phase 2: 1 when the hand comes back */
 
 /* discard.c */
 int Ehp_Discard(void);              /* the end-of-turn discard, before the turn switch: 1 while it runs */

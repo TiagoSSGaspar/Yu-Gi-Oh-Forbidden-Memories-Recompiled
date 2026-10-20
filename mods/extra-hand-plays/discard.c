@@ -203,11 +203,13 @@ int Ehp_Discard(void)
     }
 }
 
-/* State 10. Before it starts: the discard; then the other side's hand
- * records go back empty, for its draw to rebuild. */
+/* State 10. Before it starts: Main Phase 2 asked for on the field
+ * (phases.c), then the discard; then the other side's hand records go back
+ * empty, for its draw to rebuild. */
 static void turn_switch(void)
 {
     if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
+        if (Ehp_MainTwo()) return;
         if (Ehp_Discard()) return;
         Ehp_ClearBorrowed(D_8009B1D5);
         S.layout = 0;

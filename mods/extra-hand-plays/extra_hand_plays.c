@@ -81,6 +81,9 @@ extern u8 gDuel_bQuitDialogState;
 #define STATE_LOOKING 0x4000   /* the hand state's L2/R2 look at the field */
 #define STATE_PLACEMENT 7      /* placement, as the hand state starts it */
 #define STATE_TURN_SWITCH 0xA  /* the end of the turn: the discard, then the other side's */
+#define FIELD_IDLE 3           /* the player's field state, walking the field */
+#define FIELD_STEP_DONE 0x80
+#define FIELD_END 0xB          /* its step for START: the field closes, then the turn switch */
 #define CPU_HAND_STEP 2        /* the CPU's hand state: its script, then the cards */
 #define AI_HAND_SLOT_FIRST 11  /* the CPU's snapshot: 11-15 the hand */
 #define REFUSED_SOUND 8        /* the hand's cancel sound */
@@ -158,7 +161,28 @@ static int bonus_play(void)
     return hand_count() > 0 || S.bonus_draws + S.queued[D_8009B1D5] > 0;
 }
 
-/* State 5. Its first step after a play goes back to the draw instead. */
+/* The field's START, in phases: the menu instead of the end of the turn,
+ * holding the field state while it is open. Either phase taken closes the
+ * field as START does; Main Phase 2 then comes back at the turn switch
+ * (Ehp_MainTwo). */
+static int field_menu(void)
+{
+    int item;
+    if ((gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) != (STATE_FIELD | STATE_STARTED) ||
+        (D_8009B174 & 0xF) != FIELD_IDLE || !(D_8009B174 & FIELD_STEP_DONE) || gDuel_bEffectState ||
+        gDuel_bQuitDialogState || !Ehp_Phases()) {
+        S.menu = 0;
+        return 0;
+    }
+    item = Ehp_PhaseMenu(1);
+    if (item <= 0) return item < 0;
+    if (item == PHASE_MAIN2) S.main2 = 1;
+    D_8009B174 = FIELD_END;
+    return 1;
+}
+
+/* State 5. Its first step after a play goes back to the draw instead; after
+ * the last play of Main Phase 2 the turn ends, with no field. */
 static void field(void)
 {
     int bonus;
@@ -180,7 +204,14 @@ static void field(void)
         gDuel_wSceneStateFlags = STATE_DRAW;
         return;
     }
-    if (!(gDuel_wSceneStateFlags & STATE_STARTED)) S.pending = 0;
+    if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
+        S.pending = 0;
+        if (S.main2 == 2) {
+            gDuel_wSceneStateFlags = STATE_TURN_SWITCH;
+            return;
+        }
+    }
+    if (field_menu()) return;
     ((void (*)(void))original_field)();
 }
 
@@ -473,7 +504,7 @@ static void hand(void)
     int before = gDuel_wSceneStateFlags;
     if ((before & (STATE_STARTED | STATE_LOOKING)) == STATE_STARTED && human() && monsters_spent() &&
         (D_8009B174 & 0xF) == HAND_IDLE && (D_8009B174 & HAND_STEP_DONE) && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
-        !gDuel_bEffectState && !gDuel_bQuitDialogState && !S.skipping && confirm_has_monster(side)) {
+        !gDuel_bEffectState && !gDuel_bQuitDialogState && !S.skipping && !S.menu && confirm_has_monster(side)) {
         SD_SEPlayFull(REFUSED_SOUND);
         gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
         hand_state();
