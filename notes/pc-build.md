@@ -3928,7 +3928,7 @@ adb install -r tmp/pc/android-x86/memories-x86.apk
   install over a debug-signed one (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`):
   uninstall the test app once first, which deletes its files (disc copy,
   saves). The
-  package is `org.yfmredecomp.game`; the activity is SDL's own
+  package is `br.com.gasparjs.yfm` in this fork (the official app's is `org.yfmredecomp.game`; the Java classes keep that package); the activity is SDL's own
   `SDLActivity`. Our own Java is each `src/pc/platform/android/*.java`,
   compiled with SDL's.
 - `--target android-armeabi-v7a` is refused: 32-bit ARM was removed.

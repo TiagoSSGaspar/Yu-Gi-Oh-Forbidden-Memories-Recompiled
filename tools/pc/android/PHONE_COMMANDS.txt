@@ -37,7 +37,7 @@ Commands for the first phone session (Git Bash, from D:/DecompRecomp-arm64)
 
 5. The APK (the phone asks to confirm the install: tell the user first):
    adb install -r tmp/pc/arm64wt-android/memories-arm64-v8a.apk
-   adb logcat -c; adb shell am start -n org.yfmredecomp.game/org.libsdl.app.SDLActivity
+   adb logcat -c; adb shell am start -n br.com.gasparjs.yfm/org.libsdl.app.SDLActivity
    adb logcat -d -s memories:* SDL:* DEBUG:*
    Look for the loader: "libgame.so loaded ... from its link address" or
    "the game's address range at 0xC0000000 is taken" (followed by "occupied by"

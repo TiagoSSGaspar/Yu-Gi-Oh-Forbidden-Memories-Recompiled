@@ -30,11 +30,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build_android_deps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PACKAGE = "org.yfmredecomp.game"
-LABEL = "YFM Re-Decomp"
+# The fork's app id, apart from the official app's (org.yfmredecomp.game), so
+# both install side by side, each with its own folder. The Java classes stay
+# in the org.yfmredecomp.game package: the manifest names them in full and
+# android.c starts them by class name, which does not depend on the app id.
+PACKAGE = "br.com.gasparjs.yfm"
+LABEL = "YFM Re-Decomp Gaspar"
 KEYSTORE = os.path.join(ROOT, "tmp", "pc", "android-deps", "debug.keystore")
 # The port's own Java, beside SDL's, one class per file in this folder (all
-# in PACKAGE): Restart (Platform_RestartGame), HdDownload (the HD pack) and
+# in org.yfmredecomp.game): Restart (Platform_RestartGame), HdDownload (the HD pack) and
 # ReportProvider, which hands the crash report to the app the player shares
 # it with (android_report.c).
 JAVA = os.path.join(ROOT, "src", "pc", "platform", "android")

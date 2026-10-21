@@ -21,7 +21,7 @@ import java.io.FileNotFoundException;
  * with SDL's by package_android.py); the game's activity is SDL's
  * SDLActivity. */
 public class ReportProvider extends ContentProvider {
-    public static final String AUTHORITY = "org.yfmredecomp.game.reports";
+    public static final String AUTHORITY = "br.com.gasparjs.yfm.reports";
 
     private File file(Uri uri) throws FileNotFoundException {
         String name = uri.getLastPathSegment();

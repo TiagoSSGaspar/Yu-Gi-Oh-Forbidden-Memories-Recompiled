@@ -61,7 +61,7 @@
 /* The release this build is ("" for a development build): build_game32.py. */
 extern const char Memories_Version[];
 
-#define AUTHORITY "org.yfmredecomp.game.reports" /* ReportProvider.AUTHORITY, the manifest's provider */
+#define AUTHORITY "br.com.gasparjs.yfm.reports" /* ReportProvider.AUTHORITY, the manifest's provider */
 #define REPORT_LIMIT (512 * 1024)            /* of the game's report read; one is a few KB */
 #define DOWNLOADS_API 29                     /* MediaStore.Downloads */
 
