@@ -79,6 +79,17 @@ static int available(int side)
     /* The retail materializer's deck encoding starts at slot 16. */
     return h < 5 ? h : h + left;
 }
+/* The cards a side's snapshot lists after its field (func_80027DF8): the
+ * held cards, then the deck left, up to the empty record that ends them.
+ * Counted, not worked out from the five and the deck: a mod that keeps a
+ * hand past five (Extra hand plays) lists the cards past the fifth between
+ * them. `side` is 0 for the side whose turn it is, 1 for the other. */
+static int listed(int side)
+{
+    int i;
+    for (i = 0; i < 40 && gDuel_aActiveCards[11 + i + side * 55].card_id; i++) {}
+    return i;
+}
 static s32 window(void)
 {
     int n, mode;
@@ -95,9 +106,7 @@ static void clear_tails(void)
 {
     int side;
     for (side = 0; side < 2; side++) {
-        int i, n = actual_hand(D_8009B1D5 ^ side);
-        int left = 40 - D_800E9FF0[D_8009B1D5 ^ side].deck_draw_cursor;
-        if (left > 0 && left <= 40) n += left;
+        int i, n = listed(side);
         for (i = 11 + n; i < 56; i++)
             memset(&gDuel_aActiveCards[i + side * 55], 0, sizeof(AiActiveCard));
     }
@@ -276,7 +285,7 @@ static void swap_selection(void)
         DuelDeckCardRecord *a, *other, tmp;
         DuelCardDisplayObject *old;
         if (slot < 16) continue;
-        if (slot >= 11 + available(side)) return;
+        if (slot >= 11 + (actual_hand(side) < 5 ? actual_hand(side) : listed(0))) return;
         index = gDuel_aActiveCards[slot].deck_index;
         if (index < side * 40 || index >= side * 40 + 40) return;
         chosen = -1;

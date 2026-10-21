@@ -14,15 +14,24 @@ use fewer cards, then DEF, then leftmost pick order.
 
 The helper follows the human-controlled hand, including the second player in
 local two-player duels. It hides during other phases, card inspection and
-quit dialogs. It searches all ordered subsets of the five hand slots; two
-copies of a card remain separate materials. It never plays cards for you.
+quit dialogs. It searches all ordered subsets of the hand's slots, up to
+five cards a line (at most five are marked); two copies of a card remain
+separate materials. It never plays cards for you.
+
+The hand is the disc's five slots, or, while a mod keeps a hand past five,
+every slot that mod hands over with `FusionHelper_SetHand`
+(`fusion_helper.h`): [Extra hand plays](../mods/extra-hand-plays/README.md)
+does, for a hand of up to ten. A ten-card search is long, so the rules'
+answer for each pair is asked once per plan, and the plan is made again only
+when the hand, the picks or the stat caps change.
 
 Text is rasterized in window pixels through FreeType, independently of the
 internal game resolution, and uses translation/mod fonts. The see-through
 panel sits in the empty strip above the FIELD box, left-aligned
 with it, so it never covers the zones or the hand. Pick-order badges sit in
 each hand card's top-right corner (the game's selection tags use the
-top-left) and follow the actual hand objects. This works
+top-left) and follow the actual hand objects; in a hand laid out
+overlapped, at the right of the part of the card left showing. This works
 with the SDL/OpenGL and SDL fallback presenters and the legacy X11 backend.
 Small windows clip long names with an ellipsis. No additional assets needed.
 
@@ -55,7 +64,11 @@ fusion database editor is a separate feature and is not included here.
 ## Verification
 
 `pc_fusion` tests the planner, selected prefixes, duplicates, failed
-combinations, both rankings, equip order/stacking/reset, terrain and clamps.
+combinations, both rankings, equip order/stacking/reset, terrain and clamps,
+and a ten-card hand with five-card lines. `pc_fusion_helper` draws the panel
+over a hand past five handed over by a mod: the best card made of cards six
+and seven, the badges on the parts left showing, the picks, the plan kept
+while nothing changes, and the five again without the mod.
 `pc_fusion_rules` exercises packed table bytes (including odd groups), added
 cards and rule overrides, compares all 320,400 unordered pairs over its
 800-card fixture through gameplay and preview, and checks that preview emits

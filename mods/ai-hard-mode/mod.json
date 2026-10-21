@@ -1,7 +1,7 @@
 {
   "id": "ai-hard-mode",
   "name": "AI Hard Mode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "DecompRecomp",
   "description": "Configurable hand planning, fusions, guardian stars, attacks, defense, spells and information advantages.",
   "min_api": 4,

@@ -71,7 +71,7 @@ static void search(const FusionRules *rules, const FusionCard *hand, FusionLine 
                    unsigned used, int defense, FusionLine *best)
 {
     int slot;
-    if (line.count == FUSION_HAND) return;
+    if (line.count == FUSION_CHAIN) return;
     for (slot = 0; slot < FUSION_HAND; slot++) {
         FusionLine next = line;
         int fused = 0;
@@ -94,7 +94,7 @@ static int begin(const FusionRules *rules, const FusionCard *hand, const int *pr
     int i;
     memset(line, 0, sizeof(*line));
     *used = 0; *fused = 0;
-    if (count < 0 || count > FUSION_HAND || (count && !prefix)) return 0;
+    if (count < 0 || count > FUSION_CHAIN || (count && !prefix)) return 0;
     for (i = 0; i < count; i++) {
         int slot = prefix[i];
         if (slot < 0 || slot >= FUSION_HAND || (*used & (1u << slot)) || !hand[slot].id) return 0;
@@ -134,6 +134,7 @@ static void toward(const FusionRules *rules, const FusionCard *hand, FusionLine 
                    FusionCard target, FusionLine *route)
 {
     int slot;
+    if (line.count == FUSION_CHAIN) return;
     for (slot = 0; slot < FUSION_HAND; slot++) {
         FusionLine next = line;
         if ((used & (1u << slot)) || !hand[slot].id) continue;
