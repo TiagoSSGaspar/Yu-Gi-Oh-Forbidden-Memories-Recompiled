@@ -157,6 +157,12 @@ A fork without the Android release key can still make the manual Mac artifact,
 but cannot complete the tag-triggered draft release, which requires every job
 to succeed.
 
+In this fork, `draft-release` also copies the HD pack of the official
+project's latest release into the draft (`tools/pc/mirror_hd_pack.py`,
+CTest `pc_mirror_hd_pack`): the asset `yfm-redecomp-hd-mod-*.zip`, checked
+against the SHA-256 and size GitHub lists, saved as
+`yfm-redecomp-hd-mod-<tag>.zip`. Without it the job fails.
+
 Two kinds of tag:
 
 - `v0.2.0-preview.1` (any hyphen, also `-rc.1`, `-beta.2`): a **preview**.

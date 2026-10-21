@@ -813,11 +813,21 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/pc/mirror_hd_pack.py
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v4
         with:
           pattern: yfm-redecomp-*
           merge-multiple: true
           path: release
+      # The fork's release carries the official HD pack (art by Unchiga and
+      # X@nder), checked against GitHub's SHA-256 (notes/pc-release.md).
+      - name: HD pack from the official release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/pc/mirror_hd_pack.py --tag "${{ github.ref_name }}" --out release
       - name: Create or update draft release
         env:
           GH_TOKEN: ${{ github.token }}

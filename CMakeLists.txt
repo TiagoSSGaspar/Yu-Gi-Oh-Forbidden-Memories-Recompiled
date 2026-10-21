@@ -1085,6 +1085,10 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_win7_imports
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_check_win7_imports.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # The copy of the official HD pack for the fork's release (no network).
+        add_test(NAME pc_mirror_hd_pack
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_mirror_hd_pack.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
         # The SDK's one-click build (tools/pc/sdk): the pins the launchers carry,
         # the embeddable Python's sys.path, and both launchers run on a fake SDK with
         # archives made in the test (nothing downloaded, no compiler started).
