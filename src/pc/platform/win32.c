@@ -13,7 +13,7 @@
  * Win32_ServiceInterrupt from the next wait, and the clock itself catches up
  * from elapsed time. */
 #ifdef _WIN32
-#define _WIN32_WINNT 0x0A00 /* GetCurrentThreadStackLimits, high-resolution timers */
+#define _WIN32_WINNT 0x0A00 /* high-resolution timers; GetCurrentThreadStackLimits is looked up (Win32_StackRange) */
 #include "pc/compat/fs.h"
 #include "win32.h"
 #include "pc/debug/crash.h"
@@ -567,10 +567,23 @@ int Win32_CurrentCallers(int skip, uintptr_t *callers, int count)
 }
 #endif
 
+/* GetCurrentThreadStackLimits is Windows 8's: looked up, so that the game
+ * still starts on Windows 7, where the thread's TIB gives the stack's top
+ * and its reservation (VirtualQuery of an address in it) its bottom. Called
+ * once, from Crash_Init on the main thread. */
 void Win32_StackRange(uintptr_t *low, uintptr_t *high)
 {
+    typedef VOID(WINAPI * StackLimits)(PULONG_PTR, PULONG_PTR);
+    StackLimits limits =
+        (StackLimits)(void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetCurrentThreadStackLimits");
     ULONG_PTR bottom, top;
-    GetCurrentThreadStackLimits(&bottom, &top);
+    if (limits) {
+        limits(&bottom, &top);
+    } else {
+        MEMORY_BASIC_INFORMATION region;
+        top = (ULONG_PTR)((NT_TIB *)NtCurrentTeb())->StackBase;
+        bottom = VirtualQuery(&region, &region, sizeof(region)) ? (ULONG_PTR)region.AllocationBase : top;
+    }
     *low = bottom;
     *high = top;
 }

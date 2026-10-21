@@ -1081,6 +1081,10 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_build_mod_toolchain
             COMMAND "${Python3_EXECUTABLE}" tools/pc/test_build_mod_toolchain.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # The Windows games import nothing Windows 7 lacks (no compiler needed).
+        add_test(NAME pc_win7_imports
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/test_check_win7_imports.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
         # The SDK's one-click build (tools/pc/sdk): the pins the launchers carry,
         # the embeddable Python's sys.path, and both launchers run on a fake SDK with
         # archives made in the test (nothing downloaded, no compiler started).

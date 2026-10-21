@@ -225,6 +225,17 @@ line for its `-windows-x64.zip`: the 64-bit game's SDK is compared with
 those (none is listed yet; until then that game is only held to refusing
 the 32-bit releases' code mods by name).
 
+## Windows 7
+
+The fork's Windows games start on Windows 7 SP1, experimentally: the only
+import Windows 8 brought, `GetCurrentThreadStackLimits`, is looked up
+(`Win32_StackRange`), and the `package` job runs
+`tools/pc/check_win7_imports.py` on the Windows archives (CTest
+`pc_win7_imports` tests the checker). Windows 7 needs the Universal C
+Runtime (Windows Update KB2999226, or the Visual C++ 2015+ redistributable).
+There, the update check and the HD download need TLS 1.2 in WinHTTP
+(KB3140245); the FM Editor (Python) does not run.
+
 ## Android signing
 
 > **WARNING: back up the release key, in two places.** Android installs an

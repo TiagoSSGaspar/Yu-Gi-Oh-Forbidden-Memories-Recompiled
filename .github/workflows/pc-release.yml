@@ -133,6 +133,11 @@ jobs:
           $GUEST_IR_ARGS
       - name: Test archive structure
         run: python tools/pc/test_package.py --archives dist $([ "$GUEST_IR_ARGS" = --no-guest-ir ] && echo --no-guest-ir)
+      # The Windows games still start on Windows 7 (notes/pc-release.md,
+      # "Windows 7"): no import newer than it, in either game or SDL3.dll.
+      - name: Windows 7 imports
+        if: matrix.system == 'windows'
+        run: python tools/pc/check_win7_imports.py dist/yfm-redecomp-*-windows*.zip
       # What a modder does with the SDK alone: unpack it and build a bundled
       # code mod for Android with its own llvm-mingw clang and guest pass (no
       # NDK, no checkout's pass). The IR from clang (*.raw.ll) and from the
