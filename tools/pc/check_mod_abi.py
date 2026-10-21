@@ -49,7 +49,7 @@ in two of them took each other's frames and folders when they shared one."""
 import argparse, concurrent.futures, glob, hashlib, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-REPOSITORY = "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"   # src/pc/platform/update_check.c
+REPOSITORY = "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"   # the official releases' mods (the fork's update_check.c names the fork)
 CACHE = os.path.join(ROOT, "tmp/pc/mod-compat")
 LIST = os.path.join(ROOT, "tools/pc/mod_compat.txt")
 DOWNLOADS = f"https://github.com/{REPOSITORY}/releases/download"

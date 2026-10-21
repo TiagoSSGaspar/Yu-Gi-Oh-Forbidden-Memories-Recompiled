@@ -21,7 +21,7 @@
  * the tag it was built for), or "" for a development build. */
 extern const char Memories_Version[];
 
-#define REPOSITORY "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"
+#define REPOSITORY "TiagoSSGaspar/Yu-Gi-Oh-Forbidden-Memories-Recompiled" /* the fork's releases */
 #define RELEASES_API "https://api.github.com/repos/" REPOSITORY "/releases?per_page=30"
 #define RELEASES_PAGE "https://github.com/" REPOSITORY "/releases"
 #define CHECK_SECONDS 20

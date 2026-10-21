@@ -32,7 +32,7 @@
 
 #define HD_PACK_ID "forbidden-memories-hd"
 #define HD_PACK_PREFIX "yfm-redecomp-hd-mod-"
-#define HD_PACK_REPOSITORY "Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled"
+#define HD_PACK_REPOSITORY "TiagoSSGaspar/Yu-Gi-Oh-Forbidden-Memories-Recompiled" /* the fork's releases carry the official pack (mirror_hd_pack.py) */
 #define HD_PACK_LATEST "https://api.github.com/repos/" HD_PACK_REPOSITORY "/releases/latest"
 /* In the installed mod's folder: the release tag it came from. Its
  * mod.json says "version": "1.0" in every release (hd_assets_pack.py). */

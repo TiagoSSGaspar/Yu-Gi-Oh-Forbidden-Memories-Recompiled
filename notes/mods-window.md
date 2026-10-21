@@ -211,8 +211,10 @@ deletes.
 only `sdl.c` under `SDL_PLATFORM_ANDROID` calls, so no desktop has the
 button) is in the top bar, left of Save (the footer is Import's and the
 message's). It downloads the HD pack of the latest release
-(`yfm-redecomp-hd-mod-<tag>.zip` on GitHub) and installs it as Import mod...
-installs a `.zip`. Nothing is contacted until it is tapped.
+(`yfm-redecomp-hd-mod-<tag>.zip` on GitHub) — in this fork, the fork's
+latest release, which carries a copy of the official pack
+(tools/pc/mirror_hd_pack.py) and installs it as Import mod... installs a
+`.zip`. Nothing is contacted until it is tapped.
 
 - **Asking first**: a tap asks GitHub's API for `/releases/latest` (drafts
   and pre-releases are never "latest", so a preview's pack is not offered)

@@ -84,11 +84,14 @@ touch the network:
 For testing the notice end to end:
 
 - `MEMORIES_UPDATE_URL` names another release list (the same JSON as
-  `https://api.github.com/repos/Unchiga/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases`),
+  `https://api.github.com/repos/TiagoSSGaspar/Yu-Gi-Oh-Forbidden-Memories-Recompiled/releases`),
   for example one a local `python3 -m http.server` serves;
 - `MEMORIES_UPDATE_CURRENT` pretends the running version is another one;
 - `MEMORIES_USER_DIR` keeps `updates/skip.txt` and settings away from the
   player's own.
+
+This fork's builds ask the fork's releases (REPOSITORY in
+update_check.c), not the official project's.
 
 Keys drive the notice from `MEMORIES_SDL_SCRIPT`: Left/Right move the focus
 (it starts on the last button), Return presses it, Escape presses the last.
