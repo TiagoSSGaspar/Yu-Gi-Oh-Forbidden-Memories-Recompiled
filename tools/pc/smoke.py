@@ -22,6 +22,16 @@ WINDOWS_EXECUTABLE = ROOT / "tmp/pc/win32/memories-pc.exe"  # build_game32.py --
 WINE_PREFIX = ROOT / "tmp/pc/wine-prefix"
 DEFAULT_BUILD = ROOT / "tmp/pc/cmake-test"
 FIXTURES = ROOT / "tests/pc/smoke"
+# What the fork turns on by default (mods/*/mod.json), off for every case:
+# the cases were recorded with the official defaults, and one that needs
+# any of these on sets it in its own "settings", which win.
+FORK_DEFAULTS_OFF = {
+    "mod.extra-hand-plays": 0,
+    "mod.modern-rules": 0,
+    "mod.3d-monsters.attack": 0,
+    "mod.3d-monsters.summon": 0,
+    "mod.3d-monsters.board": 0,
+}
 # Each run's frames, settings and user folders go in a folder of its own,
 # tmp/pc/smoke/run-XXXXXXXX, kept when a case failed and removed when all
 # passed: worktrees share tmp/ (a junction to the main checkout's), and two
@@ -157,7 +167,8 @@ def run_cases(command: list[str], extra: dict[str, str], fixtures: list[Path], o
         user.mkdir()
         # A case may set some of the player's settings ("aspect=2" for
         # widescreen, "mod.3d-monsters=1"); everything else is the defaults.
-        settings.write_text("".join(f"{key}={value}\n" for key, value in case.get("settings", {}).items()),
+        settings.write_text("".join(f"{key}={value}\n" for key, value in
+                                    {**FORK_DEFAULTS_OFF, **case.get("settings", {})}.items()),
                             encoding="utf-8")
         print(f"smoke: {name} (frame {case['frame']})", flush=True)
         expected = case.get("expect_output")

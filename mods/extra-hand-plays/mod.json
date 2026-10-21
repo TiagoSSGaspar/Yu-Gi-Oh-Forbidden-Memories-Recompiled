@@ -7,7 +7,7 @@
   "min_api": 4,
   "game": "slus_01411",
   "library": "extra-hand-plays",
-  "enabled": false,
+  "enabled": true,
   "after": [
     "ai-hard-mode"
   ],

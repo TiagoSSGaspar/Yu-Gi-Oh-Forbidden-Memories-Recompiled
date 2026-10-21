@@ -602,7 +602,8 @@ def run_mods(tag, release, executable, build):
             for mod in wanted:
                 shutil.copytree(os.path.join(source, mod), os.path.join(folder, "mods", mod))
             with open(os.path.join(folder, "settings.txt"), "w") as handle:
-                handle.writelines(f"{key}={value}\n" for key, value in case["settings"].items())
+                from smoke import FORK_DEFAULTS_OFF   # the fork's defaults are off here too: the baseline predates them
+                handle.writelines(f"{key}={value}\n" for key, value in {**FORK_DEFAULTS_OFF, **case["settings"]}.items())
             frame = os.path.join(folder, "frame.ppm")
             subprocess.run(command, cwd=ROOT, capture_output=True, timeout=300, env={**game_environment(
                 os.path.join(folder, "settings.txt"), os.path.join(folder, "user"), os.path.join(folder, "mods"),
