@@ -239,7 +239,7 @@ import Windows 8 brought, `GetCurrentThreadStackLimits`, is looked up
 `tools/pc/check_win7_imports.py` on the Windows archives (CTest
 `pc_win7_imports` tests the checker). Windows 7 needs the Universal C
 Runtime (Windows Update KB2999226, or the Visual C++ 2015+ redistributable).
-There, the update check and the HD download need TLS 1.2 in WinHTTP
+There, the update check needs TLS 1.2 in WinHTTP
 (KB3140245); the FM Editor (Python) does not run.
 
 ## Android signing
@@ -454,7 +454,7 @@ build's own rewrite of `config/pc/guest_addresses.txt` does not count. With no t
 `aapt2 dump badging <apk>` (build-tools) shows both:
 
 ```text
-package: name='org.yfmredecomp.game' versionCode='30041' versionName='0.3.0-preview.1' ...
+package: name='br.com.gasparjs.yfm' versionCode='30041' versionName='0.3.0-preview.1' ...
 ```
 
 ### Test APKs signed with the debug key
@@ -464,14 +464,14 @@ An APK built without the release key (every local
 with a debug key. Android refuses to install the release APK over it:
 
 ```text
-adb: failed to install yfm-redecomp-v0.3.0-android-arm64.apk: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package org.yfmredecomp.game signatures do not match newer version; ignoring!]
+adb: failed to install yfm-redecomp-v0.3.0-android-arm64.apk: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package br.com.gasparjs.yfm signatures do not match newer version; ignoring!]
 ```
 
 Uninstall the test app once before the first release APK (`adb uninstall
-org.yfmredecomp.game`, or long-press the icon, then Uninstall). Uninstalling
-deletes the app's folder, `Android/data/org.yfmredecomp.game/files/`. It
+br.com.gasparjs.yfm`, or long-press the icon, then Uninstall). Uninstalling
+deletes the app's folder, `Android/data/br.com.gasparjs.yfm/files/`. It
 holds the copied disc image, the saves and the settings. Copy it out first if
-they matter (`adb pull /sdcard/Android/data/org.yfmredecomp.game/files`).
+they matter (`adb pull /sdcard/Android/data/br.com.gasparjs.yfm/files`).
 From then on each release installs over the last.
 
 ## Local commands

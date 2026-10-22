@@ -1685,7 +1685,8 @@ opponent's first attack and the player's quick and arena attacks after the
 `duel-3d-monsters` smoke input, frame by frame against the same frames with
 `MEMORIES_MOD_3D_MONSTERS_BATTLE=0`.
 
-**The attack.** The setting `attack` is a choice: off (the default), on the
+**The attack.** The setting `attack` is a choice: off (the official default; on the field
+in this fork), on the
 attack cards (the 1 the setting stored when it was a bool on or off), on the
 field, or both (one bit each). On the attack cards, with `battle` on, the
 two monsters fight on the big cards instead of standing there. The
@@ -2853,7 +2854,9 @@ The smoke runner clears other `MEMORIES_*` switches (except a caller-supplied
 `MEMORIES_DISC`) and gives each case its own settings file and a new user
 folder (`<case>.user` in the run's folder, so the player's memory cards take no part),
 no gamepad and no audio device. A case's `settings` fill that file
-(`"aspect": 2`, `"mod.3d-monsters": 1`). It still requires the private disc
+(`"aspect": 2`, `"mod.3d-monsters": 1`). Cases run with this fork's
+changed defaults pinned off (`FORK_DEFAULTS_OFF`); one that needs Modern
+rules, Extra hand plays or the 3D attack, summon or board sets it itself. It still requires the private disc
 image and the native build prerequisites described above. Each boot gets
 120 s; `MEMORIES_SMOKE_TIMEOUT=<seconds>` raises it where the headless game
 runs slower.
@@ -3919,8 +3922,8 @@ adb install -r tmp/pc/android-x86/memories-x86.apk
   `MEMORIES_ANDROID_KEYSTORE` and its password set, with that release key.
   It prints the signer's certificate (DN, SHA-256) and verifies the APK
   (`apksigner verify`).
-  The variables, the release key (held by Unchiga, in the repository's
-  secrets; releases are signed only by CI) and `package.py android-arm64`
+  The variables, the release key (this fork's own, in the fork's secrets;
+  Unchiga's for the official app; releases are signed only by CI) and `package.py android-arm64`
   (`dist/yfm-redecomp-<version>-android-arm64.apk`, release key only) are
   in [PC release](pc-release.md), "Android signing". `versionCode` and
   `versionName` come from the build's version (pc-release.md, "Version":
@@ -3942,7 +3945,8 @@ one is checked where it is (`SLUS_014.11` on a raw image, as `game_files.c`
 checks) before anything is copied, and a file that is not the disc gets the
 desktop's "Unable to use this ROM" and the welcome box again. A good image
 is copied into the app's external files folder, `game/rpg-yfm.bin` under
-`/sdcard/Android/data/org.yfmredecomp.game/files/`, since the right to read
+`/sdcard/Android/data/org.yfmredecomp.game/files/` (this fork's app:
+`br.com.gasparjs.yfm`), since the right to read
 a picked document does not outlast the app, and is remembered as on the
 desktop. A box shows the check and then the copy, "Copying the disc image
 into the game's folder: N of 493 MB" over a bar (`DiscPicker.progress`,
@@ -4047,7 +4051,7 @@ can also be pushed straight into the game folder:
 
 ```sh
 adb root
-F=/data/media/0/Android/data/org.yfmredecomp.game/files
+F=/data/media/0/Android/data/org.yfmredecomp.game/files   # fork app: br.com.gasparjs.yfm
 adb shell mkdir -p $F/game && adb push rpg-yfm.bin $F/game/
 adb shell chown -R "$(adb shell stat -c %U $F)":ext_data_rw $F/game
 adb shell chcon -R "$(adb shell ls -dZ $F/reports | cut -d' ' -f1)" $F/game   # the app's SELinux categories
@@ -4105,7 +4109,8 @@ it), a `content://` URI (the disc image the player picked, whose URI names
 their folders and file) becomes `content://<removed>`, and "started" loses
 its time zone. The report's own facts stay (settings, mods, GPU, CPU, the
 start time without its zone). Nothing of the saves, the settings file or
-the disc. The authority `org.yfmredecomp.game.reports` is spelled in the
+the disc. The authority is `br.com.gasparjs.yfm.reports` in this fork (the official
+app's is `org.yfmredecomp.game.reports`), spelled in the
 manifest, `ReportProvider.java` and `android_report.c`;
 `package_android.py` stops if one differs.
 

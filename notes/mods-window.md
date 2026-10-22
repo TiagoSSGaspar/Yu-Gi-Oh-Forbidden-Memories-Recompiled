@@ -74,7 +74,8 @@ follows the finger. Search and the profile name show the on-screen keyboard
 (its Enter ends the typing); Back is Escape. There is no Open mods folder
 (an app has no folder window to open; `Platform_OpenFolder` fails on
 Android): the player's mods go in `mods/` in the app's files folder
-(`Android/data/org.yfmredecomp.game/files`), and **Import mod...** (in the
+(`Android/data/org.yfmredecomp.game/files`; this fork's app:
+`Android/data/br.com.gasparjs.yfm/files`), and **Import mod...** (in the
 footer left of Close, on the list's page) puts one there from its `.zip`,
 below. Apply & restart starts the app again in a new process. The game is
 paused while the panel shows.
@@ -213,8 +214,8 @@ button) is in the top bar, left of Save (the footer is Import's and the
 message's). It downloads the HD pack of the latest release
 (`yfm-redecomp-hd-mod-<tag>.zip` on GitHub) — in this fork, the fork's
 latest release, which carries a copy of the official pack
-(tools/pc/mirror_hd_pack.py) and installs it as Import mod... installs a
-`.zip`. Nothing is contacted until it is tapped.
+(tools/pc/mirror_hd_pack.py). The game installs it the way Import mod...
+installs a `.zip`. Nothing is contacted until it is tapped.
 
 - **Asking first**: a tap asks GitHub's API for `/releases/latest` (drafts
   and pre-releases are never "latest", so a preview's pack is not offered)

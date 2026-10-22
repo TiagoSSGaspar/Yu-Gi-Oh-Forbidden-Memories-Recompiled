@@ -134,7 +134,8 @@ jobs:
       - name: Test archive structure
         run: python tools/pc/test_package.py --archives dist $([ "$GUEST_IR_ARGS" = --no-guest-ir ] && echo --no-guest-ir)
       # The Windows games still start on Windows 7 (notes/pc-release.md,
-      # "Windows 7"): no import newer than it, in either game or SDL3.dll.
+      # "Windows 7"): no .exe or .dll in the Windows archives imports
+      # anything newer than it.
       - name: Windows 7 imports
         if: matrix.system == 'windows'
         run: python tools/pc/check_win7_imports.py dist/yfm-redecomp-*-windows*.zip

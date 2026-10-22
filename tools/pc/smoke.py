@@ -166,7 +166,8 @@ def run_cases(command: list[str], extra: dict[str, str], fixtures: list[Path], o
         user = output / f"{name}.user"
         user.mkdir()
         # A case may set some of the player's settings ("aspect=2" for
-        # widescreen, "mod.3d-monsters=1"); everything else is the defaults.
+        # widescreen, "mod.3d-monsters=1"); the fork's changed defaults are pinned off
+        # (FORK_DEFAULTS_OFF) and everything else is the defaults.
         settings.write_text("".join(f"{key}={value}\n" for key, value in
                                     {**FORK_DEFAULTS_OFF, **case.get("settings", {})}.items()),
                             encoding="utf-8")

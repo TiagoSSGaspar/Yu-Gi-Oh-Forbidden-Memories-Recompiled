@@ -56,7 +56,10 @@
    "jp_buttons": "0",
    "card_browse": "0",
    "language": "0",
-   "confirm_quit": "1"
+   "confirm_quit": "1",
+   "mod.3d-monsters.attack": "0",
+   "mod.3d-monsters.summon": "0",
+   "mod.3d-monsters.board": "0"
   },
   "mods": [
    "3d-monsters",
