@@ -1881,6 +1881,7 @@ static void sync_banks(void)
     }
     for (bank = 1; bank < SOFT_GPU_BANKS; bank++) {
         const uint16_t *pixels;
+        int fresh;
         if (!bank_used[bank]) continue;
         bank_used[bank] = 0;
         pixels = SoftGpu_BankPixels(bank);
@@ -1896,8 +1897,9 @@ static void sync_banks(void)
                           GL_RED_INTEGER, GL_UNSIGNED_SHORT, NULL);
             gl_ActiveTexture(GL_TEXTURE0);
         }
-        if (!bank_copy[bank]) bank_copy[bank] = malloc(sizeof(uint16_t) * SOFT_GPU_WIDTH * SOFT_GPU_HEIGHT);
-        if (bank_copy[bank] && !memcmp(bank_copy[bank], pixels, sizeof(uint16_t) * SOFT_GPU_WIDTH * SOFT_GPU_HEIGHT)) {
+        fresh = !bank_copy[bank];   /* a layer never uploaded goes up whatever the copy's bytes */
+        if (fresh) bank_copy[bank] = malloc(sizeof(uint16_t) * SOFT_GPU_WIDTH * SOFT_GPU_HEIGHT);
+        if (!fresh && bank_copy[bank] && !memcmp(bank_copy[bank], pixels, sizeof(uint16_t) * SOFT_GPU_WIDTH * SOFT_GPU_HEIGHT)) {
             continue;
         }
         if (bank_copy[bank]) memcpy(bank_copy[bank], pixels, sizeof(uint16_t) * SOFT_GPU_WIDTH * SOFT_GPU_HEIGHT);
