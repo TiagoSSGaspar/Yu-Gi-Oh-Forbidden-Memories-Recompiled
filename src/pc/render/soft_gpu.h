@@ -29,7 +29,15 @@ const uint16_t *SoftGpu_Vram(void);
  * monsters keep their 256x256 texture block at once, which the console's one
  * megabyte could never do; src/pc/mods uses them. A bank is VRAM-shaped, so
  * a primitive's page, window and palette coordinates mean the same in it.
- * Returns NULL if the bank cannot be allocated. */
+ * Returns NULL if the bank cannot be allocated.
+ *
+ * Who writes which, so two never share a place: 1-12 the 3D Monsters mod
+ * (a cached card's art and its model's textures, field_art.c and
+ * field_models.c; bank 1 also its Card art glow, at x 0x100); 13 the card
+ * frames (card_layout_art.c); 14 the star, attribute and type icons and the
+ * duel UI's pictures (duel_ui.c), at places of their own; 15 the added
+ * glyphs (glyphs.h); 17 and 18 a bigger battle model's own texture pages,
+ * slot 0's and slot 1's (battle_models.c). */
 #define SOFT_GPU_BANKS 32
 /* A polygon's page word's bank bits for `bank` (0-31). */
 #define SOFT_GPU_BANK_TPAGE(bank) ((((unsigned)(bank) & 15u) << 11) | (((unsigned)(bank) >> 4 & 1u) << 10))
