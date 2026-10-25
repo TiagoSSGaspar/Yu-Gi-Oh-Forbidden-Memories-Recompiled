@@ -426,6 +426,8 @@ if(BUILD_TESTING)
         target_include_directories(memories_mips_varargs_test PRIVATE src)
         target_compile_definitions(memories_mips_varargs_test PRIVATE MEMORIES_PC _LANGUAGE_C LANGUAGE_C)
         target_compile_options(memories_mips_varargs_test PRIVATE -Wall)
+        # clock_gettime (mips.c's trace): winpthread's on MinGW
+        target_link_libraries(memories_mips_varargs_test PRIVATE Threads::Threads)
         set_source_files_properties(src/game/func_80058838.c PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing")
         if(NOT WIN32)
             target_compile_options(memories_mips_varargs_test PRIVATE -m32)
