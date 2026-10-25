@@ -333,7 +333,7 @@ static void delay(State *s, uint32_t pc)
 static struct {
     unsigned calls, instructions, us;
 } frame_cost, window_cost;
-static unsigned worst_instructions, worst_us, region_instructions[4], depth;
+static unsigned worst_instructions, worst_us, region_instructions[4], depth, nested_steps;
 static struct {
     uint32_t identifier;
     unsigned instructions, calls;
@@ -403,20 +403,28 @@ int Memories_MipsTry(uint32_t address, const uint32_t *args, unsigned count, uin
 {
     struct timespec t0, t1;
     uint32_t identifier = attributed;
-    int traced = depth == 0 && Log_Enabled(LOG_FRAMES), done;
+    unsigned steps;
+    int done;
     attributed = 0;
-    if (!traced) return interpret(address, args, count, result);
+    if (depth) {   /* inside a traced run: its instructions are the outermost's, as its time is */
+        try_steps = 0;
+        done = interpret(address, args, count, result);
+        nested_steps += try_steps;
+        return done;
+    }
+    if (!Log_Enabled(LOG_FRAMES)) return interpret(address, args, count, result);
     clock_gettime(CLOCK_MONOTONIC, &t0);
     depth++;
-    try_steps = 0;
+    try_steps = nested_steps = 0;
     done = interpret(address, args, count, result);
     depth--;
     clock_gettime(CLOCK_MONOTONIC, &t1);
+    steps = try_steps + nested_steps;
     frame_cost.calls++;
-    frame_cost.instructions += try_steps;
+    frame_cost.instructions += steps;
     frame_cost.us += (unsigned)((t1.tv_sec - t0.tv_sec) * 1000000 + (t1.tv_nsec - t0.tv_nsec) / 1000);
-    region_instructions[region_of(address)] += try_steps;
-    if (identifier) count_module(identifier, try_steps);
+    region_instructions[region_of(address)] += steps;
+    if (identifier) count_module(identifier, steps);
     return done;
 }
 
