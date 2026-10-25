@@ -1349,9 +1349,16 @@ texture pack's two maps whenever they changed); and `present phases`
 (sdl.c: the events and menu, the picture's copy into the window's texture,
 and the swap, which waits while the GPU is behind or, with vsync, for the
 display; and the texture pack's PNGs read on the main thread, which the
-frame they are read in waits for). A long swap is the GPU (the internal
-resolution, anti-aliasing, widescreen); a long game is the CPU, which the
-internal resolution does not change.
+frame they are read in waits for); and `interpreter:` (mips.c: the share
+of the game's time spent interpreting MIPS, mostly the battle models'
+control modules: calls, instructions and microseconds a frame and the
+worst frame's, the instructions by where they ran, slot A's and slot B's
+modules, other overlay code, the credits, and the modules that took the
+most, by their identifier word; outermost runs only). A long swap is the
+GPU (the internal resolution, anti-aliasing, widescreen); a long game is
+the CPU, which the internal resolution does not change. A 3D battle on
+Windows x64 interprets one call a frame, some 10,000 instructions, about
+0.1 ms (Dark Magician's variant module).
 
 **Software OpenGL on Wayland.** The 32-bit build on an NVIDIA Wayland
 desktop gets Mesa's `llvmpipe` through EGL (there is no 32-bit NVIDIA EGL
