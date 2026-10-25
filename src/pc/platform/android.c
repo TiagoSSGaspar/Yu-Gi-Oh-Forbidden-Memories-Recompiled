@@ -1927,7 +1927,7 @@ int Memories_AndroidMain(int argc, char **argv)
                      "Close the game and open it again. If this comes back:\n"
                      "- restart the phone;\n"
                      "- if a file manager shows the folder Android/data/org.yfmredecomp.game, delete it and open "
-                     "the game again (the saves in it go with it: a file manager can copy them out first);\n"
+                     "the game again (the saves in it go with it: copy them out first if you can);\n"
                      "- if you never played, Settings > Apps > the game > Storage > Clear storage;\n"
                      "- last, uninstall the game and install it again (this too removes the saves; a game of the "
                      "same name signed by someone else must go first).\n\n(%s)", why);
