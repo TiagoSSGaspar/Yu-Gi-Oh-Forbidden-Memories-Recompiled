@@ -4016,13 +4016,24 @@ a box with more than three buttons, or a build without the class, gets SDL's.
 comes before this game's code is there.
 
 The external files folder has to be there before the game starts:
-`Memories_AndroidMain` makes it, asking again for up to 10 s while it
-cannot (while the shared storage is not mounted Java's `getExternalFilesDir`
-gives no folder, `adb shell sm unmount "emulated;0"` shows it; just as it
-mounts, Java may give the folder while mkdir here says "File exists" and
-stat may not see it yet), and otherwise says "The game could not use
-its storage folder right now. Close the game and open it again." and quits,
-unless the internal `environment.txt` names a `MEMORIES_USER_DIR` (testing).
+`Memories_AndroidMain` makes it, asking Java's `getExternalFilesDir` again
+(through JNI: `SDL_GetAndroidExternalStoragePath` keeps its first answer)
+for up to 10 s while it cannot (while the shared storage is not mounted
+Java gives no folder, `adb shell sm unmount "emulated;0"` shows it; just as
+it mounts, Java may give the folder while mkdir here says "File exists" and
+stat may not see it yet). Under scoped storage (Android 11 on) the app
+cannot make its `Android/data/<package>` folder itself: the system makes
+it, and puts its owner right, when Java asks (a folder a file manager made
+there first, even with no access for the app, is the app's after the first
+ask on Android 15); when it cannot, Java gives no folder, as while the
+storage is not mounted. Otherwise it says "The game could not use its storage
+folder", what a player can try (restart the phone, delete a leftover
+`Android/data/org.yfmredecomp.game`, clear the app's storage, reinstall;
+the message says that deleting the folder and reinstalling remove the saves),
+and what is there of the folder (each of `files`, the package folder and
+`Android/data`: there with its owner and mode, or stat's reason; the
+Android version and the app's user), and quits, unless the internal
+`environment.txt` names a `MEMORIES_USER_DIR` (testing).
 Android has no fallback folder (the desktop's `./saves`, which on Android is
 no folder the app can write): the disc image and the saves would be split
 between two places. A copy of the picked image that cannot make `game/`
