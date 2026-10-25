@@ -106,8 +106,9 @@ static int tunable(const char *key, int fallback)
 #define SECTOR 2048
 #define ART_SECTORS 7
 
-/* Where the art's pixels and its CLUT sit inside the private bank: any two
- * places that do not overlap, since nothing else ever reads this bank. */
+/* Where the art's pixels and its CLUT sit inside the card's bank: any two
+ * places that do not overlap each other, nor the model's textures
+ * (field_models.c) or, in bank 1, the glow (GLOW_PIXELS_X below). */
 #define PIXELS_X 0
 #define PIXELS_Y 0
 #define CLUT_X 0
