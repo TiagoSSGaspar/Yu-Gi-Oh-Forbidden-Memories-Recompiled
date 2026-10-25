@@ -758,8 +758,11 @@ page word has any of bits 10-14 set (the texture bank, which the game puts
 there itself), is refused by the check and the model fights as its `base`. The upper row's last 16
 lines hold the slot's palettes, which the game tints as it draws: leave
 them unused in an upper page. A picture or palette the model data carries
-(a type-2 unit) must lie in the slot's own block (x 0 to 255 after the move,
-y 256 to 511; palettes y 248 to 255) or it is not uploaded, and refused.
+(a type-2 unit) must lie in the slot's own block (a picture at x 640 to 895
+as authored, which the game moves to the slot's 256 columns, and y 256 to
+511; a palette in rows 248 to 255 once moved) or it is not uploaded, and
+refused. The check holds every bigger model to these pages and blocks,
+with texture pages of its own or without.
 
 The slot then draws from a texture bank of its own (17 for slot 0, 18 for
 slot 1; `src/pc/render/soft_gpu.h`): the record's block and palettes as the
