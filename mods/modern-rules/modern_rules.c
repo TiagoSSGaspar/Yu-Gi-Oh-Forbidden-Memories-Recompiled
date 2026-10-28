@@ -7,9 +7,9 @@
  * - One card a turn: the turn draws are 1, or the opening five and the
  *   turn's card on a side's first draw. The side that goes first is dealt
  *   its five before the duel's first turn, which has no draw; the other
- *   side's first draw is its five and one. The hand holds up to ten, and a
- *   side ending its turn with more than the hand limit (six) discards down
- *   to it.
+ *   side's first draw is its five and one. The hand holds up to ten, with
+ *   no limit at the end of a turn (the Battle City's six is for a mod of
+ *   its own, as is its Pot of Greed).
  * - No card lost to a fusion: while the player confirms two or more marked
  *   cards, or puts cards onto one of their monsters, the chain they make is
  *   checked step by step as placement plays it (Fusion_Step in
@@ -19,11 +19,7 @@
  *   replaced by one that does not fuse with it. An equip used from the
  *   field must equip the monster the player puts it onto (or fuse with it),
  *   which the disc would throw away otherwise. The CPU's hand decision is
- *   held to the same rule: its cards go where none is lost, or it passes.
- * - Treasure Trickster, a card of this mod's manifest in Pot of Greed's
- *   part from the later games: using it draws two cards into a bonus hand;
- *   what does not fit waits for the next draw. The CPU uses one as soon as
- *   it holds it. */
+ *   held to the same rule: its cards go where none is lost, or it passes. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -72,26 +68,16 @@ extern unsigned char D_800EAE88[];
 #define AI_HAND_SLOT_FIRST 11    /* snapshot slots: 11-15 the hand, 16 up the upcoming deck */
 #define AI_ENEMY_SLOT_FIRST 56
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
-#define POT_IDENTITY "modern-rules:pot-of-greed:1"   /* mod:id:n, the first card of the entry; the id is the card's first name, kept for saves */
-#define POT_DRAWS 2
 #define OPENING_HAND 5
 #define HAND_MAX 10
-#define HAND_LIMIT 6
 
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
 static void *original_hand, *original_run, *original_field;
-static int pot_card;
 
 static int setting(const char *key, int fallback)
 {
     return host->setting(host, key, fallback);
-}
-/* Asked again until it answers: the card tables are built after Init. */
-static int pot(void)
-{
-    if (pot_card <= 0) pot_card = host->card_id(host, POT_IDENTITY);
-    return pot_card;
 }
 /* The hand of the side whose turn it is, slot by slot: every slot through
  * Extra hand plays (version 4), the five on the disc's otherwise. */
@@ -122,13 +108,13 @@ static int turn_draws(int side, int turn, int room)
     return api->version >= 4 ? OPENING_HAND + 1 : room;
 }
 
-/* Up to ten cards in hand, kept to the hand limit at the end of a turn. */
+/* Up to ten cards in hand, and no limit at the end of a turn. */
 static void hand_limits(int side, int *max, int *keep)
 {
     (void)side;
     if (!draw_one()) return;
     *max = HAND_MAX;
-    *keep = setting("hand_limit", HAND_LIMIT);
+    *keep = 0;
 }
 
 /* Playing a card is optional: with a full field and nothing that fuses, a
@@ -137,7 +123,7 @@ static int optional_play(void)
 {
     return host->applied(host) && setting("optional_play", 1);
 }
-/* The player's turn in phases, as in the GX games (Extra hand plays'
+/* The player's turn in phases (Extra hand plays'
  * set_phases): START opens a menu of the next phases, and Main Phase 2
  * brings the hand back after the field. */
 static int gx_phases(void)
@@ -255,27 +241,6 @@ static void field(void)
     ((void (*)(void))original_field)();
 }
 
-/* A Treasure Trickster in the CPU's hand is used first, face up, on its own: 1
- * when its decision became that. The retail script (or AI Hard Mode)
- * decides again in the bonus hand that follows. */
-static int use_pot(void)
-{
-    int slot, kept = 0, id = pot();
-    if (id <= 0 || !setting("pot_of_greed", 1)) return 0;
-    /* The CPU's snapshot numbers the cards in hand from slot 11, packed:
-     * the five, then those past the fifth. */
-    for (slot = 0; slot < (api->version >= 4 ? 2 * HAND_SIZE : HAND_SIZE); slot++) {
-        if (!hand_card(slot)) continue;
-        if (hand_card(slot) == id) {
-            memset(D_800EAE88, 0, AI_SELECTION_SIZE);
-            D_800EAE88[0] = (unsigned char)(AI_HAND_SLOT_FIRST + kept);
-            return 1;
-        }
-        kept++;
-    }
-    return 0;
-}
-
 /* Whether `ids`, going down in order after `first` (a monster they go onto,
  * or 0), play through without throwing one away. An equip alone needs a
  * monster to go onto. */
@@ -333,24 +298,14 @@ static void hold_cpu_to_rule(void)
     api->pass_hand();
 }
 
-/* The CPU's hand decision: a Treasure Trickster first; then the fusion rule. */
+/* The CPU's hand decision, held to the fusion rule. */
 static s32 run(void)
 {
     s32 result = ((s32 (*)(void))original_run)();
     if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return result;
-    if (!use_pot() && setting("fusion_guard", 1)) hold_cpu_to_rule();
+    if (setting("fusion_guard", 1)) hold_cpu_to_rule();
     return result;
-}
-
-/* Treasure Trickster's effect: the card's use asks for a bonus hand that draws.
- * Both of the use's handler calls (b 0 and 1) are taken; the per-frame
- * update (c 1) is left alone, since no retail effect was started. */
-static void effect(MemoriesModEvent *event)
-{
-    if (event->phase != MEMORIES_BEFORE || event->c != 0 || event->a <= 0 || event->a != pot()) return;
-    event->handled = 1;
-    if (event->b == 0 && setting("pot_of_greed", 1)) api->bonus_hand(POT_DRAWS);
 }
 
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
@@ -367,8 +322,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     if (api->version >= 2) api->set_optional_play(optional_play);
     if (api->version >= 4) api->set_hand_limits(hand_limits);
     if (api->version >= 5) api->set_phases(gx_phases);
-    return host->subscribe(host, MEMORIES_EVENT_EFFECT, 0, effect) &&
-        host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
+    return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run);
 }

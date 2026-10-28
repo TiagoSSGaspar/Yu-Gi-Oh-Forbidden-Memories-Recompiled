@@ -1,9 +1,9 @@
 {
   "id": "modern-rules",
   "name": "Duelist Kingdom rules",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "DecompRecomp",
-  "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, turn phases with a Main Phase 2 as in the GX games, no card lost to a fusion that does not work, and Treasure Trickster, a spell that draws two. Needs Extra hand plays.",
+  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to ten, turn phases with a second Main Phase, and no card lost to a fusion that does not work. Needs Extra hand plays.",
   "min_api": 9,
   "game": "slus_01411",
   "library": "modern-rules",
@@ -24,11 +24,11 @@
       "label": "Playing a card is optional",
       "type": "bool",
       "default": 1,
-      "description": "START in the first hand of a turn plays no card and goes on to the field, as in the later games. Without it a full field with nothing that fuses would leave no legal play."
+      "description": "START in the first hand of a turn plays no card and goes on to the field, as in the anime. Without it a full field with nothing that fuses would leave no legal play."
     },
     {
       "key": "gx_phases",
-      "label": "Phases like the GX games",
+      "label": "Turn phases",
       "type": "bool",
       "default": 1,
       "description": "START opens a menu of the next phases: from the hand (Main Phase 1) the Battle Phase or the End Phase; from the field the Main Phase 2, to play from the hand again after attacking, or the End Phase. The CPU plays as before."
@@ -41,47 +41,11 @@
       "description": "Each side opens with five cards, then draws one a turn (none on the first turn of the side that goes first). The hand holds up to ten. Off refills the hand to five each turn, as on the disc."
     },
     {
-      "key": "hand_limit",
-      "label": "Hand limit at the end of a turn",
-      "type": "int",
-      "default": 6,
-      "min": 0,
-      "max": 10,
-      "step": 1,
-      "description": "With one card drawn a turn: a side ending its turn with more cards discards down to this many. The player picks them; the CPU throws away its weakest. 0 turns the limit off."
-    },
-    {
       "key": "fusion_guard",
       "label": "Keep cards a fusion cannot use",
       "type": "bool",
       "default": 1,
       "description": "Cards put onto a monster must fuse with it or equip it, and marked cards must all fuse or equip in that order, so no card is thrown away. The player's confirm is refused; the CPU plays elsewhere, or no card."
-    },
-    {
-      "key": "pot_of_greed",
-      "label": "Treasure Trickster draws two",
-      "type": "bool",
-      "default": 1,
-      "description": "Using Treasure Trickster draws two cards and brings the hand back up. Cards that do not fit in the hand wait for the next draw. The CPU uses it too."
     }
-  ],
-  "cards": [
-    {
-      "id": "pot-of-greed",
-      "copy": "Sparks",
-      "name": "Treasure Trickster",
-      "art": "images/treasure_trickster.png",
-      "thumbnail": "images/treasure_trickster_thumb.png",
-      "description": "Draw two cards from\nyour deck.",
-      "card_effects_mode": "replace",
-      "drops": true,
-      "opponents": true,
-      "password": "55144522"
-    }
-  ],
-  "passwords": {
-    "modern-rules:pot-of-greed:1": {
-      "starchips": 300
-    }
-  }
+  ]
 }
