@@ -270,9 +270,17 @@ static void *fake_symbol(const MemoriesModHost *h, const char *name)
     (void)h;
     return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
 }
-/* The host's clock, which the hand-full notice runs by. */
+/* The host's clock, which the hand-full notice runs by: held still while
+ * the notice is checked, then a notice's length on at every reading, so a
+ * later full hand's notice is gone by the time the overlay is drawn. */
 static uint64_t fake_clock;
-static uint64_t fake_now_us(const MemoriesModHost *h) { (void)h; return fake_clock; }
+static int clock_runs;
+static uint64_t fake_now_us(const MemoriesModHost *h)
+{
+    (void)h;
+    if (clock_runs) fake_clock += 4000000;
+    return fake_clock;
+}
 /* The overlay: a 1280x960 window at the port's scale 2; the hints' boxes. */
 static struct { int x, y, w, h; } boxes[16];
 static int box_count;
@@ -603,8 +611,7 @@ int main(void)
     assert(drew_at("Hand full (5 cards)") >= 0);
     fake_clock += FULL_NOTICE_US;
     assert(!(hint_signature() & 1u << 26));
-    fake_clock = 0;
-    full_notice_until = 0;
+    clock_runs = 1;
 
     /* A bonus hand (a draw-two card used from the hand): it draws the two and
      * the waiting card as far as there is room, and is not counted as a play. */
