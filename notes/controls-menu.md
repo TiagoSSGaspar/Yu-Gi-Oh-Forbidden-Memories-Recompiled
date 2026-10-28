@@ -277,9 +277,12 @@ tools/pc/preview_controls.sh
 
 ## Controllers SDL has no mapping for
 
-`sdl.c` loads, after SDL's built-in list, SDL_GameControllerDB and this port's own
-lines (both embedded from `src/pc/assets/`, see its README), then
-`gamecontrollerdb.txt` from the user folder. A joystick still unmapped gets a generic
+`sdl.c` keeps SDL's built-in list and takes from SDL_GameControllerDB only the
+lines for controllers SDL has no mapping of its own for: SDL's own wins, so a pad
+mapped before the DB was added keeps its buttons (SDL's lines for Nintendo-layout
+pads are positional, the DB's are not). This port's own lines, then
+`gamecontrollerdb.txt` from the user folder, load after it and override (both lists
+embedded from `src/pc/assets/`, see its README). A joystick still unmapped gets a generic
 mapping (`gamepad_mapping.c`: buttons in order, hat 0 as the d-pad, first axes as
 the sticks) so it is listed and can be rebound here. `MEMORIES_TRACE=input` logs the
 counts and every generic mapping made.

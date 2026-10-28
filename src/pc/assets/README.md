@@ -32,7 +32,10 @@ small PS1 symbols are drawn separately, without modifying the saved PNG.
 `gamecontrollerdb.txt` is [SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB)
 (zlib licence) at commit `22a98f6339abf4b6ca6cb061443a70e4f7ab252d`; `gamecontrollerdb_extra.txt`
 holds this port's own lines (sent upstream when confirmed). Both are embedded in
-`gamecontrollerdb_txt.h`, which `sdl.c` loads after SDL's built-in list; a
+`gamecontrollerdb_txt.h`, the DB split by its `platform:` field so a build carries only
+its own system's lines (Windows, Mac OS X, Linux, Android). The DB only fills gaps:
+`sdl.c` adds a line of it only for a controller SDL's built-in list has no mapping for,
+so SDL's own mapping wins. This port's lines load after it and override, and a
 `gamecontrollerdb.txt` in the user folder loads last and wins. To update, fetch the file
 at a newer commit, change the commit here and regenerate:
 

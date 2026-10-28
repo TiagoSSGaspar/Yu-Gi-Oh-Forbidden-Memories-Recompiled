@@ -37,8 +37,8 @@
 #include "touch_pad.h"
 #include "touch_pad_art.h"
 #include "gamepad_mapping.h"
-#include "../assets/gamecontrollerdb_txt.h"
 #include <SDL3/SDL.h>
+#include "../assets/gamecontrollerdb_txt.h" /* after SDL.h: its SDL_PLATFORM_* pick the list */
 /* Android: SDL reaches Java (JNI) for events and joysticks, message boxes,
  * the clipboard, URLs, the cursor, the window's mode and audio devices,
  * and the runtime (ART) refuses a call from a native stack it does not
@@ -1131,17 +1131,50 @@ static void open_gamepad(SDL_JoystickID id)
             return;
         }
 }
-/* SDL's built-in mappings, then SDL_GameControllerDB and this port's own
- * lines (src/pc/assets), then the player's gamecontrollerdb.txt in the user
- * folder: a later line for the same controller wins. */
+/* SDL's built-in mappings, with SDL_GameControllerDB (src/pc/assets) only
+ * for the controllers SDL has none for: SDL's own wins, as a pad mapped
+ * before the DB was here keeps its mapping (SDL's lines for Nintendo-layout
+ * pads are positional, the DB's are not). Then this port's own lines, then
+ * the player's gamecontrollerdb.txt in the user folder: a later line for
+ * the same controller wins. */
 static void load_mappings(void)
 {
     char path[1024];
     struct stat st;
-    int db = SDL_AddGamepadMappingsFromIO(SDL_IOFromConstMem(gamecontrollerdb_txt, sizeof(gamecontrollerdb_txt) - 1), true);
+    int db = 0, known = 0;
+    /* Every line is asked about before any is added, so a DB line is never
+     * taken as known for another DB line (SDL also matches a GUID without
+     * its version or CRC). */
+    char *gaps = SDL_malloc(sizeof(gamecontrollerdb_platform_txt));
+    size_t gaps_len = 0;
+    for (const char *at = gamecontrollerdb_platform_txt, *end; gaps && *at; at = *end ? end + 1 : end) {
+        size_t guid_len = strcspn(at, ",\n");
+        end = strchr(at, '\n');
+        if (!end)
+            end = at + strlen(at);
+        /* The GUID read the way SDL reads a line's, the special "xinput"
+         * one too, and asked as SDL would map that controller. */
+        if (guid_len == 32 || (guid_len == 6 && !SDL_strncasecmp(at, "xinput", 6))) {
+            char guid[33], *mapping;
+            memcpy(guid, at, guid_len);
+            guid[guid_len] = 0;
+            if ((mapping = SDL_GetGamepadMappingForGUID(SDL_StringToGUID(guid)))) {
+                SDL_free(mapping);
+                known++;
+                continue;
+            }
+        }
+        memcpy(gaps + gaps_len, at, (size_t)(end - at));
+        gaps_len += (size_t)(end - at);
+        gaps[gaps_len++] = '\n';
+    }
+    if (gaps && gaps_len)
+        db = SDL_AddGamepadMappingsFromIO(SDL_IOFromConstMem(gaps, gaps_len), true);
+    SDL_free(gaps);
     int extra = SDL_AddGamepadMappingsFromIO(
         SDL_IOFromConstMem(gamecontrollerdb_extra_txt, sizeof(gamecontrollerdb_extra_txt) - 1), true);
-    LOG(LOG_INPUT, "controller mappings: %d from SDL_GameControllerDB, %d of our own", db, extra);
+    LOG(LOG_INPUT, "controller mappings: %d from SDL_GameControllerDB (%d already known to SDL)", db, known);
+    LOG(LOG_INPUT, "controller mappings: %d of our own", extra);
     snprintf(path, sizeof(path), "%s/gamecontrollerdb.txt", Paths_UserDir());
     if (stat(path, &st) == 0)
         LOG(LOG_INPUT, "controller mappings: %d from %s", SDL_AddGamepadMappingsFromFile(path), path);
