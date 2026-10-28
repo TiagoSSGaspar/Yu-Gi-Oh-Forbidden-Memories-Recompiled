@@ -1,0 +1,4 @@
+# Mappings this port adds to SDL_GameControllerDB (same format). Loaded after it.
+# GameSir G3s over USB on macOS (HID 05ac:033d, reported as Apple's vendor):
+# the buttons SDL's own Windows line names, the axes in IOKit's order.
+0300bdfbac0500003d03000004010000,GameSir G3s,a:b0,b:b1,x:b3,y:b4,back:b10,start:b11,leftshoulder:b6,rightshoulder:b7,lefttrigger:b8,righttrigger:b9,leftstick:b13,rightstick:b14,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a2,righty:a3,platform:Mac OS X,

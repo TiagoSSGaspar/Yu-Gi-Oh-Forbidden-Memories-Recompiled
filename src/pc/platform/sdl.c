@@ -36,6 +36,8 @@
 #include "save_icon.h"
 #include "touch_pad.h"
 #include "touch_pad_art.h"
+#include "gamepad_mapping.h"
+#include "../assets/gamecontrollerdb_txt.h"
 #include <SDL3/SDL.h>
 /* Android: SDL reaches Java (JNI) for events and joysticks, message boxes,
  * the clipboard, URLs, the cursor, the window's mode and audio devices,
@@ -1129,10 +1131,56 @@ static void open_gamepad(SDL_JoystickID id)
             return;
         }
 }
+/* SDL's built-in mappings, then SDL_GameControllerDB and this port's own
+ * lines (src/pc/assets), then the player's gamecontrollerdb.txt in the user
+ * folder: a later line for the same controller wins. */
+static void load_mappings(void)
+{
+    char path[1024];
+    struct stat st;
+    int db = SDL_AddGamepadMappingsFromIO(SDL_IOFromConstMem(gamecontrollerdb_txt, sizeof(gamecontrollerdb_txt) - 1), true);
+    int extra = SDL_AddGamepadMappingsFromIO(
+        SDL_IOFromConstMem(gamecontrollerdb_extra_txt, sizeof(gamecontrollerdb_extra_txt) - 1), true);
+    LOG(LOG_INPUT, "controller mappings: %d from SDL_GameControllerDB, %d of our own", db, extra);
+    snprintf(path, sizeof(path), "%s/gamecontrollerdb.txt", Paths_UserDir());
+    if (stat(path, &st) == 0)
+        LOG(LOG_INPUT, "controller mappings: %d from %s", SDL_AddGamepadMappingsFromFile(path), path);
+}
+/* A joystick no list maps gets a generic mapping (gamepad_mapping.c), so it
+ * is offered as a controller at all; its bindings are the Controls window's. */
+static void map_joysticks(void)
+{
+    /* Each joystick is looked at once a session, not on every scan. */
+    static SDL_JoystickID seen[64];
+    static int seen_count;
+    int count = 0;
+    SDL_JoystickID *ids = SDL_GetJoysticks(&count);
+    for (int i = 0; ids && i < count; i++) {
+        char guid[33], line[1024];
+        SDL_Joystick *j;
+        int k = 0;
+        while (k < seen_count && seen[k] != ids[i])
+            k++;
+        if (k < seen_count || SDL_IsGamepad(ids[i]))
+            continue;
+        if (seen_count < (int)(sizeof(seen) / sizeof(seen[0])))
+            seen[seen_count++] = ids[i];
+        if (!(j = SDL_OpenJoystick(ids[i])))
+            continue;
+        SDL_GUIDToString(SDL_GetJoystickGUID(j), guid, sizeof(guid));
+        if (GamepadMapping_Fallback(line, sizeof(line), guid, SDL_GetJoystickName(j), SDL_GetNumJoystickButtons(j),
+                                    SDL_GetNumJoystickHats(j), SDL_GetNumJoystickAxes(j)) &&
+            SDL_AddGamepadMapping(line) >= 0)
+            LOG(LOG_INPUT, "controller %u has no mapping; generic: %s", (unsigned)ids[i], line);
+        SDL_CloseJoystick(j);
+    }
+    SDL_free(ids);
+}
 static void scan_gamepads(void)
 {
     int count=0;SDL_JoystickID *ids;
     if(getenv("MEMORIES_NO_GAMEPAD"))return;
+    map_joysticks();
     ids=SDL_GetGamepads(&count);
     for(int i=0;ids && i<count;i++)open_gamepad(ids[i]);
     SDL_free(ids);
@@ -2494,12 +2542,20 @@ int Platform_Open(const char *title)
      * cursor/DPI scale from the rest of the desktop. SDL_VIDEODRIVER remains
      * available for diagnostics and compatibility overrides. */
     block_signals(&previous);
+#ifdef SDL_PLATFORM_MACOS
+    /* With it on, SDL leaves to Apple's GameController every pad Apple says
+     * it supports, and Apple then never makes one for some (a GameSir G3s
+     * over USB): the pad is gone. IOKit reads them all. The environment's
+     * SDL_JOYSTICK_MFI still wins. */
+    SDL_SetHint(SDL_HINT_JOYSTICK_MFI, "0");
+#endif
     SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0"); /* pump asks first */
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD | SDL_INIT_AUDIO)) {
         restore_signals(&previous);
         fprintf(stderr, "memories-pc: SDL: %s; set MEMORIES_HEADLESS=1 to run without a window\n", SDL_GetError());
         return -1;
     }
+    load_mappings();
     SDL_AddEventWatch(app_event, NULL);
     create_window(title);
     /* A software GL renderer cannot present a scaled 4K frame in the 4 ms a

@@ -26,3 +26,16 @@ particular working directory. Both the host tests and the native 32-bit build
 need libpng development headers/libraries for their target architecture.
 Button hit regions in `controls_window.c` follow the artwork; live highlights and
 small PS1 symbols are drawn separately, without modifying the saved PNG.
+
+# Controller mappings
+
+`gamecontrollerdb.txt` is [SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB)
+(zlib licence) at commit `22a98f6339abf4b6ca6cb061443a70e4f7ab252d`; `gamecontrollerdb_extra.txt`
+holds this port's own lines (sent upstream when confirmed). Both are embedded in
+`gamecontrollerdb_txt.h`, which `sdl.c` loads after SDL's built-in list; a
+`gamecontrollerdb.txt` in the user folder loads last and wins. To update, fetch the file
+at a newer commit, change the commit here and regenerate:
+
+```sh
+python3 tools/pc/embed_gamecontrollerdb.py
+```
