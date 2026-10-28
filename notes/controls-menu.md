@@ -283,12 +283,12 @@ mapped before the DB was added keeps its buttons (SDL's lines for Nintendo-layou
 pads are positional, the DB's are not). This port's own lines, then
 `gamecontrollerdb.txt` from the user folder, load after it and override (both lists
 embedded from `src/pc/assets/`, see its README). A joystick still unmapped gets a generic
-mapping (`gamepad_mapping.c`: buttons in order, hat 0 as the d-pad, first axes as
-the sticks) so it is listed and can be rebound here; one SDL types as a wheel, flight
-stick, throttle, guitar, drum kit or dance pad gets none. A device on a generic mapping
-takes an automatic port only when no real controller is free, and gives that port up
-to a real one connected later (`controls_runtime.c`, `resolve`). `MEMORIES_TRACE=input`
-logs the counts and every generic mapping made.
+mapping (`gamepad_mapping.c`: buttons in order, hat 0 as the d-pad, axes 0-1 as the
+left stick, 2-3 as the right) so it is listed and can be rebound here; one SDL types
+as a wheel, flight stick, throttle, guitar, drum kit or dance pad gets none. A device
+on a generic mapping takes an automatic port only when no real controller is free,
+and gives that port up to a real one connected later (`controls_runtime.c`,
+`resolve`). `MEMORIES_TRACE=input` logs the counts and every generic mapping made.
 
 On macOS the MFi driver is off (`SDL_HINT_JOYSTICK_MFI=0`; the environment's
 `SDL_JOYSTICK_MFI` wins): with it SDL hands Apple's GameController every pad Apple
@@ -299,4 +299,6 @@ field is read unsigned over the field, which is what the G3s sends.
 
 An axis or trigger that holds one reading from the moment input was gated, for
 half a second, is taken as stuck: it no longer holds the gate and reads as rest
-until it next comes back to rest (`controls_runtime.c`, `STUCK_US`).
+until it next comes back to rest (`controls_runtime.c`, `STUCK_US`). An axis that
+only reaches a stuck reading after the gate has already lifted is not caught: it
+reads as held until it moves back.
