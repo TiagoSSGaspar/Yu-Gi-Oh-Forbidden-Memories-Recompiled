@@ -7,6 +7,8 @@ from pathlib import Path, PurePosixPath
 import tarfile
 import zipfile
 
+ROOT = Path(__file__).resolve().parents[2]
+
 # build_mod.py's targets: each has its export list in every SDK.
 TARGETS = ("i386", "x86_64-windows", "aarch64-translated")
 
@@ -184,7 +186,9 @@ def check(path, guest_ir_wanted=True):
     if not wide:
         assert shipped["sdk/exports.txt"] == shipped["sdk/exports.i386.txt"], "exports.txt is not the i386 list"
     languages = {f"languages/{name}.txt" for name in ("en-eu", "fr", "de", "it", "es")}
-    assert {name for name in contents if name.startswith("languages/")} == languages, "languages/ needs the five packs"
+    languages |= {f"languages/ui/{path.name}" for path in (ROOT / "languages/ui").glob("*.json")}  # ui_text.h
+    assert {name for name in contents if name.startswith("languages/")} == languages, \
+        "languages/ needs the five packs and the port's own words (languages/ui)"
     assert {name for name in contents if name.startswith("game/")} == {"game/README.txt"}
     assert not any(name.startswith(("saves/", "reports/", "tmp/", "mods/assets-hd/")) or
                    name in {"disc-path.txt", "settings.ini", "controls.ini"} or
