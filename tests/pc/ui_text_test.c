@@ -1,6 +1,7 @@
 /* The port's own words in the player's language (src/pc/platform/ui_text.h):
  * languages/ui/<language>.json beside the program, the English wherever
  * the catalog has nothing or is broken. */
+#define _POSIX_C_SOURCE 200809L
 #include "pc/platform/ui_text.h"
 #include <assert.h>
 #include <stdio.h>
