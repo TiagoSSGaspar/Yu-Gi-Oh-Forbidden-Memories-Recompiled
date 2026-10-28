@@ -144,6 +144,9 @@ void ControlsRuntime_Reconcile(void)
             memset(stuck_axis[p], 0, sizeof(stuck_axis[p]));
             memset(stuck_trigger[p], 0, sizeof(stuck_trigger[p]));
             gate = 1;
+            /* The new device's readings are taken from now, even with the
+             * gate already armed (a pad connected while a window is open). */
+            gate_seen = 0;
         }
 }
 static ControlsDeviceProfile *profile(ControlsConfig *cfg, int p, int create)
@@ -227,6 +230,8 @@ void ControlsRuntime_Gate(void)
     sigfillset(&all);
     sigprocmask(SIG_BLOCK, &all, &previous);
     gate = 1;
+    /* Re-armed while still armed, the readings are taken anew too. */
+    gate_seen = 0;
     keyboard_bits = pad_bits[0] = pad_bits[1] = 0;
     memset(evaluators, 0, sizeof(evaluators));
     sigprocmask(SIG_SETMASK, &previous, NULL);

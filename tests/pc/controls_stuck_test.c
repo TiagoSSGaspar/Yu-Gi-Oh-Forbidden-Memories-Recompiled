@@ -80,6 +80,52 @@ int main(void)
     ControlsRuntime_Update();
     assert(!ControlsRuntime_Blocked());
     assert(!ControlsRuntime_Pad(0));
+    d->snapshot.trigger[CTRL_TRIGGER_LEFT] = 0;
+    ControlsRuntime_Update();
+    /* A pad connected while the Controls window is open, its stick resting
+     * full left: the readings are taken anew for it and when the window
+     * closes, so the gate still lifts. */
+    ControlsRuntime_Block(1);
+    ControlsRuntime_Update();
+    ControllerDevice *late = ControlsRuntime_Device(1);
+    late->connected = 1;
+    strcpy(late->identity, "test:late");
+    late->threshold = 1.0f / 3;
+    late->snapshot.axis[CTRL_AXIS_LEFT_X] = -1.0f;
+    ControlsRuntime_Update();
+    ControlsRuntime_Block(0);
+    ControlsRuntime_Update();
+    wait_ms(600);
+    ControlsRuntime_Update();
+    assert(!ControlsRuntime_Blocked());
+    ControlsRuntime_Key(CTRL_KEY_X, 1);
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Keyboard() == CTRL_DEST_CROSS);
+    ControlsRuntime_Key(CTRL_KEY_X, 0);
+    ControlsRuntime_Update();
+    /* Re-armed with that axis still stuck, the gate lifts again. */
+    ControlsRuntime_Gate();
+    ControlsRuntime_Update();
+    wait_ms(600);
+    ControlsRuntime_Update();
+    assert(!ControlsRuntime_Blocked());
+    /* Re-armed while still armed (a notice released): a reading that turned
+     * stuck while held is taken anew from the release. */
+    ControlsRuntime_Hold(1);
+    ControlsRuntime_Update();
+    late->snapshot.axis[CTRL_AXIS_LEFT_Y] = -1.0f;
+    ControlsRuntime_Update();
+    ControlsRuntime_Hold(0);
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Blocked()); /* still inside the grace time */
+    wait_ms(600);
+    ControlsRuntime_Update();
+    assert(!ControlsRuntime_Blocked());
+    ControlsRuntime_Key(CTRL_KEY_X, 1);
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Keyboard() == CTRL_DEST_CROSS);
+    ControlsRuntime_Key(CTRL_KEY_X, 0);
+    ControlsRuntime_Update();
     puts("controls stuck: ok");
     return 0;
 }
