@@ -26,7 +26,7 @@
         },
         "attack": {
             "label": "Monstros atacam (Modelos 3D)",
-            "description": "O atacante golpeia e o defensor reage como na arena 3D: é atingido, se defende ou, quando o atacante é mais fraco, contra-ataca. Nas cartas de ataque precisa de Monstros nas cartas de ataque. No campo, o atacante atravessa o campo até a zona do defensor, golpeia e volta; o dano aparece sobre o monstro atingido, um monstro destruído some aos poucos e as cartas de ataque não aparecem. Ambos mostra no campo e depois nas cartas de ataque. A batalha espera os golpes antes de mostrar o dano. Só no estilo Modelos 3D.",
+            "description": "O atacante golpeia e o defensor reage como na arena 3D: é atingido, se defende ou, quando o atacante é mais fraco, contra-ataca. Nas cartas de ataque precisa de Monstros nas cartas de ataque. No campo, o atacante atravessa o campo até a zona do defensor, golpeia e volta; o dano aparece sobre o monstro atingido, um monstro destruído some aos poucos e as cartas de ataque não aparecem. Com Ambos, aparece no campo e depois nas cartas de ataque. A batalha espera os golpes antes de mostrar o dano. Só no estilo Modelos 3D.",
             "choices": ["Desligado", "Nas cartas de ataque", "No campo", "Ambos"]
         },
         "attack_speed": {
