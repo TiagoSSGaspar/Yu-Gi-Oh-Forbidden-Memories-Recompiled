@@ -136,3 +136,11 @@ accept v0.3.0 variable MonsterEffect_DoNames grew by change_field at its end
 accept v0.1.2 record AnimatedBattleModelProperties reads model_id unsigned, for a mod's models from 0x8000
 accept v0.2.0 record AnimatedBattleModelProperties reads model_id unsigned, for a mod's models from 0x8000
 accept v0.3.0 record AnimatedBattleModelProperties reads model_id unsigned, for a mod's models from 0x8000
+
+# The generic gamepad mapping (gamepad_mapping.c): ControllerDevice gained
+# `generic` at its end, after threshold. Every field a mod built against a
+# release reads stays at its offset; the registry hands out pointers
+# (ControlsRuntime_Device), so no mod strides the array itself.
+accept v0.1.2 record ControllerDevice grew by generic at its end
+accept v0.2.0 record ControllerDevice grew by generic at its end
+accept v0.3.0 record ControllerDevice grew by generic at its end
