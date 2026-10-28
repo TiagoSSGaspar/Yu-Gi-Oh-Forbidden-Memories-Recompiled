@@ -274,3 +274,23 @@ ctest --test-dir tmp/pc-controls --output-on-failure -R '^pc_controls'
 tools/pc/test_controls_backend.sh
 tools/pc/preview_controls.sh
 ```
+
+## Controllers SDL has no mapping for
+
+`sdl.c` loads, after SDL's built-in list, SDL_GameControllerDB and this port's own
+lines (both embedded from `src/pc/assets/`, see its README), then
+`gamecontrollerdb.txt` from the user folder. A joystick still unmapped gets a generic
+mapping (`gamepad_mapping.c`: buttons in order, hat 0 as the d-pad, first axes as
+the sticks) so it is listed and can be rebound here. `MEMORIES_TRACE=input` logs the
+counts and every generic mapping made.
+
+On macOS the MFi driver is off (`SDL_HINT_JOYSTICK_MFI=0`; the environment's
+`SDL_JOYSTICK_MFI` wins): with it SDL hands Apple's GameController every pad Apple
+claims, and Apple never makes a controller of some (a GameSir G3s over USB). The
+macOS SDL build carries `tools/pc/patches/sdl-source/iokit-degenerate-axis-range.patch`:
+an axis declared with a one-step logical range (min -1, max 0) on an 8-bit or wider
+field is read unsigned over the field, which is what the G3s sends.
+
+An axis or trigger that holds one reading from the moment input was gated, for
+half a second, is taken as stuck: it no longer holds the gate and reads as rest
+until it next comes back to rest (`controls_runtime.c`, `STUCK_US`).
