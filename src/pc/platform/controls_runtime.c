@@ -28,6 +28,54 @@ static uint16_t raw_pads, pad_presses;
  * fires next. */
 static uint32_t host_down, host_live, host_presses, host_taps;
 static uint64_t host_repeat_at[CTRL_HOST_COUNT];
+/* Main thread only: an axis or trigger that holds one reading from the
+ * moment the gate armed, for STUCK_US, is a stuck reading (a descriptor read
+ * the wrong way, a stick resting off centre), not a press. It stops holding
+ * the gate and reads as rest until it next comes back to rest. Keys, buttons
+ * and the hat still have to be let go. */
+#define STUCK_US 500000
+#define STUCK_SPAN 0.05f
+static int gate_seen;
+static uint64_t gate_at;
+static float armed_axis[2][CTRL_AXIS_COUNT], armed_trigger[2][CTRL_TRIGGER_COUNT];
+static unsigned char steady_axis[2][CTRL_AXIS_COUNT], steady_trigger[2][CTRL_TRIGGER_COUNT];
+static unsigned char stuck_axis[2][CTRL_AXIS_COUNT], stuck_trigger[2][CTRL_TRIGGER_COUNT];
+static float span(float a, float b) { return a > b ? a - b : b - a; }
+/* The device as the evaluators see it: stuck readings at rest. */
+static ControllerDevice unstuck(int p, const ControllerDevice *d, uint64_t now)
+{
+    ControllerDevice v = *d;
+    float rest = (d->threshold > 0 ? d->threshold : 1.0f / 3) * 0.8f;
+    for (int i = 1; i < CTRL_AXIS_COUNT; i++) {
+        float x = d->snapshot.axis[i];
+        if (gate && !gate_seen) {
+            armed_axis[p][i] = x;
+            steady_axis[p][i] = 1;
+        } else if (span(x, armed_axis[p][i]) >= STUCK_SPAN)
+            steady_axis[p][i] = 0;
+        if (gate && gate_seen && steady_axis[p][i] && now - gate_at >= STUCK_US && (x > rest || x < -rest))
+            stuck_axis[p][i] = 1;
+        if (stuck_axis[p][i] && x <= rest && x >= -rest)
+            stuck_axis[p][i] = 0;
+        if (stuck_axis[p][i])
+            v.snapshot.axis[i] = 0;
+    }
+    for (int i = 1; i < CTRL_TRIGGER_COUNT; i++) {
+        float x = d->snapshot.trigger[i];
+        if (gate && !gate_seen) {
+            armed_trigger[p][i] = x;
+            steady_trigger[p][i] = 1;
+        } else if (span(x, armed_trigger[p][i]) >= STUCK_SPAN)
+            steady_trigger[p][i] = 0;
+        if (gate && gate_seen && steady_trigger[p][i] && now - gate_at >= STUCK_US && x > 0.8f / 3)
+            stuck_trigger[p][i] = 1;
+        if (stuck_trigger[p][i] && x <= 0.8f / 3)
+            stuck_trigger[p][i] = 0;
+        if (stuck_trigger[p][i])
+            v.snapshot.trigger[i] = 0;
+    }
+    return v;
+}
 #define REPEAT_DELAY_US 400000 /* like a keyboard's own repeat */
 #define REPEAT_EVERY_US 60000
 uint64_t ControlsRuntime_Now(void)
@@ -93,6 +141,8 @@ void ControlsRuntime_Reconcile(void)
         if (out[p] != assigned[p]) {
             assigned[p] = out[p];
             memset(&evaluators[p], 0, sizeof(evaluators[p]));
+            memset(stuck_axis[p], 0, sizeof(stuck_axis[p]));
+            memset(stuck_trigger[p], 0, sizeof(stuck_trigger[p]));
             gate = 1;
         }
 }
@@ -272,14 +322,19 @@ void ControlsRuntime_Update(void)
         conn[p] = i >= 0;
         if (i < 0)
             continue;
-        if (ControlsRuntime_Sources(&devices[i], sources, 64, 1))
+        ControllerDevice view = unstuck(p, &devices[i], now);
+        if (ControlsRuntime_Sources(&view, sources, 64, 1))
             neutral = 0;
-        evaluators[p].activation = devices[i].threshold;
-        pads[p] = Controls_EvalControllerRows(ControlsRuntime_Profile(&active, p, 0), &devices[i].snapshot,
+        evaluators[p].activation = view.threshold;
+        pads[p] = Controls_EvalControllerRows(ControlsRuntime_Profile(&active, p, 0), &view.snapshot,
                                               &evaluators[p]);
     }
+    if (gate && !gate_seen)
+        gate_at = now;
     if (gate && neutral && !blocked && !held)
         gate = 0;
+    /* After the release above, so the next arming captures the readings anew. */
+    gate_seen = gate;
     stopped = blocked || held || gate;
     pad_presses |= (uint16_t)(pads[0] | pads[1]) & ~raw_pads;
     raw_pads = (uint16_t)(pads[0] | pads[1]);

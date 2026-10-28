@@ -885,7 +885,7 @@ if(BUILD_TESTING)
     target_sources(memories_disc_test PRIVATE ${memories_platform_support})
     target_link_libraries(memories_audio_replace_test PRIVATE Threads::Threads)
     # controls_evdev_test.c drives the /dev/input reader, which is Linux only.
-    set(memories_controls_parts config runtime window)
+    set(memories_controls_parts config runtime window stuck)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         list(APPEND memories_controls_parts evdev)
     endif()
