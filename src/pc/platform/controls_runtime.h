@@ -5,6 +5,9 @@
 /* Registry slots are session handles, never serialized. */
 typedef struct {
     int connected, ambiguous;
+    /* On a generic mapping (gamepad_mapping.c), not a real controller's:
+     * it takes an automatic port only when no real one is free. */
+    int generic;
     char identity[CTRL_IDENTITY_MAX], name[160];
     CtrlIconStyle style;
     ControllerSnapshot snapshot;

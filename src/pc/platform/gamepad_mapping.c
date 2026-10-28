@@ -26,7 +26,7 @@ int GamepadMapping_Fallback(char *out, size_t size, const char *guid, const char
     /* A comma would end the name field early. */
     for (const char *c = name && *name ? name : "Controller"; *c; c++)
         PUT("%c", *c == ',' ? ' ' : *c);
-    PUT(" (generic),");
+    PUT(GAMEPAD_MAPPING_GENERIC ",");
     for (int b = 0; b < buttons && b < (int)(sizeof(BUTTONS) / sizeof(BUTTONS[0])); b++)
         PUT("%s:b%d,", BUTTONS[b], b);
     if (hats > 0)

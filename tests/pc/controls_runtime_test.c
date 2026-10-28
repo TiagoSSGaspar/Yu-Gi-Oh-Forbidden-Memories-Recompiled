@@ -188,8 +188,32 @@ int main(void)
     ControlsRuntime_Key(CTRL_KEY_ESCAPE, 0);
     ControlsRuntime_Update();
     assert(ControlsRuntime_TakeHost() == 1u << CTRL_HOST_EXIT);
+    /* A generic device (a joystick no list maps) takes an automatic port
+     * only when no real controller is free, and gives it up to one that
+     * connects later. */
+    cfg = *ControlsRuntime_Config();
+    cfg.port[0].mode = cfg.port[1].mode = 1;
+    assert(ControlsRuntime_Apply(&cfg, error, sizeof(error)));
+    for (int i = 0; i < 3; i++)
+        ControlsRuntime_Device(i)->connected = 0;
+    ControlsRuntime_Update();
+    ControllerDevice *wheel = ControlsRuntime_Device(0), *pad = ControlsRuntime_Device(1);
+    wheel->connected = wheel->generic = 1;
+    pad->connected = 1;
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Assigned(&cfg, 0) == 1 && ControlsRuntime_Assigned(&cfg, 1) == 0);
+    pad->connected = 0;
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Assigned(&cfg, 0) == 0 && ControlsRuntime_Assigned(&cfg, 1) == -1);
+    pad->connected = 1;
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Assigned(&cfg, 0) == 1 && ControlsRuntime_Assigned(&cfg, 1) == 0);
+    /* A second real one takes port 1 from the generic device; port 0 keeps its own. */
+    ControlsRuntime_Device(2)->connected = 1;
+    ControlsRuntime_Update();
+    assert(ControlsRuntime_Assigned(&cfg, 0) == 1 && ControlsRuntime_Assigned(&cfg, 1) == 2);
     unlink(path);
     rmdir(dir);
-    puts("controls runtime: selection, hotplug, profiles, release gate, host actions, hold, held and repeating actions passed");
+    puts("controls runtime: selection, hotplug, profiles, release gate, host actions, hold, held and repeating actions, generic devices passed");
     return 0;
 }

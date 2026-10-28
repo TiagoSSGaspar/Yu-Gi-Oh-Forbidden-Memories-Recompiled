@@ -109,6 +109,16 @@ static int explicit_device(const ControlsConfig *cfg, int p)
             return i;
     return -1;
 }
+/* The first connected device other than `taken` and `held`: a real
+ * controller before a generic one, or only a real one. -1 with none. */
+static int free_device(int taken, int held, int real_only)
+{
+    for (int generic = 0; generic <= !real_only; generic++)
+        for (int i = 0; i < CONTROLS_DEVICES; i++)
+            if (devices[i].connected && i != taken && i != held && !devices[i].generic == !generic)
+                return i;
+    return -1;
+}
 static void resolve(const ControlsConfig *cfg, int result[2])
 {
     for (int p = 0; p < 2; p++)
@@ -116,14 +126,18 @@ static void resolve(const ControlsConfig *cfg, int result[2])
     for (int p = 0; p < 2; p++)
         if (cfg->port[p].mode == 1) {
             int old = assigned[p];
-            if (old >= 0 && devices[old].connected && result[1 - p] != old)
+            if (old >= 0 && devices[old].connected && result[1 - p] != old) {
                 result[p] = old;
-            else
-                for (int i = 0; i < CONTROLS_DEVICES; i++)
-                    if (devices[i].connected && i != result[1 - p]) {
-                        result[p] = i;
-                        break;
-                    }
+                /* A real controller connected after a generic device (a
+                 * joystick no list maps) takes its port, but not from the
+                 * other port: port 1, resolved after this, keeps its own. */
+                if (devices[old].generic) {
+                    int real = free_device(result[1 - p], p == 0 && cfg->port[1].mode == 1 ? assigned[1] : -1, 1);
+                    if (real >= 0)
+                        result[p] = real;
+                }
+            } else
+                result[p] = free_device(result[1 - p], -1, 0);
         }
 }
 int ControlsRuntime_Assigned(const ControlsConfig *cfg, int p)

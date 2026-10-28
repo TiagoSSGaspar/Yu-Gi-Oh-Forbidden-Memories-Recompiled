@@ -1107,6 +1107,11 @@ static void open_gamepad(SDL_JoystickID id)
             d->threshold = 1.0f / 3;
             const char *name = SDL_GetGamepadName(pads[i]);
             snprintf(d->name, sizeof(d->name), "%s", name ? name : "Controller");
+            /* SDL names the pad after the mapping it applied, so this follows
+             * the generic one to a reconnected pad (a new id) and to one SDL
+             * matched to it without its GUID's version or CRC. */
+            size_t len = name ? strlen(name) : 0, tail = strlen(GAMEPAD_MAPPING_GENERIC);
+            d->generic = len >= tail && !strcmp(name + len - tail, GAMEPAD_MAPPING_GENERIC);
             LOG(LOG_INPUT, "controller %u opened: %s", (unsigned)id, d->name);
             const char *serial = SDL_GetGamepadSerial(pads[i]);
             if (!ControlsLinux_Identity(SDL_GetGamepadPath(pads[i]), d->identity, sizeof(d->identity))) {
@@ -1198,6 +1203,20 @@ static void map_joysticks(void)
             continue;
         if (seen_count < (int)(sizeof(seen) / sizeof(seen[0])))
             seen[seen_count++] = ids[i];
+        /* A wheel, flight stick, guitar and the like is no pad to play
+         * with; SDL tells them from the GUID, without opening them. */
+        switch (SDL_GetJoystickTypeForID(ids[i])) {
+        case SDL_JOYSTICK_TYPE_WHEEL:
+        case SDL_JOYSTICK_TYPE_FLIGHT_STICK:
+        case SDL_JOYSTICK_TYPE_THROTTLE:
+        case SDL_JOYSTICK_TYPE_GUITAR:
+        case SDL_JOYSTICK_TYPE_DRUM_KIT:
+        case SDL_JOYSTICK_TYPE_DANCE_PAD:
+            LOG(LOG_INPUT, "controller %u has no mapping; no generic one for its type", (unsigned)ids[i]);
+            continue;
+        default:
+            break;
+        }
         if (!(j = SDL_OpenJoystick(ids[i])))
             continue;
         SDL_GUIDToString(SDL_GetJoystickGUID(j), guid, sizeof(guid));
