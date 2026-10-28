@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCES = ["src/pc/compat/fs.c", "tests/pc/controls_backend_test.c"] + [
     f"src/pc/platform/{name}.c" for name in
     ("controls", "controls_config", "controls_runtime", "controls_art",
-     "controls_window", "controls_linux", "paths", "panel")]
+     "controls_window", "controls_linux", "gamepad_mapping", "paths", "panel")]
 
 
 def run(target, software=False):
