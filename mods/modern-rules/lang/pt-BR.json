@@ -1,5 +1,5 @@
 {
-    "name": "Regras modernas",
+    "name": "Regras do Reino dos Duelistas",
     "description": "Regras dos jogos mais novos: uma carta comprada por turno depois das cinco iniciais, uma mão de até dez reduzida a seis no fim do turno, fases do turno com uma Main Phase 2 como nos jogos GX, nenhuma carta perdida numa fusão que não funciona, e Treasure Trickster, uma magia que compra duas. Precisa de Jogadas extras da mão.",
     "settings": {
         "optional_play": {

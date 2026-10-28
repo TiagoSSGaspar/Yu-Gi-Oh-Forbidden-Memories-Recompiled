@@ -1,4 +1,4 @@
-/* Modern rules (mod.json beside this file; README.md for the rules).
+/* Duelist Kingdom rules (mod.json beside this file; README.md for the rules).
  *
  * Built on Extra hand plays, which it requires: that mod deals the cards a
  * turn draws and brings the hand back up, and this one says how many and

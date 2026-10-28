@@ -1,4 +1,6 @@
-# Modern rules
+# Duelist Kingdom rules
+
+Its id stays `modern-rules`; it was named Modern rules before.
 
 An optional code mod for SLUS_01411 that brings in rules from the later
 games. It needs **Extra hand plays** (`mods/extra-hand-plays`), which it

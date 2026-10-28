@@ -23,10 +23,10 @@ after the last play.
 - The first play of a turn is required, as in the original game. In an
   extra hand the player may press **START** to skip the remaining plays
   and go to the field. START does nothing in the first hand, unless
-  another mod makes playing a card optional (Modern rules does), and does
+  another mod makes playing a card optional (Duelist Kingdom rules does), and does
   nothing while cards are marked for a fusion.
 - No cards are drawn between plays, unless another mod asks for some
-  (Modern rules' Treasure Trickster). The remaining cards are moved to the left
+  (Duelist Kingdom rules' Treasure Trickster). The remaining cards are moved to the left
   of the hand, as the draw does at a turn start.
 - Once the turn's monsters are down, the hand comes back while it holds a
   card that is not a monster. Confirming a monster then, alone or marked
@@ -52,7 +52,7 @@ after the last play.
 
 ## Phases
 
-When another mod asks for them (`set_phases`, below; Modern rules does),
+When another mod asks for them (`set_phases`, below; Duelist Kingdom rules does),
 the player's turn runs in phases, as in the GX games:
 
 | Phase | Where | START opens a menu with |
@@ -82,7 +82,7 @@ the player's turn runs in phases, as in the GX games:
 ## Hands past five
 
 The disc's hand has five slots. When another mod raises the limit
-(`set_hand_limits`, below; Modern rules does), the hand holds up to ten:
+(`set_hand_limits`, below; Duelist Kingdom rules does), the hand holds up to ten:
 
 - Past five cards, the hand is laid out overlapped across the width of
   five, later cards over earlier ones and the card under the cursor over
@@ -110,7 +110,7 @@ The disc's hand has five slots. When another mod raises the limit
 
 The mod provides a table that other mods find as `extra-hand-plays:api`
 (`extra_hand_plays.h`). A mod that uses it lists `extra-hand-plays` under
-`requires`. [Modern rules](../modern-rules/README.md) uses it. The table
+`requires`. [Duelist Kingdom rules](../modern-rules/README.md) uses it. The table
 offers:
 
 - `set_turn_draws`: how many cards a turn draws, instead of the disc's

@@ -1,6 +1,6 @@
 {
   "id": "modern-rules",
-  "name": "Modern rules",
+  "name": "Duelist Kingdom rules",
   "version": "0.4.0",
   "author": "DecompRecomp",
   "description": "Rules from the later games: one card drawn a turn after the opening five, a hand of up to ten kept to six at the end of a turn, turn phases with a Main Phase 2 as in the GX games, no card lost to a fusion that does not work, and Treasure Trickster, a spell that draws two. Needs Extra hand plays.",
