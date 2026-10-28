@@ -1,0 +1,12 @@
+{
+    "name": "Câmera da mão",
+    "description": "Gira e aproxima a câmera do duelo com os botões L/R enquanto a mão está aberta, momento em que o console os deixava sem uso.",
+    "settings": {
+        "turn_speed": {"label": "Velocidade de giro"},
+        "zoom_speed": {"label": "Velocidade de zoom"},
+        "turn_left": {"label": "Girar para a esquerda"},
+        "turn_right": {"label": "Girar para a direita"},
+        "zoom_in": {"label": "Aproximar"},
+        "zoom_out": {"label": "Afastar"}
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "IA Difícil",
+    "description": "Planejamento da mão, fusões, estrelas guardiãs, ataques, defesa, magias e vantagens de informação, tudo configurável.",
+    "settings": {
+        "hand_planning": {"label": "Planejar jogadas da mão", "description": "Avalia o campo resultante e guarda materiais. Desligado usa a estratégia de mão original."},
+        "fusion_search": {"label": "Buscar cadeias de fusão", "description": "Inclui cadeias de fusão da mão e do campo nas jogadas planejadas."},
+        "guardian_stars": {"label": "Escolher estrelas guardiãs", "description": "Avalia as duas estrelas guardiãs ao jogar monstros."},
+        "attack_planning": {"label": "Planejar sequências de ataque", "description": "Busca sequências limitadas de dano, remoções e jogadas que vencem o duelo."},
+        "defensive_positions": {"label": "Defesa conforme a situação", "description": "Escolhe a defesa pelas ameaças visíveis em vez de listas fixas de cartas."},
+        "spell_timing": {"label": "Momento certo das magias", "description": "Avalia remoção, cura, dano direto, equipamentos, rituais e terreno."},
+        "effective_stats": {"label": "Usar valores efetivos (ATK/DEF)", "description": "Usa o ATK/DEF atual no campo e o terreno na avaliação tática."},
+        "equal_trades": {"label": "Permitir trocas de mesmo poder", "description": "Permite trocas quando a sequência de ataque resultante vale a pena."},
+        "preserve_hand": {"label": "Guardar cartas valiosas da mão", "description": "Ao trocar com o deck, mantém cartas valiosas que não foram escolhidas para esta jogada."},
+        "deck_access": {"label": "Acesso ao deck", "choices": ["Limites originais do oponente", "Só a mão de cinco cartas", "Janela personalizada"]},
+        "deck_window": {"label": "Janela de cartas personalizada", "description": "A mão mais as próximas cartas do deck, usada com Janela personalizada."},
+        "hidden_cards": {"label": "Conhecimento de cartas ocultas", "choices": ["Conhecimento original do oponente", "Sem ATK/DEF ocultos", "Ver ATK/DEF ocultos"]},
+        "fusion_materials": {"label": "Máximo de materiais da mão"},
+        "search_budget": {"label": "Limite de busca", "description": "Limita as tentativas de fusão e os nós da busca de ataques; valores maiores podem demorar mais."},
+        "blind_risk": {"label": "Risco de atacar carta virada para baixo", "description": "Disposição para atacar monstros desconhecidos. Zero evita ataques às cegas."},
+        "material_cost": {"label": "Economia de materiais", "description": "Valores maiores preferem usar menos cartas nas jogadas da mão."},
+        "trace": {"label": "Registrar decisões da IA"}
+    }
+}

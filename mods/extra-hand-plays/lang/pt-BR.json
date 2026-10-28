@@ -1,0 +1,15 @@
+{
+    "name": "Jogadas extras da mão",
+    "description": "Jogue cartas de magia, armadilha e equipamento à vontade a cada turno, e até cinco monstros. Depois de uma jogada a mão volta; o jogador pode pular o resto com START. A CPU joga as cartas extras pelo próprio roteiro de mão. Permite que outro mod segure até dez cartas na mão.",
+    "settings": {
+        "monsters": {
+            "label": "Monstros por turno",
+            "description": "Quantos monstros um turno pode baixar da mão; uma fusão conta como um. Cartas de magia, armadilha e equipamento não contam: a mão volta enquanto tiver uma. 1 é a regra do anime."
+        },
+        "sides": {"label": "Vale para", "choices": ["Os dois lados", "Só o jogador", "Só a CPU"]},
+        "hint": {
+            "label": "Mostrar dica de pular",
+            "description": "Enquanto o jogador tem uma mão extra, avisa que START a pula, e avisa quando acabarem os monstros do turno."
+        }
+    }
+}

@@ -1,0 +1,57 @@
+{
+    "description": "Melhorias opcionais de interface feitas por yamyi: confirmar antes de voltar à tela de título, mostrar as chances de drop na Library e, se quiser, colorir os nomes das cartas pela raridade, a partir do card_name_color.ini. As card_text_colors do manifesto continuam sendo o padrão.",
+    "settings": {
+        "confirm_exit": {"label": "Confirmar volta ao título"},
+        "rarity_name_colors": {
+            "label": "Cores de nome por raridade",
+            "description": "Colore os nomes das cartas pela raridade do drop usando o card_name_color.ini. Enquanto ligado, essas cores substituem as cores de nome do manifesto."
+        },
+        "drops": {
+            "label": "Mostrar chances de drop na Library",
+            "description": "Um painel na grade de cartas da Library com os duelistas que dropam a carta sob o cursor, e a pontuação que escolheu a cor dela."
+        },
+        "show_score": {"label": "Mostrar pontuação de raridade no painel"},
+        "drop_rows": {
+            "label": "Duelistas listados",
+            "description": "Quantos duelistas a tabela lista, de 1 a 20. Os outros são contados embaixo."
+        },
+        "drop_sort": {
+            "label": "Ordenar por",
+            "description": "Qual coluna ordena a tabela. O cabeçalho dela fica destacado. Peso e Pontuação listam o maior primeiro e escolhem os duelistas por essa coluna; Duelista e Rank organizam os melhores pelo peso.",
+            "choices": ["Peso", "Pontuação", "Duelista", "Rank"]
+        },
+        "drop_x": {
+            "label": "Posição horizontal do painel",
+            "description": "A borda esquerda do painel, a partir da esquerda da imagem, em unidades do menu, para ficar no lugar quando a janela muda de tamanho."
+        },
+        "drop_y": {
+            "label": "Posição vertical do painel",
+            "description": "A borda de cima do painel, logo abaixo da barra de menu, em unidades do menu."
+        },
+        "default_answer": {
+            "label": "Resposta padrão",
+            "description": "Em qual resposta a pergunta abre. Com NO, um segundo toque sem querer não volta ao título.",
+            "choices": ["YES", "NO"]
+        },
+        "tint_title": {
+            "label": "Cor do título",
+            "description": "Faixa de cor do RETURN TO TITLE?. As faixas de cor de texto do próprio jogo, de 0 a 6. 0 é branco e 1 o dourado dos títulos; as outras são o resto da paleta."
+        },
+        "tint_chosen": {
+            "label": "Cor da resposta escolhida",
+            "description": "Faixa de cor da resposta escolhida no momento. As faixas de cor de texto do próprio jogo, de 0 a 6. 0 é branco e 1 o dourado dos títulos; as outras são o resto da paleta."
+        },
+        "tint_dimmed": {
+            "label": "Cor da outra resposta",
+            "description": "Faixa de cor da resposta não escolhida. As faixas de cor de texto do próprio jogo, de 0 a 6. 0 é branco e 1 o dourado dos títulos; as outras são o resto da paleta."
+        },
+        "tint_ok": {
+            "label": "Cor do rótulo OK",
+            "description": "Faixa de cor do rótulo OK ao lado do botão X. As faixas de cor de texto do próprio jogo, de 0 a 6. 0 é branco e 1 o dourado dos títulos; as outras são o resto da paleta."
+        },
+        "tint_cancel": {
+            "label": "Cor do rótulo CANCEL",
+            "description": "Faixa de cor do rótulo CANCEL ao lado do botão círculo. As faixas de cor de texto do próprio jogo, de 0 a 6. 0 é branco e 1 o dourado dos títulos; as outras são o resto da paleta."
+        }
+    }
+}

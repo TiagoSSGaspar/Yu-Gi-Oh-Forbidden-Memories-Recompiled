@@ -1,0 +1,30 @@
+{
+    "name": "Regras modernas",
+    "description": "Regras dos jogos mais novos: uma carta comprada por turno depois das cinco iniciais, uma mão de até dez reduzida a seis no fim do turno, fases do turno com uma Main Phase 2 como nos jogos GX, nenhuma carta perdida numa fusão que não funciona, e Treasure Trickster, uma magia que compra duas. Precisa de Jogadas extras da mão.",
+    "settings": {
+        "optional_play": {
+            "label": "Jogar uma carta é opcional",
+            "description": "START na primeira mão do turno não joga carta nenhuma e vai para o campo, como nos jogos mais novos. Sem isso, um campo cheio sem nada que funda deixaria o jogador sem jogada válida."
+        },
+        "gx_phases": {
+            "label": "Fases como nos jogos GX",
+            "description": "START abre um menu com as próximas fases: da mão (Main Phase 1), a Battle Phase ou a End Phase; do campo, a Main Phase 2, para jogar da mão de novo depois de atacar, ou a End Phase. A CPU joga como antes."
+        },
+        "draw_one": {
+            "label": "Comprar uma carta por turno",
+            "description": "Cada lado começa com cinco cartas e depois compra uma por turno (nenhuma no primeiro turno de quem começa). A mão segura até dez. Desligado completa a mão até cinco a cada turno, como no disco."
+        },
+        "hand_limit": {
+            "label": "Limite da mão no fim do turno",
+            "description": "Com uma carta comprada por turno: um lado que termina o turno com mais cartas descarta até ficar com essa quantidade. O jogador escolhe quais; a CPU joga fora as mais fracas. 0 desliga o limite."
+        },
+        "fusion_guard": {
+            "label": "Guardar cartas que a fusão não usa",
+            "description": "Cartas postas sobre um monstro precisam fundir com ele ou equipá-lo, e as cartas marcadas precisam todas fundir ou equipar nessa ordem, então nenhuma carta é jogada fora. A confirmação do jogador é recusada; a CPU joga em outro lugar, ou não joga carta."
+        },
+        "pot_of_greed": {
+            "label": "Treasure Trickster compra duas",
+            "description": "Usar Treasure Trickster compra duas cartas e traz a mão de volta. As cartas que não cabem na mão esperam a próxima compra. A CPU também a usa."
+        }
+    }
+}

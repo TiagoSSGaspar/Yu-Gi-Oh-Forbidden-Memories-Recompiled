@@ -1,0 +1,76 @@
+{
+    "name": "Monstros 3D",
+    "description": "Monstros com a face para cima ficam de pé sobre as cartas, como os modelos que a batalha usa (animados no lugar, e capazes de ficar sobre as cartas grandes, frente a frente, quando um ataca outro; o console não tinha RAM nem VRAM para isso), ou, sem custo nenhum de carregar modelos ou de VRAM, como um recorte ampliado da arte da própria carta, sempre virado para a câmera.",
+    "settings": {
+        "style": {
+            "label": "Estilo",
+            "description": "Modelos 3D mostra cada monstro de pé sobre a carta como o seu modelo de batalha. Arte da carta mostra em vez disso um recorte ampliado da arte da própria carta, com um brilho opcional. Monstros nas cartas de ataque só funciona em Modelos 3D.",
+            "choices": ["Modelos 3D", "Arte da carta"]
+        },
+        "scale": {"label": "Escala do modelo (Modelos 3D)", "description": "4096 é a escala original do modelo."},
+        "pixels": {"label": "Altura desejada", "description": "Altura do modelo em pixels do jogo."},
+        "lift": {"label": "Elevação vertical"},
+        "pitch": {"label": "Limite de inclinação do campo"},
+        "depth": {"label": "Ajuste de profundidade"},
+        "battle": {
+            "label": "Monstros nas cartas de ataque (Modelos 3D)",
+            "description": "Quando um monstro ataca outro, os dois ficam de pé sobre as cartas grandes, frente a frente, e as cartas ficam escurecidas embaixo deles. Só no estilo Modelos 3D; em Arte da carta as cartas de ataque aparecem normais."
+        },
+        "battle_pixels": {
+            "label": "Tamanho do monstro na carta de ataque (Modelos 3D)",
+            "description": "A altura de um monstro de tamanho médio sobre a carta, em pixels do jogo; monstros maiores ficam mais altos e os menores mais baixos. Cada um é ajustado pela altura ou pela largura, a que chegar primeiro."
+        },
+        "battle_dim": {
+            "label": "Escurecimento da carta de ataque (Modelos 3D)",
+            "description": "Quanto as cartas ficam mais escuras embaixo dos monstros, em porcentagem."
+        },
+        "attack": {
+            "label": "Monstros atacam (Modelos 3D)",
+            "description": "O atacante golpeia e o defensor reage como na arena 3D: é atingido, se defende ou, quando o atacante é mais fraco, contra-ataca. Nas cartas de ataque precisa de Monstros nas cartas de ataque. No campo, o atacante atravessa o campo até a zona do defensor, golpeia e volta; o dano aparece sobre o monstro atingido, um monstro destruído some aos poucos e as cartas de ataque não aparecem. Ambos mostra no campo e depois nas cartas de ataque. A batalha espera os golpes antes de mostrar o dano. Só no estilo Modelos 3D.",
+            "choices": ["Desligado", "Nas cartas de ataque", "No campo", "Ambos"]
+        },
+        "attack_speed": {
+            "label": "Velocidade do ataque (Modelos 3D)",
+            "description": "A velocidade do ataque e das reações, em porcentagem da velocidade da arena 3D: 100 é o ritmo da própria arena."
+        },
+        "effects": {
+            "label": "Efeitos de ataque (Modelos 3D)",
+            "description": "Na luta no campo, os efeitos do próprio atacante na arena 3D: raios, clarões e partículas, no tamanho do campo, e o golpe acerta quando eles chegam ao defensor. Só no estilo Modelos 3D."
+        },
+        "sounds": {
+            "label": "Sons de ataque (Modelos 3D)",
+            "description": "Quando monstros atacam, fazem os sons que fazem na arena 3D: o golpe do atacante e a reação do defensor, nos mesmos momentos da animação em que a arena os toca. Só com Monstros atacam ligado."
+        },
+        "summon": {
+            "label": "Invocação do anime (Modelos 3D)",
+            "description": "Um monstro colocado com a face para cima cresce saindo da carta, aparecendo aos poucos, enquanto a carta brilha e depois some; a carta fica escondida embaixo do monstro onde quer que ele seja desenhado. Desligado: a carta fica e o monstro aparece de uma vez."
+        },
+        "summon_frames": {
+            "label": "Duração da invocação (Modelos 3D)",
+            "description": "Quadros que um monstro leva para crescer saindo da carta, a 60 por segundo."
+        },
+        "board": {
+            "label": "Monstros no campo visto de cima (Modelos 3D)",
+            "description": "Os monstros continuam lá quando a câmera sobe para o campo visto de cima, onde se escolhe uma zona ou um ataque: vistos de cima, virados para onde estão virados no campo, sobre as cartas. Desligado: só aparecem no campo visto de lado."
+        },
+        "board_size": {
+            "label": "Tamanho do monstro visto de cima (Modelos 3D)",
+            "description": "O tamanho dos monstros no campo visto de cima, em porcentagem do tamanho no campo; a câmera chega bem mais perto ali, então menor mantém cada um sobre a própria carta. Eles encolhem até esse tamanho enquanto a câmera sobe."
+        },
+        "glow": {
+            "label": "Brilho difuso (Arte da carta)",
+            "description": "Um brilho suave e pulsante, somado à imagem, que se espalha para fora de cada recorte. Só no estilo Arte da carta."
+        },
+        "glow_r": {"label": "Cor do brilho: vermelho (Arte da carta)"},
+        "glow_g": {"label": "Cor do brilho: verde (Arte da carta)"},
+        "glow_b": {"label": "Cor do brilho: azul (Arte da carta)"},
+        "glow_reach": {
+            "label": "Alcance do brilho (Arte da carta)",
+            "description": "Porcentagem: até onde o brilho se espalha, proporcional ao tamanho do próprio recorte."
+        },
+        "glow_period": {
+            "label": "Período do pulso do brilho (Arte da carta)",
+            "description": "Quadros de um ciclo completo de fraco a forte e de volta a fraco. Menor é mais rápido."
+        }
+    }
+}
