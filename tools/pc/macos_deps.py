@@ -17,6 +17,19 @@ from fetch_tools import ensure as ensure_tool
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "tmp/pc/macos-deps"
 INSTALL = OUT / "install"
+PATCHES = ROOT / "tools/pc/patches"
+
+
+def patches(name):
+    """This port's fixes to a pinned source (tools/pc/patches/<name>/*.patch), in order."""
+    return sorted((PATCHES / name).glob("*.patch"))
+
+
+def patch_digest(name):
+    digest = hashlib.sha256()
+    for path in patches(name):
+        digest.update(path.name.encode() + b"\0" + path.read_bytes())
+    return digest.hexdigest()
 
 
 def sdk_path():
@@ -35,17 +48,21 @@ def source(name):
     archive = download(url, digest)
     folder = OUT / "src" / name
     stamp = folder / ".archive-sha256"
-    if stamp.is_file() and stamp.read_text() == digest:
+    wanted = digest + " " + patch_digest(name)
+    if stamp.is_file() and stamp.read_text() == wanted:
         return folder
     with tarfile.open(archive) as bundle:
         top = bundle.getnames()[0].split("/")[0]
     temporary = OUT / "src" / (name + ".extract")
     shutil.rmtree(temporary, ignore_errors=True)
     unpack(archive, str(temporary))
+    for path in patches(name):
+        # A patch that no longer applies (a new pinned version) stops the build.
+        subprocess.run(["patch", "-p1", "--forward", "--batch", "-i", str(path)], cwd=temporary / top, check=True)
     shutil.rmtree(folder, ignore_errors=True)
     (temporary / top).rename(folder)
     shutil.rmtree(temporary)
-    stamp.write_text(digest)
+    stamp.write_text(wanted)
     return folder
 
 
@@ -156,6 +173,7 @@ def ensure(names=("zstd", "zlib", "libpng", "freetype", "sdl-source"), jobs=8):
             {
                 "command": command,
                 "archive": ARCHIVES[name][1],
+                "patches": patch_digest(name),
                 "builder": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 "compiler_identity": compiler_identity,
             },

@@ -1,0 +1,40 @@
+--- a/src/joystick/darwin/SDL_iokitjoystick_c.h	2026-10-28 11:23:45
++++ b/src/joystick/darwin/SDL_iokitjoystick_c.h	2026-10-28 11:24:07
+@@ -38,6 +38,7 @@
+     // runtime variables used for auto-calibration
+     SInt32 minReport; // min returned value
+     SInt32 maxReport; // max returned value
++    int unsignedBits; // read the field unsigned, this wide (a broken descriptor's range)
+ 
+     struct recElement *pNext; // next element in list
+ };
+--- a/src/joystick/darwin/SDL_iokitjoystick.c	2026-10-28 11:23:45
++++ b/src/joystick/darwin/SDL_iokitjoystick.c	2026-10-28 11:24:07
+@@ -184,6 +184,9 @@
+         IOHIDValueRef valueRef;
+         if (IOHIDDeviceGetValue(pDevice->deviceRef, pElement->elementRef, &valueRef) == kIOReturnSuccess) {
+             value = (SInt32)IOHIDValueGetIntegerValue(valueRef);
++            if (pElement->unsignedBits) {
++                value &= (SInt32)((1u << pElement->unsignedBits) - 1);
++            }
+ 
+             // record min and max for auto calibration
+             if (value < pElement->minReport) {
+@@ -424,6 +427,17 @@
+ 
+             element->minReport = element->min = (SInt32)IOHIDElementGetLogicalMin(refElement);
+             element->maxReport = element->max = (SInt32)IOHIDElementGetLogicalMax(refElement);
++            // A one-step logical range (min -1, max 0) on an axis field of 8 bits
++            // or more is a broken descriptor: the GameSir G3s sends 0..255, centred
++            // on 128, which IOKit then sign-extends. Read the field unsigned.
++            if (headElement == &(pDevice->firstAxis) && element->max - element->min <= 1) {
++                const uint32_t bits = IOHIDElementGetReportSize(refElement);
++                if (bits >= 8 && bits < 32) {
++                    element->unsignedBits = (int)bits;
++                    element->minReport = element->min = 0;
++                    element->maxReport = element->max = (SInt32)((1u << bits) - 1);
++                }
++            }
+             element->cookie = IOHIDElementGetCookie(refElement);
+ 
+             pDevice->elements++;
