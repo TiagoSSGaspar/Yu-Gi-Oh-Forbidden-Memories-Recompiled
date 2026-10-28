@@ -3,9 +3,9 @@
 /* An on-screen controller for touch screens (phones, tablets, touch
  * laptops): a D-pad, the four face buttons, L1/L2/R1/R2, SELECT and START
  * at the sides of the window, and MENU (which opens the menu bar's first
- * menu) under L2/L1, drawn with the game's own button pictures and font off
- * the disc (touch_pad_art.c). It feeds the first controller's bits beside
- * the keyboard and the pads, as the button it shows (Cross is Cross,
+ * menu) under L2/L1, drawn smooth at the screen's size (touch_pad_art.c).
+ * It feeds the first controller's bits beside the keyboard and the pads,
+ * as the button it shows (Cross is Cross,
  * whatever View > Japanese buttons says), and a press shorter than a frame
  * still counts once, as a key's does (controls_runtime.c).
  *

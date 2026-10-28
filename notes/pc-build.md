@@ -349,12 +349,17 @@ after-hook sees what the game gets ([mod API](mod-api-3.md)).
 Automatic, the default; 1 Show; 2 Hide) is an on-screen controller for touch
 screens (phones, tablets, touch laptops): a D-pad and the four face buttons
 at the middle of the left and right sides, L2/L1 and R1/R2 above them,
-SELECT and START below (`platform/touch_pad.c`). It is drawn with the game's
-own pictures, cut off the disc from the boot package the game keeps in VRAM
-(`touch_pad_art.c`, `cards/disc_art.h`): the round Cross, Circle, Triangle and
-Square, START, the L1/L2/R1/R2 tabs and the boxed arrows (Left is Right's,
-turned round); SELECT is set in the game's text font. A button let go is
-see-through; held, it is solid and a little smaller. Automatic shows it once
+SELECT and START below (`platform/touch_pad.c`). `touch_pad_art.c` draws it at
+the window's own size, from distance fields, so its edges stay smooth on any
+screen:
+
+- dark see-through buttons with a thin light edge;
+- the face buttons' symbols in the PlayStation's colors;
+- the D-pad's arrows;
+- the L/R, SELECT, START and MENU pills, labelled in the overlay's face.
+
+Each button's picture, let go and held, is drawn once per size. A held button
+lightens and its edge brightens. Automatic shows it once
 the screen is touched (that touch presses nothing) and hides it when a key or
 a controller button is pressed. Several fingers work at once; a finger that
 lands on the pad stays the pad's while it slides (the D-pad goes by the angle
@@ -363,7 +368,7 @@ elsewhere is the mouse SDL makes of it (the menu bar). It presses the button
 it shows: its bits join the pad state beside the mouse's, which View >
 Japanese buttons does not exchange, and a tap shorter than a frame counts
 once. Hidden, it draws nothing and takes no touch.
-**MENU**, in the game's font under L2/L1 (the D-pad below it), opens the
+**MENU**, under L2/L1 (the D-pad below it), opens the
 menu bar's first menu (`TouchPad_TakeMenu`, taken in the event pump): the
 way to the menus where the bar is hidden, as in fullscreen or on a phone.
 While a menu, a notice or a bar drawn over the picture is up, the pad
