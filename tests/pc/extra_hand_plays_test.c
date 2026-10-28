@@ -270,6 +270,9 @@ static void *fake_symbol(const MemoriesModHost *h, const char *name)
     (void)h;
     return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
 }
+/* The host's clock, which the hand-full notice runs by. */
+static uint64_t fake_clock;
+static uint64_t fake_now_us(const MemoriesModHost *h) { (void)h; return fake_clock; }
 /* The overlay: a 1280x960 window at the port's scale 2; the hints' boxes. */
 static struct { int x, y, w, h; } boxes[16];
 static int box_count;
@@ -401,6 +404,7 @@ int main(void)
     fake_host.symbol = fake_symbol;
     fake_host.overlay_size = fake_overlay_size; fake_host.text_width = fake_text_width;
     fake_host.fill = fake_fill; fake_host.draw_text = fake_draw_text;
+    fake_host.now_us = fake_now_us;
     assert(MemoriesModInit(&fake_host, &mod));
     mod_overlay = mod.overlay;
     assert(helper_hand && helper_hand(0) == &D_800EA030[0] && helper_hand(4) == &D_800EA030[4] && !helper_hand(5));
@@ -588,10 +592,19 @@ int main(void)
     to_hand();
     assert(D_800E9FF0[0].deck_draw_cursor == 11 && D_800E9FF0[0].hand[3] == 10);
     assert(D_800E9FF0[0].hand[4] < 0 && D_800EA030[3].object && !D_800EA030[4].object);
-    /* A full hand has no room: the turn's card waits instead. */
+    /* A full hand has no room: the turn's card waits instead, and a notice
+     * says it was drawn, for three seconds. */
+    fake_clock = 1000000;
     new_turn(0, 0);
     to_hand();
     assert(D_800E9FF0[0].deck_draw_cursor == 11 && provided->queued(0) == 1);
+    assert(hint_signature() & 1u << 26);
+    overlay_lines();
+    assert(drew_at("Hand full (5 cards)") >= 0);
+    fake_clock += FULL_NOTICE_US;
+    assert(!(hint_signature() & 1u << 26));
+    fake_clock = 0;
+    full_notice_until = 0;
 
     /* A bonus hand (a draw-two card used from the hand): it draws the two and
      * the waiting card as far as there is room, and is not counted as a play. */

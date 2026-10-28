@@ -136,9 +136,11 @@ When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
 resolution's own loop, but puts each card into the first empty slot
 instead of the last ones, so the hand stays packed to the left. Cards
-that do not fit wait. They are drawn into the next hand, and the player's
-hand shows how many are waiting. Drawing with no cards left in the deck
-loses the duel, as at a turn's draw.
+that do not fit wait. They are drawn into the next hand. When the player's
+draw finds the hand full, a notice in the middle of the screen says so for
+three seconds ("Hand full", the cards drawn and how many wait), and then
+the hint line under the strip above the field keeps the count. Drawing
+with no cards left in the deck loses the duel, as at a turn's draw.
 
 ## How it works
 

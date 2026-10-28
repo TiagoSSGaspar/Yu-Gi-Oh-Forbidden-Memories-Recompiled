@@ -236,14 +236,25 @@ static void lay_out(void)
     S.focus = 0;
 }
 
+/* The player's draw that found the hand full: when the notice of it goes,
+ * and how many cards that draw left waiting (draw_hint). Not saved: a
+ * notice, not the duel's state. */
+#define FULL_NOTICE_US 3000000
+static uint64_t full_notice_until;
+static unsigned full_notice_drawn;
+
 /* How many of `total` wanted cards fit; the rest wait. */
 static void plan_draws(int total)
 {
-    int side = D_8009B1D5, room = Ehp_HandMax() - hand_count();
+    int side = D_8009B1D5, room = Ehp_HandMax() - hand_count(), before = S.queued[side];
     if (total > 255) total = 255;
     S.to_draw = (u8)(total < room ? total : room);
     S.queued[side] = (u8)(total - S.to_draw);
     S.custom = 1;
+    if (S.queued[side] > before && human()) {
+        full_notice_until = host->now_us(host) + FULL_NOTICE_US;
+        full_notice_drawn = (unsigned)(S.queued[side] - before);
+    }
 }
 
 /* State 2. A real draw starts a new turn. A rebuilt hand takes the draw's
@@ -621,8 +632,9 @@ static int phase_shown(void)
 /* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2-9: cards
  * waiting to be drawn; bits 16-18: the phase shown; 19-20: the phase
  * menu's cursor, 21-22 its entries, 23-25 its first. The discard: bit 31,
- * with the cards still to mark. */
-static unsigned hint_signature(void)
+ * with the cards still to mark. The hand-full notice is hint_signature's
+ * bit 26, beside all of these. */
+static unsigned hint_bits(void)
 {
     unsigned shown = 0;
     int phase = phase_shown(), items[2];
@@ -641,6 +653,43 @@ static unsigned hint_signature(void)
     }
     if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
     return shown | (unsigned)S.queued[D_8009B1D5] << 2;
+}
+static int full_notice_shown(void) { return full_notice_until && host->now_us(host) < full_notice_until; }
+static unsigned hint_signature(void) { return hint_bits() | (full_notice_shown() ? 1u << 26 : 0); }
+
+/* A drawn card that found no room: a panel high in the middle of the
+ * screen for a few seconds, so the draw is seen to have happened. */
+static void full_notice(void)
+{
+    char title[48], text[96];
+    int width, height, scale, big, small, frame, pad, w, x, y, panel_w, panel_h, waiting = S.queued[D_8009B1D5];
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    big = 2 * scale;
+    small = scale;
+    frame = 2 * scale;
+    pad = 10 * scale;
+    snprintf(title, sizeof title, "Hand full (%d cards)", Ehp_HandMax());
+    if (full_notice_drawn == 1)
+        snprintf(text, sizeof text, "You drew a card: it waits until a play makes room (%d waiting)", waiting);
+    else
+        snprintf(text, sizeof text, "You drew %u cards: they wait until plays make room (%d waiting)",
+                 full_notice_drawn, waiting);
+    w = host->text_width(host, title, big);
+    if (host->text_width(host, text, small) > w) w = host->text_width(host, text, small);
+    panel_w = w + 2 * pad;
+    panel_h = pad + 16 * big + 4 * scale + 12 * small + pad;
+    x = (width - panel_w) / 2;
+    y = height * 70 / 240;
+    host->fill(host, x, y, panel_w, panel_h, MENU_PANEL_RGB, 235);
+    host->fill(host, x, y, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y + panel_h - frame, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    host->fill(host, x + panel_w - frame, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    host->draw_text(host, x + (panel_w - host->text_width(host, title, big)) / 2, y + pad + 8 * big, title,
+                    MENU_TITLE_RGB, big);
+    host->draw_text(host, x + (panel_w - host->text_width(host, text, small)) / 2,
+                    y + pad + 16 * big + 4 * scale + 6 * small, text, MENU_PICKED_RGB, small);
 }
 /* The phase menu, as in the GX games: a panel in the middle of the screen,
  * the phase now on top, the next phases under it with the one under the
@@ -690,6 +739,8 @@ static void draw_hint(void)
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
     int phase = shown >> 16 & 7, row = 0;
     char text[64];
+    if (shown & 1u << 26) full_notice();
+    shown &= ~(1u << 26);
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
         snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
@@ -705,7 +756,7 @@ static void draw_hint(void)
     if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++, HINT_RGB);
     if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);
     if (waiting) {
-        snprintf(text, sizeof text, "%u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
+        snprintf(text, sizeof text, "Hand full: %u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
         line(text, row, HINT_RGB);
     }
 }
