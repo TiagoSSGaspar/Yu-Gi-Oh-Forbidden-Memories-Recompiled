@@ -22,8 +22,9 @@
  * reaches it: events and joysticks (Android_JNI_PollInputDevices), the
  * window's mode and title, the cursor, the clipboard, message boxes, URLs,
  * text input, gamepads and rumble, audio devices, file dialogs, the app's
- * storage paths and files opened through SDL, SDL's own set-up, and the
- * JNI environment and activity our own Java calls start from (android.c). */
+ * storage paths and files opened through SDL, the system's languages, SDL's
+ * own set-up, and the JNI environment and activity our own Java calls start
+ * from (android.c). */
 #if defined(SDL_PLATFORM_ANDROID) && defined(__aarch64__)
 #include "pc/guest/state.h"
 
@@ -57,6 +58,7 @@
 #define SDL_OpenJoystick(...) MEMORIES_JNI(SDL_OpenJoystick, __VA_ARGS__)
 #define SDL_CloseJoystick(...) MEMORIES_JNI(SDL_CloseJoystick, __VA_ARGS__)
 #define SDL_AddGamepadMappingsFromFile(...) MEMORIES_JNI(SDL_AddGamepadMappingsFromFile, __VA_ARGS__)
+#define SDL_GetPreferredLocales(...) MEMORIES_JNI(SDL_GetPreferredLocales, __VA_ARGS__)
 #define SDL_RumbleGamepad(...) MEMORIES_JNI(SDL_RumbleGamepad, __VA_ARGS__)
 #define SDL_OpenAudioDeviceStream(...) MEMORIES_JNI(SDL_OpenAudioDeviceStream, __VA_ARGS__)
 #define SDL_ShowOpenFileDialog(...) MEMORIES_JNI(SDL_ShowOpenFileDialog, __VA_ARGS__)

@@ -279,8 +279,9 @@ static int visible(int mod)
         return 0;
     if (filter == 3 && !Mods_Status(mod)[0])
         return 0;
-    return contains(Mods_Name(mod), query) || contains(Mods_Id(mod), query) ||
-           contains(Mods_Metadata(mod, "author"), query);
+    /* The name in the player's language, and the manifest's as well. */
+    return contains(Mods_Name(mod), query) || contains(Mods_Metadata(mod, "name"), query) ||
+           contains(Mods_Id(mod), query) || contains(Mods_Metadata(mod, "author"), query);
 }
 static int shown(int row)
 {
@@ -476,14 +477,14 @@ static void option_label(int mod, int index, char *out, size_t size)
     if (!strcmp(type, "bool"))
         snprintf(out, size, "%s", value ? "On" : "Off");
     else if (!strcmp(type, "choice"))
-        snprintf(out, size, "%s", Json_String(Json_At(Json_Member(spec, "choices"), value), "Invalid choice"));
+        snprintf(out, size, "%s", Mods_OptionChoice(mod, index, value, "Invalid choice"));
     else if (!strcmp(type, "key")) {
         int bit = 0;
         while (bit < 16 && value != (1 << bit))
             bit++;
         snprintf(out, size, "%s", bit < 16 ? pad_names[bit] : "None");
     } else
-        snprintf(out, size, "%d%s", value, str(spec, "suffix", ""));
+        snprintf(out, size, "%d%s", value, Mods_OptionText(mod, index, "suffix", ""));
 }
 /* Wide enough for every value the setting can take, so none is cut off. */
 static int value_width(int option, int w)
@@ -493,16 +494,15 @@ static int value_width(int option, int w)
     char s[96];
     int widest = width_text("Off");
     if (!strcmp(type, "choice")) {
-        const JsonValue *choices = Json_Member(spec, "choices");
-        for (int i = 0; i < Json_Count(choices); i++)
-            widest = max(widest, width_text(Json_String(Json_At(choices, i), "")));
+        for (int i = 0; i < Json_Count(Json_Member(spec, "choices")); i++)
+            widest = max(widest, width_text(Mods_OptionChoice(selected, option, i, "")));
     } else if (!strcmp(type, "key")) {
         for (int i = 0; i < 16; i++)
             widest = max(widest, width_text(pad_names[i]));
     } else if (strcmp(type, "bool")) {
-        snprintf(s, sizeof(s), "%d%s", num(spec, "min", 0), str(spec, "suffix", ""));
+        snprintf(s, sizeof(s), "%d%s", num(spec, "min", 0), Mods_OptionText(selected, option, "suffix", ""));
         widest = max(widest, width_text(s));
-        snprintf(s, sizeof(s), "%d%s", num(spec, "max", 100), str(spec, "suffix", ""));
+        snprintf(s, sizeof(s), "%d%s", num(spec, "max", 100), Mods_OptionText(selected, option, "suffix", ""));
         widest = max(widest, width_text(s));
     }
     return min(max(widest + 24 * unit, 64 * unit), w * 2 / 5);
@@ -518,13 +518,13 @@ typedef struct {
 static void option(MenuCanvas *c, int index, int w, int y, OptionBox *o)
 {
     const JsonValue *spec = Mods_Option(selected, index);
-    const char *about = str(spec, "description", "");
+    const char *about = Mods_OptionText(selected, index, "description", "");
     char value[160];
     int box = value_width(index, w), bottom;
     o->plus = rect(w - CONTROL, y, CONTROL, CONTROL);
     o->value = rect(o->plus.x - 4 * unit - box, y, box, CONTROL);
     o->minus = rect(o->value.x - 4 * unit - CONTROL, y, CONTROL, CONTROL);
-    bottom = wrap(c, 0, y + 3 * unit, o->minus.x - 16 * unit, str(spec, "label", str(spec, "key", "Setting")), TEXT);
+    bottom = wrap(c, 0, y + 3 * unit, o->minus.x - 16 * unit, Mods_OptionText(selected, index, "label", str(spec, "key", "Setting")), TEXT);
     bottom = max(y + CONTROL, bottom);
     if (*about)
         bottom = wrap(c, 0, bottom + 4 * unit, w, about, DIM);
@@ -947,7 +947,7 @@ static void apply(void)
         for (int j = 0; j < counts[i]; j++) {
             if (!Mods_Failed(i) && !Mods_OptionValid(i, j, values[i][j])) {
                 snprintf(status, sizeof(status), "Invalid setting: %s / %s", Mods_Name(i),
-                         str(Mods_Option(i, j), "key", ""));
+                         Mods_OptionText(i, j, "label", str(Mods_Option(i, j), "key", "")));
                 return;
             }
         }

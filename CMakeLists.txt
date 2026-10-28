@@ -496,6 +496,15 @@ if(BUILD_TESTING)
     target_include_directories(memories_mods_manager_test PRIVATE src)
     target_link_libraries(memories_mods_manager_test PRIVATE m Threads::Threads)
     add_test(NAME pc_mods_manager COMMAND memories_mods_manager_test)
+    # A mod's own words in the player's language (lang/<language>.json).
+    add_executable(memories_mods_language_test tests/pc/mods_language_test.c ${MOD_TEST_SOURCES})
+    target_include_directories(memories_mods_language_test PRIVATE src)
+    target_link_libraries(memories_mods_language_test PRIVATE m Threads::Threads)
+    target_compile_definitions(memories_mods_language_test PRIVATE MODS_SOURCE_DIR="${CMAKE_SOURCE_DIR}/mods")
+    if(NOT MSVC)
+        target_compile_options(memories_mods_language_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME pc_mods_language COMMAND memories_mods_language_test)
     # What enabled mods change in common (src/pc/mods/overlap.c): the mods in
     # tests/pc/mod_overlaps, whose lines the FM Editor's check must find too.
     add_executable(memories_mods_overlap_test tests/pc/mods_overlap_test.c src/pc/mods/overlap.c src/pc/mods/json.c

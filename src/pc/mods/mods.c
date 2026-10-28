@@ -117,6 +117,7 @@ typedef struct {
     MemoriesMod hooks;
     MemoriesModHost host;
     JsonDocument *manifest;
+    JsonDocument *strings;       /* lang/<language>.json: its own words in the player's language, or NULL */
     const JsonValue *data;       /* the "data" array, applied when enabled */
     const JsonValue *cards;      /* the "cards" array: cards the mod adds (src/pc/cards) */
     const JsonValue *models;     /* the "models" array: battle models the mod adds */
@@ -1783,6 +1784,128 @@ static void check_keys(Mod *mod, const JsonValue *root)
     }
 }
 
+/* The language a mod's own words are shown in (notes/modding.md, "A mod in
+ * the player's language"): MEMORIES_MODS_LANGUAGE, else the system's
+ * (Mods_SetLanguage), else the locale's environment. A tag as BCP 47 writes
+ * it, "pt-BR"; empty for none. */
+static char system_language[16], read_language[16];   /* and the one the lang files were read for */
+
+/* "pt_BR.UTF-8", "pt-br" or "pt" as "pt-BR" or "pt", a script as "zh-Hant";
+ * "C" and "POSIX" as none. */
+static void language_tag(char *out, size_t size, const char *text)
+{
+    size_t length = 0, part = 0;
+    if (!size) return;
+    out[0] = '\0';
+    if (!text || !strcmp(text, "C") || !strncmp(text, "C.", 2) || !strcmp(text, "POSIX")) return;
+    for (; *text && *text != '.' && *text != '@' && length + 1 < size; text++) {
+        if (*text == '_' || *text == '-') {
+            if (!length || part) break;   /* the language and its country (or script), no more */
+            part = length + 1;
+            out[length++] = '-';
+        } else if (isalnum((unsigned char)*text)) {
+            out[length++] = (char)tolower((unsigned char)*text);
+        } else break;
+    }
+    if (length && out[length - 1] == '-') length--;
+    out[length] = '\0';
+    if (part && length - part == 4) out[part] = (char)toupper((unsigned char)out[part]);   /* a script: Hant */
+    else if (part) for (size_t i = part; i < length; i++) out[i] = (char)toupper((unsigned char)out[i]);
+}
+
+static void current_language(char *out, size_t size)
+{
+    static const char *const locale[] = {"LC_ALL", "LC_MESSAGES", "LANG"};
+    const char *named = getenv("MEMORIES_MODS_LANGUAGE");
+    if (named) { language_tag(out, size, named); return; }
+    if (*system_language) { language_tag(out, size, system_language); return; }
+    out[0] = '\0';
+    for (size_t i = 0; i < sizeof(locale) / sizeof(locale[0]); i++) {
+        const char *value = getenv(locale[i]);
+        if (value && *value) { language_tag(out, size, value); return; }   /* the first set wins, C too */
+    }
+}
+
+/* The mod's lang/<language>.json, else lang/<language without country>.json
+ * ("pt-BR", then "pt"), checked against its manifest: what it gets wrong is
+ * a warning, and the English is shown there. Never freed: the window
+ * borrows its strings until exit (mods.h). */
+static void read_strings(Mod *mod)
+{
+    char tag[16], path[PATH_MAX_], error[128], name[32];
+    const JsonValue *root, *settings = Json_Member(Json_Root(mod->manifest), "settings"), *own, *entry;
+    int found = 0;
+    mod->strings = NULL;
+    current_language(tag, sizeof(tag));
+    memcpy(read_language, tag, sizeof(read_language));
+    if (!Json_Root(mod->manifest)) return;   /* no mod to put words to */
+    for (int whole = 1; whole >= 0 && *tag && !found; whole--) {
+        int length = (int)(whole ? strlen(tag) : strcspn(tag, "-"));
+        if (!whole && tag[length] == '\0') break;
+        snprintf(name, sizeof(name), "lang/%.*s.json", length, tag);
+        if (snprintf(path, sizeof(path), "%s/%s", mod->directory, name) >= (int)sizeof(path) || access(path, R_OK))
+            continue;
+        found = 1;
+        mod->strings = Json_ParseFile(path, error, sizeof(error));
+    }
+    if (!mod->strings) {
+        if (found) warn(mod, 1, "%s: %s", name, error);
+        return;
+    }
+    root = Json_Root(mod->strings);
+    if (Json_TypeOf(root) != JSON_OBJECT) {
+        warn(mod, 1, "%s is not an object; the mod's words stay English", name);
+        Json_Free(mod->strings);
+        mod->strings = NULL;
+        return;
+    }
+    for (entry = Json_At(root, 0); entry; entry = Json_Next(entry)) {
+        const char *key = Json_Name(entry);
+        if (strcmp(key, "name") && strcmp(key, "description") && strcmp(key, "settings"))
+            warn(mod, 1, "%s: unknown key \"%s\"", name, key);
+    }
+    own = Json_Member(root, "settings");
+    if (own && Json_TypeOf(own) != JSON_OBJECT) {
+        warn(mod, 1, "%s: \"settings\" is not an object of the settings' keys", name);
+        own = NULL;
+    }
+    for (entry = Json_At(own, 0); entry; entry = Json_Next(entry)) {
+        const JsonValue *spec = NULL, *choices;
+        for (const JsonValue *s = Json_At(settings, 0); s && !spec; s = Json_Next(s))
+            if (!strcmp(Json_String(Json_Member(s, "key"), ""), Json_Name(entry))) spec = s;
+        if (!spec) {
+            warn(mod, 1, "%s: the mod has no setting \"%s\"", name, Json_Name(entry));
+            continue;
+        }
+        choices = Json_Member(entry, "choices");
+        if (choices && Json_Count(choices) != Json_Count(Json_Member(spec, "choices")))
+            warn(mod, 1, "%s: \"%s\" has %d choices, the mod %d; they stay English", name, Json_Name(entry),
+                 Json_Count(choices), Json_Count(Json_Member(spec, "choices")));
+    }
+}
+
+void Mods_SetLanguage(const char *tag)
+{
+    char now[16];
+    language_tag(system_language, sizeof(system_language), tag);
+    current_language(now, sizeof(now));
+    if (!strcmp(now, read_language)) return;   /* the files read are the ones it would read */
+    for (int i = 0; i < mod_count; i++)
+        if (!mods[i].removed) read_strings(&mods[i]);
+}
+
+/* The mod's own word for `key` of its manifest ("name", "description"), or
+ * of its setting `option` (its "label", "description", "suffix"), in the
+ * player's language when its lang file has one. */
+static const char *own_word(const Mod *mod, const JsonValue *spec, const char *key)
+{
+    const JsonValue *root = Json_Root(mod->strings);
+    if (!root) return NULL;
+    if (spec) root = Json_Member(Json_Member(root, "settings"), Json_String(Json_Member(spec, "key"), ""));
+    const char *word = Json_String(Json_Member(root, key), NULL);
+    return word && *word ? word : NULL;   /* "" is a word left out */
+}
+
 /* mod.json, read into the record. Returns 0 when it is not a mod at all. */
 static int read_manifest(Mod *mod, const char *directory, const char *origin)
 {
@@ -1956,6 +2079,7 @@ static int read_manifest(Mod *mod, const char *directory, const char *origin)
         mod->enabled = environment_choice(mod->id, fallback) != 0;
     }
     check_keys(mod, root);
+    read_strings(mod);
     return 1;
 }
 
@@ -2545,7 +2669,11 @@ static Mod *at(int index)
 }
 
 const char *Mods_Id(int mod) { return at(mod) ? mods[mod].id : ""; }
-const char *Mods_Name(int mod) { return at(mod) ? mods[mod].name : ""; }
+const char *Mods_Name(int mod)
+{
+    const char *own = at(mod) ? own_word(&mods[mod], NULL, "name") : NULL;
+    return own ? own : at(mod) ? mods[mod].name : "";
+}
 const char *Mods_Status(int mod) { return at(mod) ? mods[mod].status : ""; }
 int Mods_Enabled(int mod) { return at(mod) ? mods[mod].enabled : 0; }
 int Mods_RequiresRestart(int mod) { return at(mod) ? mods[mod].restart : 0; }
@@ -2654,7 +2782,26 @@ void Mods_Reset(void)
 }
 
 const JsonValue *Mods_Manifest(int index) { return at(index) ? Json_Root(mods[index].manifest) : NULL; }
-const char *Mods_Metadata(int index, const char *key) { return Json_String(Json_Member(Mods_Manifest(index), key), ""); }
+const char *Mods_Metadata(int index, const char *key)
+{
+    const char *own = at(index) && key && !strcmp(key, "description") ? own_word(&mods[index], NULL, key) : NULL;
+    return own ? own : Json_String(Json_Member(Mods_Manifest(index), key), "");
+}
+const char *Mods_OptionText(int index, int option, const char *key, const char *fallback)
+{
+    const JsonValue *spec = Mods_Option(index, option);
+    const char *own = at(index) && spec ? own_word(&mods[index], spec, key) : NULL;
+    return own ? own : Json_String(Json_Member(spec, key), fallback);
+}
+const char *Mods_OptionChoice(int index, int option, int choice, const char *fallback)
+{
+    const JsonValue *spec = Mods_Option(index, option), *choices = Json_Member(spec, "choices"), *own = NULL;
+    if (at(index) && spec && mods[index].strings)
+        own = Json_Member(Json_Member(Json_Member(Json_Root(mods[index].strings), "settings"),
+                                      Json_String(Json_Member(spec, "key"), "")), "choices");
+    const char *word = own && Json_Count(own) == Json_Count(choices) ? Json_String(Json_At(own, choice), NULL) : NULL;
+    return word && *word ? word : Json_String(Json_At(choices, choice), fallback);   /* read_strings warned of a count */
+}
 const char *Mods_Directory(int index) { return at(index) ? mods[index].directory : ""; }
 const char *Mods_Origin(int index) { return at(index) ? mods[index].origin : ""; }
 int Mods_Active(int index) { return at(index) && mods[index].active; }

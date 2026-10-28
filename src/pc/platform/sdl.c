@@ -15,6 +15,7 @@
 #include "pc/render/present_pass.h"
 #include "mods_window.h"
 #include "pc/mods/hd_pack.h"
+#include "pc/mods/mods.h"
 #include "controls_window.h"
 #include "controls_linux.h"
 #include "panel.h"
@@ -1136,6 +1137,22 @@ static void open_gamepad(SDL_JoystickID id)
             return;
         }
 }
+/* The mods' own words in the language the player put first in the system's
+ * settings (Mods_SetLanguage), which the locale's environment may not say:
+ * an app opened from the Finder has none. */
+static void set_language(void)
+{
+    int count = 0;
+    SDL_Locale **locales = SDL_GetPreferredLocales(&count);
+    if (locales && count > 0 && locales[0]->language) {
+        char tag[16];
+        snprintf(tag, sizeof(tag), "%s%s%s", locales[0]->language, locales[0]->country ? "-" : "",
+                 locales[0]->country ? locales[0]->country : "");
+        Mods_SetLanguage(tag);
+    }
+    SDL_free(locales);
+}
+
 /* SDL's built-in mappings, with SDL_GameControllerDB (src/pc/assets) only
  * for the controllers SDL has none for: SDL's own wins, as a pad mapped
  * before the DB was here keeps its mapping (SDL's lines for Nintendo-layout
@@ -2608,6 +2625,7 @@ int Platform_Open(const char *title)
         return -1;
     }
     load_mappings();
+    set_language();
     SDL_AddEventWatch(app_event, NULL);
     create_window(title);
     /* A software GL renderer cannot present a scaled 4K frame in the 4 ms a

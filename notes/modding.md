@@ -101,6 +101,45 @@ Two folders in one mods directory with the same `id` do not replace each
 other: the first by name is kept and says which one was left out. Across
 directories the player's copy still replaces the shipped one.
 
+### A mod in the player's language
+
+What the Mods window shows of a mod (its name, its description, and its
+settings' labels, descriptions, suffixes and choices) may come in other
+languages, one file each beside `mod.json`: `lang/pt-BR.json` for Brazilian
+Portuguese, `lang/es.json` for Spanish, a tag as the system writes it. It
+holds only the words, keyed by the settings' `key`; whatever it leaves out
+stays the manifest's:
+
+```json
+{
+    "name": "Regras modernas",
+    "description": "Regras dos jogos mais novos: ...",
+    "settings": {
+        "draw_one": {"label": "Comprar uma carta por turno", "description": "..."},
+        "sides": {"label": "Vale para", "choices": ["Os dois lados", "Só o jogador", "Só a CPU"]}
+    }
+}
+```
+
+The language is the first one the player put in the system's settings (on
+macOS and Android too, where an app opened from its icon has no locale in
+its environment). The X11 build, which has no SDL, and a headless run read
+`LC_ALL`, `LC_MESSAGES` or `LANG` instead. `MEMORIES_MODS_LANGUAGE=pt-BR`
+picks one for a run, and `MEMORIES_MODS_LANGUAGE=` keeps every mod in its
+manifest's words. The file for the whole tag is read (`pt-BR.json`), else
+the one for its language alone (`pt.json`). A file that does not parse, a
+key other than these three, a setting the manifest does not have and
+`choices` of another length than the manifest's are warnings beside the
+mod, as a manifest's are; the words they concern stay the manifest's, as
+does any word left empty. The
+search in the Mods window finds a mod by the manifest's name too. Nothing
+else changes: the settings' keys and values and the mod's `id` are the same
+in every language (a note beside a mod, as "requires", names the mods as
+the window does). The language changes only what the window
+shows, never what the game says (that is [a translation](translation.md)).
+
+The mods the release ships have `lang/pt-BR.json`.
+
 ### Which game a mod needs
 
 A game that does not know a key, or a value of one, plays the mod without

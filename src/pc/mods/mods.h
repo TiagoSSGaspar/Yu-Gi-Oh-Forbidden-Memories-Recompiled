@@ -53,6 +53,7 @@ void *Mods_RandSeed(unsigned *size);
 
 int Mods_Count(void);
 const char *Mods_Id(int mod);
+/* In the player's language when the mod's lang file names it (Mods_SetLanguage). */
 const char *Mods_Name(int mod);
 /* Empty while all is well, else why this mod did not load. */
 const char *Mods_Status(int mod);
@@ -172,7 +173,14 @@ void Mods_ModelParsed(int slot);
 
 /* Manager metadata and configuration. Borrowed strings live until exit. */
 const struct JsonValue *Mods_Manifest(int mod);
+/* The manifest's string `key`; its "description" in the player's language
+ * when the mod has a lang file for it (Mods_SetLanguage), as Mods_Name is. */
 const char *Mods_Metadata(int mod, const char *key);
+/* The language of the mods' own words, as the system names it ("pt-BR",
+ * "pt_BR.UTF-8"): each mod's lang/<language>.json, else its
+ * lang/<language without country>.json, is read again. NULL or "" for the
+ * locale's environment; MEMORIES_MODS_LANGUAGE wins over both. */
+void Mods_SetLanguage(const char *tag);
 const char *Mods_Directory(int mod);
 /* Where players put new mods (MEMORIES_MODS_DIR, else the user mods
  * folder), created if missing; 0 on success. */
@@ -230,6 +238,11 @@ void Mods_SetOverlapDuelists(int (*duelist)(const char *text));
 void Mods_SetFunctionNames(const char *(*lookup)(uintptr_t address, uintptr_t *offset));
 int Mods_OptionCount(int mod);
 const struct JsonValue *Mods_Option(int mod, int option);
+/* A setting's "label", "description" or "suffix", and its choice number
+ * `choice`, in the player's language when the mod's lang file has it, else
+ * the manifest's, else `fallback`. */
+const char *Mods_OptionText(int mod, int option, const char *key, const char *fallback);
+const char *Mods_OptionChoice(int mod, int option, int choice, const char *fallback);
 int Mods_OptionValue(int mod, int option);
 int Mods_OptionValid(int mod, int option, int value);
 /* A key a mod's settings may use (mod.<id>.<key>): letters, digits, '_' and
