@@ -119,9 +119,15 @@ int main(void)
     Mods_SetLanguage("en-US");
     Mods_SetLanguage("de");
     assert(!strcmp(Mods_Name(words), "Palavras"));
+    assert(!setenv("MEMORIES_MODS_LANGUAGE", "en", 1));
+    Mods_SetLanguage("pt-BR");
+    assert(!strcmp(Mods_Name(words), "Words"));   /* no lang/en.json: the manifest's, whatever the system says */
+#ifndef _WIN32
+    /* Windows has no empty variable: setting one to "" removes it. */
     assert(!setenv("MEMORIES_MODS_LANGUAGE", "", 1));
     Mods_SetLanguage("pt-BR");
-    assert(!strcmp(Mods_Name(words), "Words"));   /* "" is English, whatever the system says */
+    assert(!strcmp(Mods_Name(words), "Words"));   /* "" is English too */
+#endif
     assert(!unsetenv("MEMORIES_MODS_LANGUAGE"));
     /* With no system language, the locale's environment. */
     assert(!setenv("LC_ALL", "pt_BR.UTF-8", 1));

@@ -125,8 +125,9 @@ The language is the first one the player put in the system's settings (on
 macOS and Android too, where an app opened from its icon has no locale in
 its environment). The X11 build, which has no SDL, and a headless run read
 `LC_ALL`, `LC_MESSAGES` or `LANG` instead. `MEMORIES_MODS_LANGUAGE=pt-BR`
-picks one for a run, and `MEMORIES_MODS_LANGUAGE=` keeps every mod in its
-manifest's words. The file for the whole tag is read (`pt-BR.json`), else
+picks one for a run, and `MEMORIES_MODS_LANGUAGE=en` keeps every mod in its
+manifest's words (so does an empty one, except on Windows, where setting a
+variable to nothing removes it). The file for the whole tag is read (`pt-BR.json`), else
 the one for its language alone (`pt.json`). A file that does not parse, a
 key other than these three, a setting the manifest does not have and
 `choices` of another length than the manifest's are warnings beside the
