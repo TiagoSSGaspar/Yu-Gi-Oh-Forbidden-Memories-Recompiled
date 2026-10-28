@@ -1201,6 +1201,60 @@ all greyed with an empty `MEMORIES_LANGUAGES_DIR`; choosing Español and
 Restart now started the game again in Spanish from the pack. The six
 smoke cases are unchanged with English (US).
 
+### The port's words in the player's language
+
+The port's own words follow the language the player put first in the
+system's settings, as a mod's do (notes/modding.md, "A mod in the player's
+language"). They are the menu bar, the Mods and Controls windows, notices,
+prompts and the Android screens. Game > Language is a different thing: it
+is the game's text. The English in the C source is the key. `UI("Save
+state")` (src/pc/platform/ui_text.h) returns the string that
+`languages/ui/<language>.json` gives it, and the English when the catalog
+has none. The catalog is read beside the program, else in the working
+folder: `pt-BR.json`, else `pt.json` for the language alone. The build
+copies it with the language packs, into the release, the macOS app's
+Resources and the Android assets. It ships Brazilian Portuguese.
+
+The SDL builds take the language from `SDL_GetPreferredLocales`. The X11
+build, which has no SDL, and a headless run read `LC_ALL`, `LC_MESSAGES`
+or `LANG`. `MEMORIES_UI_LANGUAGE=pt-BR` picks a language for a run, and
+`MEMORIES_UI_LANGUAGE=en` keeps the English. A catalog that does not parse,
+or is not an object, is named on stderr and the menus stay English. So does
+a machine whose menus fall back to the built-in 5x7 letters, which have no
+accents (`UiText_SetPlain`).
+
+In the source:
+
+- A string the player sees goes through `UI()` where it is drawn or shown.
+- The menu tables keep plain literals. menu.c translates each label, and
+  each shortcut or reason beside it, where it measures and draws it.
+- `Menu_ShowNotice` translates its title, text and buttons, and the Mods
+  window's `button()` its label.
+- A sentence is one format with its `%d`/`%s` in it, not pieces put
+  together. A count has a format for one and one for several.
+
+Some text stays English:
+
+- The log.
+- The mod system's own messages: a mod's warnings, overlaps and why an
+  import failed.
+- The game's words: START, SELECT, Free Duel, Library.
+
+`tools/pc/check_ui_text.py`, CTest `pc_ui_text_catalogs`, checks every
+catalog:
+
+- Each key must still be a string literal somewhere in src/pc.
+- Each translation must keep its English's conversions, in the same order.
+- `--missing` lists the `UI()` strings a catalog does not translate.
+
+Tested:
+
+- CTest `pc_ui_text`: lookup, the language alone, a broken catalog, the
+  5x7 letters, `MEMORIES_UI_LANGUAGE` and the locale's environment.
+- The catalog check.
+- The Mods and Controls windows rendered in Brazilian Portuguese
+  (`tools/pc/preview_*.sh`).
+
 ### Present pass (Video > Color)
 
 The OpenGL presenter can draw the game picture through one fragment program

@@ -77,6 +77,7 @@
 #include "pc/mods/import.h"
 #include "pc/mods/mods.h"
 #include "update.h"
+#include "ui_text.h"
 #include "jni_guard.h" /* last: after SDL's own headers */
 
 #define LOG_TAG "memories"
@@ -331,22 +332,22 @@ static int copy_disc(FILE *from, Sint64 size, Sint64 image, const char *to, char
      * leaves its file: not counted against the free space, nor kept. */
     if (!remove(temporary)) fprintf(stderr, "memories-pc: removed %s, left by a copy that did not finish\n", temporary);
     if (!statvfs(folder, &space) && (Sint64)space.f_bavail * (Sint64)space.f_frsize < need + (16 << 20)) {
-        snprintf(why, why_size, "There is not enough free space for the disc image: it needs %lld MB, and %lld MB "
-                 "are free.", (long long)(need >> 20), (long long)((Sint64)space.f_bavail * space.f_frsize >> 20));
+        snprintf(why, why_size, UI("There is not enough free space for the disc image: it needs %lld MB, and %lld MB "
+                 "are free."), (long long)(need >> 20), (long long)((Sint64)space.f_bavail * space.f_frsize >> 20));
         return 0;
     }
     /* is_the_disc read it out of order: back to its start, which a document
      * that cannot seek refuses (rewind would not say). */
     if (fseek(from, 0, SEEK_SET)) {
-        snprintf(why, why_size, "The file you chose could not be read from its start again (%s). "
-                 "Copy it to the phone's Download folder and choose it there.", strerror(errno));
+        snprintf(why, why_size, UI("The file you chose could not be read from its start again (%s). "
+                 "Copy it to the phone's Download folder and choose it there."), strerror(errno));
         return 0;
     }
     if (!(out = fopen(temporary, "wb"))) {
-        snprintf(why, why_size, "Could not write the disc image to %s: %s", folder, strerror(errno));
+        snprintf(why, why_size, UI("Could not write the disc image to %s: %s"), folder, strerror(errno));
         return 0;
     }
-    snprintf(line, sizeof(line), "Copying the disc image into the game's folder: 0 of %lld MB",
+    snprintf(line, sizeof(line), UI("Copying the disc image into the game's folder: 0 of %lld MB"),
              (long long)(need >> 20));
     disc_call(DISC_PROGRESS, line, 0, (int)(need >> 20));
     for (;;) {
@@ -355,7 +356,7 @@ static int copy_disc(FILE *from, Sint64 size, Sint64 image, const char *to, char
         if (fwrite(buffer, 1, got, out) != got) break;
         done += (Sint64)got;
         if (!(done & ((8 << 20) - 1))) {
-            snprintf(line, sizeof(line), "Copying the disc image into the game's folder: %lld of %lld MB",
+            snprintf(line, sizeof(line), UI("Copying the disc image into the game's folder: %lld of %lld MB"),
                      (long long)(done >> 20), (long long)(need >> 20));
             disc_call(DISC_PROGRESS, line, (int)(done >> 20), (int)(need >> 20));
         }
@@ -369,12 +370,12 @@ static int copy_disc(FILE *from, Sint64 size, Sint64 image, const char *to, char
     if (fclose(out)) ok = 0;
     if (!ok || rename(temporary, to)) {
         if (ok)
-            snprintf(why, why_size, "Could not copy the disc image into %s (%s).", folder, strerror(errno));
+            snprintf(why, why_size, UI("Could not copy the disc image into %s (%s)."), folder, strerror(errno));
         else if (!complete && !ferror(from) && !ferror(out))
-            snprintf(why, why_size, "Could not copy the disc image into %s: the file you chose ended after %lld of "
-                     "%lld MB.", folder, (long long)(done >> 20), (long long)(need >> 20));
+            snprintf(why, why_size, UI("Could not copy the disc image into %s: the file you chose ended after %lld of "
+                     "%lld MB."), folder, (long long)(done >> 20), (long long)(need >> 20));
         else
-            snprintf(why, why_size, "Could not copy the disc image into %s (a read or a write failed after %lld MB).",
+            snprintf(why, why_size, UI("Could not copy the disc image into %s (a read or a write failed after %lld MB)."),
                      folder, (long long)(done >> 20));
         remove(temporary);
         return 0;
@@ -524,7 +525,7 @@ static int take_disc(const char *uri, char *target, size_t target_size, char *wh
     Sint64 image = 0;
     char said[600];
     fprintf(stderr, "memories-pc: chosen: %s\n", uri);
-    disc_call(DISC_PROGRESS, "Checking the file you chose...", 0, 0);
+    disc_call(DISC_PROGRESS, UI("Checking the file you chose..."), 0, 0);
     stream = SDL_IOFromFile(uri, "rb");
     snprintf(said, sizeof(said), "%s", stream ? "" : SDL_GetError());
     file = stream ? SDL_GetPointerProperty(SDL_GetIOProperties(stream), SDL_PROP_IOSTREAM_STDIO_FILE_POINTER, NULL)
@@ -532,16 +533,16 @@ static int take_disc(const char *uri, char *target, size_t target_size, char *wh
     if (!file || !is_the_disc(file, &image)) {
         if (!stream) {
             fprintf(stderr, "memories-pc: the chosen document could not be opened: %s\n", said);
-            snprintf(why, why_size, "That file could not be opened.\n\nChoose it again, or copy it to the phone's "
-                     "Download folder first and choose it there.\n\n(%s)", said);
+            snprintf(why, why_size, UI("That file could not be opened.\n\nChoose it again, or copy it to the phone's "
+                     "Download folder first and choose it there.\n\n(%s)"), said);
         } else {
-            snprintf(why, why_size, "That file could not be read as a Forbidden Memories (USA, SLUS-01411) disc.\n\n"
-                     "Choose the raw .bin file from your .bin/.cue pair, rather than the .cue file.");
+            snprintf(why, why_size, "%s", UI("That file could not be read as a Forbidden Memories (USA, SLUS-01411) disc.\n\n"
+                     "Choose the raw .bin file from your .bin/.cue pair, rather than the .cue file."));
             SDL_CloseIO(stream);
         }
         disc_call(DISC_CLOSE, NULL, 0, 0);
         disc_call(DISC_RELEASE, uri, 0, 0);
-        Platform_ShowError("Unable to use this ROM", why);
+        Platform_ShowError(UI("Unable to use this ROM"), why);
         return 0;
     }
     Paths_WriteBegin();
@@ -549,8 +550,8 @@ static int take_disc(const char *uri, char *target, size_t target_size, char *wh
         char folder[1100], reason[1300];
         snprintf(folder, sizeof(folder), "%s/game", Paths_UserDir());
         Paths_WriteError(reason, sizeof(reason), folder); /* mkdir's reason (Paths_MakeDirs) */
-        snprintf(why, why_size, "The game could not use its storage folder, so the disc image cannot be copied.\n\n"
-                 "Try again, or close the game and open it again.\n\n%s", reason);
+        snprintf(why, why_size, UI("The game could not use its storage folder, so the disc image cannot be copied.\n\n"
+                 "Try again, or close the game and open it again.\n\n%s"), reason);
         SDL_CloseIO(stream);
         disc_call(DISC_CLOSE, NULL, 0, 0);
         disc_call(DISC_RELEASE, uri, 0, 0);
@@ -561,7 +562,7 @@ static int take_disc(const char *uri, char *target, size_t target_size, char *wh
         SDL_CloseIO(stream);
         disc_call(DISC_CLOSE, NULL, 0, 0);
         disc_call(DISC_RELEASE, uri, 0, 0);
-        Platform_ShowError("Unable to use this ROM", why);
+        Platform_ShowError(UI("Unable to use this ROM"), why);
         return 0;
     }
     SDL_CloseIO(stream);
@@ -577,15 +578,15 @@ static int take_disc(const char *uri, char *target, size_t target_size, char *wh
 static int select_disc(int what, char *text, const char *record, char *target, size_t target_size, char *why,
                        size_t why_size)
 {
-    static const SDL_MessageBoxButtonData buttons[] = {
-        {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Quit"},
-        {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Choose disc image..."}
+    const SDL_MessageBoxButtonData buttons[] = {
+        {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, UI("Quit")},
+        {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, UI("Choose disc image...")}
     };
     const SDL_MessageBoxData welcome = {
-        SDL_MESSAGEBOX_INFORMATION, NULL, "Welcome to Forbidden Memories Recompiled",
-        "Choose your copy of Yu-Gi-Oh! Forbidden Memories to begin.\n\n"
-        "Select the .bin file of your USA disc (SLUS-01411), the .bin of a .bin/.cue pair.\n\n"
-        "The game copies it into its own folder (about 500 MB), so you can remove the file you chose afterwards.",
+        SDL_MESSAGEBOX_INFORMATION, NULL, UI("Welcome to Forbidden Memories Recompiled"),
+        UI("Choose your copy of Yu-Gi-Oh! Forbidden Memories to begin.\n\n"
+           "Select the .bin file of your USA disc (SLUS-01411), the .bin of a .bin/.cue pair.\n\n"
+           "The game copies it into its own folder (about 500 MB), so you can remove the file you chose afterwards."),
         2, buttons, NULL
     };
     unsigned picks = 0;
@@ -594,7 +595,7 @@ static int select_disc(int what, char *text, const char *record, char *target, s
             char id[64];
             int button = 0;
             if (!Android_ShowMessageBox(&welcome, &button)) {
-                snprintf(why, why_size, "Could not open ROM setup: %s", SDL_GetError());
+                snprintf(why, why_size, UI("Could not open ROM setup: %s"), SDL_GetError());
                 return -1;
             }
             if (button != 1 || drain_events()) return 0;
@@ -604,7 +605,7 @@ static int select_disc(int what, char *text, const char *record, char *target, s
             snprintf(id, sizeof(id), "%d-%u-%llu", (int)getpid(), ++picks, (unsigned long long)SDL_GetTicksNS());
             remove(record);
             if (!disc_call(DISC_START, id, 0, 0)) {
-                snprintf(why, why_size, "Could not open the file picker.");
+                snprintf(why, why_size, "%s", UI("Could not open the file picker."));
                 return -1;
             }
             what = wait_pick(record, id, &text);
@@ -616,8 +617,8 @@ static int select_disc(int what, char *text, const char *record, char *target, s
             fprintf(stderr, "memories-pc: no disc image chosen (%s)\n", text ? text : "");
         } else if (what == PICK_FAILED) {
             fprintf(stderr, "memories-pc: the picker gave no document: %s\n", text ? text : "");
-            snprintf(why, why_size, "The file picker gave back no file.\n\n%s", text ? text : "");
-            Platform_ShowError("Unable to use this ROM", why);
+            snprintf(why, why_size, UI("The file picker gave back no file.\n\n%s"), text ? text : "");
+            Platform_ShowError(UI("Unable to use this ROM"), why);
         } else if (take_disc(text, target, target_size, why, why_size)) {
             free(text);
             return 1;
@@ -654,11 +655,24 @@ int Platform_SelectDisc(char *path, size_t size, char *why, size_t why_size)
     char record[1024], target[1024];
     int result = 0;
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-        snprintf(why, why_size, "Could not open ROM setup: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not open ROM setup: %s"), SDL_GetError());
         return -1;
     }
+    {
+        /* The welcome comes before Platform_Open reads the system's language
+         * (sdl.c, set_language): its words in it too. */
+        int count = 0;
+        SDL_Locale **locales = SDL_GetPreferredLocales(&count);
+        if (locales && count > 0 && locales[0]->language) {
+            char tag[16];
+            snprintf(tag, sizeof(tag), "%s%s%s", locales[0]->language, locales[0]->country ? "-" : "",
+                     locales[0]->country ? locales[0]->country : "");
+            UiText_SetLanguage(tag);
+        }
+        SDL_free(locales);
+    }
     if (!pick_record(record, sizeof(record))) {
-        snprintf(why, why_size, "Could not open ROM setup: Android gave the app no internal folder.");
+        snprintf(why, why_size, "%s", UI("Could not open ROM setup: Android gave the app no internal folder."));
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
         return -1;
     }
@@ -689,7 +703,7 @@ int Platform_SelectDisc(char *path, size_t size, char *why, size_t why_size)
     }
     if (result > 0) {
         if (strlen(target) >= size) {
-            snprintf(why, why_size, "The ROM path is too long.");
+            snprintf(why, why_size, "%s", UI("The ROM path is too long."));
             result = -1;
         } else {
             snprintf(path, size, "%s", target);
@@ -736,7 +750,7 @@ int Platform_PickedModZip(char *why, size_t why_size)
     if (!mod_picking || !SDL_GetAtomicInt(&mod_pick.done)) return 0;
     mod_picking = 0;
     if (mod_pick.result < 0) {
-        snprintf(why, why_size, "Could not open the file picker: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not open the file picker: %s"), SDL_GetError());
         return -2;
     }
     if (!mod_pick.result) return -1;
@@ -755,48 +769,48 @@ int Platform_FetchModZip(char *path, size_t size, char *why, size_t why_size)
     int ok = 1;
     if (Mods_InstallDirectory(folder, sizeof(folder)) ||
         snprintf(path, size, "%s/.incoming.zip", folder) >= (int)size) {
-        snprintf(why, why_size, "Could not make the mods folder.");
+        snprintf(why, why_size, "%s", UI("Could not make the mods folder."));
         return 0;
     }
     Mods_ImportCleanup(folder); /* what an import cut short left */
     if (!(stream = SDL_IOFromFile(mod_pick.uri, "rb"))) {
-        snprintf(why, why_size, "Could not read that file: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not read that file: %s"), SDL_GetError());
         return 0;
     }
     if (!(out = fopen(path, "wb"))) {
-        snprintf(why, why_size, "Could not write in the mods folder: %s.", strerror(errno));
+        snprintf(why, why_size, UI("Could not write in the mods folder: %s."), strerror(errno));
         SDL_CloseIO(stream);
         return 0;
     }
     while ((got = SDL_ReadIO(stream, buffer, sizeof(buffer))) > 0) {
         if (!total && (got < 4 || memcmp(buffer, "PK", 2) || (buffer[2] != 3 && buffer[2] != 5))) {
-            snprintf(why, why_size, "That file is not a .zip.");
+            snprintf(why, why_size, "%s", UI("That file is not a .zip."));
             ok = 0;
             break;
         }
         total += (Sint64)got;
         if (total > (1 << 30)) {
-            snprintf(why, why_size, "That file is too large for a mod (more than 1 GB).");
+            snprintf(why, why_size, "%s", UI("That file is too large for a mod (more than 1 GB)."));
             ok = 0;
             break;
         }
         if (fwrite(buffer, 1, got, out) != got) {
-            snprintf(why, why_size, "Could not copy the .zip into the mods folder: %s.", strerror(errno));
+            snprintf(why, why_size, UI("Could not copy the .zip into the mods folder: %s."), strerror(errno));
             ok = 0;
             break;
         }
     }
     if (ok && SDL_GetIOStatus(stream) == SDL_IO_STATUS_ERROR) {
-        snprintf(why, why_size, "Could not read that file: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not read that file: %s"), SDL_GetError());
         ok = 0;
     }
     if (ok && !total) {
-        snprintf(why, why_size, "That file is empty.");
+        snprintf(why, why_size, "%s", UI("That file is empty."));
         ok = 0;
     }
     SDL_CloseIO(stream);
     if (fclose(out) && ok) {
-        snprintf(why, why_size, "Could not copy the .zip into the mods folder: %s.", strerror(errno));
+        snprintf(why, why_size, UI("Could not copy the .zip into the mods folder: %s."), strerror(errno));
         ok = 0;
     }
     if (!ok) {
@@ -876,9 +890,9 @@ int Platform_GuestMemoryHelp(char *why, size_t size)
      * kernel; the app's arm64 game always has the 64-bit address space. */
     if (four_gigabytes() == 0) {
         fprintf(stderr, "memories-pc: this is a 32-bit kernel (3 GB for the app): the guest memory cannot be placed\n");
-        snprintf(why, size, "This Android is 32-bit.\n\n"
+        snprintf(why, size, "%s", UI("This Android is 32-bit.\n\n"
                  "The game needs a 64-bit Android that can still run 32-bit apps: on a 32-bit system there is no "
-                 "room for the memory the game runs in.");
+                 "room for the memory the game runs in."));
         return 1;
     }
 #endif
@@ -923,16 +937,16 @@ int Platform_GuestMemoryHelp(char *why, size_t size)
         /* A range that something holds, or another failure (no shared
          * memory for the game's RAM, a refused mapping), told as it is. */
         if (parsed && strstr(failed, "already holds"))
-            snprintf(lead, sizeof(lead), "%s already uses memory this game needs (%s).",
-                     strstr(occupants, "dalvik") ? "Android's Java runtime" : "Something else in the app", range);
+            snprintf(lead, sizeof(lead), UI("%s already uses memory this game needs (%s)."),
+                     strstr(occupants, "dalvik") ? UI("Android's Java runtime") : UI("Something else in the app"), range);
         else
-            snprintf(lead, sizeof(lead), "The game could not set up its memory: %s.",
-                     *failed ? failed : "the reason is in the report");
-        snprintf(facts, sizeof(facts), "%s %s, Android %s, Linux %s, heap %s\nHeld by %s",
+            snprintf(lead, sizeof(lead), UI("The game could not set up its memory: %s."),
+                     *failed ? failed : UI("the reason is in the report"));
+        snprintf(facts, sizeof(facts), UI("%s %s, Android %s, Linux %s, heap %s\nHeld by %s"),
                  PROPERTY("ro.product.manufacturer", maker), PROPERTY("ro.product.model", model),
                  PROPERTY("ro.build.version.release", release), version, PROPERTY("dalvik.vm.heapsize", heap),
-                 holder[0] ? holder : "nothing found there now");
-        snprintf(message, sizeof(message), "%s\nPlease tap Share and send the report to us on Discord or GitHub.\n\n%s",
+                 holder[0] ? holder : UI("nothing found there now"));
+        snprintf(message, sizeof(message), UI("%s\nPlease tap Share and send the report to us on Discord or GitHub.\n\n%s"),
                  lead, facts);
         add_detail(&details, &used, &room, "failed step: %s\n", *failed ? failed : "(none recorded)");
         add_detail(&details, &used, &room, "kernel: %s %s; MAP_FIXED_NOREPLACE %s\n", kernel.release,
@@ -950,13 +964,13 @@ int Platform_GuestMemoryHelp(char *why, size_t size)
             fclose(maps);
         }
 #undef PROPERTY
-        shown = Android_OfferStartupReport("The game cannot start", message,
+        shown = Android_OfferStartupReport(UI("The game cannot start"), message,
                                            details ? details : "(no memory for the details)");
         free(details);
         if (shown) return 0;
         /* No box with buttons (a scripted run, or none could be shown):
          * the caller's error box, whose text is all there is. */
-        snprintf(why, size, "%s\nPlease send a screenshot of this to us on Discord or GitHub.\n\n%s", lead, facts);
+        snprintf(why, size, UI("%s\nPlease send a screenshot of this to us on Discord or GitHub.\n\n%s"), lead, facts);
     }
     return 1;
 }
@@ -1923,14 +1937,14 @@ int Memories_AndroidMain(int argc, char **argv)
             if (named && *named)
                 fprintf(stderr, "memories-pc: nor the MEMORIES_USER_DIR environment.txt names: %s: %s\n", named,
                         strerror(errno));
-            snprintf(message, sizeof(message), "The game could not use its storage folder.\n\n"
+            snprintf(message, sizeof(message), UI("The game could not use its storage folder.\n\n"
                      "Close the game and open it again. If this comes back:\n"
                      "- restart the phone;\n"
                      "- if a file manager shows the folder Android/data/org.yfmredecomp.game, delete it and open "
                      "the game again (the saves in it go with it: copy them out first if you can);\n"
                      "- if you never played, Settings > Apps > the game > Storage > Clear storage;\n"
                      "- last, uninstall the game and install it again (this too removes the saves; a game of the "
-                     "same name signed by someone else must go first).\n\n(%s)", why);
+                     "same name signed by someone else must go first).\n\n(%s)"), why);
             Platform_ShowError("Yu-Gi-Oh! Forbidden Memories", message);
             return 1;
         }

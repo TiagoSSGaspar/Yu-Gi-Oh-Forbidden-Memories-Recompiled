@@ -375,7 +375,7 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME pc_user_dir COMMAND memories_user_dir_test)
     add_executable(memories_save_menu_test tests/pc/save_menu_test.c src/pc/saves/save_menu.c
-        src/pc/saves/save_slots.c src/pc/platform/paths.c)
+        src/pc/saves/save_slots.c src/pc/platform/paths.c src/pc/platform/ui_text.c src/pc/mods/json.c)
     target_include_directories(memories_save_menu_test PRIVATE src tests/pc)
     if(NOT MSVC)
         target_compile_options(memories_save_menu_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -387,7 +387,8 @@ if(BUILD_TESTING)
         endforeach()
     endif()
     add_test(NAME pc_save_menu COMMAND memories_save_menu_test)
-    add_executable(memories_title_jump_test tests/pc/title_jump_test.c src/pc/platform/title_jump.c)
+    add_executable(memories_title_jump_test tests/pc/title_jump_test.c src/pc/platform/title_jump.c
+        src/pc/platform/paths.c src/pc/platform/ui_text.c src/pc/mods/json.c)
     target_include_directories(memories_title_jump_test PRIVATE src)
     if(NOT MSVC)
         target_compile_options(memories_title_jump_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -397,14 +398,15 @@ if(BUILD_TESTING)
         target_link_options(memories_title_jump_test PRIVATE -fsanitize=address,undefined)
     endif()
     add_test(NAME pc_title_jump COMMAND memories_title_jump_test)
-    add_executable(memories_quit_prompt_test tests/pc/quit_prompt_test.c src/pc/platform/quit_prompt.c)
+    add_executable(memories_quit_prompt_test tests/pc/quit_prompt_test.c src/pc/platform/quit_prompt.c
+        src/pc/platform/paths.c src/pc/platform/ui_text.c src/pc/mods/json.c)
     target_include_directories(memories_quit_prompt_test PRIVATE src)
     if(NOT MSVC)
         target_compile_options(memories_quit_prompt_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_quit_prompt COMMAND memories_quit_prompt_test)
     add_executable(memories_host_actions_test tests/pc/host_actions_test.c src/pc/platform/host_actions.c
-        src/pc/platform/controls.c src/pc/platform/quit_prompt.c)
+        src/pc/platform/controls.c src/pc/platform/quit_prompt.c src/pc/platform/paths.c src/pc/platform/ui_text.c src/pc/mods/json.c)
     target_include_directories(memories_host_actions_test PRIVATE src)
     if(NOT MSVC)
         target_compile_options(memories_host_actions_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -479,7 +481,7 @@ if(BUILD_TESTING)
     # mod_libc.c lends mods the indirect-branch thunks (src/pc/guest/branch_thunks.c).
     add_executable(memories_mods_test tests/pc/mods_test.c src/pc/mods/mods.c src/pc/mods/events.c src/pc/mods/hooks.c src/pc/mods/manager.c src/pc/mods/overlap.c src/pc/mods/mod_libc.c
         src/pc/mods/object_loader.c src/pc/mods/json.c src/pc/guest/branch_thunks.c
-        src/pc/platform/paths.c src/pc/platform/settings.c)
+        src/pc/platform/paths.c src/pc/platform/settings.c src/pc/platform/ui_text.c)
     target_include_directories(memories_mods_test PRIVATE src)
     # The mod C library hands mods the maths functions and reads the monotonic
     # clock, which on Windows (clock_gettime) comes from the threads library.
@@ -505,6 +507,14 @@ if(BUILD_TESTING)
         target_compile_options(memories_mods_language_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_mods_language COMMAND memories_mods_language_test)
+    # The port's own words in the player's language (src/pc/platform/ui_text.h).
+    add_executable(memories_ui_text_test tests/pc/ui_text_test.c src/pc/platform/ui_text.c src/pc/mods/json.c
+        src/pc/platform/paths.c)
+    target_include_directories(memories_ui_text_test PRIVATE src tests/pc)
+    if(NOT MSVC)
+        target_compile_options(memories_ui_text_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+    add_test(NAME pc_ui_text COMMAND memories_ui_text_test)
     # What enabled mods change in common (src/pc/mods/overlap.c): the mods in
     # tests/pc/mod_overlaps, whose lines the FM Editor's check must find too.
     add_executable(memories_mods_overlap_test tests/pc/mods_overlap_test.c src/pc/mods/overlap.c src/pc/mods/json.c
@@ -907,7 +917,7 @@ if(BUILD_TESTING)
     foreach(part IN LISTS memories_controls_parts)
         add_executable(memories_controls_${part}_test tests/pc/controls_${part}_test.c
             src/pc/platform/controls.c src/pc/platform/controls_config.c src/pc/platform/controls_runtime.c
-            src/pc/platform/paths.c ${memories_platform_support})
+            src/pc/platform/paths.c src/pc/platform/ui_text.c src/pc/mods/json.c ${memories_platform_support})
         target_include_directories(memories_controls_${part}_test PRIVATE src)
         target_link_libraries(memories_controls_${part}_test PRIVATE Threads::Threads)
         if(part STREQUAL "window")
@@ -1166,6 +1176,10 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_utf8_paths
             COMMAND "${Python3_EXECUTABLE}" tools/pc/check_utf8_paths.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # languages/ui's catalogs against the source (tools/pc/check_ui_text.py).
+        add_test(NAME pc_ui_text_catalogs
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/check_ui_text.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endif()
 endif()
 
@@ -1233,5 +1247,8 @@ if(BUILD_TESTING)
     list(REMOVE_ITEM memories_all_tests pc_scratch_sweep)
     foreach(test IN LISTS memories_all_tests)
         set_property(TEST ${test} APPEND PROPERTY FIXTURES_REQUIRED memories_scratch)
+        # The port's words in English, whatever the machine's language
+        # (src/pc/platform/ui_text.h): tests check the English.
+        set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT MEMORIES_UI_LANGUAGE=en)
     endforeach()
 endif()

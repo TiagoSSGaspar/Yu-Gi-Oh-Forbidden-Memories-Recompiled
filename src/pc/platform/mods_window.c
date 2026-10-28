@@ -11,6 +11,7 @@
  * A drag scrolls what it starts on (ModsWindow_Drag); a slider or a
  * scrollbar is held at once instead (ModsWindow_Grabs). */
 #include "mods_window.h"
+#include "ui_text.h"
 #include "../../types.h"
 #include "pc/mods/hd_pack.h"
 #include "pc/mods/import.h"
@@ -102,11 +103,11 @@ static int filter_width(void)
 {
     int widest = 0;
     for (int i = 0; i < 4; i++)
-        widest = max(widest, width_text(filters[i]));
+        widest = max(widest, width_text(UI(filters[i])));
     return widest + 24 * unit;
 }
 static Rect none(void) { return rect(0, 0, 0, 0); }
-static int defaults_width(void) { return max(150 * unit, width_text("Restore defaults") + 24 * unit); }
+static int defaults_width(void) { return max(150 * unit, width_text(UI("Restore defaults")) + 24 * unit); }
 /* On a phone's page the settings' count and Restore defaults scroll with
  * the settings, as their first row, rather than taking a row of the view. */
 static int toolbar_in_body(void) { return touch && compact && tab == 1 && selected >= 0 && counts[selected]; }
@@ -117,7 +118,7 @@ static int options_top(void) { return -detail_scroll + (toolbar_in_body() ? touc
 static void layout_touch(Layout *l)
 {
     int p = 12 * unit, g = 8 * unit, t = touch, footer = height - p - t, left = compact ? width : width * 36 / 100;
-    int top = p + t + g, save_w = max(64 * unit, width_text("Save") + 24 * unit), right, x, view_top;
+    int top = p + t + g, save_w = max(64 * unit, width_text(UI("Save")) + 24 * unit), right, x, view_top;
     int defaults_w = defaults_width();
     memset(l, 0, sizeof(*l));
     l->apply = rect(width - p - 150 * unit, footer, 150 * unit, t);
@@ -128,7 +129,7 @@ static void layout_touch(Layout *l)
      * open: Platform_OpenFolder fails on Android); on the list's page. */
     l->folder = none();
     if (import_pick && (!compact || page == 0)) {
-        int w = max(120 * unit, width_text("Import mod...") + 24 * unit);
+        int w = max(120 * unit, width_text(UI("Import mod...")) + 24 * unit);
         l->folder = rect(l->close.x - g - w, footer, w, t);
     }
     /* Remove, where Import is (an app cannot open its mods folder to delete
@@ -138,7 +139,7 @@ static void layout_touch(Layout *l)
      * Remove, so this one steps aside rather than showing a second, dead one. */
     l->remove = none();
     if (import_pick && selected >= 0 && pending != 5 && (!compact || page == 1)) {
-        int w = max(90 * unit, width_text("Remove") + 24 * unit), edge = l->folder.w ? l->folder.x : l->close.x;
+        int w = max(90 * unit, width_text(UI("Remove")) + 24 * unit), edge = l->folder.w ? l->folder.x : l->close.x;
         l->remove = rect(edge - g - w, footer, w, t);
     }
     {   /* A message of two to four lines beside the buttons (a refusal, a
@@ -159,7 +160,7 @@ static void layout_touch(Layout *l)
          * its errors take two lines on a phone). The search field (on a
          * phone) or the profile field gives it the room. */
         if (HdPack_Available()) {
-            int w = max(width_text("HD pack...") + 24 * unit, width_text("Stop") + 24 * unit);
+            int w = max(width_text(UI("HD pack...")) + 24 * unit, width_text(UI("Stop")) + 24 * unit);
             l->hd = rect(x - g - w, p, w, t);
             x = l->hd.x;
         }
@@ -329,7 +330,7 @@ static void adopt(int i)
     values[i] = calloc((size_t)max(1, counts[i]), sizeof(int));
     if (!values[i]) {
         counts[i] = 0;
-        snprintf(status, sizeof(status), "Could not allocate mod settings");
+        snprintf(status, sizeof(status), "%s", UI("Could not allocate mod settings"));
         return;
     }
     for (int j = 0; j < counts[i]; j++)
@@ -427,6 +428,7 @@ static void text(MenuCanvas *c, int x, int y, int w, const char *s, unsigned col
 }
 static void button(MenuCanvas *c, Rect r, const char *label, int accent)
 {
+    label = UI(label); /* every button is the port's own word */
     /* A label that does not fit the usual margins (the Load order's "+" in
      * its 28-pixel button) is centred in what there is, not cut to "...". */
     int pad = max(2 * unit, min(10 * unit, (r.w - width_text(label)) / 2));
@@ -475,14 +477,14 @@ static void option_label(int mod, int index, char *out, size_t size)
     const char *type = str(spec, "type", "int");
     int value = values[mod][index];
     if (!strcmp(type, "bool"))
-        snprintf(out, size, "%s", value ? "On" : "Off");
+        snprintf(out, size, "%s", UI(value ? "On" : "Off"));
     else if (!strcmp(type, "choice"))
-        snprintf(out, size, "%s", Mods_OptionChoice(mod, index, value, "Invalid choice"));
+        snprintf(out, size, "%s", Mods_OptionChoice(mod, index, value, UI("Invalid choice")));
     else if (!strcmp(type, "key")) {
         int bit = 0;
         while (bit < 16 && value != (1 << bit))
             bit++;
-        snprintf(out, size, "%s", bit < 16 ? pad_names[bit] : "None");
+        snprintf(out, size, "%s", UI(bit < 16 ? pad_names[bit] : "None"));
     } else
         snprintf(out, size, "%d%s", value, Mods_OptionText(mod, index, "suffix", ""));
 }
@@ -492,7 +494,7 @@ static int value_width(int option, int w)
     const JsonValue *spec = Mods_Option(selected, option);
     const char *type = str(spec, "type", "int");
     char s[96];
-    int widest = width_text("Off");
+    int widest = width_text(UI("Off"));
     if (!strcmp(type, "choice")) {
         for (int i = 0; i < Json_Count(Json_Member(spec, "choices")); i++)
             widest = max(widest, width_text(Mods_OptionChoice(selected, option, i, "")));
@@ -524,12 +526,12 @@ static void option(MenuCanvas *c, int index, int w, int y, OptionBox *o)
     o->plus = rect(w - CONTROL, y, CONTROL, CONTROL);
     o->value = rect(o->plus.x - 4 * unit - box, y, box, CONTROL);
     o->minus = rect(o->value.x - 4 * unit - CONTROL, y, CONTROL, CONTROL);
-    bottom = wrap(c, 0, y + 3 * unit, o->minus.x - 16 * unit, Mods_OptionText(selected, index, "label", str(spec, "key", "Setting")), TEXT);
+    bottom = wrap(c, 0, y + 3 * unit, o->minus.x - 16 * unit, Mods_OptionText(selected, index, "label", str(spec, "key", UI("Setting"))), TEXT);
     bottom = max(y + CONTROL, bottom);
     if (*about)
         bottom = wrap(c, 0, bottom + 4 * unit, w, about, DIM);
     if (Json_Bool(Json_Member(spec, "restart"), 0))
-        bottom = wrap(c, 0, bottom + (*about ? 0 : 4 * unit), w, "Requires a restart", WARN);
+        bottom = wrap(c, 0, bottom + (*about ? 0 : 4 * unit), w, UI("Requires a restart"), WARN);
     o->slider = rect(0, bottom + 2 * unit, w, !is_int(index) ? 0 : touch ? max(22 * unit, touch * 2 / 3) : 22 * unit);
     o->height = o->slider.y + o->slider.h + 14 * unit - y;
     if (!c)
@@ -571,7 +573,7 @@ static int overlaps(MenuCanvas *c, int w, int y)
     for (int k = 0; k < MODS_OVERLAP_KINDS; k++)
         more_top[k] = more_bottom[k] = 0;
     if (!wanted[selected] || place < 0)
-        return wrap(c, 0, y, w, "Enable this mod to see what it changes that other enabled mods change too.", DIM);
+        return wrap(c, 0, y, w, UI("Enable this mod to see what it changes that other enabled mods change too."), DIM);
     /* A line about this mod alone (overlap.h Mods_OverlapModCount: starter
      * pools the game leaves out) is no other mod's change: said apart. */
     for (int i = 0; i < n; i++)
@@ -584,17 +586,20 @@ static int overlaps(MenuCanvas *c, int w, int y)
             warnings += Mods_OverlapSeverity(found, i) == MODS_OVERLAP_WARNING;
         }
     if (!total && !alone)
-        return wrap(c, 0, y, w, "Nothing it changes is changed by another enabled mod.", GREEN);
+        return wrap(c, 0, y, w, UI("Nothing it changes is changed by another enabled mod."), GREEN);
     if (total) {
         snprintf(line, sizeof(line),
-                 "Also changed by other enabled mods: %d thing%s, %d where only one mod's change is used.", total,
-                 total == 1 ? "" : "s", warnings);
+                 total == 1 ? UI("Also changed by other enabled mods: %d thing, %d where only one mod's change is used.")
+                            : UI("Also changed by other enabled mods: %d things, %d where only one mod's change is used."),
+                 total, warnings);
         y = wrap(c, 0, y, w, line, warnings ? WARN : TEXT);
     } else
-        y = wrap(c, 0, y, w, "Nothing it changes is changed by another enabled mod.", GREEN);
+        y = wrap(c, 0, y, w, UI("Nothing it changes is changed by another enabled mod."), GREEN);
     if (alone) {
-        snprintf(line, sizeof(line), "Left out by the game with these mods enabled: %d thing%s of its own.", alone,
-                 alone == 1 ? "" : "s");
+        snprintf(line, sizeof(line),
+                 alone == 1 ? UI("Left out by the game with these mods enabled: %d thing of its own.")
+                            : UI("Left out by the game with these mods enabled: %d things of its own."),
+                 alone);
         y = wrap(c, 0, y, w, line, WARN);
     }
     for (int kind = 0, i = 0; kind < MODS_OVERLAP_KINDS; kind++) {
@@ -609,8 +614,8 @@ static int overlaps(MenuCanvas *c, int w, int y)
         }
         if (!count)
             continue;
-        snprintf(line, sizeof(line), "%s: %d (%d warning%s)", Mods_OverlapKindName(kind), count, kind_warnings,
-                 kind_warnings == 1 ? "" : "s");
+        snprintf(line, sizeof(line), kind_warnings == 1 ? UI("%s: %d (%d warning)") : UI("%s: %d (%d warnings)"),
+                 Mods_OverlapKindName(kind), count, kind_warnings);
         y = wrap(c, 0, y + 10 * unit, w, line, TEXT);
         for (int j = first; j < i && shown < limit; j++)
             if (Mods_OverlapInvolves(found, j, place)) {
@@ -621,18 +626,20 @@ static int overlaps(MenuCanvas *c, int w, int y)
             }
         if (count > shown || opened[kind]) {
             if (count > shown && opened[kind])
-                snprintf(line, sizeof(line), "...and %d more, in the log (MEMORIES_TRACE=mods). Show fewer", count - shown);
+                snprintf(line, sizeof(line), UI("...and %d more, in the log (MEMORIES_TRACE=mods). Show fewer"), count - shown);
             else if (count > shown)
-                snprintf(line, sizeof(line), "...and %d more: show %s", count - shown,
-                         count - shown > OVERLAPS_OPEN - OVERLAPS_SHOWN ? "the next ones" : "them");
+                snprintf(line, sizeof(line),
+                         count - shown > OVERLAPS_OPEN - OVERLAPS_SHOWN ? UI("...and %d more: show the next ones")
+                                                                         : UI("...and %d more: show them"),
+                         count - shown);
             else
-                snprintf(line, sizeof(line), "Show fewer");
+                snprintf(line, sizeof(line), "%s", UI("Show fewer"));
             more_top[kind] = y;
             y = wrap(c, 12 * unit, y, w - 12 * unit, line, BLUE);
             more_bottom[kind] = y;
         }
     }
-    return wrap(c, 0, y + 10 * unit, w, "Every line is in the log with MEMORIES_TRACE=mods.", DIM);
+    return wrap(c, 0, y + 10 * unit, w, UI("Every line is in the log with MEMORIES_TRACE=mods."), DIM);
 }
 /* The selected tab's contents, `w` wide from `y`; returns where they end. */
 static int body(MenuCanvas *c, int w, int y)
@@ -644,17 +651,17 @@ static int body(MenuCanvas *c, int w, int y)
         y = wrap(c, 0, y, w, line, DIM);
         y = wrap(c, 0, y, w, Mods_Directory(selected), DIM) + 16 * unit;
         y = wrap(c, 0, y, w,
-                 Mods_HasCode(selected) ? "Native code mod: runs game code from this author."
-                                        : "Content mod: assets, cards or data patches.",
+                 Mods_HasCode(selected) ? UI("Native code mod: runs game code from this author.")
+                                        : UI("Content mod: assets, cards or data patches."),
                  DIM);
         if (Mods_Status(selected)[0])
             y = wrap(c, 0, y + 16 * unit, w, Mods_Status(selected), Mods_Failed(selected) ? RED : WARN);
     } else if (tab == 1) {
         if (!counts[selected])
-            return wrap(c, 0, y, w, "This mod does not declare configurable settings.", DIM);
+            return wrap(c, 0, y, w, UI("This mod does not declare configurable settings."), DIM);
         if (toolbar_in_body()) {
             if (c) {
-                snprintf(line, sizeof(line), "%d setting%s", counts[selected], counts[selected] == 1 ? "" : "s");
+                snprintf(line, sizeof(line), counts[selected] == 1 ? UI("%d setting") : UI("%d settings"), counts[selected]);
                 text(c, 0, y + touch / 2, w - defaults_width() - 12 * unit, line, DIM);
                 button(c, rect(w - defaults_width(), y, defaults_width(), touch), "Restore defaults", 0);
             }
@@ -667,9 +674,9 @@ static int body(MenuCanvas *c, int w, int y)
         }
     } else {
         const char *keys[] = {"requires", "after", "conflicts"};
-        const char *labels[] = {"Requires: ", "Load after: ", "Conflicts: "};
+        const char *labels[] = {UI("Requires: "), UI("Load after: "), UI("Conflicts: ")};
         y = wrap(c, 0, y, w,
-                 Mods_RequiresRestart(selected) ? "Changes require a restart." : "This mod supports live changes.",
+                 Mods_RequiresRestart(selected) ? UI("Changes require a restart.") : UI("This mod supports live changes."),
                  DIM) +
             12 * unit;
         for (int k = 0; k < 3; k++) {
@@ -683,7 +690,7 @@ static int body(MenuCanvas *c, int w, int y)
         if (!Mods_Validate(wanted, line, sizeof(line)))
             y = wrap(c, 0, y + 12 * unit, w, line, WARN);
         else
-            y = wrap(c, 0, y + 12 * unit, w, "Dependencies and declared conflicts are satisfied.", GREEN);
+            y = wrap(c, 0, y + 12 * unit, w, UI("Dependencies and declared conflicts are satisfied."), GREEN);
         y = overlaps(c, w, y + 12 * unit);
     }
     return y;
@@ -728,23 +735,27 @@ static void counts_line(char *line, size_t size, int room)
         for (int i = 0; i < overlap_count; i++)
             overlap_warnings += Mods_OverlapSeverity(found, i) == MODS_OVERLAP_WARNING;
     }
-    if (overlap_count)
-        snprintf(line, size, "%d installed  /  %d enabled  /  %d overlap%s, %d warning%s%s", listed,
-                 enabled, overlap_count, overlap_count == 1 ? "" : "s", overlap_warnings,
-                 overlap_warnings == 1 ? "" : "s", changed() ? "  /  Unsaved changes" : "");
-    if (overlap_count && width_text(line) > room) /* a small window: the tab has the warnings */
-        snprintf(line, size, "%d installed  /  %d enabled  /  %d overlap%s%s", listed, enabled,
-                 overlap_count, overlap_count == 1 ? "" : "s", changed() ? "  /  Unsaved" : "");
-    else if (!overlap_count)
-        snprintf(line, size, "%d installed  /  %d enabled%s", listed, enabled,
-                 changed() ? "  /  Unsaved changes" : "");
+    /* In pieces, each a whole phrase, singular or plural as the count is. */
+    for (int brief = 0; brief < 2; brief++) {
+        size_t used = (size_t)snprintf(line, size, UI("%d installed  /  %d enabled"), listed, enabled);
+        if (overlap_count && used < size)
+            used += (size_t)snprintf(line + used, size - used,
+                                     overlap_count == 1 ? UI("  /  %d overlap") : UI("  /  %d overlaps"), overlap_count);
+        if (overlap_count && !brief && used < size)
+            used += (size_t)snprintf(line + used, size - used,
+                                     overlap_warnings == 1 ? UI(", %d warning") : UI(", %d warnings"), overlap_warnings);
+        if (changed() && used < size)
+            snprintf(line + used, size - used, "%s", brief ? UI("  /  Unsaved") : UI("  /  Unsaved changes"));
+        if (!overlap_count || width_text(line) <= room) /* a small window: the tab has the warnings */
+            break;
+    }
 }
 /* The search, filter and profile fields with Save and Load. */
 static void draw_fields(MenuCanvas *c, const Layout *l)
 {
     fill(c, l->search, focus == 1 ? EDGE : PANEL);
     text(c, l->search.x + 10 * unit, l->search.y + l->search.h / 2, l->search.w - 20 * unit,
-         *query ? query : "Search mods, IDs or authors...", *query ? TEXT : DIM);
+         *query ? query : UI("Search mods, IDs or authors..."), *query ? TEXT : DIM);
     button(c, l->filter, filters[filter], 0);
     fill(c, l->profile, focus == 2 ? EDGE : PANEL);
     text(c, l->profile.x + 10 * unit, l->profile.y + l->profile.h / 2, l->profile.w - 20 * unit, profile, TEXT);
@@ -770,15 +781,15 @@ static void draw_list(MenuCanvas *c, const Layout *l)
              wanted[mod] ? GREEN : DIM);
         text(c, row.x + 44 * unit, row.y + lift + 18 * unit, w, Mods_Name(mod), TEXT);
         snprintf(line, sizeof(line), "%s%s%s",
-                 Mods_Failed(mod)      ? "Error"
-                 : Mods_Status(mod)[0] ? "Warning"
-                 : Mods_Active(mod)    ? "Active"
-                                       : "Inactive",
-                 wanted[mod] != Mods_Active(mod) ? " / pending" : "", Mods_RequiresRestart(mod) ? " / restart" : "");
+                 UI(Mods_Failed(mod)      ? "Error"
+                    : Mods_Status(mod)[0] ? "Warning"
+                    : Mods_Active(mod)    ? "Active"
+                                          : "Inactive"),
+                 wanted[mod] != Mods_Active(mod) ? UI(" / pending") : "", Mods_RequiresRestart(mod) ? UI(" / restart") : "");
         text(c, row.x + 44 * unit, row.y + lift + 39 * unit, w, line, Mods_Failed(mod) ? RED : DIM);
     }
     if (!shown_count())
-        text(c, l->list.x + 16 * unit, l->list.y + 32 * unit, l->list.w - 32 * unit, "No matching mods", DIM);
+        text(c, l->list.x + 16 * unit, l->list.y + 32 * unit, l->list.w - 32 * unit, UI("No matching mods"), DIM);
     scrollbar(c, l->list_bar, shown_count(), rows(), scroll, bar_drag == 1);
 }
 static void draw_details(MenuCanvas *c, const Layout *l)
@@ -787,7 +798,7 @@ static void draw_details(MenuCanvas *c, const Layout *l)
     fill(c, l->detail, PANEL);
     if (selected >= 0) {
         int name_x = l->back.w ? l->back.x + l->back.w + 8 * unit : l->detail.x + 16 * unit, total = body_height(l);
-        int order_x = l->order[0].x - 10 * unit - width_text("Load order"), label = 1;
+        int order_x = l->order[0].x - 10 * unit - width_text(UI("Load order")), label = 1;
         /* With a finger the name shares its row with the load order: the
          * label goes where the name would have too little room. */
         if (touch && order_x - name_x < 140 * unit) {
@@ -799,11 +810,11 @@ static void draw_details(MenuCanvas *c, const Layout *l)
         text(c, name_x, l->name_y, (touch ? order_x : l->toggle.x) - 12 * unit - name_x, Mods_Name(selected), TEXT);
         button(c, l->toggle, wanted[selected] ? "Enabled" : "Disabled", wanted[selected]);
         snprintf(line, sizeof(line), "%s  /  %s  /  %s", Mods_Metadata(selected, "version"),
-                 Mods_Metadata(selected, "author"), Mods_Origin(selected));
+                 Mods_Metadata(selected, "author"), UI(Mods_Origin(selected))); /* "shipped", "installed" */
         text(c, name_x, l->meta_y, order_x - 12 * unit - name_x, line, DIM);
         if (label)
-            text(c, order_x, touch ? l->order[0].y + l->order[0].h / 2 : l->meta_y, width_text("Load order") + unit,
-                 "Load order", DIM);
+            text(c, order_x, touch ? l->order[0].y + l->order[0].h / 2 : l->meta_y, width_text(UI("Load order")) + unit,
+                 UI("Load order"), DIM);
         button(c, l->order[0], "-", 0);
         snprintf(line, sizeof(line), "%d", ranks[selected]);
         centred(c, rect(l->order[0].x + l->order[0].w, l->order[0].y, l->order[1].x - l->order[0].x - l->order[0].w,
@@ -814,7 +825,7 @@ static void draw_details(MenuCanvas *c, const Layout *l)
         button(c, l->tabs[1], "Settings", tab == 1);
         button(c, l->tabs[2], "Compatibility", tab == 2);
         if (tab == 1 && counts[selected] && !toolbar_in_body()) {
-            snprintf(line, sizeof(line), "%d setting%s", counts[selected], counts[selected] == 1 ? "" : "s");
+            snprintf(line, sizeof(line), counts[selected] == 1 ? UI("%d setting") : UI("%d settings"), counts[selected]);
             text(c, l->view.x, l->defaults.y + l->defaults.h / 2, l->defaults.x - l->view.x - 12 * unit, line, DIM);
             button(c, l->defaults, "Restore defaults", 0);
             fill(c, rect(l->view.x, l->view.y - 7 * unit, l->view.w, 1), EDGE);
@@ -831,7 +842,7 @@ static void draw_details(MenuCanvas *c, const Layout *l)
         scrollbar(c, l->bar, total, l->view.h, detail_scroll, bar_drag == 2);
     } else
         text(c, l->detail.x + 20 * unit, l->detail.y + 30 * unit, l->detail.w - 40 * unit,
-             "Select a mod to view its details", DIM);
+             UI("Select a mod to view its details"), DIM);
 }
 static const char *apply_label(void)
 {
@@ -886,11 +897,11 @@ void ModsWindow_Draw(MenuCanvas *c)
         draw_touch(c, &l);
         return;
     }
-    text(c, 20 * unit, 29 * unit, width - 40 * unit, "Mod library", TEXT);
+    text(c, 20 * unit, 29 * unit, width - 40 * unit, UI("Mod library"), TEXT);
     counts_line(line, sizeof(line), width / 2 - 20 * unit);
     text(c, width / 2, 29 * unit, width / 2 - 20 * unit, line, DIM);
     draw_fields(c, &l);
-    text(c, l.profile.x, 118 * unit, width - l.profile.x - 20 * unit, "Named profile  /  Save uses applied settings",
+    text(c, l.profile.x, 118 * unit, width - l.profile.x - 20 * unit, UI("Named profile  /  Save uses applied settings"),
          DIM);
     draw_list(c, &l);
     draw_details(c, &l);
@@ -900,9 +911,9 @@ void ModsWindow_Draw(MenuCanvas *c)
         wrap(c, 20 * unit, height - 59 * unit - extra - LINE / 2, width - 40 * unit, status, pending ? WARN : DIM);
     else
         text(c, 20 * unit, height - 59 * unit, width - 40 * unit,
-             *status ? status : "Changes are staged. Apply once when you are ready.", pending ? WARN : DIM);
+             *status ? status : UI("Changes are staged. Apply once when you are ready."), pending ? WARN : DIM);
     text(c, 20 * unit, height - 32 * unit, l.folder.x - 28 * unit,
-         "Arrow keys: select / toggle   Tab: search   Mouse wheel: scroll", DIM);
+         UI("Arrow keys: select / toggle   Tab: search   Mouse wheel: scroll"), DIM);
     button(c, l.folder, "Open mods folder", 0);
     button(c, l.close, pending ? "Cancel" : "Close", 0);
     button(c, l.apply, apply_label(), changed() || pending);
@@ -930,14 +941,14 @@ static void apply(void)
 {
     int restart = needs_restart(), old_ranks[MODS_MAX], *old_values[MODS_MAX] = {0};
     if (!changed()) {
-        snprintf(status, sizeof(status), "No pending changes");
+        snprintf(status, sizeof(status), "%s", UI("No pending changes"));
         return;
     }
     if (restart && pending != 1) {
         pending = 1;
         snprintf(status, sizeof(status),
-                 "Applying these changes restarts the game. Unsaved game progress "
-                 "will be lost.");
+                 "%s", UI("Applying these changes restarts the game. Unsaved game progress "
+                 "will be lost."));
         return;
     }
     pending = 0;
@@ -946,7 +957,7 @@ static void apply(void)
     for (int i = 0; i < Mods_Count(); i++)
         for (int j = 0; j < counts[i]; j++) {
             if (!Mods_Failed(i) && !Mods_OptionValid(i, j, values[i][j])) {
-                snprintf(status, sizeof(status), "Invalid setting: %s / %s", Mods_Name(i),
+                snprintf(status, sizeof(status), UI("Invalid setting: %s / %s"), Mods_Name(i),
                          Mods_OptionText(i, j, "label", str(Mods_Option(i, j), "key", "")));
                 return;
             }
@@ -959,7 +970,7 @@ static void apply(void)
         if (!old_values[i]) {
             for (int j = 0; j < i; j++)
                 free(old_values[j]);
-            snprintf(status, sizeof(status), "Could not prepare settings");
+            snprintf(status, sizeof(status), "%s", UI("Could not prepare settings"));
             return;
         }
         for (int j = 0; j < counts[i]; j++)
@@ -990,11 +1001,11 @@ static void apply(void)
                     MemoriesModEvent event = {MEMORIES_EVENT_SETTINGS, MEMORIES_AFTER, i, j, values[i][j], 0, 0};
                     Mods_Dispatch(&event);
                 }
-        snprintf(status, sizeof(status), "Changes applied.");
+        snprintf(status, sizeof(status), "%s", UI("Changes applied."));
         if (restart && Platform_RestartGame() < 0)
             snprintf(status, sizeof(status),
-                     "Settings saved. Restart failed; relaunch the game to finish "
-                     "applying them.");
+                     "%s", UI("Settings saved. Restart failed; relaunch the game to finish "
+                     "applying them."));
     }
     for (int i = 0; i < Mods_Count(); i++)
         free(old_values[i]);
@@ -1044,7 +1055,7 @@ static int import_names(ModsImport *import, int (*pick)(const ModsImportMod *), 
         size_t used = strlen(out);
         if (!pick(mod))
             continue;
-        put(out + used, size - used, "%s%s", n == 0 ? "" : n == total - 1 ? " and " : ", ", mod->name);
+        put(out + used, size - used, "%s%s", n == 0 ? "" : n == total - 1 ? UI(" and ") : ", ", mod->name);
         n++;
     }
     return n;
@@ -1124,40 +1135,41 @@ static void import_install(void)
     char why[400], folder[1024], names[300], line[512];
     int first, later, n, several, lost;
     if (Mods_InstallDirectory(folder, sizeof(folder))) {
-        put(status, sizeof(status), "Could not make the mods folder.");
+        put(status, sizeof(status), "%s", UI("Could not make the mods folder."));
         import_done();
         return;
     }
     if (!Mods_ImportInstall(import_waiting, folder, why, sizeof(why))) {
-        put(status, sizeof(status), "%s%s", strncmp(why, "Nothing was", 11) ? "Nothing was imported. " : "", why);
+        put(status, sizeof(status), "%s%s", strncmp(why, "Nothing was", 11) ? UI("Nothing was imported. ") : "", why);
         import_done();
         return;
     }
     first = import_discover(import_waiting, folder, &later, &lost);
     n = import_names(import_waiting, any_mod, names, sizeof(names));
     if (n == 1 && replacing(Mods_ImportMod(import_waiting, 0)))
-        put(line, sizeof(line), "Replaced %s.", names);
+        put(line, sizeof(line), UI("Replaced %s."), names);
     else if (n == 1)
-        put(line, sizeof(line), "Imported %s.", names);
+        put(line, sizeof(line), UI("Imported %s."), names);
     else {
         char replaced[300];
         int k = import_names(import_waiting, replacing, replaced, sizeof(replaced));
-        put(line, sizeof(line), "Imported %d mods: %s.", n, names);
+        put(line, sizeof(line), UI("Imported %d mods: %s."), n, names);
         if (k)
-            put(line + strlen(line), sizeof(line) - strlen(line), " %d of them replaced the installed ones.", k);
+            put(line + strlen(line), sizeof(line) - strlen(line), UI(" %d of them replaced the installed ones."), k);
     }
     if (later) /* a mod with that id in place this launch (the release's own) */
-        put(line + strlen(line), sizeof(line) - strlen(line), " It is used after a restart.");
+        put(line + strlen(line), sizeof(line) - strlen(line), "%s", UI(" It is used after a restart."));
     if (lost)
-        put(line + strlen(line), sizeof(line) - strlen(line), " %d could not be added to the list.", lost);
+        put(line + strlen(line), sizeof(line) - strlen(line), UI(" %d could not be added to the list."), lost);
     several = import_names(import_waiting, code_off, names, sizeof(names)) > 1;
     if (*names && n == 1)
-        put(status, sizeof(status), "%s This mod has code, which the game cannot run %s yet. It stays off and "
-            "changes nothing in the game.", line, HERE);
+        put(status, sizeof(status), UI("%s This mod has code, which the game cannot run %s yet. It stays off and "
+            "changes nothing in the game."), line, UI(HERE));
     else if (*names)
-        put(status, sizeof(status), "%s %s %s code, which the game cannot run %s yet. %s off and change%s nothing "
-            "in the game.", line, names, several ? "have" : "has", HERE, several ? "They stay" : "It stays",
-            several ? "" : "s");
+        put(status, sizeof(status),
+            several ? UI("%s %s have code, which the game cannot run %s yet. They stay off and change nothing in the game.")
+                    : UI("%s %s has code, which the game cannot run %s yet. It stays off and changes nothing in the game."),
+            line, names, UI(HERE));
     else
         put(status, sizeof(status), "%s", line);
     fprintf(stderr, "memories-pc: import: %s\n", status);
@@ -1205,7 +1217,7 @@ static int import_target(ModsImport *import, int index, const char *folder)
                     break;
             }
             if (k == 100) {
-                put(status, sizeof(status), "Nothing was imported: the mods folder has no free name for %s.", mod->name);
+                put(status, sizeof(status), UI("Nothing was imported: the mods folder has no free name for %s."), mod->name);
                 return -1;
             }
             put(mod->folder, sizeof(mod->folder), "%s", name);
@@ -1220,8 +1232,8 @@ static int import_target(ModsImport *import, int index, const char *folder)
         /* Its code, data or pictures are this launch's files: they must
          * not change under it. */
         if (mod->replace[0] && Mods_InUse(j)) {
-            put(status, sizeof(status), "%s is in use, so its files cannot be replaced now. Turn it off, Apply "
-                "& restart, then import it again.", Mods_Name(j));
+            put(status, sizeof(status), UI("%s is in use, so its files cannot be replaced now. Turn it off, Apply "
+                "& restart, then import it again."), Mods_Name(j));
             return -1;
         }
     }
@@ -1244,12 +1256,12 @@ static void import_read(void)
         return;
     }
     if (!Mods_ImportCount(import_waiting)) {
-        put(status, sizeof(status), "This .zip has no mod in it.");
+        put(status, sizeof(status), "%s", UI("This .zip has no mod in it."));
         import_done();
         return;
     }
     if (Mods_InstallDirectory(folder, sizeof(folder))) {
-        put(status, sizeof(status), "Could not make the mods folder.");
+        put(status, sizeof(status), "%s", UI("Could not make the mods folder."));
         import_done();
         return;
     }
@@ -1266,7 +1278,7 @@ static void import_read(void)
         fresh += !known;
     }
     if (Mods_Count() + fresh > MODS_MAX) {
-        put(status, sizeof(status), "Nothing was imported: the game takes at most %d mods.", MODS_MAX);
+        put(status, sizeof(status), UI("Nothing was imported: the game takes at most %d mods."), MODS_MAX);
         import_done();
         return;
     }
@@ -1277,9 +1289,9 @@ static void import_read(void)
     pending = 3;
     import_names(import_waiting, replacing, names, sizeof(names));
     if (taken == 1)
-        put(status, sizeof(status), "%s is already installed. Replace it with the one in this .zip?", names);
+        put(status, sizeof(status), UI("%s is already installed. Replace it with the one in this .zip?"), names);
     else
-        put(status, sizeof(status), "%s are already installed. Replace them with the ones in this .zip?", names);
+        put(status, sizeof(status), UI("%s are already installed. Replace them with the ones in this .zip?"), names);
 }
 static void import_start(void)
 {
@@ -1291,7 +1303,7 @@ static void import_start(void)
         return;
     }
     import_step = 1;
-    put(status, sizeof(status), "Choose a mod's .zip.");
+    put(status, sizeof(status), "%s", UI("Choose a mod's .zip."));
 }
 /* --- Remove ------------------------------------------------------------ */
 
@@ -1308,25 +1320,25 @@ static void remove_start(void)
         return;
     name = Mods_Name(selected);
     if (hd_step || import_step || import_waiting) {
-        put(status, sizeof(status), "Wait for the import or the HD pack to finish first.");
+        put(status, sizeof(status), "%s", UI("Wait for the import or the HD pack to finish first."));
         return;
     }
     if (strcmp(Mods_Origin(selected), "installed")) {
-        put(status, sizeof(status), "%s came with the game, so it cannot be removed.", name);
+        put(status, sizeof(status), UI("%s came with the game, so it cannot be removed."), name);
         return;
     }
     if (Mods_InUse(selected)) {
         put(status, sizeof(status), Mods_Active(selected)
-            ? "%s is on, so the game is using its files. Turn it off, apply, restart the game, then remove it."
-            : "%s was tried since the game started, so the game may still hold its files. Turn it off, apply, "
-              "restart the game, then remove it.",
+            ? UI("%s is on, so the game is using its files. Turn it off, apply, restart the game, then remove it.")
+            : UI("%s was tried since the game started, so the game may still hold its files. Turn it off, apply, "
+              "restart the game, then remove it."),
             name);
         return;
     }
     remove_target = selected;
     pending = 5;
-    put(status, sizeof(status), "Remove %s? Its folder is deleted from the mods folder, with everything in it. "
-        "This cannot be undone.", name);
+    put(status, sizeof(status), UI("Remove %s? Its folder is deleted from the mods folder, with everything in it. "
+        "This cannot be undone."), name);
 }
 /* Remove's answer was yes: the folder goes, the mod leaves the list now
  * (Mods_Forget keeps its slot, so no other mod's index moves), and the
@@ -1338,21 +1350,21 @@ static void remove_confirm(void)
     remove_target = -1;
     pending = 0;
     if (mod < 0 || mod >= Mods_Count() || Mods_Removed(mod) || Mods_InUse(mod)) {
-        put(status, sizeof(status), "Nothing was removed.");
+        put(status, sizeof(status), "%s", UI("Nothing was removed."));
         return;
     }
     put(name, sizeof(name), "%s", Mods_Name(mod));
     if (Mods_InstallDirectory(folder, sizeof(folder))) {
-        put(status, sizeof(status), "Could not open the mods folder. Nothing was removed.");
+        put(status, sizeof(status), "%s", UI("Could not open the mods folder. Nothing was removed."));
         return;
     }
     if (Mods_ImportRemoveInstalled(folder, Mods_Directory(mod), why, sizeof(why))) {
-        put(status, sizeof(status), "%s It stays in the list.", why);
+        put(status, sizeof(status), UI("%s It stays in the list."), why);
         fprintf(stderr, "memories-pc: remove: %s\n", why);
         return;
     }
     if (Mods_Forget(mod)) {
-        put(status, sizeof(status), "%s was removed, but it leaves the list after a restart.", name);
+        put(status, sizeof(status), UI("%s was removed, but it leaves the list after a restart."), name);
         return;
     }
     adopt(mod); /* what was staged for it (a rank, a setting, On) goes with it: no "Unsaved changes" for a mod that is gone */
@@ -1373,7 +1385,7 @@ static void remove_confirm(void)
     if (compact)
         page = 0;
     scroll = max(0, min(scroll, shown_count() - rows()));
-    put(status, sizeof(status), "Removed %s.", name);
+    put(status, sizeof(status), UI("Removed %s."), name);
     fprintf(stderr, "memories-pc: remove: %s\n", status);
 }
 /* --- HD pack... (hd_pack.h) -------------------------------------------- */
@@ -1405,43 +1417,43 @@ static void hd_found(void)
     long long room = HdPack_FreeBytes(Paths_UserDir()); /* the downloads folder's and the mods folder's */
     UpdateVersion have, latest;
     if (known && !strcmp(tag, release->tag)) {
-        put(status, sizeof(status), "The HD pack is already installed (%s).", tag);
+        put(status, sizeof(status), UI("The HD pack is already installed (%s)."), tag);
         hd_end();
         return;
     }
     if (known && Update_ParseVersion(tag, &have) && Update_ParseVersion(release->tag, &latest) &&
         Update_CompareVersions(&have, &latest) > 0) {
-        put(status, sizeof(status), "The installed HD pack (%s) is newer than the latest release (%s).", tag,
+        put(status, sizeof(status), UI("The installed HD pack (%s) is newer than the latest release (%s)."), tag,
             release->tag);
         hd_end();
         return;
     }
     if (j >= 0 && Mods_InUse(j)) {
-        put(status, sizeof(status), "The HD pack is in use, so it cannot be replaced now. Turn it off, Apply & "
-            "restart, then tap HD pack... again.");
+        put(status, sizeof(status), "%s", UI("The HD pack is in use, so it cannot be replaced now. Turn it off, Apply & "
+            "restart, then tap HD pack... again."));
         hd_end();
         return;
     }
     if (j < 0 && Mods_Count() >= MODS_MAX) {
-        put(status, sizeof(status), "The game takes at most %d mods: remove one to add the HD pack.", MODS_MAX);
+        put(status, sizeof(status), UI("The game takes at most %d mods: remove one to add the HD pack."), MODS_MAX);
         hd_end();
         return;
     }
     if (room >= 0 && (unsigned long long)room < need) {
-        put(status, sizeof(status), "Not enough free space for the HD pack: it needs about %lu MB, and %lu MB are "
-            "free.", megabytes(need), megabytes((unsigned long long)room));
+        put(status, sizeof(status), UI("Not enough free space for the HD pack: it needs about %lu MB, and %lu MB are "
+            "free."), megabytes(need), megabytes((unsigned long long)room));
         hd_end();
         return;
     }
     if (j < 0)
-        put(status, sizeof(status), "Download the HD pack (%s)? %lu MB; Wi-Fi recommended. Needs ~%lu MB free.",
+        put(status, sizeof(status), UI("Download the HD pack (%s)? %lu MB; Wi-Fi recommended. Needs ~%lu MB free."),
             release->tag, megabytes(release->size), megabytes(need));
     else if (known)
-        put(status, sizeof(status), "Update the HD pack from %s to %s? %lu MB; Wi-Fi recommended. Needs ~%lu MB "
-            "free.", tag, release->tag, megabytes(release->size), megabytes(need));
+        put(status, sizeof(status), UI("Update the HD pack from %s to %s? %lu MB; Wi-Fi recommended. Needs ~%lu MB "
+            "free."), tag, release->tag, megabytes(release->size), megabytes(need));
     else
-        put(status, sizeof(status), "Download the HD pack (%s) over the installed one? %lu MB; Wi-Fi recommended. "
-            "Needs ~%lu MB free.", release->tag, megabytes(release->size), megabytes(need));
+        put(status, sizeof(status), UI("Download the HD pack (%s) over the installed one? %lu MB; Wi-Fi recommended. "
+            "Needs ~%lu MB free."), release->tag, megabytes(release->size), megabytes(need));
     pending = 4;
     hd_step = 2;
 }
@@ -1451,7 +1463,7 @@ static void hd_confirm(void)
     char folder[1024];
     pending = 0;
     if (Paths_User(folder, sizeof(folder), "downloads") || Paths_MakeDirs(folder)) {
-        put(status, sizeof(status), "Could not make the app's downloads folder.");
+        put(status, sizeof(status), "%s", UI("Could not make the app's downloads folder."));
         hd_end();
         return;
     }
@@ -1462,7 +1474,7 @@ static void hd_confirm(void)
     }
     hd_step = 3;
     hd_shown = -1;
-    put(status, sizeof(status), "Downloading the HD pack (%s)...", HdPack_Release()->tag);
+    put(status, sizeof(status), UI("Downloading the HD pack (%s)..."), HdPack_Release()->tag);
 }
 /* The .zip is checked: where it goes (a copy there is replaced, as Import
  * replaces the same mod), then its unpacking on the job's thread. */
@@ -1471,7 +1483,7 @@ static void hd_downloaded(void)
     char folder[1024];
     ModsImport *import = HdPack_Import();
     if (Mods_InstallDirectory(folder, sizeof(folder))) {
-        put(status, sizeof(status), "Could not make the mods folder.");
+        put(status, sizeof(status), "%s", UI("Could not make the mods folder."));
         hd_end();
         return;
     }
@@ -1482,7 +1494,7 @@ static void hd_downloaded(void)
     if (!HdPack_Install(folder)) {
         if (HdPack_State() == HD_FAILED)
             return; /* a Stop that came after the download, or no thread: hd_tick says so next */
-        put(status, sizeof(status), "Could not start unpacking the HD pack.");
+        put(status, sizeof(status), "%s", UI("Could not start unpacking the HD pack."));
         hd_end();
         return;
     }
@@ -1498,17 +1510,19 @@ static void hd_done(void)
     if (!Mods_InstallDirectory(folder, sizeof(folder)))
         first = import_discover(HdPack_Import(), folder, &later, &lost);
     if (first < 0)
-        put(status, sizeof(status), "The HD pack (%s) is in the mods folder, but could not be added to the list. "
-            "Restart the game to see it.", HdPack_Release()->tag);
+        put(status, sizeof(status), UI("The HD pack (%s) is in the mods folder, but could not be added to the list. "
+            "Restart the game to see it."), HdPack_Release()->tag);
     else
-        put(status, sizeof(status), "HD pack %s (%s). %s", replaced ? "updated" : "installed", HdPack_Release()->tag,
-            later ? "It is used after a restart." : Mods_Enabled(first) ? "Apply to use it."
-                                                                         : "Tick it and apply to use it.");
+        put(status, sizeof(status), replaced ? UI("HD pack updated (%s). %s") : UI("HD pack installed (%s). %s"),
+            HdPack_Release()->tag,
+            UI(later ? "It is used after a restart." : Mods_Enabled(first) ? "Apply to use it."
+                                                                            : "Tick it and apply to use it."));
     fprintf(stderr, "memories-pc: HD pack: %s\n", status);
     hd_end();
     import_show(first);
 }
-/* The step's share in the message; 1 when it changed (draw again). */
+/* The step's share in the message, `what` its format (the tag, the share
+ * and the size); 1 when it changed (draw again). */
 static int hd_progress(const char *what)
 {
     unsigned long done = HdPack_Done(), total = HdPack_Total();
@@ -1517,11 +1531,12 @@ static int hd_progress(const char *what)
         return 0;
     hd_shown = shown * 3 + waiting;
     if (waiting) /* the download manager waits for a connection (or retries), or for Wi-Fi */
-        put(status, sizeof(status), "Waiting for %s to go on with the HD pack (%s): %d%% of %lu MB.",
-            waiting == 2 ? "Wi-Fi" : "the network", HdPack_Release()->tag, shown, megabytes(total));
+        put(status, sizeof(status),
+            waiting == 2 ? UI("Waiting for Wi-Fi to go on with the HD pack (%s): %d%% of %lu MB.")
+                         : UI("Waiting for the network to go on with the HD pack (%s): %d%% of %lu MB."),
+            HdPack_Release()->tag, shown, megabytes(total));
     else
-        put(status, sizeof(status), "%s the HD pack (%s): %d%% of %lu MB.", what, HdPack_Release()->tag, shown,
-            megabytes(total));
+        put(status, sizeof(status), UI(what), HdPack_Release()->tag, shown, megabytes(total));
     return 1;
 }
 /* Once per tick while the window has a job: its next step. */
@@ -1534,7 +1549,7 @@ static int hd_tick(void)
         return 0;
     if (state == HD_FAILED) {
         if (HdPack_Cancelled())
-            put(status, sizeof(status), "The HD pack's download was stopped. Nothing was installed.");
+            put(status, sizeof(status), "%s", UI("The HD pack's download was stopped. Nothing was installed."));
         else
             put(status, sizeof(status), "%s", HdPack_Why());
         fprintf(stderr, "memories-pc: HD pack: %s\n", status);
@@ -1546,13 +1561,13 @@ static int hd_tick(void)
         return 1;
     }
     if (hd_step == 3 && state == HD_DOWNLOADING)
-        return hd_progress("Downloading");
+        return hd_progress("Downloading the HD pack (%s): %d%% of %lu MB.");
     if (hd_step == 3 && state == HD_DOWNLOADED) {
         hd_downloaded();
         return 1;
     }
     if (hd_step == 4 && state == HD_INSTALLING)
-        return hd_progress("Unpacking");
+        return hd_progress("Unpacking the HD pack (%s): %d%% of %lu MB.");
     if (hd_step == 4 && state == HD_INSTALLED) {
         hd_done();
         return 1;
@@ -1563,7 +1578,7 @@ static int hd_tick(void)
 static void hd_tap(void)
 {
     if (!hd_step && HdPack_State() == HD_CLEANING) { /* what a cut-short job left, being removed */
-        put(status, sizeof(status), "Clearing an earlier download; tap HD pack... again in a moment.");
+        put(status, sizeof(status), "%s", UI("Clearing an earlier download; tap HD pack... again in a moment."));
         hd_clearing = 1;
         return;
     }
@@ -1572,13 +1587,13 @@ static void hd_tap(void)
      * refuses. Once the unpacking ends the pack is in. */
     if (HdPack_Busy() || hd_step == 3) {
         HdPack_Cancel();
-        put(status, sizeof(status), "Stopping...");
+        put(status, sizeof(status), "%s", UI("Stopping..."));
         return;
     }
     if (hd_step)
         return;
     if (import_step || import_waiting) {
-        put(status, sizeof(status), "Wait for the import to finish first.");
+        put(status, sizeof(status), "%s", UI("Wait for the import to finish first."));
         return;
     }
     if (!HdPack_Lookup()) {
@@ -1587,7 +1602,7 @@ static void hd_tap(void)
         return;
     }
     hd_step = 1;
-    put(status, sizeof(status), "Asking GitHub for the latest HD pack...");
+    put(status, sizeof(status), "%s", UI("Asking GitHub for the latest HD pack..."));
 }
 int ModsWindow_Tick(void)
 {
@@ -1598,7 +1613,7 @@ int ModsWindow_Tick(void)
     if (hd_clearing && HdPack_State() != HD_CLEANING) { /* that message's moment is over */
         hd_clearing = 0;
         if (!pending)
-            put(status, sizeof(status), "Ready: tap HD pack... again.");
+            put(status, sizeof(status), "%s", UI("Ready: tap HD pack... again."));
         return 1;
     }
     if (import_step == 2) { /* "Importing..." was drawn: now the work */
@@ -1613,7 +1628,7 @@ int ModsWindow_Tick(void)
         return 0;
     import_step = result > 0 ? 2 : 0;
     if (result > 0)
-        put(status, sizeof(status), "Importing...");
+        put(status, sizeof(status), "%s", UI("Importing..."));
     else if (result == -1)
         status[0] = 0;
     else
@@ -1865,7 +1880,7 @@ int ModsWindow_RequestClose(void)
     if (pending == 2 || !changed())
         return 1;
     pending = 2;
-    snprintf(status, sizeof(status), "Discard your unsaved mod changes?");
+    snprintf(status, sizeof(status), "%s", UI("Discard your unsaved mod changes?"));
     return 0;
 }
 int ModsWindow_Event(const MenuEvent *e)
@@ -1899,7 +1914,7 @@ int ModsWindow_Event(const MenuEvent *e)
             }
             if (changed()) {
                 pending = 2;
-                snprintf(status, sizeof(status), "Discard your unsaved mod changes?");
+                snprintf(status, sizeof(status), "%s", UI("Discard your unsaved mod changes?"));
                 return 0;
             }
             return 1;
@@ -1962,7 +1977,7 @@ int ModsWindow_Event(const MenuEvent *e)
                 cancel_pending();
             else if (changed()) {
                 pending = 2;
-                snprintf(status, sizeof(status), "Discard your unsaved mod changes?");
+                snprintf(status, sizeof(status), "%s", UI("Discard your unsaved mod changes?"));
             } else
                 return 1;
         } else if (inside(l.apply, e->x, e->y)) {
@@ -1976,7 +1991,7 @@ int ModsWindow_Event(const MenuEvent *e)
             else if (pending == 5)
                 remove_confirm();
             else if (hd_step)
-                put(status, sizeof(status), "Wait for the HD pack to finish, or stop it, before applying changes.");
+                put(status, sizeof(status), "%s", UI("Wait for the HD pack to finish, or stop it, before applying changes."));
             else
                 apply();
         } else if (!pending && l.hd.w && inside(l.hd, e->x, e->y)) {
@@ -1985,17 +2000,17 @@ int ModsWindow_Event(const MenuEvent *e)
             remove_start();
         } else if (!pending && touch && import_pick && inside(l.folder, e->x, e->y)) {
             if (hd_step)
-                put(status, sizeof(status), "Wait for the HD pack to finish, or stop it, before importing.");
+                put(status, sizeof(status), "%s", UI("Wait for the HD pack to finish, or stop it, before importing."));
             else
                 import_start();
         } else if (!pending && inside(l.folder, e->x, e->y)) {
             char path[1024];
             if (Mods_InstallDirectory(path, sizeof(path)))
-                snprintf(status, sizeof(status), "Could not create the mods folder.");
+                snprintf(status, sizeof(status), "%s", UI("Could not create the mods folder."));
             else if (Platform_OpenFolder(path))
-                snprintf(status, sizeof(status), "Could not open %.400s", path);
+                snprintf(status, sizeof(status), UI("Could not open %.400s"), path);
             else
-                snprintf(status, sizeof(status), "Opened %.400s. New mods appear after a restart.", path);
+                snprintf(status, sizeof(status), UI("Opened %.400s. New mods appear after a restart."), path);
         } else if (!pending) {
             focus = inside(l.search, e->x, e->y) ? 1 : inside(l.profile, e->x, e->y) ? 2 : 0;
             if (inside(l.filter, e->x, e->y)) {
@@ -2023,13 +2038,13 @@ int ModsWindow_Event(const MenuEvent *e)
             }
             if (inside(l.save, e->x, e->y)) {
                 if (changed())
-                    snprintf(status, sizeof(status), "Apply your changes before saving a profile.");
+                    snprintf(status, sizeof(status), "%s", UI("Apply your changes before saving a profile."));
                 else if (Mods_ProfileSave(profile))
-                    snprintf(status, sizeof(status), "Profile saved.");
+                    snprintf(status, sizeof(status), "%s", UI("Profile saved."));
                 else if (*Mods_ProfileSaveError())
-                    snprintf(status, sizeof(status), "Could not save the profile to %s", Mods_ProfileSaveError());
+                    snprintf(status, sizeof(status), UI("Could not save the profile to %s"), Mods_ProfileSaveError());
                 else
-                    snprintf(status, sizeof(status), "Could not save profile; use a simple name.");
+                    snprintf(status, sizeof(status), "%s", UI("Could not save profile; use a simple name."));
             }
             if (inside(l.load, e->x, e->y)) {
                 if (Mods_ProfileRead(profile, wanted)) {
@@ -2046,9 +2061,9 @@ int ModsWindow_Event(const MenuEvent *e)
                             values[i][j] = Mods_ProfileValue(profile, key, num(Mods_Option(i, j), "default", 0));
                         }
                     }
-                    snprintf(status, sizeof(status), "Profile loaded for review. Apply changes when ready.");
+                    snprintf(status, sizeof(status), "%s", UI("Profile loaded for review. Apply changes when ready."));
                 } else
-                    snprintf(status, sizeof(status), "Profile missing or references unavailable mods.");
+                    snprintf(status, sizeof(status), "%s", UI("Profile missing or references unavailable mods."));
             }
             if (selected >= 0) {
                 if (inside(l.toggle, e->x, e->y))

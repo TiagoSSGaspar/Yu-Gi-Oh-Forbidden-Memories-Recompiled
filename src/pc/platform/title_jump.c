@@ -37,6 +37,7 @@
 #include "pc/compat/fs.h"
 #include "pc/platform/title_jump.h"
 #include "pc/platform/menu.h"
+#include "pc/platform/ui_text.h"
 #include "pc/saves/save_menu.h"
 #include "pc/guest/state.h"
 #include "pc/free_duel/duelists.h"
@@ -85,7 +86,7 @@ void TitleJump_Confirm(void)
     if (!active) return;
     if (Tower_Guard(TOWER_GUARD_JUMP, 1, NULL, 0)) return;   /* asked before the question */
     /* No is focused and last, so Enter and Escape both keep playing. */
-    Menu_ShowNotice("Restart game", "Restart the game? Unsaved progress is lost.", buttons, 2, 1, restart_chosen);
+    Menu_ShowNotice(UI("Restart game"), UI("Restart the game? Unsaved progress is lost."), buttons, 2, 1, restart_chosen);
 }
 
 void TitleJump_Frame(unsigned presented)

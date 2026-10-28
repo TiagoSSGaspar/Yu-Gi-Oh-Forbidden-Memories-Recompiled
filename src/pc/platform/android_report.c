@@ -42,6 +42,7 @@
 #include "paths.h"
 #include "report_folder.h"
 #include "settings.h"
+#include "ui_text.h"
 #include "pc/debug/crash.h"
 #include "pc/guest/state.h"
 #include <SDL3/SDL.h>
@@ -477,13 +478,13 @@ static int write_shared_copy(Java *java)
     FILE *file;
     int ok;
     if (!cache || !*cache) {
-        snprintf(java->why, sizeof(java->why), "The app has no cache folder to share the report from (%s).",
+        snprintf(java->why, sizeof(java->why), UI("The app has no cache folder to share the report from (%s)."),
                  SDL_GetError());
         java->bad = 1;
         return 0;
     }
     if (snprintf(folder, sizeof(folder), "%s/shared", cache) >= (int)sizeof(folder)) {
-        snprintf(java->why, sizeof(java->why), "The app's cache folder's name is too long.");
+        snprintf(java->why, sizeof(java->why), "%s", UI("The app's cache folder's name is too long."));
         java->bad = 1;
         return 0;
     }
@@ -501,8 +502,8 @@ static int write_shared_copy(Java *java)
     ok = (file = fopen(path, "wb")) != NULL && fwrite(offer.text, 1, offer.size, file) == offer.size;
     if (file && fclose(file)) ok = 0;
     if (!ok) {
-        snprintf(java->why, sizeof(java->why), "Could not write the report to share (%s).",
-                 errno ? strerror(errno) : "short write");
+        snprintf(java->why, sizeof(java->why), UI("Could not write the report to share (%s)."),
+                 errno ? strerror(errno) : UI("short write"));
         java->bad = 1;
     }
     return ok;
@@ -585,19 +586,19 @@ static void java_call(void *argument)
     java->bad = 0;
     java->why[0] = '\0';
     if (!java->env) {
-        snprintf(java->why, sizeof(java->why), "Java is not reachable from the game (%s).", SDL_GetError());
+        snprintf(java->why, sizeof(java->why), UI("Java is not reachable from the game (%s)."), SDL_GetError());
         java->bad = 1;
         return;
     }
     if ((*java->env)->PushLocalFrame(java->env, 64) < 0) {
         if ((*java->env)->ExceptionCheck(java->env)) (*java->env)->ExceptionClear(java->env);
-        snprintf(java->why, sizeof(java->why), "Java has no room for the report's calls.");
+        snprintf(java->why, sizeof(java->why), "%s", UI("Java has no room for the report's calls."));
         java->bad = 1;
         return;
     }
     if (!(activity = (jobject)SDL_GetAndroidActivity())) {
         if ((*java->env)->ExceptionCheck(java->env)) (*java->env)->ExceptionClear(java->env);
-        snprintf(java->why, sizeof(java->why), "The game's activity is not reachable (%s).", SDL_GetError());
+        snprintf(java->why, sizeof(java->why), UI("The game's activity is not reachable (%s)."), SDL_GetError());
         java->bad = 1;
     } else if (java->share) {
         share(java, activity);
@@ -610,8 +611,8 @@ static void java_call(void *argument)
 
 /* --- the notice ------------------------------------------------------ */
 
-/* Added to what the player is told when a report could not be retired. */
-#define AGAIN "\n\nIt may be offered again next launch."
+/* Added to what the player is told when a report could not be retired: each
+ * message has its own whole sentence in two forms. */
 
 static void chosen(int button, int *quit)
 {
@@ -634,11 +635,13 @@ static void chosen(int button, int *quit)
         fprintf(stderr, "memories-pc: crash report %s: don't ask again (offer_crash_reports=0)\n", offer.name);
         /* With the offer off, one not retired comes back only once it is
          * turned on again: worth a word, not a warning. */
-        snprintf(text, sizeof(text),
-                 "No crash report will be offered from now on. Help > Offer crash reports at start turns this "
-                 "back on.%s",
-                 retired ? "" : "\n\nThis report could not be put away: it is offered again if you turn this back on.");
-        Menu_ShowNotice("Crash reports off", text, ok, 1, 0, NULL);
+        snprintf(text, sizeof(text), "%s",
+                 retired ? UI("No crash report will be offered from now on. Help > Offer crash reports at start turns "
+                              "this back on.")
+                         : UI("No crash report will be offered from now on. Help > Offer crash reports at start turns "
+                              "this back on.\n\nThis report could not be put away: it is offered again if you turn "
+                              "this back on."));
+        Menu_ShowNotice(UI("Crash reports off"), text, ok, 1, 0, NULL);
         return;
     } else {
         fprintf(stderr, "memories-pc: crash report %s: not now (offered again next launch)\n", offer.name);
@@ -653,20 +656,26 @@ static void chosen(int button, int *quit)
                 offer.saved_name[0] ? offer.saved_name : offer.file_name);
         if (!call.share) {
             if (offer.saved_name[0])
-                snprintf(text, sizeof(text), "It is in your Downloads folder as %s.%s", offer.saved_name,
-                         retired ? "" : AGAIN);
+                snprintf(text, sizeof(text),
+                         retired ? UI("It is in your Downloads folder as %s.")
+                                 : UI("It is in your Downloads folder as %s.\n\nIt may be offered again next launch."),
+                         offer.saved_name);
             else
-                snprintf(text, sizeof(text), "It is in your Downloads folder.%s", retired ? "" : AGAIN);
-            Menu_ShowNotice("Report saved", text, ok, 1, 0, NULL);
+                snprintf(text, sizeof(text), "%s",
+                         retired ? UI("It is in your Downloads folder.")
+                                 : UI("It is in your Downloads folder.\n\nIt may be offered again next launch."));
+            Menu_ShowNotice(UI("Report saved"), text, ok, 1, 0, NULL);
         } else if (!retired) {
             /* Under the share sheet, for when the player comes back. */
-            Menu_ShowNotice("Report shared", "The report went to the share sheet." AGAIN, ok, 1, 0, NULL);
+            Menu_ShowNotice(UI("Report shared"),
+                            UI("The report went to the share sheet.\n\nIt may be offered again next launch."), ok, 1, 0,
+                            NULL);
         }
         return;
     }
-    snprintf(text, sizeof(text), "%s\n\nIt is offered again the next time the game starts.",
-             call.why[0] ? call.why : "Something went wrong.");
-    Menu_ShowNotice(call.share ? "Report not shared" : "Report not saved", text, ok, 1, 0, NULL);
+    snprintf(text, sizeof(text), UI("%s\n\nIt is offered again the next time the game starts."),
+             call.why[0] ? call.why : UI("Something went wrong."));
+    Menu_ShowNotice(call.share ? UI("Report not shared") : UI("Report not saved"), text, ok, 1, 0, NULL);
 }
 
 void Android_OfferCrashReport(void)
@@ -701,10 +710,10 @@ void Android_OfferCrashReport(void)
     localtime_r(&seconds, &when);
     strftime(offer.file_name, sizeof(offer.file_name), "yfm-redecomp-crash-%Y%m%d-%H%M%S.txt", &when);
     fprintf(stderr, "memories-pc: offering crash report %s (%zu bytes) as %s\n", offer.name, offer.size, offer.file_name);
-    Menu_ShowNotice("The game stopped last time",
-                    "A report of what happened helps fix it. It holds the game's version, your phone's model, "
-                    "its Android version and free memory, and the game's crash log with its settings and mods: "
-                    "no personal data and none of your saves.",
+    Menu_ShowNotice(UI("The game stopped last time"),
+                    UI("A report of what happened helps fix it. It holds the game's version, your phone's model, "
+                       "its Android version and free memory, and the game's crash log with its settings and mods: "
+                       "no personal data and none of your saves."),
                     save ? with_save : share_only, save ? 4 : 3, save ? 3 : 2, chosen);
 }
 
@@ -718,10 +727,10 @@ void Android_OfferCrashReport(void)
  * still lives; Close ends it. */
 int Android_OfferStartupReport(const char *title, const char *message, const char *details)
 {
-    static const SDL_MessageBoxButtonData with_save[] = {
-        {0, 0, "Share"}, {0, 1, "Save to Downloads"}, {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Close"}};
-    static const SDL_MessageBoxButtonData share_only[] = {
-        {0, 0, "Share"}, {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Close"}};
+    const SDL_MessageBoxButtonData with_save[] = {
+        {0, 0, UI("Share")}, {0, 1, UI("Save to Downloads")}, {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, UI("Close")}};
+    const SDL_MessageBoxButtonData share_only[] = {
+        {0, 0, UI("Share")}, {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, UI("Close")}};
     char line[2048], clean[2600], value[PROP_VALUE_MAX], value2[PROP_VALUE_MAX], memory[64], build[64], commit[96];
     char *text, *shown;
     const char *at, *facts, *headless = getenv("MEMORIES_HEADLESS");
@@ -800,13 +809,13 @@ int Android_OfferStartupReport(const char *title, const char *message, const cha
          * (what to do), so the box keeps its height and its buttons stay
          * where they were (MessageBox.java scrolls a taller one). */
         if (call.bad)
-            snprintf(shown, shown_size, "%s %s%s", call.share ? "Not shared:" : "Not saved:",
-                     call.why[0] ? call.why : "something went wrong.", facts);
+            snprintf(shown, shown_size, call.share ? UI("Not shared: %s%s") : UI("Not saved: %s%s"),
+                     call.why[0] ? call.why : UI("something went wrong."), facts);
         else if (call.share)
-            snprintf(shown, shown_size, "The report went to the share sheet. Close this once it is sent.%s",
+            snprintf(shown, shown_size, UI("The report went to the share sheet. Close this once it is sent.%s"),
                      facts);
         else
-            snprintf(shown, shown_size, "The report is in your Downloads folder as %s.%s",
+            snprintf(shown, shown_size, UI("The report is in your Downloads folder as %s.%s"),
                      offer.saved_name[0] ? offer.saved_name : offer.file_name, facts);
         fprintf(stderr, "memories-pc: start-up report %s: %s\n", offer.file_name,
                 call.bad ? call.why : call.share ? "shared" : "saved to Downloads");

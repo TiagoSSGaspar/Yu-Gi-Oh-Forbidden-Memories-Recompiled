@@ -14,6 +14,7 @@
 #include "pc/platform/paths.h"
 #include "pc/platform/platform.h"
 #include "pc/platform/settings.h"
+#include "pc/platform/ui_text.h"
 #include "pc/guest/state.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -200,7 +201,7 @@ static void describe(int slot)
     }
     name[0] = 0;
     if (best) card_name(best, name, sizeof(name));
-    snprintf(menu.label[slot], sizeof(menu.label[slot]), "%s%s%d monsters, %d other", name, best ? "   " : "",
+    snprintf(menu.label[slot], sizeof(menu.label[slot]), UI("%s%s%d monsters, %d other"), name, best ? "   " : "",
              monsters, DECK_SLOT_CARDS - monsters);
 }
 
@@ -460,13 +461,13 @@ static void show(void)
     holding = 1;
     menu.top = 0;
     if (!allowed) {
-        message(1, "Decks open on the main menu, the map, a card shop, Free Duel and Build Deck.");
+        message(1, UI("Decks open on the main menu, the map, a card shop, Free Duel and Build Deck."));
         return;
     }
     reconcile();
     SaveSlots_StateName((const unsigned char *)&workspace()->state, name, sizeof(name));
-    snprintf(menu.title, sizeof(menu.title), picking == PICK_OPEN ? "Build Deck: which deck? (%s)" : "Decks: %s",
-             name[0] ? name : "(no name)");
+    snprintf(menu.title, sizeof(menu.title), picking == PICK_OPEN ? UI("Build Deck: which deck? (%s)") : UI("Decks: %s"),
+             name[0] ? name : UI("(no name)"));
     refresh();
     menu.cursor = draft.active >= 0 ? draft.active : 0;
     keep_cursor_shown();
@@ -503,14 +504,14 @@ static void use(int slot)
             return;
         }
         SD_SEPlayFull(SOUND_BUZZER);
-        message(0, "That is already your deck.");
+        message(0, UI("That is already your deck."));
         return;
     }
     if (draft.active < 0) {
         /* Every slot holds another deck, or the deck is not forty cards. */
         SD_SEPlayFull(SOUND_BUZZER);
-        message(0, deck_complete() ? "Your deck is in no slot and all ten are used: clear one to keep it."
-                                   : "Your deck is not forty cards yet: finish it in Build Deck first.");
+        message(0, deck_complete() ? UI("Your deck is in no slot and all ten are used: clear one to keep it.")
+                                   : UI("Your deck is not forty cards yet: finish it in Build Deck first."));
         return;
     }
     if (!draft.slots[slot].used) {
@@ -524,7 +525,7 @@ static void use(int slot)
             choose();
             return;
         }
-        snprintf(text, sizeof(text), "Slot %d is a new deck, a copy of yours. Build Deck changes it.", slot + 1);
+        snprintf(text, sizeof(text), UI("Slot %d is a new deck, a copy of yours. Build Deck changes it."), slot + 1);
         message(0, text);
         return;
     }
@@ -532,11 +533,11 @@ static void use(int slot)
     name[0] = 0;
     if (card && Cards_Valid(card)) card_name(card, name, sizeof(name));
     if (result == DECK_MISSING) {
-        snprintf(text, sizeof(text), "Missing %d x %s: not in your trunk or deck.", count, name);
+        snprintf(text, sizeof(text), UI("Missing %d x %s: not in your trunk or deck."), count, name);
     } else if (result == DECK_TRUNK_FULL) {
-        snprintf(text, sizeof(text), "Your trunk has no room for %d more %s.", count, name);
+        snprintf(text, sizeof(text), UI("Your trunk has no room for %d more %s."), count, name);
     } else if (result != DECK_OK) {
-        snprintf(text, sizeof(text), "Slot %d does not hold forty cards this game has, at most three of each.",
+        snprintf(text, sizeof(text), UI("Slot %d does not hold forty cards this game has, at most three of each."),
                  slot + 1);
     }
     if (result != DECK_OK) {
@@ -553,7 +554,7 @@ static void use(int slot)
         choose();
         return;
     }
-    snprintf(text, sizeof(text), "Your deck is now the one in slot %d.", slot + 1);
+    snprintf(text, sizeof(text), UI("Your deck is now the one in slot %d."), slot + 1);
     message(0, text);
 }
 
@@ -787,12 +788,12 @@ static int centred_words(MenuCanvas *canvas, int x, int w, int y, int line_h, co
 
 static const char *status_text(int slot)
 {
-    if (!draft.slots[slot].used) return "Empty";
-    if (menu.current[slot]) return "your deck";
+    if (!draft.slots[slot].used) return UI("Empty");
+    if (menu.current[slot]) return UI("your deck");
     switch (menu.status[slot]) {
-    case DECK_MISSING: return "cards missing";
-    case DECK_TRUNK_FULL: return "trunk full";
-    case DECK_INVALID: return "not a valid deck";
+    case DECK_MISSING: return UI("cards missing");
+    case DECK_TRUNK_FULL: return UI("trunk full");
+    case DECK_INVALID: return UI("not a valid deck");
     default: return "";
     }
 }
@@ -801,10 +802,10 @@ static const char *status_text(int slot)
 static const char *hints(int jp)
 {
     if (jp)
-        return picking == PICK_OPEN ? "Circle: edit this deck (an empty slot: a copy of yours)   Triangle: clear   Cross: back"
-                                    : "Circle: use (an empty slot: a copy of yours)   Triangle: clear   Cross: close";
-    return picking == PICK_OPEN ? "Cross: edit this deck (an empty slot: a copy of yours)   Triangle: clear   Circle: back"
-                                : "Cross: use (an empty slot: a copy of yours)   Triangle: clear   Circle: close";
+        return picking == PICK_OPEN ? UI("Circle: edit this deck (an empty slot: a copy of yours)   Triangle: clear   Cross: back")
+                                    : UI("Circle: use (an empty slot: a copy of yours)   Triangle: clear   Cross: close");
+    return picking == PICK_OPEN ? UI("Cross: edit this deck (an empty slot: a copy of yours)   Triangle: clear   Circle: back")
+                                : UI("Cross: use (an empty slot: a copy of yours)   Triangle: clear   Circle: close");
 }
 
 static int flowed(MenuCanvas *canvas, int x, int w, int y, int line_h, const char *line, uint32_t color, int *widest)
@@ -822,7 +823,7 @@ static int list_layout(int pw, int s, int jp, int *lines)
     int slot, one_row = 1, piece;
     ui_scale = s;
     *lines = 1;
-    if (width(menu.title) + 44 * s + (draft.dirty ? width("saved with the game") + 40 * s : 0) > pw ||
+    if (width(menu.title) + 44 * s + (draft.dirty ? width(UI("saved with the game")) + 40 * s : 0) > pw ||
         width(hints(jp)) + 28 * s > pw)
         one_row = 0;
     for (slot = 0; slot < DECK_SLOT_COUNT && one_row; slot++) {
@@ -883,7 +884,7 @@ void DeckMenu_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
         int n = centred_words(NULL, px + 14 * s, pw - 28 * s, 0, 18 * s, menu.message, 0);
         int top = py + ph / 2 - (n - 1) * 9 * s;
         centred_words(canvas, px + 14 * s, pw - 28 * s, top, 18 * s, menu.message, COLOR_TEXT);
-        centred(canvas, px, pw, top + (n - 1) * 18 * s + 22 * s, jp ? "Press Circle" : "Press Cross", COLOR_DIM);
+        centred(canvas, px, pw, top + (n - 1) * 18 * s + 22 * s, jp ? UI("Press Circle") : UI("Press Cross"), COLOR_DIM);
         *x = px, *y = py, *w = pw, *h = ph;
         return;
     }
@@ -916,7 +917,7 @@ void DeckMenu_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
     if (draft.dirty) {
         /* Kept with the game: lost with it when it is not saved. Narrow, it
          * goes under the title. */
-        const char *note = "saved with the game";
+        const char *note = UI("saved with the game");
         if (layout > 0 && width(menu.title) + 44 * s + width(note) + 40 * s > pw)
             text(canvas, px + 14 * s, py + 20 * s + line_h, note, COLOR_WARN);
         else
@@ -924,14 +925,14 @@ void DeckMenu_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
     }
     if (menu.view == VIEW_CONFIRM) {
         int bw = 120 * s, bh = 108 * s, bx0 = px + 24 * s, by = py + (ph - bh) / 2, cw = pw - 48 * s, bx;
-        const char *labels[2] = {"Yes", "No"};
+        const char *labels[2] = {UI("Yes"), UI("No")};
         if (2 * bw + 16 * s > cw) { /* narrow: the menu's width, the buttons share it */
             bx0 = px + 8 * s;
             cw = pw - 16 * s;
             if (2 * bw + 16 * s > cw - 16 * s) bw = (cw - 32 * s) / 2;
         }
         frame_box(canvas, bx0, by, cw, bh, s);
-        snprintf(line, sizeof(line), "Clear slot %d?", menu.cursor + 1);
+        snprintf(line, sizeof(line), UI("Clear slot %d?"), menu.cursor + 1);
         centred(canvas, bx0, cw, by + 30 * s, line, COLOR_TEXT);
         bx = bx0 + (cw - 2 * bw - 16 * s) / 2;
         for (i = 0; i < 2; i++) {
@@ -950,7 +951,7 @@ void DeckMenu_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
         my = py + (ph - mh) / 2;
         frame_box(canvas, mx, my, mw, mh, s);
         centred_words(canvas, mx + 8 * s, mw - 16 * s, my + 24 * s, 18 * s, menu.message, COLOR_TEXT);
-        centred(canvas, mx, mw, my + 46 * s + (n - 1) * 18 * s, jp ? "Press Circle" : "Press Cross", COLOR_DIM);
+        centred(canvas, mx, mw, my + 46 * s + (n - 1) * 18 * s, jp ? UI("Press Circle") : UI("Press Cross"), COLOR_DIM);
     }
     *x = px;
     *y = py;

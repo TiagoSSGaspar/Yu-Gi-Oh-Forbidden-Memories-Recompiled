@@ -16,6 +16,7 @@
 #include "mods_window.h"
 #include "pc/mods/hd_pack.h"
 #include "pc/mods/mods.h"
+#include "ui_text.h"
 #include "controls_window.h"
 #include "controls_linux.h"
 #include "panel.h"
@@ -695,8 +696,8 @@ static void screenshot_not_saved(const char *why)
 {
     static const char *const ok[] = {"OK"};
     char text[1300];
-    snprintf(text, sizeof(text), "Could not save the screenshot to %s", why);
-    fprintf(stderr, "memories-pc: %s\n", text);
+    fprintf(stderr, "memories-pc: Could not save the screenshot to %s\n", why);
+    snprintf(text, sizeof(text), UI("Could not save the screenshot to %s"), why);
     Menu_ShowNotice("Screenshot not saved", text, ok, 1, 0, NULL);
 }
 
@@ -1137,9 +1138,9 @@ static void open_gamepad(SDL_JoystickID id)
             return;
         }
 }
-/* The mods' own words in the language the player put first in the system's
- * settings (Mods_SetLanguage), which the locale's environment may not say:
- * an app opened from the Finder has none. */
+/* The mods' own words and the port's (Mods_SetLanguage, UiText_SetLanguage)
+ * in the language the player put first in the system's settings, which the
+ * locale's environment may not say: an app opened from the Finder has none. */
 static void set_language(void)
 {
     int count = 0;
@@ -1149,6 +1150,7 @@ static void set_language(void)
         snprintf(tag, sizeof(tag), "%s%s%s", locales[0]->language, locales[0]->country ? "-" : "",
                  locales[0]->country ? locales[0]->country : "");
         Mods_SetLanguage(tag);
+        UiText_SetLanguage(tag);
     }
     SDL_free(locales);
 }
@@ -2534,12 +2536,12 @@ static void SDLCALL disc_selected(void *userdata, const char *const *files, int 
 
 int Platform_SelectDisc(char *path, size_t size, char *why, size_t why_size)
 {
-    static const SDL_MessageBoxButtonData buttons[] = {
+    SDL_MessageBoxButtonData buttons[] = {
         {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Quit"},
         {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Choose ROM..."}
     };
-    static const SDL_DialogFileFilter filters[] = {{"PlayStation disc image (.bin)", "bin;BIN"}};
-    const SDL_MessageBoxData welcome = {
+    SDL_DialogFileFilter filters[] = {{"PlayStation disc image (.bin)", "bin;BIN"}};
+    SDL_MessageBoxData welcome = {
         SDL_MESSAGEBOX_INFORMATION, NULL, "Welcome to Forbidden Memories Recompiled",
         "Choose your copy of Yu-Gi-Oh! Forbidden Memories to begin.\n\n"
         "Select the .bin ROM from your USA disc (SLUS-01411).\n"
@@ -2551,12 +2553,18 @@ int Platform_SelectDisc(char *path, size_t size, char *why, size_t why_size)
     int button = 0;
     Monitor_Modal(1);
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-        snprintf(why, why_size, "Could not open ROM setup: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not open ROM setup: %s"), SDL_GetError());
         Monitor_Modal(0);
         return -1;
     }
+    set_language(); /* the welcome comes before Platform_Open: its words in the system's language */
+    buttons[0].text = UI(buttons[0].text);
+    buttons[1].text = UI(buttons[1].text);
+    filters[0].name = UI(filters[0].name);
+    welcome.title = UI(welcome.title);
+    welcome.message = UI(welcome.message);
     if (!SDL_ShowMessageBox(&welcome, &button)) {
-        snprintf(why, why_size, "Could not open ROM setup: %s", SDL_GetError());
+        snprintf(why, why_size, UI("Could not open ROM setup: %s"), SDL_GetError());
         selection.result = -1;
     } else if (button == 1) {
         selection.path = path;

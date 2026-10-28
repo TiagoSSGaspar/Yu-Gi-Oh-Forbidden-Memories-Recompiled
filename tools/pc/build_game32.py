@@ -837,18 +837,20 @@ def build_mods(build, release=False, code=True, target="i386"):
 
 def copy_languages(build, release=False):
     """languages/*.txt, the official European languages' text (Game >
-    Language, src/pc/text/language.h), into <build>/languages beside the
-    game. A release takes only the packs git tracks."""
+    Language, src/pc/text/language.h), and languages/ui/*.json, the port's
+    own words in other languages (src/pc/platform/ui_text.h), into
+    <build>/languages beside the game. A release takes only the files git
+    tracks."""
     out_root = f"{build}/languages"
-    packs = sorted(glob.glob("languages/*.txt"))
+    packs = sorted(glob.glob("languages/*.txt") + glob.glob("languages/ui/*.json"))
     if release:
         tracked = set(subprocess.check_output(["git", "ls-files", "-z", "languages"], text=True).split("\0"))
         packs = [path for path in packs if path.replace(os.sep, "/") in tracked]
         shutil.rmtree(out_root, ignore_errors=True)
     for path in packs:
-        copy_if_changed(path, os.path.join(out_root, os.path.basename(path)))
+        copy_if_changed(path, os.path.join(out_root, os.path.relpath(path, "languages")))
     if packs:
-        print(f"{out_root}: " + ", ".join(os.path.splitext(os.path.basename(path))[0] for path in packs))
+        print(f"{out_root}: " + ", ".join(os.path.splitext(os.path.relpath(path, "languages"))[0] for path in packs))
 
 
 def copy_if_changed(source, destination):

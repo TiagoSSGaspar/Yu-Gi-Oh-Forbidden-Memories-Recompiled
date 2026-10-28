@@ -29,6 +29,7 @@
 #include "pc/compat/fs.h"
 #include "controls_window.h"
 #include "controls_art.h"
+#include "ui_text.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -230,7 +231,21 @@ static const char *source_label(const ControlSource *src)
     ControllerDevice *d = ControlsRuntime_Device(current_device());
     if (style == CTRL_ICON_AUTOMATIC)
         style = d ? d->style : CTRL_ICON_GENERIC;
-    return Controls_SourceLabel(src, style);
+    return UI(Controls_SourceLabel(src, style));
+}
+
+/* The selected row's name for a message, with "(alternate)" after it for a
+ * controller's second slot, and "(main)" after the first when `main_too`. */
+static const char *slot_name(char *buf, size_t size, int main_too)
+{
+    const char *name = UI(Controls_RowName(ui.row));
+    if (ui.tab && ui.slot)
+        snprintf(buf, size, UI("%s (alternate)"), name);
+    else if (ui.tab && main_too)
+        snprintf(buf, size, UI("%s (main)"), name);
+    else
+        snprintf(buf, size, "%s", name);
+    return buf;
 }
 
 static void say(int kind, const char *s)
@@ -431,12 +446,12 @@ static void button(int id, Rect r, const char *label, int style)
 static void cancel_capture(void)
 {
     ui.capture.state = CAP_IDLE;
-    say(SAY_INFO, "Binding unchanged.");
+    say(SAY_INFO, UI("Binding unchanged."));
 }
 static void apply(int close)
 {
     if (ControlsRuntime_Apply(&ui.draft, ui.status, sizeof(ui.status))) {
-        say(SAY_DONE, "Controls saved.");
+        say(SAY_DONE, UI("Controls saved."));
         ui.modal = 0;
         ui.close = close;
     } else
@@ -511,7 +526,7 @@ static void start_capture(void)
 {
     ui.click_id = 0;
     if (!ui.tab && ui.player) {
-        say(SAY_WARN, "The keyboard always plays as Player 1.");
+        say(SAY_WARN, UI("The keyboard always plays as Player 1."));
         return;
     }
     if (ui.tab && ui.draft.profile_count == CTRL_PROFILE_MAX) {
@@ -520,18 +535,18 @@ static void start_capture(void)
             if (dev >= 0 && !strcmp(ui.draft.profiles[i].identity, ControlsRuntime_Device(dev)->identity))
                 found = 1;
         if (!found) {
-            say(SAY_WARN, "Profile limit reached. Remove old profiles from controls.txt before adding more.");
+            say(SAY_WARN, UI("Profile limit reached. Remove old profiles from controls.txt before adding more."));
             return;
         }
     }
     if (ui.tab && current_device() < 0) {
-        say(SAY_WARN, "Connect a controller and choose it above before rebinding.");
+        say(SAY_WARN, UI("Connect a controller and choose it above before rebinding."));
         return;
     }
     ui.modal = 0;
     ui.popup = 0;
     Controls_CaptureBegin(&ui.capture, ui.row, ui.slot, ControlsRuntime_Now());
-    say(SAY_BUSY, "Release everything you are holding, then press the input you want.");
+    say(SAY_BUSY, UI("Release everything you are holding, then press the input you want."));
 }
 /* Keep the selected line, and its heading where possible, inside its list's
  * view. */
@@ -577,17 +592,17 @@ static void activate(int id)
             if (choice < 2) {
                 p->mode = choice == 0 ? 1 : 0;
                 p->identity[0] = 0;
-                say(SAY_INFO, choice == 0 ? "This player uses the first free controller."
-                                          : "This player's controller is switched off.");
+                say(SAY_INFO, choice == 0 ? UI("This player uses the first free controller.")
+                                          : UI("This player's controller is switched off."));
             } else {
                 ControllerDevice *d = ControlsRuntime_Device(choice - 2);
                 if (!d || !d->connected)
                     return;
                 if (d->ambiguous)
-                    say(SAY_WARN, "Two identical controllers: choose this one again after restarting the game.");
+                    say(SAY_WARN, UI("Two identical controllers: choose this one again after restarting the game."));
                 ControlsPort *other = &ui.draft.port[1 - ui.player];
                 if (other->mode == 2 && !strcmp(other->identity, d->identity)) {
-                    say(SAY_WARN, "That controller belongs to the other player. Release it there first.");
+                    say(SAY_WARN, UI("That controller belongs to the other player. Release it there first."));
                     ui.popup = 0;
                     return;
                 }
@@ -624,7 +639,7 @@ static void activate(int id)
         break;
     case KEYBOARD:
         if (ui.player) {
-            say(SAY_WARN, "The keyboard always plays as Player 1. Switch to Player 1 to edit it.");
+            say(SAY_WARN, UI("The keyboard always plays as Player 1. Switch to Player 1 to edit it."));
             break;
         }
         if (ui.tab)
@@ -647,14 +662,14 @@ static void activate(int id)
         break;
     case CLEAR:
         if (Controls_Row(profile(0), ui.row)[ui.slot].kind == CTRL_SRC_UNBOUND) {
-            say(SAY_INFO, "That slot is already empty.");
+            say(SAY_INFO, UI("That slot is already empty."));
             break;
         }
         Controls_ClearSlot(profile(1), ui.row, ui.slot);
         /* Esc cancels a capture, so it cannot be pressed back in. */
         say(SAY_INFO, ui.row == CTRL_ROW_EXIT && !ui.tab
-                          ? "Exit game cleared; Esc still quits. Apply to save."
-                          : "Binding cleared. Apply to save.");
+                          ? UI("Exit game cleared; Esc still quits. Apply to save.")
+                          : UI("Binding cleared. Apply to save."));
         break;
     case DEFAULTS:
         ui.modal = 2;
@@ -665,7 +680,7 @@ static void activate(int id)
         break;
     case APPLY:
         if (!dirty()) {
-            say(SAY_INFO, "Nothing to save.");
+            say(SAY_INFO, UI("Nothing to save."));
             break;
         }
         apply(0);
@@ -684,12 +699,12 @@ static void activate(int id)
             Controls_InitDefaults(&defaults);
             *profile(1) = ui.tab ? defaults.ctrl[ui.player] : defaults.kb;
             ui.modal = 0;
-            say(SAY_INFO, "Defaults restored. Apply to save.");
+            say(SAY_INFO, UI("Defaults restored. Apply to save."));
         } else if (ui.modal == 3) {
             Controls_MoveSource(profile(1), ui.row, ui.slot, &ui.capture.pending);
             ui.capture.state = CAP_IDLE;
             ui.modal = 0;
-            say(SAY_INFO, "Binding moved. Apply to save.");
+            say(SAY_INFO, UI("Binding moved. Apply to save."));
         }
         break;
     case NO:
@@ -781,7 +796,7 @@ void ControlsWindow_Event(const MenuEvent *e)
     ui.focus = h->id;
     if (h->id >= DIAGRAM && h->id < CHOICE) {
         select_row(h->id - DIAGRAM, 0);
-        say(SAY_INFO, Controls_Actions[ui.row].name);
+        say(SAY_INFO, UI(Controls_Actions[ui.row].name));
         if (double_click)
             start_capture();
         return;
@@ -832,7 +847,7 @@ void ControlsWindow_Key(int key, int down, int repeat, int modifiers)
     }
     if (ui.capture.state) {
         if (!key)
-            say(SAY_WARN, "That key is not supported. Choose a standard keyboard key.");
+            say(SAY_WARN, UI("That key is not supported. Choose a standard keyboard key."));
         return;
     }
     if (key == CTRL_KEY_TAB) {
@@ -901,14 +916,14 @@ void ControlsWindow_Tick(void)
     if (ui.capture.state && ui.modal != 3) {
         if (ui.tab && (!d || !d->connected)) {
             cancel_capture();
-            say(SAY_WARN, "Controller disconnected; binding unchanged.");
+            say(SAY_WARN, UI("Controller disconnected; binding unchanged."));
             return;
         }
         n = ui.tab ? ControlsRuntime_Sources(d, sources, 64, ui.capture.state == CAP_WAIT_NEUTRAL)
                    : ControlsRuntime_Keys(keys);
         ControlSource *src = n ? (ui.tab ? sources : keys) : NULL;
         if ((ui.mods || n > 1) && !ui.tab && ui.capture.state == CAP_AWAIT_INPUT) {
-            say(SAY_WARN, "Key combinations cannot be bound. Release the keys and try again.");
+            say(SAY_WARN, UI("Key combinations cannot be bound. Release the keys and try again."));
             if (now >= ui.capture.deadline_us)
                 cancel_capture();
             return;
@@ -916,14 +931,14 @@ void ControlsWindow_Tick(void)
         int result = Controls_CaptureStep(&ui.capture, profile(0), src, ui.tab && device >= 0, now);
         if (result == CAPTURE_DONE) {
             Controls_MoveSource(profile(1), ui.row, ui.slot, &ui.capture.pending);
-            say(SAY_DONE, "Binding updated. Apply to save.");
+            say(SAY_DONE, UI("Binding updated. Apply to save."));
         } else if (result == CAPTURE_CONFLICT) {
             ui.modal = 3;
             ui.focus = YES;
         } else if (result == CAPTURE_REJECT_RESERVED)
-            say(SAY_WARN, Controls_ReservedReason(src->code, Controls_IsModifier(src->code)));
+            say(SAY_WARN, UI(Controls_ReservedReason(src->code, Controls_IsModifier(src->code))));
         else if (result == CAPTURE_RESET)
-            say(SAY_WARN, "Nothing was pressed in time; binding unchanged.");
+            say(SAY_WARN, UI("Nothing was pressed in time; binding unchanged."));
     }
 }
 
@@ -989,7 +1004,7 @@ static void controller(int x, int y, int w, uint16_t bits)
         hit(DIAGRAM + dest, region_hit(i, x, y, w));
     }
     if (!ControlsArt_Draw(canvas, x * scale, (y + offset_y) * scale, w * scale)) {
-        text_at(x + 20, y + 40, "Controller picture unavailable", dim);
+        text_at(x + 20, y + 40, UI("Controller picture unavailable"), dim);
         return;
     }
     /* Tiny PS1 face symbols retain the original line drawing's open buttons. */
@@ -1049,7 +1064,7 @@ static void held_summary(char *out, size_t size, uint16_t bits)
         int action = pad_order[i];
         if (!(bits & Controls_Actions[action].bit))
             continue;
-        int wrote = snprintf(out + at, size - at, "%s%s", at ? ", " : "", Controls_Actions[action].name);
+        int wrote = snprintf(out + at, size - at, "%s%s", at ? ", " : "", UI(Controls_Actions[action].name));
         if (wrote < 0 || (size_t)wrote >= size - at)
             break;
         at += (size_t)wrote;
@@ -1060,12 +1075,12 @@ static void draw_diagram(Rect r, uint16_t bits)
 {
     char live[160];
     frame(r, panel, edge);
-    int title_mid = r.y + 18, title_w = text_w("PlayStation pad");
-    text_clip(r.x + 12, title_mid, "PlayStation pad", r.w - 24, dim);
+    int title_mid = r.y + 18, title_w = text_w(UI("PlayStation pad"));
+    text_clip(r.x + 12, title_mid, UI("PlayStation pad"), r.w - 24, dim);
     held_summary(live, sizeof(live), bits);
     int room = r.w - 36 - title_w;
     if (room > 40)
-        text_right_clip(r.x + r.w - 12, title_mid, live[0] ? live : "nothing pressed", room,
+        text_right_clip(r.x + r.w - 12, title_mid, live[0] ? live : UI("nothing pressed"), room,
                         live[0] ? on_held : faint);
 
     int legend_lines = r.w >= 330 ? 3 : 2;
@@ -1080,17 +1095,17 @@ static void draw_diagram(Rect r, uint16_t bits)
 
     int y = r.y + r.h - legend_h + 4, swatch = 10;
     fill(r.x + 12, y + 3, swatch, swatch, held);
-    text_at(r.x + 12 + swatch + 6, y + 8, "pressed now", faint);
-    int x = r.x + 12 + swatch + 6 + text_w("pressed now") + 18;
+    text_at(r.x + 12 + swatch + 6, y + 8, UI("pressed now"), faint);
+    int x = r.x + 12 + swatch + 6 + text_w(UI("pressed now")) + 18;
     box(x, y + 3, swatch, swatch, marker);
     box(x + 1, y + 4, swatch - 2, swatch - 2, marker);
-    text_at(x + swatch + 6, y + 8, "selected", faint);
-    text_clip(r.x + 12, y + 26, touch ? "Tap a button here to jump to its row." : "Click a button here to jump to its row.",
+    text_at(x + swatch + 6, y + 8, UI("selected"), faint);
+    text_clip(r.x + 12, y + 26, touch ? UI("Tap a button here to jump to its row.") : UI("Click a button here to jump to its row."),
               r.w - 24, faint);
     if (legend_lines > 2)
         text_clip(r.x + 12, y + 44,
-                  ui.tab ? "Stick clicks (L3/R3) are in the list only."
-                         : "The picture always shows a PlayStation pad.",
+                  ui.tab ? UI("Stick clicks (L3/R3) are in the list only.")
+                         : UI("The picture always shows a PlayStation pad."),
                   r.w - 24, faint);
 }
 
@@ -1128,17 +1143,17 @@ static void draw_table(Rect r, uint64_t rows, int list)
     int x = r.x + 8, inner = r.w - 16 - bar;
     int slot_w = (inner - NAME_W - (slots - 1) * 6) / slots;
     int head_mid = r.y + HEAD_H / 2;
-    text_clip(x + 10, head_mid, lists[list].title, NAME_W - 14, faint);
-    text_clip(x + NAME_W + 7, head_mid, ui.tab ? "BINDING" : "KEYBOARD KEY", slot_w - 14, faint);
+    text_clip(x + 10, head_mid, UI(lists[list].title), NAME_W - 14, faint);
+    text_clip(x + NAME_W + 7, head_mid, ui.tab ? UI("BINDING") : UI("KEYBOARD KEY"), slot_w - 14, faint);
     if (slots > 1)
-        text_clip(x + NAME_W + slot_w + 13, head_mid, "ALTERNATE", slot_w - 14, faint);
+        text_clip(x + NAME_W + slot_w + 13, head_mid, UI("ALTERNATE"), slot_w - 14, faint);
 
     for (int i = 0; i < shown; i++) {
         int line = *scroll + i, group = 0;
         int action = line_action(list, line, &group);
         int y = top + i * ROW_H, mid = y + (ROW_H - 2) / 2;
         if (action < 0) {
-            const char *title = lists[list].groups[group].title;
+            const char *title = UI(lists[list].groups[group].title);
             int tw = text_w(title);
             text_at(x + 6, mid, title, faint);
             fill(x + 12 + tw, mid, inner - tw - 18, 1, edge);
@@ -1152,7 +1167,7 @@ static void draw_table(Rect r, uint64_t rows, int list)
         fill(x, y, inner, ROW_H - 2, row_face);
         if (chosen)
             fill(x, y, 3, ROW_H - 2, accent);
-        text_clip(x + 10, mid, Controls_RowName(action), NAME_W - 16, down ? on_held : text);
+        text_clip(x + 10, mid, UI(Controls_RowName(action)), NAME_W - 16, down ? on_held : text);
         hit(ROW + action * 2, rect(x, y, NAME_W, ROW_H - 2));
         for (int slot = 0; slot < slots; slot++) {
             Rect cell = rect(x + NAME_W + slot * (slot_w + 6), y, slot_w, ROW_H - 2);
@@ -1163,7 +1178,7 @@ static void draw_table(Rect r, uint64_t rows, int list)
                   target ? accent : ui.hover == ROW + action * 2 + slot ? dim : edge);
             if (target && ui.capture.state)
                 box(cell.x + 1, cell.y + 1, cell.w - 2, cell.h - 2, accent);
-            text_clip(cell.x + 7, mid, bound ? source_label(src) : "Unbound", cell.w - 14,
+            text_clip(cell.x + 7, mid, bound ? source_label(src) : UI("Unbound"), cell.w - 14,
                       !bound ? faint : down ? on_held : text);
             hit(ROW + action * 2 + slot, cell);
         }
@@ -1179,12 +1194,12 @@ static void draw_table(Rect r, uint64_t rows, int list)
 }
 
 /* The fixed keys, for reference: text only, nothing to select. */
-static int fixed_height(int width) { return 26 + text_wrap(0, 0, fixed_keys, width - 24, dim, FIXED_LINES, 0) * 18 + 6; }
+static int fixed_height(int width) { return 26 + text_wrap(0, 0, UI(fixed_keys), width - 24, dim, FIXED_LINES, 0) * 18 + 6; }
 static void draw_fixed(Rect r)
 {
     frame(r, panel, edge);
-    text_clip(r.x + 12, r.y + 14, "FIXED KEYS (not bindable)", r.w - 24, faint);
-    text_wrap(r.x + 12, r.y + 34, fixed_keys, r.w - 24, dim, FIXED_LINES, 1);
+    text_clip(r.x + 12, r.y + 14, UI("FIXED KEYS (not bindable)"), r.w - 24, faint);
+    text_wrap(r.x + 12, r.y + 34, UI(fixed_keys), r.w - 24, dim, FIXED_LINES, 1);
 }
 
 /* The device list, drawn over everything else and owning every hit. */
@@ -1240,14 +1255,15 @@ static void draw_popup(Rect anchor)
         Rect row = rect(list.x + 4, list.y + 4 + i * POPUP_ROW, list.w - 8, POPUP_ROW);
         const char *name;
         if (entry < 2)
-            name = entry ? "None - no controller for this player" : "Automatic - first free controller";
+            name = entry ? UI("None - no controller for this player") : UI("Automatic - first free controller");
         else if (entry == CONTROLS_DEVICES + 2)
-            name = "Saved controller (not connected)";
+            name = UI("Saved controller (not connected)");
         else {
             ControllerDevice *d = ControlsRuntime_Device(entry - 2);
-            snprintf(line, sizeof(line), "%s #%d%s", d->name, entry - 1,
-                     ControlsRuntime_Assigned(&ui.draft, 1 - ui.player) == entry - 2 ? "  (other player)"
-                                                                                     : "");
+            if (ControlsRuntime_Assigned(&ui.draft, 1 - ui.player) == entry - 2)
+                snprintf(line, sizeof(line), UI("%s #%d  (other player)"), d->name, entry - 1);
+            else
+                snprintf(line, sizeof(line), "%s #%d", d->name, entry - 1);
             name = line;
         }
         int over = ui.hover == CHOICE + entry, focused = ui.focus == CHOICE + entry;
@@ -1259,7 +1275,7 @@ static void draw_popup(Rect anchor)
         hit(CHOICE + entry, row);
     }
     if (ui.popup_max)
-        text_right(list.x + list.w - 8, list.y + list.h - 4, "scroll for more", faint);
+        text_right(list.x + list.w - 8, list.y + list.h - 4, UI("scroll for more"), faint);
 }
 
 static void draw_modal(void)
@@ -1269,20 +1285,20 @@ static void draw_modal(void)
     ui.count = 0;
     shade(0, 0, ui.width, ui.height);
     if (ui.modal == 1) {
-        title = "Unsaved changes";
-        message = "Save your new bindings before closing the window?";
+        title = UI("Unsaved changes");
+        message = UI("Save your new bindings before closing the window?");
     } else if (ui.modal == 2) {
-        title = "Restore defaults";
-        message = ui.tab ? "Restore the default bindings for this controller? Other players and the "
-                           "keyboard are not touched."
-                         : "Restore the default keyboard bindings? Controllers are not touched.";
+        title = UI("Restore defaults");
+        message = ui.tab ? UI("Restore the default bindings for this controller? Other players and the "
+                           "keyboard are not touched.")
+                         : UI("Restore the default keyboard bindings? Controllers are not touched.");
     } else {
         int other = ui.capture.conflict_dest;
-        snprintf(body, sizeof(body), "%s is already bound to %s. Move it to %s instead?",
+        snprintf(body, sizeof(body), UI("%s is already bound to %s. Move it to %s instead?"),
                  source_label(&ui.capture.pending),
-                 other >= 0 && other < CTRL_ROW_COUNT ? Controls_RowName(other) : "another button",
-                 Controls_RowName(ui.row));
-        title = "Input already in use";
+                 other >= 0 && other < CTRL_ROW_COUNT ? UI(Controls_RowName(other)) : UI("another button"),
+                 UI(Controls_RowName(ui.row)));
+        title = UI("Input already in use");
         message = body;
     }
     int w = ui.width - 60 < 460 ? ui.width - 60 : 460;
@@ -1294,14 +1310,14 @@ static void draw_modal(void)
     text_at(m.x + 16, m.y + 16, title, text);
     text_wrap(m.x + 16, m.y + 52, message, m.w - 32, dim, 3, 1);
     int y = m.y + m.h - 16 - BTN_H, right = m.x + m.w - 16;
-    const char *accept = ui.modal == 1 ? "Apply" : ui.modal == 2 ? "Restore" : "Move binding";
-    const char *reject = ui.modal == 1 ? "Discard" : "Cancel";
+    const char *accept = ui.modal == 1 ? UI("Apply") : ui.modal == 2 ? UI("Restore") : UI("Move binding");
+    const char *reject = ui.modal == 1 ? UI("Discard") : UI("Cancel");
     int aw = button_w(accept), rw = button_w(reject);
     button(YES, rect(right - aw, y, aw, BTN_H), accept, BTN_PRIMARY);
     button(NO, rect(right - aw - 8 - rw, y, rw, BTN_H), reject, BTN_NORMAL);
     if (ui.modal == 1) {
-        int kw = button_w("Keep editing");
-        button(KEEP, rect(m.x + 16, y, kw, BTN_H), "Keep editing", BTN_NORMAL);
+        int kw = button_w(UI("Keep editing"));
+        button(KEEP, rect(m.x + 16, y, kw, BTN_H), UI("Keep editing"), BTN_NORMAL);
     }
 }
 
@@ -1338,18 +1354,18 @@ static void draw_header(void)
     int w = ui.width;
     fill(0, 0, w, HEADER_H, panel);
     fill(0, HEADER_H - 1, w, 1, edge);
-    text_at(PAD, 22, "Controls", text);
+    text_at(PAD, 22, UI("Controls"), text);
 
     int seg = 92, seg_x = w - PAD - 2 * seg;
-    text_right(seg_x - 10, 22, "Editing", faint);
-    segment(PLAYER, rect(seg_x, 10, seg, 25), "Player 1", ui.player == 0);
-    segment(PLAYER_2, rect(seg_x + seg, 10, seg, 25), "Player 2", ui.player == 1);
+    text_right(seg_x - 10, 22, UI("Editing"), faint);
+    segment(PLAYER, rect(seg_x, 10, seg, 25), UI("Player 1"), ui.player == 0);
+    segment(PLAYER_2, rect(seg_x + seg, 10, seg, 25), UI("Player 2"), ui.player == 1);
 
     int x = PAD;
-    x = tab_item(KEYBOARD, x, HEADER_H - 30, 29, "Keyboard", !ui.tab, ui.player == 1);
-    tab_item(CONTROLLER, x, HEADER_H - 30, 29, "Controller", ui.tab, 0);
+    x = tab_item(KEYBOARD, x, HEADER_H - 30, 29, UI("Keyboard"), !ui.tab, ui.player == 1);
+    tab_item(CONTROLLER, x, HEADER_H - 30, 29, UI("Controller"), ui.tab, 0);
     if (dirty())
-        text_right(w - PAD, HEADER_H - 16, "Unsaved changes", warn);
+        text_right(w - PAD, HEADER_H - 16, UI("Unsaved changes"), warn);
 }
 
 static void draw_device_row(Rect r, ControllerDevice *d)
@@ -1358,34 +1374,37 @@ static void draw_device_row(Rect r, ControllerDevice *d)
     const ControlsPort *p = &ui.draft.port[ui.player];
     if (!ui.tab) {
         text_clip(r.x + 2, r.y + r.h / 2,
-                  "Keyboard bindings always play as Player 1. One key per PlayStation button.", r.w - 4, dim);
+                  UI("Keyboard bindings always play as Player 1. One key per PlayStation button."), r.w - 4, dim);
         return;
     }
     const char *state;
     uint32_t state_ink;
     if (p->mode == 0) {
-        state = "Switched off";
+        state = UI("Switched off");
         state_ink = faint;
     } else if (d && d->connected) {
         /* Two identical pads cannot be told apart again after a restart. */
-        state = d->ambiguous ? "Choose again after a restart" : "Connected";
+        state = d->ambiguous ? UI("Choose again after a restart") : UI("Connected");
         state_ink = d->ambiguous ? warn : good;
     } else if (p->mode == 2) {
-        state = "Not connected";
+        state = UI("Not connected");
         state_ink = warn;
     } else {
-        state = getenv("MEMORIES_NO_GAMEPAD") ? "Disabled this session" : "No controller found";
+        state = getenv("MEMORIES_NO_GAMEPAD") ? UI("Disabled this session") : UI("No controller found");
         state_ink = warn;
     }
     if (p->mode == 0)
-        snprintf(label, sizeof(label), "None - no controller for this player");
-    else if (p->mode == 1)
-        snprintf(label, sizeof(label), "Automatic%s%s", d ? " - " : "", d ? d->name : "");
-    else
-        snprintf(label, sizeof(label), "%s", d ? d->name : "Saved controller (not connected)");
+        snprintf(label, sizeof(label), "%s", UI("None - no controller for this player"));
+    else if (p->mode == 1) {
+        if (d)
+            snprintf(label, sizeof(label), UI("Automatic - %s"), d->name);
+        else
+            snprintf(label, sizeof(label), "%s", UI("Automatic"));
+    } else
+        snprintf(label, sizeof(label), "%s", d ? d->name : UI("Saved controller (not connected)"));
 
-    text_at(r.x + 2, r.y + r.h / 2, "Controller", dim);
-    int left = r.x + 2 + text_w("Controller") + 12;
+    text_at(r.x + 2, r.y + r.h / 2, UI("Controller"), dim);
+    int left = r.x + 2 + text_w(UI("Controller")) + 12;
     int pill_w = text_w(state) + 24, pill_x = r.x + r.w - pill_w;
     Rect drop = rect(left, r.y, pill_x - 10 - left, r.h);
     device_drop = drop;
@@ -1409,7 +1428,7 @@ static void draw_touch(MenuCanvas *c, ControllerDevice *d, uint64_t rows)
     char line[256];
     int t, w, h, inner, view_h, y, device_y, diagram_y = 0, diagram_w = 0, diagram_h = 0, pad_y, game_y, fixed_y;
     int fixed_h, defaults_y, header_h, footer_h, message_h = 26, picture_first = 0;
-    const char *restore = ui.tab ? "Restore controller defaults" : "Restore keyboard defaults";
+    const char *restore = ui.tab ? UI("Restore controller defaults") : UI("Restore keyboard defaults");
     scale = Menu_Scale();
     while (scale > 1 && (c->width / scale < 480 || c->height / scale < 300))
         scale--;
@@ -1498,15 +1517,15 @@ static void draw_touch(MenuCanvas *c, ControllerDevice *d, uint64_t rows)
     fill(0, 0, w, header_h, panel);
     fill(0, header_h - 1, w, 1, edge);
     {
-        int x = tab_item(KEYBOARD, PAD, 8, btn_h, "Keyboard", !ui.tab, ui.player == 1);
-        int seg = text_w("Player 2") + 28 > 92 ? text_w("Player 2") + 28 : 92, seg_x = w - PAD - 2 * seg;
-        x = tab_item(CONTROLLER, x, 8, btn_h, "Controller", ui.tab, 0);
-        segment(PLAYER, rect(seg_x, 8, seg, btn_h), "Player 1", ui.player == 0);
-        segment(PLAYER_2, rect(seg_x + seg, 8, seg, btn_h), "Player 2", ui.player == 1);
-        if (dirty() && seg_x - 12 - x >= text_w("Unsaved changes"))
-            text_right(seg_x - 12, header_h / 2, "Unsaved changes", warn);
-        else if (seg_x - 12 - x >= text_w("Controls"))
-            text_right(seg_x - 12, header_h / 2, "Controls", dim);
+        int x = tab_item(KEYBOARD, PAD, 8, btn_h, UI("Keyboard"), !ui.tab, ui.player == 1);
+        int seg = text_w(UI("Player 2")) + 28 > 92 ? text_w(UI("Player 2")) + 28 : 92, seg_x = w - PAD - 2 * seg;
+        x = tab_item(CONTROLLER, x, 8, btn_h, UI("Controller"), ui.tab, 0);
+        segment(PLAYER, rect(seg_x, 8, seg, btn_h), UI("Player 1"), ui.player == 0);
+        segment(PLAYER_2, rect(seg_x + seg, 8, seg, btn_h), UI("Player 2"), ui.player == 1);
+        if (dirty() && seg_x - 12 - x >= text_w(UI("Unsaved changes")))
+            text_right(seg_x - 12, header_h / 2, UI("Unsaved changes"), warn);
+        else if (seg_x - 12 - x >= text_w(UI("Controls")))
+            text_right(seg_x - 12, header_h / 2, UI("Controls"), dim);
     }
 
     /* The message line: what the window waits for, what happened, or the
@@ -1516,17 +1535,27 @@ static void draw_touch(MenuCanvas *c, ControllerDevice *d, uint64_t rows)
     if (ui.capture.state) {
         uint64_t now = ControlsRuntime_Now();
         int left = ui.capture.deadline_us > now ? (int)((ui.capture.deadline_us - now + 999999) / 1000000) : 0;
-        snprintf(line, sizeof(line), "Press a %s for %s%s - %d second%s left. Back cancels.", ui.tab ? "button" : "key",
-                 Controls_RowName(ui.row), ui.tab && ui.slot ? " (alternate)" : "", left, left == 1 ? "" : "s");
+        char name[160];
+        slot_name(name, sizeof(name), 0);
+        if (ui.tab)
+            snprintf(line, sizeof(line),
+                     left == 1 ? UI("Press a button for %s - %d second left. Back cancels.")
+                               : UI("Press a button for %s - %d seconds left. Back cancels."),
+                     name, left);
+        else
+            snprintf(line, sizeof(line),
+                     left == 1 ? UI("Press a key for %s - %d second left. Back cancels.")
+                               : UI("Press a key for %s - %d seconds left. Back cancels."),
+                     name, left);
         text_clip(PAD, ui.view_bottom + message_h / 2, line, inner, accent);
     } else if (ui.status[0])
         text_clip(PAD, ui.view_bottom + message_h / 2, ui.status, inner,
                   ui.say == SAY_WARN ? warn : ui.say == SAY_DONE ? good : ui.say == SAY_BUSY ? accent : dim);
     else {
         const ControlSource *src = &Controls_Row(profile(0), ui.row)[ui.slot];
-        snprintf(line, sizeof(line), "%s / %s%s: %s", action_group(ui.row), Controls_RowName(ui.row),
-                 ui.tab ? (ui.slot ? " (alternate)" : " (main)") : "",
-                 src->kind != CTRL_SRC_UNBOUND ? source_label(src) : "Unbound");
+        char name[160];
+        snprintf(line, sizeof(line), UI("%s / %s: %s"), UI(action_group(ui.row)), slot_name(name, sizeof(name), 1),
+                 src->kind != CTRL_SRC_UNBOUND ? source_label(src) : UI("Unbound"));
         text_clip(PAD, ui.view_bottom + message_h / 2, line, inner, text);
     }
 
@@ -1534,14 +1563,14 @@ static void draw_touch(MenuCanvas *c, ControllerDevice *d, uint64_t rows)
     fill(0, h - footer_h, w, footer_h, panel);
     fill(0, h - footer_h, w, 1, edge);
     {
-        int by = h - footer_h + 8, clear_w = button_w("Clear"), rebind_w = button_w("Rebind");
-        int ok_w = button_w("OK") + 18, apply_w = button_w("Apply"), cancel_w = button_w("Cancel");
+        int by = h - footer_h + 8, clear_w = button_w(UI("Clear")), rebind_w = button_w(UI("Rebind"));
+        int ok_w = button_w(UI("OK")) + 18, apply_w = button_w(UI("Apply")), cancel_w = button_w(UI("Cancel"));
         const ControlSource *src = &Controls_Row(profile(0), ui.row)[ui.slot];
-        button(CLEAR, rect(PAD, by, clear_w, btn_h), "Clear", src->kind != CTRL_SRC_UNBOUND ? BTN_NORMAL : BTN_QUIET);
-        button(REBIND, rect(PAD + clear_w + 8, by, rebind_w, btn_h), ui.capture.state ? "Stop" : "Rebind", BTN_NORMAL);
-        button(OK, rect(w - PAD - ok_w, by, ok_w, btn_h), "OK", BTN_PRIMARY);
-        button(APPLY, rect(w - PAD - ok_w - 8 - apply_w, by, apply_w, btn_h), "Apply", dirty() ? BTN_READY : BTN_QUIET);
-        button(CANCEL, rect(w - PAD - ok_w - 8 - apply_w - 8 - cancel_w, by, cancel_w, btn_h), "Cancel", BTN_NORMAL);
+        button(CLEAR, rect(PAD, by, clear_w, btn_h), UI("Clear"), src->kind != CTRL_SRC_UNBOUND ? BTN_NORMAL : BTN_QUIET);
+        button(REBIND, rect(PAD + clear_w + 8, by, rebind_w, btn_h), ui.capture.state ? UI("Stop") : UI("Rebind"), BTN_NORMAL);
+        button(OK, rect(w - PAD - ok_w, by, ok_w, btn_h), UI("OK"), BTN_PRIMARY);
+        button(APPLY, rect(w - PAD - ok_w - 8 - apply_w, by, apply_w, btn_h), UI("Apply"), dirty() ? BTN_READY : BTN_QUIET);
+        button(CANCEL, rect(w - PAD - ok_w - 8 - apply_w - 8 - cancel_w, by, cancel_w, btn_h), UI("Cancel"), BTN_NORMAL);
     }
     if (ui.popup == DEVICE)
         draw_popup(device_drop);
@@ -1687,34 +1716,43 @@ void ControlsWindow_Draw(MenuCanvas *c)
 
     /* Selection and the two buttons that act on it. */
     const ControlSource *src = &Controls_Row(profile(0), ui.row)[ui.slot];
-    snprintf(line, sizeof(line), "%s / %s%s: %s", action_group(ui.row), Controls_RowName(ui.row),
-             ui.tab ? (ui.slot ? " (alternate)" : " (main)") : "",
-             src->kind != CTRL_SRC_UNBOUND ? source_label(src) : "Unbound");
-    int rebind_w = button_w("Rebind"), clear_w = button_w("Clear");
+    char name[160];
+    snprintf(line, sizeof(line), UI("%s / %s: %s"), UI(action_group(ui.row)), slot_name(name, sizeof(name), 1),
+             src->kind != CTRL_SRC_UNBOUND ? source_label(src) : UI("Unbound"));
+    int rebind_w = button_w(UI("Rebind")), clear_w = button_w(UI("Clear"));
     text_clip(PAD, action_y + BTN_H / 2, line, w - 2 * PAD - rebind_w - clear_w - 24, text);
-    button(CLEAR, rect(w - PAD - rebind_w - 8 - clear_w, action_y, clear_w, BTN_H), "Clear",
+    button(CLEAR, rect(w - PAD - rebind_w - 8 - clear_w, action_y, clear_w, BTN_H), UI("Clear"),
            src->kind != CTRL_SRC_UNBOUND ? BTN_NORMAL : BTN_QUIET);
     button(REBIND, rect(w - PAD - rebind_w, action_y, rebind_w, BTN_H),
-           ui.capture.state ? "Stop" : "Rebind", BTN_NORMAL);
+           ui.capture.state ? UI("Stop") : UI("Rebind"), BTN_NORMAL);
 
     /* Hint line: what to do here, or what the window is waiting for. */
     const char *hint;
     if (ui.capture.state) {
         uint64_t now = ControlsRuntime_Now();
         int left = ui.capture.deadline_us > now ? (int)((ui.capture.deadline_us - now + 999999) / 1000000) : 0;
-        snprintf(line, sizeof(line), "Listening for %s%s - %d second%s left. Escape cancels%s.",
-                 Controls_RowName(ui.row), ui.tab && ui.slot ? " (alternate)" : "", left, left == 1 ? "" : "s",
-                 ui.row == CTRL_ROW_EXIT && !ui.tab ? "; Esc quits whatever is bound here" : "");
+        char name[160];
+        slot_name(name, sizeof(name), 0);
+        if (ui.row == CTRL_ROW_EXIT && !ui.tab)
+            snprintf(line, sizeof(line),
+                     left == 1 ? UI("Listening for %s - %d second left. Escape cancels; Esc quits whatever is bound here.")
+                               : UI("Listening for %s - %d seconds left. Escape cancels; Esc quits whatever is bound here."),
+                     name, left);
+        else
+            snprintf(line, sizeof(line),
+                     left == 1 ? UI("Listening for %s - %d second left. Escape cancels.")
+                               : UI("Listening for %s - %d seconds left. Escape cancels."),
+                     name, left);
         hint = line;
     } else if (ui.hover >= DIAGRAM && ui.hover < CHOICE) {
-        snprintf(line, sizeof(line), "%s - click to select it, double-click to rebind it.",
-                 Controls_Actions[ui.hover - DIAGRAM].name);
+        snprintf(line, sizeof(line), UI("%s - click to select it, double-click to rebind it."),
+                 UI(Controls_Actions[ui.hover - DIAGRAM].name));
         hint = line;
     } else if (ui.row == CTRL_ROW_EXIT)
-        hint = ui.tab ? "Double-click a binding, or select one and press Enter, to change it. Delete clears it."
-                      : "Esc always quits; bind a key or button here to quit with it too.";
+        hint = ui.tab ? UI("Double-click a binding, or select one and press Enter, to change it. Delete clears it.")
+                      : UI("Esc always quits; bind a key or button here to quit with it too.");
     else
-        hint = "Double-click a binding, or select one and press Enter, to change it. Delete clears it.";
+        hint = UI("Double-click a binding, or select one and press Enter, to change it. Delete clears it.");
     /* A warning too long for its line (a failed save's path and reason)
      * takes the hint's line too. */
     int long_warning = !squat && !ui.capture.state && ui.say == SAY_WARN && text_w(ui.status) > w - 2 * PAD;
@@ -1732,13 +1770,13 @@ void ControlsWindow_Draw(MenuCanvas *c)
     fill(0, foot_top, w, FOOTER_H, panel);
     fill(0, foot_top, w, 1, edge);
     int by = foot_top + (FOOTER_H - BTN_H) / 2;
-    const char *restore = ui.tab ? "Restore controller defaults" : "Restore keyboard defaults";
+    const char *restore = ui.tab ? UI("Restore controller defaults") : UI("Restore keyboard defaults");
     button(DEFAULTS, rect(PAD, by, button_w(restore), BTN_H), restore, BTN_NORMAL);
-    int ok_w = button_w("OK") + 18, apply_w = button_w("Apply"), cancel_w = button_w("Cancel");
-    button(OK, rect(w - PAD - ok_w, by, ok_w, BTN_H), "OK", BTN_PRIMARY);
-    button(APPLY, rect(w - PAD - ok_w - 8 - apply_w, by, apply_w, BTN_H), "Apply",
+    int ok_w = button_w(UI("OK")) + 18, apply_w = button_w(UI("Apply")), cancel_w = button_w(UI("Cancel"));
+    button(OK, rect(w - PAD - ok_w, by, ok_w, BTN_H), UI("OK"), BTN_PRIMARY);
+    button(APPLY, rect(w - PAD - ok_w - 8 - apply_w, by, apply_w, BTN_H), UI("Apply"),
            dirty() ? BTN_READY : BTN_QUIET);
-    button(CANCEL, rect(w - PAD - ok_w - 8 - apply_w - 8 - cancel_w, by, cancel_w, BTN_H), "Cancel",
+    button(CANCEL, rect(w - PAD - ok_w - 8 - apply_w - 8 - cancel_w, by, cancel_w, BTN_H), UI("Cancel"),
            BTN_NORMAL);
 
     if (ui.popup == DEVICE)

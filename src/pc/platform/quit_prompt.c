@@ -4,6 +4,7 @@
 #include "pc/platform/quit_prompt.h"
 #include "pc/platform/menu.h"
 #include "pc/platform/settings.h"
+#include "pc/platform/ui_text.h"
 
 static void chosen(int button, int *quit)
 {
@@ -19,7 +20,7 @@ void QuitPrompt_Request(int *quit)
     }
     /* Keep playing is focused and last, so Enter, Escape and Circle all
      * stay in the game: only a deliberate Quit ends it. */
-    Menu_ShowNotice("Quit the game?", "Progress since your last save is lost.", buttons, 2, 1, chosen);
+    Menu_ShowNotice(UI("Quit the game?"), UI("Progress since your last save is lost."), buttons, 2, 1, chosen);
 }
 
 static void chosen_back(int button, int *quit)
@@ -35,5 +36,5 @@ void QuitPrompt_Back(int *quit)
         *quit = 1;
         return;
     }
-    Menu_ShowNotice("Quit the game?", "Progress since your last save is lost.", buttons, 3, 2, chosen_back);
+    Menu_ShowNotice(UI("Quit the game?"), UI("Progress since your last save is lost."), buttons, 3, 2, chosen_back);
 }

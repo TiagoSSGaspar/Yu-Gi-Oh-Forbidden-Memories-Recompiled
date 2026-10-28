@@ -814,6 +814,7 @@ int main(void)
 {
     char path[1024];
     int w, h;
+    assert(!setenv("MEMORIES_UI_LANGUAGE", "en", 1)); /* the English it checks, on any machine */
     test_text_cuts();
     assert(scratch_dir(root, sizeof(root), "memories-mod-window"));
     make_dir("mods");

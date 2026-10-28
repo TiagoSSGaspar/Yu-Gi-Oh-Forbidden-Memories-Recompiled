@@ -179,6 +179,9 @@ def package(binary, out, label, *, icon=None):
     languages.mkdir()
     for name in ("en-eu", "fr", "de", "it", "es"):
         shutil.copyfile(ROOT / f"languages/{name}.txt", languages / f"{name}.txt")
+    (languages / "ui").mkdir()
+    for catalog in sorted((ROOT / "languages/ui").glob("*.json")):  # the port's own words (ui_text.h)
+        shutil.copyfile(catalog, languages / "ui" / catalog.name)
     mod_files, mod_libraries = stage_mods(resources, binary.parent)
     revision = identity["revision"]
     build_number = subprocess.check_output(

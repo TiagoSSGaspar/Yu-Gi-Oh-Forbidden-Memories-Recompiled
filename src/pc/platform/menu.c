@@ -14,6 +14,7 @@
  * falls back to the 5x7 bitmap font at the end of the file, drawn at twice
  * its size. */
 #include "menu.h"
+#include "ui_text.h"
 #include "platform.h"
 #include "settings.h"
 #include "pc/audio/spu.h"
@@ -468,6 +469,7 @@ static void load_font(void)
     }
     free_extra_glyphs();
     font_loaded = 0;
+    UiText_SetPlain(1); /* the 5x7 letters have no accents: English until a face loads */
 #if defined(_WIN32) || defined(__APPLE__)
     if (!file || FT_Init_FreeType(&library)) {
         return;
@@ -494,6 +496,7 @@ static void load_font(void)
     font_ascent = (int)(face->size->metrics.ascender >> 6);
     font_descent = (int)(-face->size->metrics.descender >> 6);
     font_loaded = 1;
+    UiText_SetPlain(0);
 #if !defined(_WIN32) && !defined(__APPLE__)
     FcPatternDestroy(pattern);
     FcPatternDestroy(match);
@@ -838,7 +841,7 @@ static void layout_bar(void)
 {
     int i, at = 0;
     for (i = 0; i < MENU_COUNT; i++) {
-        menus[i].w = text_width(menus[i].label) + BAR_PAD * 2;
+        menus[i].w = text_width(UI(menus[i].label)) + BAR_PAD * 2;
         menus[i].x = at;
         at += menus[i].w;
     }
@@ -886,14 +889,14 @@ static void choose_language(int language)
     if (!Settings_Save()) {
         char why[sizeof(notice.text)];
         Settings_Set(SET_LANGUAGE, language_before);
-        snprintf(why, sizeof(why), "%s The language stays as it was.", Settings_LastError());
+        snprintf(why, sizeof(why), UI("%s The language stays as it was."), Settings_LastError());
         Settings_TakeNewError(); /* told here */
         Menu_ShowNotice("Language", why, ok, 1, 0, NULL);
         return;
     }
     if (language == Language_Current()) return; /* back to the one this launch has */
     snprintf(text, sizeof(text),
-             "%s takes effect when the game starts again. Restart now? Progress since your last save is lost.",
+             UI("%s takes effect when the game starts again. Restart now? Progress since your last save is lost."),
              Language_Label(language));
     Menu_ShowNotice("Language", text, buttons, 3, 0, language_chosen);
 }
@@ -1086,13 +1089,13 @@ static void drop_box(int level, int *x, int *y, int *w, int *h, int *full)
         if (item->kind == ITEM_SEPARATOR) {
             continue;
         }
-        wide = text_width(item->label);
+        wide = text_width(UI(item->label));
         if (item->kind == ITEM_SLIDER) {
             wide += 12 * ui + SLIDER_W + 12 * ui + text_width("100");
         }
         widest = wide > widest ? wide : widest;
         if (item->shortcut) {
-            int s = text_width(item->shortcut);
+            int s = text_width(UI(item->shortcut));
             shortcuts = s > shortcuts ? s : shortcuts;
         } else if (item->kind == ITEM_SUBMENU) {
             shortcuts = shortcuts > 8 * ui ? shortcuts : 8 * ui;
@@ -1254,7 +1257,7 @@ static void slider_geometry(int level, int index, int *sx, int *middle)
 {
     int x, y, w, h;
     drop_geometry(level, &x, &y, &w, &h);
-    *sx = x + ITEM_PAD + MARK_W + text_width(level_menu(level)->items[index].label) + 12 * ui;
+    *sx = x + ITEM_PAD + MARK_W + text_width(UI(level_menu(level)->items[index].label)) + 12 * ui;
     *middle = item_top(level, index) + ITEM_H / 2;
 }
 
@@ -1450,12 +1453,12 @@ void Menu_ShowNotice(const char *title, const char *text, const char *const *but
     if (count < 1) count = 1;
     if (count > MENU_NOTICE_BUTTONS) count = MENU_NOTICE_BUTTONS;
     close_menu();
-    snprintf(notice.title, sizeof(notice.title), "%s", title ? title : "");
-    snprintf(notice.text, sizeof(notice.text), "%s", text ? text : "");
+    snprintf(notice.title, sizeof(notice.title), "%s", title ? UI(title) : "");
+    snprintf(notice.text, sizeof(notice.text), "%s", text ? UI(text) : "");
     Menu_TextTrim(notice.title);
     Menu_TextTrim(notice.text);
     for (i = 0; i < count; i++) {
-        snprintf(notice.buttons[i], sizeof(notice.buttons[i]), "%s", buttons && buttons[i] ? buttons[i] : "OK");
+        snprintf(notice.buttons[i], sizeof(notice.buttons[i]), "%s", UI(buttons && buttons[i] ? buttons[i] : "OK"));
         Menu_TextTrim(notice.buttons[i]);
     }
     notice.count = count;
@@ -1596,7 +1599,7 @@ void Menu_Draw(MenuCanvas *into)
         } else if (i == hover_bar) {
             fill(menu->x, 0, menu->w, MENU_H - 1, C_BAR_HOVER, 255);
         }
-        draw_text(menu->x + BAR_PAD, MENU_H / 2, menu->label, ink);
+        draw_text(menu->x + BAR_PAD, MENU_H / 2, UI(menu->label), ink);
     }
     for (level = 0; level < (open_sub >= 0 ? 2 : open_menu >= 0 ? 1 : 0); level++) {
         const Menu *menu = level_menu(level);
@@ -1643,9 +1646,9 @@ void Menu_Draw(MenuCanvas *into)
             } else if (item->kind == ITEM_RADIO) {
                 draw_radio(x + ITEM_PAD, middle, item_state(item));
             }
-            draw_text(x + ITEM_PAD + MARK_W, middle, item->label, ink);
+            draw_text(x + ITEM_PAD + MARK_W, middle, UI(item->label), ink);
             if (item->shortcut) {
-                draw_text(x + w - ITEM_PAD - text_width(item->shortcut), middle, item->shortcut, dim);
+                draw_text(x + w - ITEM_PAD - text_width(UI(item->shortcut)), middle, UI(item->shortcut), dim);
             } else if (item->kind == ITEM_SUBMENU) {
                 draw_arrow(x + w - ITEM_PAD - 6 * ui, middle, ink);
             }
@@ -1833,10 +1836,10 @@ static void show_system_info(void)
     }
     if (used < sizeof(shown)) {
         snprintf(shown + used, sizeof(shown) - used, "\n%s%s%s%s%s%s",
-                 copied ? "Copied to the clipboard: paste it into your bug report." : "",
-                 copied && saved ? " Also in " : saved ? "Attach this file to your bug report: " : "",
+                 copied ? UI("Copied to the clipboard: paste it into your bug report.") : "",
+                 copied && saved ? UI(" Also in ") : saved ? UI("Attach this file to your bug report: ") : "",
                  saved ? path : "", saved ? "." : "",
-                 saved ? "" : copied ? " Could not write system-info.txt: " : "Could not write system-info.txt: ",
+                 saved ? "" : copied ? UI(" Could not write system-info.txt: ") : UI("Could not write system-info.txt: "),
                  saved ? "" : why);
     }
     Menu_ShowNotice("System info", shown, ok, 1, 0, NULL);
@@ -2005,7 +2008,7 @@ static void update_card_drops_item(void)
     }
     for (i = 0; i < Mods_Count() && !name; i++)
         if (id && !strcmp(Mods_Id(i), id)) name = Mods_Name(i);
-    snprintf(label, sizeof(label), "Card drops (set by %.48s)", name ? name : id ? id : "a mod");
+    snprintf(label, sizeof(label), UI("Card drops (set by %.48s)"), name ? name : id ? id : UI("a mod"));
     item->label = label;
     item->flags |= ITEM_DISABLED;
 }

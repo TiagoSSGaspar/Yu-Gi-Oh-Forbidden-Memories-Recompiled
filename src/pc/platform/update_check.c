@@ -10,6 +10,7 @@
 #include "paths.h"
 #include "platform.h"
 #include "settings.h"
+#include "ui_text.h"
 #include "pc/compat/signal.h"
 #include <ctype.h>
 #include <pthread.h>
@@ -54,8 +55,8 @@ static int known_version(void) { return Update_ParseVersion(current_version(), N
 const char *Update_VersionLabel(void)
 {
     static char label[96];
-    if (known_version()) snprintf(label, sizeof(label), "Version %s", current_version());
-    else snprintf(label, sizeof(label), "Development build");
+    if (known_version()) snprintf(label, sizeof(label), UI("Version %s"), current_version());
+    else snprintf(label, sizeof(label), "%s", UI("Development build"));
     return label;
 }
 
@@ -199,11 +200,11 @@ static void show_newer(void)
 {
     static const char *const buttons[] = {"Release page", "Skip this version", "Later"};
     char title[128], text[1024];
-    snprintf(title, sizeof(title), "%s %s is out", offered.prerelease ? "Pre-release" : "Version", offered.tag);
+    snprintf(title, sizeof(title), offered.prerelease ? UI("Pre-release %s is out") : UI("Version %s is out"), offered.tag);
     snprintf(text, sizeof(text),
-             "%s is available; you have %s.\n\n"
-             "The game does not download or install anything itself. Get the new version from its release "
-             "page and unpack it the way you did this one; your saves, settings and mods stay in your user folder.",
+             UI("%s is available; you have %s.\n\n"
+                "The game does not download or install anything itself. Get the new version from its release "
+                "page and unpack it the way you did this one; your saves, settings and mods stay in your user folder."),
              offered.title, current_version());
     Menu_ShowNotice(title, text, buttons, 3, -1, chosen_newer);
 }
@@ -238,16 +239,16 @@ void Update_Frame(void)
         fprintf(stderr, "memories-pc: update: no newer release to offer than %s\n", current_version());
         if (job.manual) {
             static const char *const ok[] = {"OK"};
-            snprintf(text, sizeof(text), "%s is the newest release.", current_version());
-            Menu_ShowNotice("You're up to date", text, ok, 1, 0, chosen_plain);
+            snprintf(text, sizeof(text), UI("%s is the newest release."), current_version());
+            Menu_ShowNotice(UI("You're up to date"), text, ok, 1, 0, chosen_plain);
         }
         break;
     case CHECK_FAILED:
         fprintf(stderr, "memories-pc: update: check failed: %s\n", job.why);
         if (job.manual) {
             static const char *const buttons[] = {"Releases page", "Close"};
-            snprintf(text, sizeof(text), "%s\n\nYou can look at the releases page instead.", job.why);
-            Menu_ShowNotice("Could not check for updates", text, buttons, 2, 1, chosen_releases);
+            snprintf(text, sizeof(text), UI("%s\n\nYou can look at the releases page instead."), UI(job.why));
+            Menu_ShowNotice(UI("Could not check for updates"), text, buttons, 2, 1, chosen_releases);
         }
         break;
     default: break;
@@ -259,9 +260,9 @@ void Update_CheckNow(void)
     if (job.running) return;
     if (!known_version()) {
         static const char *const buttons[] = {"Releases page", "Close"};
-        Menu_ShowNotice("Development build",
-                        "This build was not made from a release, so it has no version to compare with the "
-                        "releases. The releases page lists what is out.",
+        Menu_ShowNotice(UI("Development build"),
+                        UI("This build was not made from a release, so it has no version to compare with the "
+                           "releases. The releases page lists what is out."),
                         buttons, 2, 1, chosen_releases);
         return;
     }

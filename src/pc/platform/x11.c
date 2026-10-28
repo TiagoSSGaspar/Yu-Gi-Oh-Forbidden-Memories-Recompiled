@@ -14,6 +14,7 @@
 #include "pc/debug/hud.h"
 #include "pc/guest/state.h"
 #include "menu.h"
+#include "pc/platform/ui_text.h"
 #include "pc/saves/deck_menu.h"
 #include "mods_window.h"
 #include "controls_window.h"
@@ -163,7 +164,8 @@ static void screenshot_not_saved(const char *why)
     char text[1300];
     snprintf(text, sizeof(text), "Could not save the screenshot to %s", why);
     fprintf(stderr, "memories-pc: %s\n", text);
-    Menu_ShowNotice("Screenshot not saved", text, ok, 1, 0, NULL);
+    snprintf(text, sizeof(text), UI("Could not save the screenshot to %s"), why);
+    Menu_ShowNotice(UI("Screenshot not saved"), text, ok, 1, 0, NULL);
 }
 
 void Platform_Screenshot(int window_image)
@@ -664,7 +666,7 @@ void Platform_OpenControls(void)
     if(!controls_image->data||controls_image->bits_per_pixel!=32){close_controls();return;}
     controls_canvas.pixels=(uint32_t *)controls_image->data;controls_canvas.stride=controls_image->bytes_per_line/4;
     controls_window=XCreateSimpleWindow(display,DefaultRootWindow(display),0,0,(unsigned)controls_canvas.width,(unsigned)controls_canvas.height,0,0,0);
-    XStoreName(display,controls_window,"Controls");XSetTransientForHint(display,controls_window,window);
+    XStoreName(display,controls_window,UI("Controls"));XSetTransientForHint(display,controls_window,window);
     XSizeHints hints={0};hints.flags=PMinSize;ControlsWindow_MinSize(&hints.min_width,&hints.min_height);
     XSetWMNormalHints(display,controls_window,&hints);XSetWMProtocols(display,controls_window,&close_atom,1);
     XSelectInput(display,controls_window,ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask|FocusChangeMask|StructureNotifyMask);

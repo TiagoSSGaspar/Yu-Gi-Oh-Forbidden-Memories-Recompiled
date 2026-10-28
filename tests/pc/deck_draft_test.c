@@ -52,6 +52,7 @@ const char *Cards_Identity(int id) { (void)id; return NULL; }
 int Paths_User(char *out, size_t size, const char *relative)
 { snprintf(out, size, "test/%s", relative); return 0; }
 int Paths_MakeDirs(const char *path) { (void)path; return 0; }
+const char *UI(const char *english) { return english; } /* the English: no catalog here */
 void SaveSlots_StateName(const unsigned char *state, char *out, size_t size)
 { (void)state; snprintf(out, size, "Test"); }
 int DeckSlots_Read(const char *path, DeckSlot *slots, DeckFindFn find, int *skipped)

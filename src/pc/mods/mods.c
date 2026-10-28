@@ -36,6 +36,7 @@
 #include "pc/platform/settings.h"
 #include "pc/platform/platform.h"
 #include "pc/platform/menu.h"
+#include "pc/platform/ui_text.h"
 #include "pc/debug/log.h"
 #include "pc/debug/symbols.h"
 #include "pc/sdk/disc.h"
@@ -1790,40 +1791,9 @@ static void check_keys(Mod *mod, const JsonValue *root)
  * it, "pt-BR"; empty for none. */
 static char system_language[16], read_language[16];   /* and the one the lang files were read for */
 
-/* "pt_BR.UTF-8", "pt-br" or "pt" as "pt-BR" or "pt", a script as "zh-Hant";
- * "C" and "POSIX" as none. */
-static void language_tag(char *out, size_t size, const char *text)
-{
-    size_t length = 0, part = 0;
-    if (!size) return;
-    out[0] = '\0';
-    if (!text || !strcmp(text, "C") || !strncmp(text, "C.", 2) || !strcmp(text, "POSIX")) return;
-    for (; *text && *text != '.' && *text != '@' && length + 1 < size; text++) {
-        if (*text == '_' || *text == '-') {
-            if (!length || part) break;   /* the language and its country (or script), no more */
-            part = length + 1;
-            out[length++] = '-';
-        } else if (isalnum((unsigned char)*text)) {
-            out[length++] = (char)tolower((unsigned char)*text);
-        } else break;
-    }
-    if (length && out[length - 1] == '-') length--;
-    out[length] = '\0';
-    if (part && length - part == 4) out[part] = (char)toupper((unsigned char)out[part]);   /* a script: Hant */
-    else if (part) for (size_t i = part; i < length; i++) out[i] = (char)toupper((unsigned char)out[i]);
-}
-
 static void current_language(char *out, size_t size)
 {
-    static const char *const locale[] = {"LC_ALL", "LC_MESSAGES", "LANG"};
-    const char *named = getenv("MEMORIES_MODS_LANGUAGE");
-    if (named) { language_tag(out, size, named); return; }
-    if (*system_language) { language_tag(out, size, system_language); return; }
-    out[0] = '\0';
-    for (size_t i = 0; i < sizeof(locale) / sizeof(locale[0]); i++) {
-        const char *value = getenv(locale[i]);
-        if (value && *value) { language_tag(out, size, value); return; }   /* the first set wins, C too */
-    }
+    Language_Pick(out, size, "MEMORIES_MODS_LANGUAGE", system_language);
 }
 
 /* The mod's lang/<language>.json, else lang/<language without country>.json
@@ -1887,7 +1857,7 @@ static void read_strings(Mod *mod)
 void Mods_SetLanguage(const char *tag)
 {
     char now[16];
-    language_tag(system_language, sizeof(system_language), tag);
+    Language_Tag(system_language, sizeof(system_language), tag);
     current_language(now, sizeof(now));
     if (!strcmp(now, read_language)) return;   /* the files read are the ones it would read */
     for (int i = 0; i < mod_count; i++)

@@ -30,6 +30,7 @@
 #include "title_config.h"
 #include "title_images.h"
 #include "menu.h"
+#include "ui_text.h"
 #include "platform.h"
 #include "pc/guest/state.h"
 #include "pc/mods/mods.h"
@@ -231,7 +232,7 @@ static void quit_chosen(int button, int *quit)
 static int choose(int menu, int item)
 {
     const TitleItem *it = &config()->items[item];
-    static const char *const ok[] = {"OK"}, *const quit[] = {"Quit", "Cancel"};
+    static const char *const ok[] = {"OK"}, *const quit[] = {"Quit", "Cancel"}; /* Menu_ShowNotice translates them */
     MemoriesModEvent event = {MEMORIES_EVENT_MENU, MEMORIES_BEFORE, 0, 0, 0, -1, 0};
     int action = it->action;
     event.a = item;
@@ -274,10 +275,10 @@ static int choose(int menu, int item)
     } else if (action == TITLE_ACTION_NOTICE) {
         SD_SEPlay(SE_CHOOSE, 0xFF, 0);
         Menu_ShowNotice(it->notice_title[0] ? it->notice_title : it->label[0] ? it->label : "", it->notice, ok, 1, 0,
-                        NULL);
+                        NULL); /* a mod's words: Menu_ShowNotice would look them up, harmlessly */
     } else if (action == TITLE_ACTION_QUIT) {
         SD_SEPlay(SE_CHOOSE, 0xFF, 0);
-        Menu_ShowNotice("Quit", "Quit the game?", quit, 2, 1, quit_chosen);
+        Menu_ShowNotice(UI("Quit"), UI("Quit the game?"), quit, 2, 1, quit_chosen);
     } else if (action == TITLE_ACTION_DEBUG_MENU) {
         leave(menu, DEBUG_SELECTION);
     } else {
