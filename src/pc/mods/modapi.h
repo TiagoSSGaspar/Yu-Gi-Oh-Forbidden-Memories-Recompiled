@@ -64,6 +64,8 @@
  *      reads a mod's model at Cards_ModelSector (-1 for one bigger than a
  *      record: its base stands in), and AnimatedBattleModelProperties's
  *      model_id is unsigned (0x8000 up)
+ *  22  text: a code mod's own words in the player's language, from its
+ *      lang/<language>.json's "texts"; no manifest feature
  * A data mod declares its required version with min_api in mod.json. */
 #include "mod_types.h"
 
@@ -264,6 +266,17 @@ struct MemoriesModHost {
     int (*sound_add)(const MemoriesModHost *, const int16_t *samples, size_t frames, int channels, unsigned rate);
     int (*sound_play)(const MemoriesModHost *, int sound, int volume, int pan);
     void (*sound_free)(const MemoriesModHost *, int sound);
+
+    /* --- API 22 ---
+     * A text the mod draws, in the player's language: `english`, written
+     * exactly as the mod passes it, looked up in "texts" of the mod's
+     * lang/<language>.json (notes/modding.md, "A mod in the player's
+     * language"). It returns the translation, or `english` itself when the
+     * file has none. A translation whose printf conversions ("%d", "%s"...)
+     * are not the English's, in the same order, is never returned, so the
+     * result takes the English's arguments. It follows the language as the
+     * player changes it, and lives until exit. */
+    const char *(*text)(const MemoriesModHost *, const char *english);
 };
 
 /* The symbol a mod's object defines, and its type. */

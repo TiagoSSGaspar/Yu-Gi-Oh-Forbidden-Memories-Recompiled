@@ -181,6 +181,10 @@ const char *Mods_Metadata(int mod, const char *key);
  * lang/<language without country>.json, is read again. NULL or "" for the
  * locale's environment; MEMORIES_MODS_LANGUAGE wins over both. */
 void Mods_SetLanguage(const char *tag);
+/* `english`, a text the mod draws, from its lang file's "texts" in the
+ * player's language (host->text); `english` itself when there is none, or
+ * when the translation takes other printf values than the English. */
+const char *Mods_Text(int mod, const char *english);
 const char *Mods_Directory(int mod);
 /* Where players put new mods (MEMORIES_MODS_DIR, else the user mods
  * folder), created if missing; 0 on success. */

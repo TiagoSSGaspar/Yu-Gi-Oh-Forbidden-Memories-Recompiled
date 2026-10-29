@@ -129,7 +129,7 @@ picks one for a run, and `MEMORIES_MODS_LANGUAGE=en` keeps every mod in its
 manifest's words (so does an empty one, except on Windows, where setting a
 variable to nothing removes it). The file for the whole tag is read (`pt-BR.json`), else
 the one for its language alone (`pt.json`). A file that does not parse, a
-key other than these three, a setting the manifest does not have and
+key other than these three and `texts` (below), a setting the manifest does not have and
 `choices` of another length than the manifest's are warnings beside the
 mod, as a manifest's are; the words they concern stay the manifest's, as
 does any word left empty. The
@@ -139,7 +139,29 @@ in every language (a note beside a mod, as "requires", names the mods as
 the window does). The language changes only what the window
 shows, never what the game says (that is [a translation](translation.md)).
 
-The mods the release ships have `lang/pt-BR.json`.
+A code mod's own words, the ones it draws over the game, go in the same
+file under `texts` (host API 22). Each key is the English exactly as the
+mod's code writes it, `%` conversions and all; each value its translation:
+
+```json
+"texts": {
+    "Hand full (%d cards)": "Mão cheia (%d cartas)",
+    "Main Phase 1": "Fase Principal 1"
+}
+```
+
+The mod asks for one with `host->text(host, "Hand full (%d cards)")` and
+gets the translation, or the English back when the file has none (an empty
+one too). A translation goes to `snprintf` with the English's arguments, so
+it must have the same conversions, written the same (`%d`, `%-3u`, `%s`), in
+the same order; `%%` may go anywhere. One that does not is a warning beside
+the mod, and the English is used. A plural is two texts, one for each form
+the English picks. The words follow the language when the player changes
+it, and the overlays are drawn again in them. A mod that also runs on an
+older game checks `host->api >= 22` first and keeps its English there.
+
+The mods the release ships have `lang/pt-BR.json`; Extra hand plays'
+translates its hints, its phase menu and its notices this way.
 
 ### Which game a mod needs
 
@@ -176,7 +198,8 @@ A mod written by hand should do the same. A release that adds a mod.json
 feature an older game would leave out raises `MEMORIES_MOD_API`
 (`src/pc/mods/mod_types.h`), lists the feature here and in `compat.py`,
 and keeps every lower `min_api` loading.
-API 12 (v0.3.0 too) added no mod.json feature, only a code mod's sounds.
+API 12 (v0.3.0 too) added no mod.json feature, only a code mod's sounds;
+API 22 none either, only a code mod's words in the player's language.
 When tagging the first release past v0.3.0, replace the unreleased descriptions in
 the table and add that tag to `compat.RELEASES`; do not assign an unchosen
 release number in advance.
@@ -2246,7 +2269,7 @@ the player's settings file as `mod.<id>.<key>`, and read from
 `MEMORIES_MOD_<ID>_<KEY>` first when that is set; a key is letters, digits,
 `_` and `-`, and `order` is the manager's), `disc_file_start`/
 `disc_read`, `pad`, and from mod API 2 `now_us` (a clock) and `map_fixed`
-(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`). API 14 adds no entry or event either; it marks the [tower](tower-mode.md)'s mod.json features, API 17 a duelist's [bust](more-duelists.md#bust--the-large-character), and API 18 the [card frames](#frame-styles-and-the-rules-that-pick-them)'s keys.
+(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`). API 14 adds no entry or event either; it marks the [tower](tower-mode.md)'s mod.json features, API 17 a duelist's [bust](more-duelists.md#bust--the-large-character), and API 18 the [card frames](#frame-styles-and-the-rules-that-pick-them)'s keys. API 22 adds `text`, a text the mod draws in the player's language from its `lang/<language>.json`'s `texts` ([A mod in the player's language](#a-mod-in-the-players-language)).
 A mod that uses an entry newer than API 1 should refuse to start when
 `host->api` is older.
 
