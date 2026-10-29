@@ -324,10 +324,12 @@ void Ehp_Show(int view)
         object->field_30.h.field_30 = (s16)x;
         object->field_30.h.field_32 = (s16)y;
         object->field_0C = DUEL_DISPLAY_COLOR_NORMAL;
-        DuelSelection_LinkDisplayObject(parent, object);
         at->object = (u8 *)object;
         set_depth(slot, base_depth() + slot * DEPTH_STEP);
+        /* Raised before the link: the panel places a linked object once, at
+         * the offset the link takes now, and lets it go. */
         if (S.mark[view + slot]) pick_number(at, S.mark[view + slot]);
+        DuelSelection_LinkDisplayObject(parent, object);
     }
     S.focus = 0;
 }
