@@ -1376,6 +1376,36 @@ int main(void)
         memset(S.xhand, -1, sizeof S.xhand);
     }
 
+    /* The hint line says which cards of a long hand are on screen. */
+    {
+        unsigned sig;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        overlay_lines();
+        assert(drew("Cards 1\xE2\x80\x93" "10 of 23"));
+        sig = hint_signature();
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        assert(hint_signature() != sig);
+        overlay_lines();
+        assert(drew("Cards 2\xE2\x80\x93" "11 of 23") && !drew("Cards 1\xE2\x80\x93" "10 of 23"));
+        /* 40 cards at the end of the window: the largest place there is. */
+        player_hand(40);
+        side = hand_record();
+        side->field_0E = 9;
+        for (int k = 0; k < 30; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 30);
+        overlay_lines();
+        assert(drew("Cards 31\xE2\x80\x93" "40 of 40"));
+        /* Ten fit: no line. */
+        player_hand(10);
+        overlay_lines();
+        for (int i = 0; i < text_count; i++) assert(strncmp(texts[i], "Cards ", 6));
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
     printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper), phases (menu, Main Phase 2, on screen) passed\n");
     return 0;
 }

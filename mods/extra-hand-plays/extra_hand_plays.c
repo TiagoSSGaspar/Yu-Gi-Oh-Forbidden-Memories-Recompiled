@@ -642,16 +642,28 @@ static int phase_shown(void)
     if (hand_idle()) return S.main2 == 2 ? PHASE_MAIN2 : PHASE_MAIN1;
     return 0;
 }
+/* The window's place, for a player's hand past ten: bits 10-15 and 27-30
+ * of the hints hold (count - 11) * 31 + view + 1 (1 to 930), 0 for none. */
+static unsigned window_bits(void)
+{
+    int count = Ehp_Count(D_8009B1D5);
+    unsigned e;
+    if (!human() || count <= EHP_VIEW) return 0;
+    e = (unsigned)((count - EHP_VIEW - 1) * 31 + S.view + 1);
+    return (e & 0x3F) << 10 | (e >> 6) << 27;
+}
+
 /* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2-9: cards
- * waiting to be drawn; bits 16-18: the phase shown; 19-20: the phase
- * menu's cursor, 21-22 its entries, 23-25 its first. The discard: bit 31,
- * with the cards still to mark. The hand-full notice is hint_signature's
- * bit 26, beside all of these. */
+ * waiting to be drawn; bits 10-15 and 27-30: the window (window_bits);
+ * bits 16-18: the phase shown; 19-20: the phase menu's cursor, 21-22 its
+ * entries, 23-25 its first. The discard: bit 31, with the cards still to
+ * mark and the window. The hand-full notice is hint_signature's bit 26,
+ * beside all of these. */
 static unsigned hint_bits(void)
 {
     unsigned shown = 0;
     int phase = phase_shown(), items[2];
-    if (S.discard && human()) return 0x80000000u | S.discard_left;
+    if (S.discard && human()) return 0x80000000u | S.discard_left | window_bits();
     if (phase) {
         shown = (unsigned)phase << 16;
         if (S.menu) {
@@ -665,7 +677,7 @@ static unsigned hint_bits(void)
         shown |= 1;
     }
     if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
-    return shown | (unsigned)S.queued[D_8009B1D5] << 2;
+    return shown | (unsigned)S.queued[D_8009B1D5] << 2 | window_bits();
 }
 static int full_notice_shown(void) { return full_notice_until && host->now_us(host) < full_notice_until; }
 static unsigned hint_signature(void) { return hint_bits() | (full_notice_shown() ? 1u << 26 : 0); }
@@ -747,18 +759,31 @@ static void phase_menu(int phase)
     host->draw_text(host, x + (panel_w - host->text_width(host, foot, small)) / 2, top + gap + 6 * small, foot,
                     MENU_OTHER_RGB, small);
 }
+/* "Cards 11-20 of 23", from window_bits' share of the hints; "" for none. */
+static void window_line(unsigned shown, char *text, size_t size)
+{
+    unsigned e = (shown >> 10 & 0x3F) | (shown >> 27 & 0xF) << 6;
+    int count, view;
+    *text = 0;
+    if (!e) return;
+    count = (int)((e - 1) / 31) + EHP_VIEW + 1;
+    view = (int)((e - 1) % 31);
+    snprintf(text, size, "Cards %d\xE2\x80\x93%d of %d", view + 1, view + EHP_VIEW, count);
+}
 static void draw_hint(void)
 {
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
     int phase = shown >> 16 & 7, row = 0;
-    char text[64];
+    char text[64], window[32];
     if (shown & 1u << 26) full_notice();
     shown &= ~(1u << 26);
+    window_line(shown, window, sizeof window);
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
         snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
         line(text, row++, HINT_RGB);
-        line("UP: mark   X: discard the marked cards", row, HINT_RGB);
+        line("UP: mark   X: discard the marked cards", row++, HINT_RGB);
+        if (*window) line(window, row, HINT_RGB);
         return;
     }
     if (phase) {
@@ -770,8 +795,9 @@ static void draw_hint(void)
     if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);
     if (waiting) {
         snprintf(text, sizeof text, "Hand full: %u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
-        line(text, row, HINT_RGB);
+        line(text, row++, HINT_RGB);
     }
+    if (*window) line(window, row, HINT_RGB);
 }
 
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
