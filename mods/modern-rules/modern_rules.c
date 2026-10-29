@@ -19,7 +19,8 @@
  *   replaced by one that does not fuse with it. An equip used from the
  *   field must equip the monster the player puts it onto (or fuse with it),
  *   which the disc would throw away otherwise. The CPU's hand decision is
- *   held to the same rule: its cards go where none is lost, or it passes. */
+ *   held to the same rule: its cards go where none is lost, or it passes.
+ * - Petit Moth's evolution, as in the anime: moth.c. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
