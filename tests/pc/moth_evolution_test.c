@@ -52,6 +52,28 @@ static int fake_subscribe(const MemoriesModHost *h, unsigned event, int priority
 }
 static int fake_register_state(const MemoriesModHost *h, void *data, size_t size, unsigned version)
 { (void)h; (void)data; (void)version; registered_size = (int)size; return 1; }
+/* The overlay: a 1280x960 window at the port's scale 2; the words drawn. */
+static char drawn[8][96];
+static int drawn_count;
+static void fake_overlay_size(const MemoriesModHost *h, int *w, int *hh, int *scale)
+{ (void)h; *w = 1280; *hh = 960; *scale = 2; }
+static int fake_text_width(const MemoriesModHost *h, const char *t, int scale) { (void)h; return (int)strlen(t) * 6 * scale; }
+static void fake_fill(const MemoriesModHost *h, int x, int y, int w, int hh, uint32_t rgb, unsigned a)
+{ (void)h; (void)x; (void)y; (void)w; (void)hh; (void)rgb; (void)a; }
+static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const char *t, uint32_t rgb, int scale)
+{
+    (void)h; (void)x; (void)middle; (void)rgb; (void)scale;
+    assert(drawn_count < 8);
+    snprintf(drawn[drawn_count++], sizeof drawn[0], "%s", t);
+}
+static void fake_picture_point(const MemoriesModHost *h, int x, int y, int *cx, int *cy)
+{ (void)h; *cx = x * 4; *cy = y * 4; }
+static const char *fake_text(const MemoriesModHost *h, const char *english)
+{
+    (void)h;
+    if (!strcmp(english, "Cocoon: Great Moth in %d turns")) return "Casulo: Great Moth em %d turnos";
+    return english;
+}
 static MemoriesModHost fake_host;
 static MemoriesMod fake_mod;
 
@@ -82,6 +104,12 @@ int main(void)
     fake_host.applied = fake_applied;
     fake_host.subscribe = fake_subscribe;
     fake_host.register_state = fake_register_state;
+    fake_host.overlay_size = fake_overlay_size;
+    fake_host.text_width = fake_text_width;
+    fake_host.fill = fake_fill;
+    fake_host.draw_text = fake_draw_text;
+    fake_host.picture_point = fake_picture_point;
+    fake_host.text = fake_text;
     assert(Moth_Install(&fake_host, &fake_mod) && fusion_cb && monster_cb && registered_size == (int)sizeof S);
 
     /* Petit Moth and Cocoon of Evolution fuse into the cocoon, either way
@@ -179,6 +207,43 @@ int main(void)
     moth_setting = 1;
     S.due[5] = 0;
 
-    printf("Petit Moth's evolution: the fusion, the cocoon, the turns, the evolution passed\n");
+    /* The player's cocoons say how many turns are left, in the player's
+     * language; the CPU's do not show. The signature follows the count. */
+    {
+        unsigned before;
+        memset(S.turns, 0, sizeof S.turns);
+        put(8, MOTH_COCOON, 0);
+        S.turns[8] = 2; S.card[8] = MOTH_COCOON;                  /* 1 turn gone: 3 left */
+        put(22, MOTH_COCOON, 0);
+        S.turns[22] = 1; S.card[22] = MOTH_COCOON;
+        gDuel_wSceneStateFlags = 4;
+        drawn_count = 0;
+        fake_mod.overlay();
+        assert(drawn_count == 1 && !strcmp(drawn[0], "Casulo: Great Moth em 3 turnos"));
+        before = fake_mod.overlay_signature();
+        S.turns[8] = 4;                                           /* 1 left */
+        assert(fake_mod.overlay_signature() != before);
+        drawn_count = 0;
+        fake_mod.overlay();
+        assert(drawn_count == 1 && !strcmp(drawn[0], "Cocoon: Great Moth in 1 turn"));
+        put(8, MOTH_GREAT, 0);
+        S.turns[8] = 6; S.card[8] = MOTH_GREAT;                   /* 5 gone: 1 left */
+        drawn_count = 0;
+        fake_mod.overlay();
+        assert(drawn_count == 1 && !strcmp(drawn[0], "Great Moth: Perfectly Ultimate Great Moth in 1 turn"));
+        /* Not while the field is busy, nor off. */
+        gDuel_wSceneStateFlags = 9;
+        drawn_count = 0;
+        fake_mod.overlay();
+        assert(!drawn_count && !fake_mod.overlay_signature());
+        gDuel_wSceneStateFlags = 4;
+        moth_setting = 0;
+        drawn_count = 0;
+        fake_mod.overlay();
+        assert(!drawn_count);
+        moth_setting = 1;
+    }
+
+    printf("Petit Moth's evolution: the fusion, the cocoon, the turns, the evolution, the turns left on screen passed\n");
     return 0;
 }

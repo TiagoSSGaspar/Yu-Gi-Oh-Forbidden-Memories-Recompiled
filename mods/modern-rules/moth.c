@@ -162,12 +162,76 @@ int Moth_Hold(void)
     return Moth_Hold();
 }
 
+static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+/* Where a point of the game's picture is on the canvas (API 22), else a 4:3
+ * picture as tall as the canvas, in its middle. */
+static void picture_point(int x, int y, int *cx, int *cy)
+{
+    int width, height, scale;
+    if (host->api >= 22) {
+        host->picture_point(host, x, y, cx, cy);
+        return;
+    }
+    host->overlay_size(host, &width, &height, &scale);
+    *cx = (width - height * 4 / 3) / 2 + x * height / 240;
+    *cy = y * height / 240;
+}
+/* A line for each of the player's cocoons and Great Moths still to evolve:
+ * the turns left, from the picture's line just above the hand upwards,
+ * while the hand or the field waits for the player. */
+#define LINES_Y 140
+#define LINE_STEP 12
+static int left(int r)
+{
+    if (!S.turns[r]) return 0;
+    if (S.card[r] == MOTH_COCOON) return MOTH_GREAT_TURN - (S.turns[r] - 1);
+    if (S.card[r] == MOTH_GREAT) return MOTH_PERFECT_TURN - (S.turns[r] - 1);
+    return 0;
+}
+static int shown(void)
+{
+    int scene = gDuel_wSceneStateFlags & SCENE_MASK;
+    return on() && (scene == 4 || scene == 5);
+}
+static void overlay(void)
+{
+    char text[96];
+    int r, n, row = 0, width, height, scale, w, cx, cy;
+    if (!shown()) return;
+    forget_gone();
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    for (r = 5; r < 10; r++) {
+        if ((n = left(r)) <= 0) continue;
+        if (S.card[r] == MOTH_COCOON)
+            snprintf(text, sizeof text,
+                     n == 1 ? T("Cocoon: Great Moth in %d turn") : T("Cocoon: Great Moth in %d turns"), n);
+        else
+            snprintf(text, sizeof text,
+                     n == 1 ? T("Great Moth: Perfectly Ultimate Great Moth in %d turn")
+                            : T("Great Moth: Perfectly Ultimate Great Moth in %d turns"), n);
+        picture_point(160, LINES_Y - row++ * LINE_STEP, &cx, &cy);
+        w = host->text_width(host, text, scale);
+        host->fill(host, cx - w / 2 - 8 * scale, cy - 10 * scale, w + 16 * scale, 20 * scale, 0x000000, 160);
+        host->draw_text(host, cx - w / 2, cy, text, 0xFFFFFF, scale);
+    }
+}
+static unsigned overlay_signature(void)
+{
+    unsigned s;
+    int r;
+    if (!shown()) return 0;
+    for (s = 1, r = 5; r < 10; r++) s = s * 31u + (unsigned)left(r) * 7u + (unsigned)(S.card[r] == MOTH_GREAT);
+    return s;
+}
+
 int Moth_Install(const MemoriesModHost *from, MemoriesMod *mod)
 {
-    (void)mod;
     host = from;
     memset(&S, 0, sizeof S);
     S.evolving = -1;
+    mod->overlay = overlay;
+    mod->overlay_signature = overlay_signature;
     if (host->api < 10) return 1;   /* no monster events: no evolution, nothing else changes */
     return host->subscribe(host, MEMORIES_EVENT_FUSION, 0, fusion) > 0 &&
         host->subscribe(host, MEMORIES_EVENT_MONSTER, 0, monster) > 0 &&
