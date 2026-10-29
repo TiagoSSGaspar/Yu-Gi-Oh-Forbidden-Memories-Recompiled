@@ -351,6 +351,12 @@ static int draw_many(int side, int turn, int room)
     (void)side; (void)turn;
     return room;
 }
+static void limits_forty_keep6(int side, int *max, int *keep)
+{
+    (void)side;
+    *max = 40;
+    *keep = 6;
+}
 static int draw_three(int side, int turn, int room)
 {
     (void)side; (void)turn; (void)room;
@@ -1320,6 +1326,52 @@ int main(void)
         confirm(side, Ehp_Slot(2));
         assert(D_800E9EF0[0] == (DisplayObject *)Ehp_Slot(2)->object && !D_800E9EF0[1]);
         assert(Ehp_Get(0, 8) < 0 && Ehp_Count(0) == 22);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The end-of-turn discard of a hand of 23 down to six: its window
+     * scrolls, marks past five only raise the card, and the marked cards go
+     * from anywhere in the hand. */
+    {
+        int k, steps;
+        provided->set_hand_limits(limits_forty_keep6);
+        player_hand(23);
+        assert(Ehp_Discard() && S.discard == DISCARD_PANEL_IN && S.discard_left == 17);
+        assert(S.layout == EHP_VIEW && S.view == 0 && S.xslot[4].object);
+        D_8009B162 = 0;
+        assert(Ehp_Discard() && S.discard == DISCARD_PICK);
+        side = hand_record();
+        for (k = 0; k < 17; k++) {
+            gInput_wPad1Pressed = PAD_UP;
+            assert(Ehp_Discard());
+            gInput_wPad1Pressed = 0;
+            gInput_wPad1Repeat = PAD_RIGHT;
+            assert(Ehp_Discard());
+            gInput_wPad1Repeat = 0;
+        }
+        assert(side->field_15 == 17 && S.view == 8 && S.mark[16] == 17 && !S.mark[17]);
+        gInput_wPad1Pressed = PAD_UP;                               /* no more than 17 */
+        Ehp_Discard();
+        gInput_wPad1Pressed = 0;
+        assert(side->field_15 == 17 && !S.mark[18]);
+        /* The window back to the start shows the first marks' numbers. */
+        side->field_0E = 0;
+        for (k = 0; k < 8; k++) {
+            gInput_wPad1Repeat = PAD_LEFT;
+            Ehp_Discard();
+        }
+        gInput_wPad1Repeat = 0;
+        assert(S.view == 0 && D_800EA030[2].active_09 == 3 && D_800EA030[2].child && S.xslot[4].active_09 == 10 &&
+               !S.xslot[4].child);
+        gInput_wPad1Pressed = PAD_BUTTON_CONFIRM_MASK;
+        Ehp_Discard();
+        gInput_wPad1Pressed = 0;
+        assert(S.discard == DISCARD_PANEL_OUT);
+        D_8009B162 = 0;
+        for (steps = 0; Ehp_Discard(); steps++) assert(steps < 4);
+        assert(Ehp_Count(0) == 6 && S.discard == DISCARD_NONE);
+        for (k = 0; k < 6; k++) assert(Ehp_Get(0, k) == 17 + k);
         provided->set_hand_limits(NULL);
         memset(S.xhand, -1, sizeof S.xhand);
     }
