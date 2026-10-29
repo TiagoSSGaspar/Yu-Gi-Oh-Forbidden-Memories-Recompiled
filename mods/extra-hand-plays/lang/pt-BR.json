@@ -24,12 +24,14 @@
         "Hand limit: discard %u card": "Limite da mão: descarte %u carta",
         "Hand limit: discard %u cards": "Limite da mão: descarte %u cartas",
         "UP: mark   X: discard the marked cards": "CIMA: marcar   X: descartar as marcadas",
-        "Cards %d–%d of %d": "Cartas %d–%d de %d",
         "%s   START: phases": "%s   START: fases",
         "Main Phase 1": "Fase Principal 1",
         "Battle Phase": "Fase de Batalha",
         "Main Phase 2": "Fase Principal 2",
-        "End Phase": "Fase Final",
-        "X: select   O: back": "X: escolher   O: voltar"
+        "Attack": "Atacar",
+        "Go to the field": "Ir para o campo",
+        "Play more cards": "Jogar mais cartas",
+        "End turn": "Passar a vez",
+        "X: confirm   O: close": "X: confirmar   O: fechar"
     }
 }

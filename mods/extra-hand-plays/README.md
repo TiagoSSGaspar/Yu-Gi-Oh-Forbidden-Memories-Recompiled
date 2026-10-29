@@ -57,13 +57,14 @@ the player's turn runs in phases, as in the GX games:
 
 | Phase | Where | START opens a menu with |
 |---|---|---|
-| Main Phase 1 | the hand | Battle Phase, End Phase |
-| Battle Phase | the field (attacks, positions, set cards) | Main Phase 2, End Phase |
-| Main Phase 2 | the hand again | End Phase |
+| Main Phase 1 | the hand | Attack (the Battle Phase), End turn (the End Phase) |
+| Battle Phase | the field (attacks, positions, set cards) | Play more cards (Main Phase 2), End turn |
+| Main Phase 2 | the hand again | End turn |
 | End Phase | the discard down to the hand limit, then the other side's turn | |
 
 - The menu is a panel in the middle of the screen: the phase now on top,
-  the next phases under it. UP and DOWN move its bar, X takes the phase
+  what the next phases do under it. On the duel's first turn, when the
+  disc lets no monster attack, the Battle Phase's entry is Go to the field. UP and DOWN move its bar, X takes the phase
   under it, circle or START close the menu. While it is open no button
   reaches the game. The phase's name also shows under the strip at the
   top, where the hints are.
@@ -91,8 +92,8 @@ forty, a whole deck:
   most five cards are marked, as a fusion chain takes.
 - No more than ten cards are on screen. Past ten, the screen is a window
   of ten over the hand: the cursor stepping past either end moves it one
-  card, and the hint line under the strip at the top says which cards it
-  shows ("Cards 11–20 of 23"). A marked card keeps its mark and its number
+  card, and a blinking red arrow beside the hand points to the cards off
+  each end, with how many there are under it. A marked card keeps its mark and its number
   off screen, and goes down with the others when the play is confirmed. A
   card drawn past the window moves it on, so the card is seen coming in.
   Only the player's window moves: the CPU's cards past the tenth are not

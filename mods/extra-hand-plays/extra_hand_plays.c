@@ -39,6 +39,7 @@
 #include "game/duel_apply_card_object_flags.h"
 #include "game/duel_card.h"
 #include "game/duel_card_layout.h"
+#include "game/duel_check_quit_input.h"
 #include "game/duel_display.h"
 #include "game/duel_hand.h"
 #include "game/duel_scene_state.h"
@@ -643,6 +644,16 @@ static int field_idle(void)
         (D_8009B174 & 0xF) == FIELD_IDLE;
 }
 static const char *const phase_names[] = {"", "Main Phase 1", "Battle Phase", "Main Phase 2", "End Phase"};
+/* The menu's entries say what each next phase does for the player. On the
+ * duel's first turn no monster may attack (D_8009B16C's bit, which the disc
+ * sets as the duel starts and clears as that turn ends; the field refuses
+ * an attack while it is set), so the Battle Phase is only the field. */
+static const char *const phase_actions[] = {"", "", "Attack", "Play more cards", "End turn"};
+#define DUEL_FIRST_TURN 0x1000
+static const char *phase_action(int phase)
+{
+    return phase == PHASE_BATTLE && (D_8009B16C & DUEL_FIRST_TURN) ? "Go to the field" : phase_actions[phase];
+}
 /* The phase on screen, in phases: the hand's Main Phase or the field's
  * Battle Phase; 0 for none. */
 static int phase_shown(void)
@@ -691,6 +702,16 @@ static unsigned hint_bits(void)
 }
 static int full_notice_shown(void) { return full_notice_until && host->now_us(host) < full_notice_until; }
 static unsigned hint_signature(void) { return hint_bits() | (full_notice_shown() ? 1u << 26 : 0); }
+/* The hand's arrows (hand_arrows) blink: dim every other half second. */
+#define WINDOW_BITS (0x3Fu << 10 | 0xFu << 27)
+#define ARROW_BLINK_US 500000
+static int arrows_dim(void) { return (int)(host->now_us(host) / ARROW_BLINK_US & 1); }
+/* What the overlay shows, the arrows' blink with it. */
+static unsigned overlay_signature(void)
+{
+    unsigned shown = hint_signature();
+    return shown & WINDOW_BITS && arrows_dim() ? ~shown : shown;
+}
 
 /* A drawn card that found no room: a panel high in the middle of the
  * screen for a few seconds, so the draw is seen to have happened. */
@@ -727,12 +748,12 @@ static void full_notice(void)
                     y + pad + 16 * big + 4 * scale + 6 * small, text, MENU_PICKED_RGB, small);
 }
 /* The phase menu, as in the GX games: a panel in the middle of the screen,
- * the phase now on top, the next phases under it with the one under the
- * cursor on a bar, the buttons at the foot. Its text is three times the
+ * the phase now on top, what the next phases do under it with the one
+ * under the cursor on a bar, the buttons at the foot. Its text is three times the
  * hints' size, the foot's twice. */
 static void phase_menu(int phase)
 {
-    const char *foot = T("X: select   O: back");
+    const char *foot = T("X: confirm   O: close");
     int width, height, scale, big, small, frame, items[2], n, i, w, row, pad, gap, x, y, panel_w, panel_h, top;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
@@ -742,7 +763,8 @@ static void phase_menu(int phase)
     n = Ehp_PhaseItems(phase == PHASE_BATTLE, items);
     w = host->text_width(host, T(phase_names[phase]), big);
     for (i = 0; i < n; i++)
-        if (host->text_width(host, T(phase_names[items[i]]), big) > w) w = host->text_width(host, T(phase_names[items[i]]), big);
+        if (host->text_width(host, T(phase_action(items[i])), big) > w)
+            w = host->text_width(host, T(phase_action(items[i])), big);
     if (host->text_width(host, foot, small) > w) w = host->text_width(host, foot, small);
     row = 16 * big;
     pad = 14 * scale;
@@ -763,38 +785,83 @@ static void phase_menu(int phase)
     top += row + gap;
     for (i = 0; i < n; i++, top += row) {
         if (i + 1 == S.menu) host->fill(host, x + pad / 2, top, panel_w - pad, row, MENU_BAR_RGB, 230);
-        host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_names[items[i]]), big)) / 2, top + row / 2,
-                        T(phase_names[items[i]]), i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB, big);
+        host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_action(items[i])), big)) / 2,
+                        top + row / 2, T(phase_action(items[i])), i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB,
+                        big);
     }
     host->draw_text(host, x + (panel_w - host->text_width(host, foot, small)) / 2, top + gap + 6 * small, foot,
                     MENU_OTHER_RGB, small);
 }
-/* "Cards 11-20 of 23", from window_bits' share of the hints; "" for none. */
-static void window_line(unsigned shown, char *text, size_t size)
+/* Where a point of the game's picture (320 x 240) is on the canvas: the
+ * host's answer from API 22, else a 4:3 picture as tall as the canvas, in
+ * its middle. */
+static void picture_point(int x, int y, int *cx, int *cy)
+{
+    int width, height, scale;
+    if (host->api >= 22) {
+        host->picture_point(host, x, y, cx, cy);
+        return;
+    }
+    host->overlay_size(host, &width, &height, &scale);
+    *cx = (width - height * 4 / 3) / 2 + x * height / 240;
+    *cy = y * height / 240;
+}
+/* The cards off the window at either end of a long hand: a red arrow (the
+ * cursor's red) pointing that way, with how many there are under it, in
+ * the gutters beside the ten cards on screen (Ehp_LayoutX), above the
+ * cursor's height. The arrows blink. */
+#define ARROW_RGB 0xE81810
+#define ARROW_LEFT_X 8
+#define ARROW_RIGHT_X 312
+#define ARROW_TOP 154
+#define ARROW_BOTTOM 166
+#define ARROW_HALF_WIDTH 3
+#define ARROW_NUMBER_Y 176
+static void hidden_cards(int at, int left, int cards)
+{
+    char number[8];
+    int width, height, scale, x0, y0, x1, y1, cx, cy, tw, box_w, row, half, alpha = arrows_dim() ? 110 : 255;
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    snprintf(number, sizeof number, "%d", cards);
+    tw = host->text_width(host, number, scale);
+    picture_point(at - ARROW_HALF_WIDTH, ARROW_TOP, &x0, &y0);
+    picture_point(at + ARROW_HALF_WIDTH, ARROW_BOTTOM, &x1, &y1);
+    picture_point(at, ARROW_NUMBER_Y, &cx, &cy);
+    box_w = (tw > x1 - x0 ? tw : x1 - x0) + 6 * scale;
+    host->fill(host, cx - box_w / 2, y0 - 3 * scale, box_w, cy + 10 * scale - (y0 - 3 * scale), 0x000000, 160);
+    half = (y1 - y0) / 2;
+    for (row = y0; row < y1 && half > 0; row++) {
+        int d = row - (y0 + half), w = (x1 - x0) * (half - (d < 0 ? -d : d)) / half;
+        if (w > 0) host->fill(host, left ? x1 - w : x0, row, w, 1, ARROW_RGB, alpha);
+    }
+    host->draw_text(host, cx - tw / 2, cy, number, HINT_RGB, scale);
+}
+/* The arrows for window_bits' share of the hints; none for none. */
+static void hand_arrows(unsigned shown)
 {
     unsigned e = (shown >> 10 & 0x3F) | (shown >> 27 & 0xF) << 6;
     int count, view;
-    *text = 0;
-    if (!e) return;
+    if (!(shown & WINDOW_BITS)) return;
     count = (int)((e - 1) / 31) + EHP_VIEW + 1;
     view = (int)((e - 1) % 31);
-    snprintf(text, size, T("Cards %d\xE2\x80\x93%d of %d"), view + 1, view + EHP_VIEW, count);
+    if (view > 0) hidden_cards(ARROW_LEFT_X, 1, view);
+    if (count - view - EHP_VIEW > 0) hidden_cards(ARROW_RIGHT_X, 0, count - view - EHP_VIEW);
 }
 static void draw_hint(void)
 {
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
     int phase = shown >> 16 & 7, row = 0;
-    char text[128], window[64];
+    char text[128];
     if (shown & 1u << 26) full_notice();
     shown &= ~(1u << 26);
-    window_line(shown, window, sizeof window);
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
         snprintf(text, sizeof text, left == 1 ? T("Hand limit: discard %u card") : T("Hand limit: discard %u cards"),
                  left);
         line(text, row++, HINT_RGB);
-        line(T("UP: mark   X: discard the marked cards"), row++, HINT_RGB);
-        if (*window) line(window, row, HINT_RGB);
+        line(T("UP: mark   X: discard the marked cards"), row, HINT_RGB);
+        hand_arrows(shown);
         return;
     }
     if (phase) {
@@ -811,7 +878,7 @@ static void draw_hint(void)
                  waiting);
         line(text, row++, HINT_RGB);
     }
-    if (*window) line(window, row, HINT_RGB);
+    hand_arrows(shown);
 }
 
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
@@ -820,7 +887,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     host = ehp_host = from;
     mod->api = 4;
     mod->overlay = draw_hint;
-    mod->overlay_signature = hint_signature;
+    mod->overlay_signature = overlay_signature;
     memset(S.xhand, -1, sizeof S.xhand);
     return host->register_state(host, &S, sizeof S, EHP_STATE_VERSION) &&
         host->provide(host, "api", (void *)&api) &&
