@@ -9,6 +9,10 @@
 #include <string.h>
 #include "../../mods/modern-rules/modern_rules.c"
 
+/* Petit Moth's evolution is tested on its own (moth_evolution_test.c). */
+int Moth_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Moth_Hold(void) { return 0; }
+
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B174;
 u8 D_8009B1D5;

@@ -1,13 +1,13 @@
 {
   "id": "modern-rules",
   "name": "Duelist Kingdom rules",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "DecompRecomp",
-  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, and no card lost to a fusion that does not work. Needs Extra hand plays.",
-  "min_api": 9,
+  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, the moth's evolution, and no card lost to a fusion that does not work. Needs Extra hand plays.",
+  "min_api": 10,
   "game": "slus_01411",
   "library": "modern-rules",
-  "enabled": true,
+  "enabled": false,
   "restart": true,
   "requires": [
     {
@@ -17,6 +17,15 @@
   ],
   "after": [
     "ai-hard-mode"
+  ],
+  "cards": [
+    {
+      "replace": "Great Moth",
+      "description": "{f8 0A 05}<Poison dust>{f8 0A 00} At the start of each of its owner's turns, the opponent's monsters lose 300 ATK, and keep the loss.",
+      "monster_effects": [
+        { "when": "draw", "do": "boost", "target": "opponent", "attack": -300 }
+      ]
+    }
   ],
   "settings": [
     {
@@ -46,6 +55,13 @@
       "type": "bool",
       "default": 1,
       "description": "Cards put onto a monster must fuse with it or equip it, and marked cards must all fuse or equip in that order, so no card is thrown away. The player's confirm is refused; the CPU plays elsewhere, or no card."
+    },
+    {
+      "key": "moth_evolution",
+      "label": "The moth's evolution (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in Weevil's duels: Cocoon of Evolution put onto Petit Moth or Larvae Moth, or the two fused from the hand, makes the cocoon, in defense. At its owner's 5th turn after, it opens: Perfectly Ultimate Great Moth. Destroyed before, it dies with the larva, unless it has had 4 of those turns: then Great Moth comes out in its place, in attack. A Cocoon played alone stays a Cocoon."
     }
   ]
 }
