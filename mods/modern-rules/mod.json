@@ -1,9 +1,9 @@
 {
   "id": "modern-rules",
   "name": "Duelist Kingdom rules",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": "DecompRecomp",
-  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to ten, turn phases with a second Main Phase, and no card lost to a fusion that does not work. Needs Extra hand plays.",
+  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, and no card lost to a fusion that does not work. Needs Extra hand plays.",
   "min_api": 9,
   "game": "slus_01411",
   "library": "modern-rules",
@@ -12,7 +12,7 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.6.0"
+      "min_version": "0.7.0"
     }
   ],
   "after": [
@@ -38,7 +38,7 @@
       "label": "Draw one card a turn",
       "type": "bool",
       "default": 1,
-      "description": "Each side opens with five cards, then draws one a turn (none on the first turn of the side that goes first). The hand holds up to ten. Off refills the hand to five each turn, as on the disc."
+      "description": "Each side opens with five cards, then draws one a turn (none on the first turn of the side that goes first). The hand holds up to forty. Off refills the hand to five each turn, as on the disc."
     },
     {
       "key": "fusion_guard",

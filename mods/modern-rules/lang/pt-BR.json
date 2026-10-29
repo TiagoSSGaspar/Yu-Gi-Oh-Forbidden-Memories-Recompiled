@@ -1,6 +1,6 @@
 {
     "name": "Regras do Reino dos Duelistas",
-    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até dez, fases do turno com uma segunda Main Phase, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
+    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até quarenta, fases do turno com uma segunda Main Phase, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
     "settings": {
         "optional_play": {
             "label": "Jogar uma carta é opcional",
@@ -12,7 +12,7 @@
         },
         "draw_one": {
             "label": "Comprar uma carta por turno",
-            "description": "Cada lado começa com cinco cartas e depois compra uma por turno (nenhuma no primeiro turno de quem começa). A mão segura até dez. Desligado completa a mão até cinco a cada turno, como no disco."
+            "description": "Cada lado começa com cinco cartas e depois compra uma por turno (nenhuma no primeiro turno de quem começa). A mão segura até quarenta. Desligado completa a mão até cinco a cada turno, como no disco."
         },
         "fusion_guard": {
             "label": "Guardar cartas que a fusão não usa",

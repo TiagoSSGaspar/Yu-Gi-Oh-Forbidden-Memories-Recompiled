@@ -76,9 +76,14 @@ static int hand_card_api(int slot)
 static int hand_mark_api(int slot) { return slot >= HAND_SIZE ? extra_marks[slot - HAND_SIZE] : D_800EA030[slot].active_09; }
 static ExtraHandPhases registered_phases;
 static void set_phases(ExtraHandPhases fn) { registered_phases = fn; }
+/* The test's hands fit on screen: the cursor's slot is its card. */
+static int hand_cursor_api(void)
+{
+    return (s8)((DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE))->field_0E;
+}
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases};
+                                      set_phases, hand_cursor_api};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
@@ -180,10 +185,10 @@ int main(void)
         int max = HAND_SIZE, keep = 6;
         assert(registered_limits);
         registered_limits(0, &max, &keep);
-        assert(max == 10 && keep == 0);
+        assert(max == 40 && keep == 0);
         keep = 6;
         registered_limits(1, &max, &keep);
-        assert(max == 10 && keep == 0);
+        assert(max == 40 && keep == 0);
         draw_one_setting = 0;
         max = HAND_SIZE; keep = 0;
         registered_limits(0, &max, &keep);

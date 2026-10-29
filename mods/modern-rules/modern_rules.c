@@ -7,8 +7,8 @@
  * - One card a turn: the turn draws are 1, or the opening five and the
  *   turn's card on a side's first draw. The side that goes first is dealt
  *   its five before the duel's first turn, which has no draw; the other
- *   side's first draw is its five and one. The hand holds up to ten, with
- *   no limit at the end of a turn (the Battle City's six is for a mod of
+ *   side's first draw is its five and one. The hand holds up to forty, a
+ *   whole deck, with no limit at the end of a turn (the Battle City's six is for a mod of
  *   its own, as is its Pot of Greed).
  * - No card lost to a fusion: while the player confirms two or more marked
  *   cards, or puts cards onto one of their monsters, the chain they make is
@@ -69,7 +69,7 @@ extern unsigned char D_800EAE88[];
 #define AI_ENEMY_SLOT_FIRST 56
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
 #define OPENING_HAND 5
-#define HAND_MAX 10
+#define HAND_MAX 40
 
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
@@ -91,6 +91,9 @@ static int hand_card(int slot)
     return D_800E9FF0[D_8009B1D5].hand[slot] >= 0 ? D_801A7AD8[record].card_id : 0;
 }
 static int hand_mark(int slot) { return api->version >= 4 ? api->hand_mark(slot) : D_800EA030[slot].active_09; }
+/* The card under the player's hand cursor: its place on screen is the
+ * card's until the hand passes ten (Extra hand plays version 6). */
+static int hand_cursor(DuelSelectionRecord *side) { return api->version >= 6 ? api->hand_cursor() : (s8)side->field_0E; }
 
 static int draw_one(void) { return host->applied(host) && setting("draw_one", 1); }
 
@@ -108,7 +111,7 @@ static int turn_draws(int side, int turn, int room)
     return api->version >= 4 ? OPENING_HAND + 1 : room;
 }
 
-/* Up to ten cards in hand, and no limit at the end of a turn. */
+/* Up to forty cards in hand, and no limit at the end of a turn. */
 static void hand_limits(int side, int *max, int *keep)
 {
     (void)side;
@@ -153,7 +156,7 @@ static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
 {
     int pick, slot, current = first, next;
     if (side->field_15 == 0) {
-        next = hand_card((s8)side->field_0E);
+        next = hand_card(hand_cursor(side));
         return next && step(current, next);
     }
     for (pick = 1; pick <= HAND_SIZE; pick++) {

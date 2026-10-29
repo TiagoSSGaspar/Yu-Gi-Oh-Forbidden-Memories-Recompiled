@@ -23,18 +23,19 @@ come on top.
 |---|---|
 | Playing a card is optional | START in the first hand of a turn plays no card and goes to the field, as in the anime. Without it, a full monster row with nothing that fuses would leave the player no legal play, since a monster can no longer be replaced. |
 | Turn phases | On by default. START opens a menu of the next phases instead of ending the hand or the turn: from the hand (Main Phase 1) the Battle Phase (the field) or the End Phase; from the field Main Phase 2, to play from the hand again after attacking, or the End Phase. UP/DOWN pick, X takes, circle closes. The turn's monster still counts once across both Main Phases. The CPU plays as before. See Extra hand plays' README. |
-| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to ten cards. Off refills the hand to five each turn, as on the disc. |
+| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to forty cards. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. An equip used from the field must equip the monster the player puts it onto. |
 
 ## Rules
 
-- **Drawing.** The hand holds up to ten cards (Extra hand plays lays them
-  out overlapped past five). A card drawn with no room waits, and is drawn
+- **Drawing.** The hand holds up to forty cards, a whole deck (Extra hand
+  plays lays them out overlapped past five, ten at a time on screen, in a
+  window the cursor moves). A card drawn with no room waits, and is drawn
   into the next hand: the next bonus or extra hand, or the next turn, on
   top of that turn's card. The hand shows how many are waiting. Drawing
   with no cards left in the deck loses the duel, as at a turn's draw.
 - **No hand limit.** The hand is not cut down at the end of a turn: passing
-  turns without playing, it grows by one each turn, up to ten.
+  turns without playing, it grows by one each turn, up to forty.
 - **Fusion chains.** Cards are played in the order they were marked, as in
   the original game. Each next card must either fuse with the card the
   chain has made so far, or one of the two must equip the other. Chains of
@@ -60,7 +61,7 @@ dealing cards into the first empty slots. It provides a table,
 mod uses it in two places:
 
 - It sets the turn draws: 6 on a side's first draw (nothing drawn yet:
-  the five and the turn's card), 1 after; and the hand limits, ten held and
+  the five and the turn's card), 1 after; and the hand limits, forty held and
   none kept at the end of a turn.
 - It wraps the CPU's hand decision (`AiScript_Run`) for the fusion check
   below. The manifest loads this mod after AI Hard Mode, so it also wraps
