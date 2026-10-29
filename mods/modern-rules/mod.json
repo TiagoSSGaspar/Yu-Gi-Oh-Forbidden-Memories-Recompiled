@@ -7,7 +7,7 @@
   "min_api": 10,
   "game": "slus_01411",
   "library": "modern-rules",
-  "enabled": true,
+  "enabled": false,
   "restart": true,
   "requires": [
     {
