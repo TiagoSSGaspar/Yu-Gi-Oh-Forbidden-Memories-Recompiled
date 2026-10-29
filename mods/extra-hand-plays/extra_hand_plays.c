@@ -589,15 +589,21 @@ static void pass_hand(void)
         return;
     slide_away(hand_record());
 }
-static int hand_slots(void) { return Ehp_BigHand() ? S.layout : HAND_SIZE; }
-static int hand_card(int slot)
+/* Up to the last card held: five for a hand that never passed them. */
+static int hand_slots(void)
 {
-    if (slot < 0 || slot >= EHP_HAND) return 0;
-    return Ehp_CardId(Ehp_Get(D_8009B1D5, slot));
+    int n = Ehp_BigHand() ? EHP_HAND : HAND_SIZE;
+    while (n > HAND_SIZE && Ehp_Get(D_8009B1D5, n - 1) < 0) n--;
+    return n;
 }
-static int hand_mark(int slot) { return slot < 0 || slot >= EHP_VIEW ? 0 : Ehp_Slot(slot)->active_09; }
+static int hand_card(int card)
+{
+    if (card < 0 || card >= EHP_HAND) return 0;
+    return Ehp_CardId(Ehp_Get(D_8009B1D5, card));
+}
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark, Ehp_SetPhases};
+                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, Ehp_Mark, Ehp_SetPhases,
+                                 Ehp_Cursor};
 
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the

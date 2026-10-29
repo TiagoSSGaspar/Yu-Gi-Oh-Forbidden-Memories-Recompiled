@@ -82,12 +82,21 @@ the player's turn runs in phases, as in the GX games:
 ## Hands past five
 
 The disc's hand has five slots. When another mod raises the limit
-(`set_hand_limits`, below; Duelist Kingdom rules does), the hand holds up to ten:
+(`set_hand_limits`, below; Duelist Kingdom rules does), the hand holds up to
+forty, a whole deck:
 
 - Past five cards, the hand is laid out overlapped across the width of
   five, later cards over earlier ones and the card under the cursor over
   all. The player walks, views, marks and plays every card as with five; at
   most five cards are marked, as a fusion chain takes.
+- No more than ten cards are on screen. Past ten, the screen is a window
+  of ten over the hand: the cursor stepping past either end moves it one
+  card, and the hint line under the strip at the top says which cards it
+  shows ("Cards 11–20 of 23"). A marked card keeps its mark and its number
+  off screen, and goes down with the others when the play is confirmed. A
+  card drawn past the window moves it on, so the card is seen coming in.
+  Only the player's window moves: the CPU's cards past the tenth are not
+  drawn.
 - The CPU's hand script sees the cards past the fifth ahead of its upcoming
   deck, numbered the way it numbers deck cards it may swap into the hand.
   One it picks is swapped into the five by the game's own swap (or AI Hard
@@ -96,13 +105,14 @@ The disc's hand has five slots. When another mod raises the limit
   discards down to it. For the player the hand comes up on its panel: UP
   marks a card to throw away, DOWN or circle takes the mark back, X or
   square throws the marked cards away once there are as many as asked for.
-  The CPU throws away its weakest cards: monsters by their better stat,
-  any other card counted as 1500. The game has no graveyard; a discarded
+  Past ten cards the window moves as in the hand, and past the fifth mark
+  a card is only raised, with no number. The CPU throws away its weakest
+  cards: monsters by their better stat, any other card counted as 1500. The game has no graveyard; a discarded
   card leaves the duel.
-- Exodia is assembled from every slot.
-- The port's View > Fusion helper reads every slot, so it finds fusions
-  with the cards past the fifth too and numbers them where each card is
-  left showing. The mod hands it the slots through the port's
+- Exodia is assembled from the whole hand.
+- The port's View > Fusion helper reads the ten cards on screen, so it
+  finds fusions with the cards past the fifth too and numbers them where
+  each card is left showing. The mod hands it the slots through the port's
   `FusionHelper_SetHand`, looked up by name: on a port without it the mod
   loads all the same, and the helper sees the five.
 
@@ -124,13 +134,17 @@ offers:
 - `pass_hand` (version 3): the side whose turn it is plays no card from the
   hand now up, as START does for the player. For the CPU it is called from
   inside its hand script, with the decision emptied.
-- `set_hand_limits` (version 4): how many cards a side may hold (5 to 10)
-  and keep at the end of its turn (0 for no limit).
-- `hand_slots`, `hand_card(slot)` and `hand_mark(slot)` (version 4): the
-  hand of the side whose turn it is, slot by slot, past the fifth too: how
-  many slots it has, the card in one and the order it was marked in.
+- `set_hand_limits` (version 4): how many cards a side may hold (5 to 40;
+  10 before version 6) and keep at the end of its turn (0 for no limit).
+- `hand_slots`, `hand_card(card)` and `hand_mark(card)` (version 4): the
+  hand of the side whose turn it is, card by card, past the fifth too: how
+  many there are room for, the card at one and the order it was marked in.
+  From version 6 they count the whole hand, off screen too; before, the
+  slots on screen.
 - `set_phases` (version 5): while the function it is given says so, the
   player's turn runs in phases (above).
+- `hand_cursor` (version 6): the hand card under the player's hand cursor.
+  Past ten cards the cursor's place on screen is not the card's.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
@@ -173,10 +187,16 @@ START sets the hand panel's slide-out, the same way the hand state does for
 a magic card used from it. The panel releases its cursor and cards on the
 way out, and the field starts when it is gone.
 
-Past five cards (`big_hand.c`), cards six to ten keep their deck indices
-beside the side's `hand[5]`, their slots on screen beside `D_800EA030`, and
-borrow the other side's five hand records, which nothing reads during the
-turn; they are cleared when the turn ends and when it begins. The five
+Past five cards (`big_hand.c`), the hand and what is drawn of it are kept
+apart. The hand cards past the fifth keep their deck indices beside the
+side's `hand[5]`, up to 35 of them. The screen has ten slots: the five
+beside `D_800EA030`, and five more that borrow the other side's five hand
+records, which nothing reads during the turn; they are cleared when the
+turn ends and when it begins. Screen slot `i` shows hand card `view + i`;
+moving the window sets each slot's record up again for its new card and
+makes its object anew on the panel. Marks are kept by hand card. A marked
+card off the window that goes down in a play takes the place of an
+unmarked card on screen, which the panel takes away with it. The five
 slots are always filled first. The player's hand state is a copy of the
 disc's player steps over every slot, used only past five cards, and the
 five-slot helpers it calls (the cursor, the pick number, the zone cursor,
@@ -187,8 +207,8 @@ is given its card 40 short. The end-of-turn discard (`discard.c`) runs
 before the turn switch (scene state 10).
 
 The mod's state (plays and hands this turn, a rebuild or deal in progress,
-bonus hands, each side's waiting cards, the cards past the fifth and their
-slots) is registered with the host, so save states keep it. The slots hold
+bonus hands, each side's waiting cards, the cards past the fifth, the
+window, the marks and the slots) is registered with the host, so save states keep it. The slots hold
 guest pointers to their card objects, which a save state restores with the
 guest memory.
 

@@ -1,6 +1,6 @@
 {
     "name": "Jogadas extras da mão",
-    "description": "Jogue cartas de magia, armadilha e equipamento à vontade a cada turno, e até cinco monstros. Depois de uma jogada a mão volta; o jogador pode pular o resto com START. A CPU joga as cartas extras pelo próprio roteiro de mão. Permite que outro mod segure até dez cartas na mão.",
+    "description": "Jogue cartas de magia, armadilha e equipamento à vontade a cada turno, e até cinco monstros. Depois de uma jogada a mão volta; o jogador pode pular o resto com START. A CPU joga as cartas extras pelo próprio roteiro de mão. Permite que outro mod segure até quarenta cartas na mão, dez delas na tela de cada vez.",
     "settings": {
         "monsters": {
             "label": "Monstros por turno",

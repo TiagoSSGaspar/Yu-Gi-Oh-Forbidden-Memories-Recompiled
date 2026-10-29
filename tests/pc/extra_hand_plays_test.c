@@ -427,6 +427,8 @@ static void player_hand(int count)
     memset(S.xhand, -1, sizeof S.xhand);
     new_turn(0, 0);
     memset(hand_record(), 0, DUEL_SELECTION_SIDE_SIZE);        /* as the hand state's setup leaves it */
+    memset(drawn_objects, 0, sizeof drawn_objects);              /* the last hand's objects are gone */
+    drawn = sprite_count = 0;
     ((DisplayParent *)hand_record())->position_base = &panel_object;
     for (k = HAND_SIZE; k < count; k++) S.xhand[0][k - HAND_SIZE] = (s8)k;
     D_800E9FF0[0].deck_draw_cursor = (u8)count;
@@ -1406,6 +1408,27 @@ int main(void)
         memset(S.xhand, -1, sizeof S.xhand);
     }
 
-    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper), phases (menu, Main Phase 2, on screen) passed\n");
+    /* The API counts hand cards (version 6), and says which one is under
+     * the cursor. */
+    {
+        int k;
+        assert(provided->version == 6);
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 15 */
+        assert(provided->hand_slots() == 23 && provided->hand_card(22) == deck[22].id && !provided->hand_card(23));
+        assert(provided->hand_mark(15) == 1 && !provided->hand_mark(9));
+        side->field_0E = 2;
+        assert(provided->hand_cursor() == 8);
+        player_hand(HAND_SIZE);
+        assert(provided->hand_slots() == HAND_SIZE && provided->hand_cursor() == 0);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five and up to 40 (draws, packing, records, snapshot, window, scrolling, marks off screen, discard, Exodia, fusion helper, API 6), phases (menu, Main Phase 2, on screen) passed\n");
     return 0;
 }
