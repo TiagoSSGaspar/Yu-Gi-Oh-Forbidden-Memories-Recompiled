@@ -112,7 +112,7 @@ _Generated from `config/slus_01411/functions.csv` and `config/slus_01411/overlay
 
 ## Community
 
-Join the [Discord](https://discord.gg/Gn6Mag52q) to follow development, ask questions
+Join the [Discord](https://discord.gg/7DbsjUtsEQ)to follow development, ask questions
 and report issues.
 
 ## License
