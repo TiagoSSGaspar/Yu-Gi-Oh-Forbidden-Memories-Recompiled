@@ -65,7 +65,8 @@
  *      record: its base stands in), and AnimatedBattleModelProperties's
  *      model_id is unsigned (0x8000 up)
  *  22  text: a code mod's own words in the player's language, from its
- *      lang/<language>.json's "texts"; no manifest feature
+ *      lang/<language>.json's "texts"; picture_point: where a point of the
+ *      game's picture shows on the overlay's canvas; no manifest feature
  * A data mod declares its required version with min_api in mod.json. */
 #include "mod_types.h"
 
@@ -277,6 +278,10 @@ struct MemoriesModHost {
      * result takes the English's arguments. It follows the language as the
      * player changes it, and lives until exit. */
     const char *(*text)(const MemoriesModHost *, const char *english);
+    /* Where a point of the game's picture, as the disc draws it (320 x 240),
+     * shows on the overlay's canvas: whatever the window's size, widescreen
+     * and the touch pad's place. Only in the overlay callback. */
+    void (*picture_point)(const MemoriesModHost *, int x, int y, int *canvas_x, int *canvas_y);
 };
 
 /* The symbol a mod's object defines, and its type. */

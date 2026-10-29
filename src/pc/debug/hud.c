@@ -125,8 +125,18 @@ static void cover(int x, int y, int w, int h)
     bounds.x = x; bounds.y = y; bounds.w = w; bounds.h = h;
 }
 
+/* The picture the mods' overlays point into (host->picture_point): the
+ * fusion helper's, as the window last laid it out. */
+static void mods_picture(void)
+{
+    int x, y, w, h;
+    FusionHelper_GetViewport(&x, &y, &w, &h);
+    Mods_SetPicture(x, y, w, h, Platform_Widescreen() ? 426 : 320);
+}
+
 void Hud_DrawMods(MenuCanvas *canvas)
 {
+    mods_picture();
     Mods_DrawOverlay(canvas, Menu_Scale(), Menu_DrawTextScaled, Menu_TextWidthScaled, &mods_first.x, &mods_first.y,
                      &mods_first.w, &mods_first.h);
     mods_first.drawn = 1;
@@ -150,6 +160,7 @@ void Hud_Draw(MenuCanvas *canvas)
     TitleScreen_Draw(canvas, &x, &y, &w, &h);
     cover(x, y, w, h);
     if (!mods_drawn) {
+        mods_picture();
         Mods_DrawOverlay(canvas, Menu_Scale(), Menu_DrawTextScaled, Menu_TextWidthScaled, &x, &y, &w, &h);
         cover(x, y, w, h);
     }

@@ -549,6 +549,27 @@ static void overlay_touch(int x, int y, int w, int h)
     if (y1 > overlay.y1) overlay.y1 = y1;
 }
 
+/* The game's picture on the canvas (Mods_SetPicture); none set: the whole
+ * canvas, 4:3. */
+static struct { int x, y, w, h, columns; } picture;
+
+void Mods_SetPicture(int x, int y, int w, int h, int columns)
+{
+    picture.x = x; picture.y = y; picture.w = w; picture.h = h;
+    picture.columns = columns > 0 ? columns : 320;
+}
+
+static void host_picture_point(const MemoriesModHost *host, int x, int y, int *canvas_x, int *canvas_y)
+{
+    int px = picture.x, py = picture.y, pw = picture.w, ph = picture.h, columns = picture.columns;
+    if (!owner(host) || !overlay.canvas) { *canvas_x = *canvas_y = 0; return; }
+    if (pw <= 0 || ph <= 0) {
+        px = py = 0; pw = overlay.canvas->width; ph = overlay.canvas->height; columns = 320;
+    }
+    *canvas_x = px + pw / 2 + (x - 160) * pw / columns;
+    *canvas_y = py + y * ph / 240;
+}
+
 static void host_overlay_size(const MemoriesModHost *host, int *width, int *height, int *scale)
 {
     int on = owner(host) && overlay.canvas;
@@ -615,7 +636,8 @@ static unsigned language_generation;
 
 unsigned Mods_OverlaySignature(unsigned frame)
 {
-    unsigned signature = language_generation;
+    unsigned signature = language_generation * 2654435761u ^ (unsigned)(picture.x * 31 + picture.y) * 40503u ^
+                         (unsigned)(picture.w * 31 + picture.h) * 16777619u ^ (unsigned)picture.columns;
     if (shut_down) return 0;
     for (int i = 0; i < mod_count; i++) {
         const MemoriesMod *hooks = &mods[i].hooks;
@@ -650,6 +672,7 @@ static void fill_host(Mod *mod)
     mod->host.sound_play = host_sound_play;
     mod->host.sound_free = host_sound_free;
     mod->host.text = host_text;
+    mod->host.picture_point = host_picture_point;
     mod->host.api = MEMORIES_MOD_API;
     mod->host.id = mod->id;
     mod->host.directory = mod->directory;

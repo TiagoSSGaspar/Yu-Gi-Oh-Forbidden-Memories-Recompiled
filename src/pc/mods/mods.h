@@ -116,6 +116,10 @@ void Mods_DrawOverlay(struct MenuCanvas *canvas, int scale,
                       void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
                       int (*width)(const char *, int), int *x, int *y, int *w, int *h);
 unsigned Mods_OverlaySignature(unsigned frame);
+/* Where the game's picture shows on the overlays' canvas, and how many of
+ * the disc's 320 columns its width spans (more in widescreen), for
+ * host->picture_point; set before each Mods_DrawOverlay. */
+void Mods_SetPicture(int x, int y, int w, int h, int columns);
 /* Drop everything cached from the running game: a resumed save state is
  * another game. */
 void Mods_Reset(void);
