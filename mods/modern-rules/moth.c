@@ -15,12 +15,14 @@
 #include "game/duel_card_record_lifecycle.h"
 #include "game/duel_deck_card.h"
 #include "game/duel_effect_request.h"
-#include "game/duel_effect_resource_record.h"
 #include "game/duel_effect_resource_setup.h"
+#include "game/duel_ritual_controller.h"
 #include "game/duel_scene_state.h"
 #include "game/duel_side_state.h"
 #include "game/file_transfer.h"
 #include "game/sound.h"
+#include "psyq/libgte.h"
+#include "psyq/libgpu.h"
 #include "unmatched.h"
 #include "moth.h"
 #include <stdio.h>
@@ -116,12 +118,12 @@ static int evolve(void)
     }
     case 1: {   /* the picture in: into the card's picture block */
         RECT rect;
-        DuelEffectResourceRecord *resource = &D_800EA0E8[1];
         if ((D_8009B0F4_abs & FILE_TRANSFER_REQUEST_BLOCKED_MASK) | D_8009B134_abs) return 1;
         deck->id = (u16)into;
         card->card_id = (s16)into;
-        rect.x = resource->src_x + 56;
-        rect.y = resource->src_y;
+        /* The picture's source, as the ritual reads it (D_800EA128[20], [21]). */
+        rect.x = D_800EA128[20] + 56;
+        rect.y = D_800EA128[21];
         rect.w = 8;
         rect.h = 88;
         StoreImage(&rect, (u32 *)(D_8018C2D8 + deck->data_block_index * 1408));

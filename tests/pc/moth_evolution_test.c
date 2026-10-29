@@ -15,7 +15,7 @@ DuelCardRecord D_801A7AD8[DUEL_CARD_RECORD_COUNT];
 static DuelDeckCardRecord deck_cards[DUEL_CARD_RECORD_COUNT];
 volatile u32 D_8009B0F4_abs;
 u32 D_8009B134_abs;
-DuelEffectResourceRecord D_800EA0E8[4];
+u16 D_800EA128[DUEL_RITUAL_IMAGE_PREFIX_HALFWORDS];
 u8 D_8018C2D8[80 * 1408];
 static int sounds, requests, loads, loaded_id, stores, remakes;
 static DuelEffectRequest effect_request;
