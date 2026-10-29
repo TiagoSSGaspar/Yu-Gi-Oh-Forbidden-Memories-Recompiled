@@ -490,9 +490,34 @@ static s32 exodia(void)
     return 1;
 }
 
+/* The screen slot holding hand card `card`, for placement to take, with
+ * `number` for its pick: its own when the window shows it; else an unmarked
+ * slot's, its record set up again for the card and its object made anew
+ * where the old one was. The panel leaves once the play goes down, so the
+ * card it stood in for is not missed. */
+static DuelHandSlot *bring(int card, int number)
+{
+    int side = D_8009B1D5, slot, record;
+    DuelHandSlot *at = 0;
+    DuelCardDisplayObject *old;
+    if (card >= S.view && card < S.view + S.layout) return Ehp_Slot(card - S.view);
+    for (slot = 0; slot < S.layout; slot++) {
+        at = Ehp_Slot(slot);
+        if (at->object && !at->active_09 && !S.mark[S.view + slot]) break;
+    }
+    if (slot == S.layout) return 0;   /* not with five marked and ten on screen */
+    old = (DuelCardDisplayObject *)at->object;
+    record = Ehp_Record(side, slot);
+    Ehp_SetupRecord(record, Ehp_Get(side, card));
+    at->object = (u8 *)func_80018004(&D_801A7AD8[record], old->out_x, old->out_y);
+    DisplayObject_ReleaseIfPresent(old);
+    at->active_09 = (u8)number;
+    return at;
+}
+
 /* The hand state's zone confirm (its step 4): the marked cards, in the order
- * they were marked, or the card under the cursor, after any field card they
- * go onto, into D_800E9EF0 for placement. */
+ * they were marked -- from anywhere in the hand -- or the card under the
+ * cursor, after any field card they go onto, into D_800E9EF0 for placement. */
 static void confirm(DuelSelectionRecord *side, DuelHandSlot *hand)
 {
     DuelCardRecord *card;
@@ -516,12 +541,16 @@ static void confirm(DuelSelectionRecord *side, DuelHandSlot *hand)
     if (side->field_15 == 0) {
         hand->active_09 = 1;
         if (HAND_OBJECT(hand->object)->face != 0) D_8009B1C8->rank.face_down_plays++;
-    }
-    for (value = 1; value <= HAND_SIZE; value++) {
-        for (n = 0; n < S.layout && Ehp_Slot(n)->active_09 != value; n++) { }
-        if (n == S.layout) break;
-        Ehp_Set(D_8009B1D5, n, -1);
-        D_800E9EF0[i++] = (DisplayObject *)Ehp_Slot(n)->object;
+        Ehp_Set(D_8009B1D5, Ehp_Cursor(), -1);
+        D_800E9EF0[i] = (DisplayObject *)hand->object;
+    } else {
+        for (value = 1; value <= HAND_SIZE; value++) {
+            DuelHandSlot *at;
+            for (n = 0; n < EHP_HAND && S.mark[n] != value; n++) { }
+            if (n == EHP_HAND || !(at = bring(n, value))) break;
+            Ehp_Set(D_8009B1D5, n, -1);
+            D_800E9EF0[i++] = (DisplayObject *)at->object;
+        }
     }
     D_8009B174 = 6;
 }
@@ -708,7 +737,7 @@ void Ehp_HandActions(DuelSelectionRecord *side)
                     D_800E9EF0[0] = (DisplayObject *)obj;
                     D_8009B18C = 0;
                     D_8009B188 = 0;
-                    Ehp_Set(D_8009B1D5, at, -1);
+                    Ehp_Set(D_8009B1D5, Ehp_Cursor(), -1);
                     D_8009B174 = 5;
                     return;
                 }

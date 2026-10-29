@@ -483,10 +483,10 @@ static void hand_state(void)
  * marked ones, or the one under the cursor when none is marked. */
 static int confirm_has_monster(DuelSelectionRecord *side)
 {
-    int slot, slots = Ehp_BigHand() ? S.layout : HAND_SIZE;
-    if (side->field_15 == 0) return monster(Ehp_CardId(Ehp_Get(D_8009B1D5, (s8)side->field_0E)));
-    for (slot = 0; slot < slots; slot++)
-        if (Ehp_Slot(slot)->active_09 && monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))) return 1;
+    int card;
+    if (side->field_15 == 0) return monster(Ehp_CardId(Ehp_Get(D_8009B1D5, Ehp_Cursor())));
+    for (card = 0; card < EHP_HAND; card++)
+        if (Ehp_Mark(card) && monster(Ehp_CardId(Ehp_Get(D_8009B1D5, card)))) return 1;
     return 0;
 }
 

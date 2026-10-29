@@ -420,6 +420,7 @@ static void player_hand(int count)
     memset(&S, 0, sizeof S);
     memset(S.xhand, -1, sizeof S.xhand);
     new_turn(0, 0);
+    memset(hand_record(), 0, DUEL_SELECTION_SIDE_SIZE);        /* as the hand state's setup leaves it */
     ((DisplayParent *)hand_record())->position_base = &panel_object;
     for (k = HAND_SIZE; k < count; k++) S.xhand[0][k - HAND_SIZE] = (s8)k;
     D_800E9FF0[0].deck_draw_cursor = (u8)count;
@@ -1273,6 +1274,52 @@ int main(void)
         assert(Ehp_Count(0) == 13 && S.view == 3 && S.layout == EHP_VIEW);
         assert(Ehp_Get(0, 12) == 12 && D_801A7AD8[Ehp_Record(0, 9)].card_id == deck[12].id);
         provided->set_turn_draws(NULL);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The play: marked cards go down in mark order from anywhere in the
+     * hand; one off the window takes an unmarked slot's place on screen. */
+    {
+        int k, id0, id15, magic = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 0: 1 */
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 6);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 15: 2 */
+        assert(S.mark[0] == 1 && S.mark[15] == 2 && side->field_15 == 2);
+        assert(confirm_has_monster(side));
+        gDuel_adwCardStats[deck[0].id - 1] = gDuel_adwCardStats[deck[15].id - 1] = magic;
+        assert(!confirm_has_monster(side));
+        gDuel_adwCardStats[deck[0].id - 1] = gDuel_adwCardStats[deck[15].id - 1] = 50;
+        id0 = Ehp_CardId(Ehp_Get(0, 0));
+        id15 = Ehp_CardId(Ehp_Get(0, 15));
+        memset(D_800907D8, DUEL_CARD_SIDE_RECORD_COUNT - 1, sizeof D_800907D8);   /* empty zones */
+        D_801A7AD8[DUEL_CARD_SIDE_RECORD_COUNT - 1].flags = 0;
+        D_8009B1B4 = SIDE_CURSOR(D_800E9F48);
+        D_8009B1B4->row = 2;
+        D_8009B1B4->col = 0;
+        confirm(side, Ehp_Slot((s8)side->field_0E));
+        assert(D_8009B174 == 6 && !D_800E9EF0[2]);
+        assert(D_800E9EF0[0] == (DisplayObject *)Ehp_Slot(0)->object && Ehp_Slot(0)->active_09 == 1);
+        assert(D_801A7AD8[Ehp_Record(0, 0)].card_id == id0);           /* hand card 0, in hand card 6's place */
+        assert(D_800E9EF0[1] == (DisplayObject *)Ehp_Slot(9)->object && Ehp_Slot(9)->active_09 == 2);
+        assert(D_801A7AD8[Ehp_Record(0, 9)].card_id == id15);
+        assert(Ehp_Get(0, 0) < 0 && Ehp_Get(0, 15) < 0 && Ehp_Count(0) == 21);
+
+        /* No mark: the card under the cursor, in the window. */
+        player_hand(23);
+        side = hand_record();
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        side->field_0E = 2;
+        assert(Ehp_Cursor() == 8 && confirm_has_monster(side));
+        confirm(side, Ehp_Slot(2));
+        assert(D_800E9EF0[0] == (DisplayObject *)Ehp_Slot(2)->object && !D_800E9EF0[1]);
+        assert(Ehp_Get(0, 8) < 0 && Ehp_Count(0) == 22);
         provided->set_hand_limits(NULL);
         memset(S.xhand, -1, sizeof S.xhand);
     }
