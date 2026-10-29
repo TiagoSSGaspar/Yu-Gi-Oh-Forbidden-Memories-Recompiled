@@ -11,5 +11,25 @@
             "label": "Mostrar dica de pular",
             "description": "Enquanto o jogador tem uma mão extra, avisa que START a pula, e avisa quando acabarem os monstros do turno."
         }
+    },
+    "texts": {
+        "Hand full (%d cards)": "Mão cheia (%d cartas)",
+        "You drew a card: it waits until a play makes room (%d waiting)": "Você comprou uma carta: ela espera até uma jogada abrir espaço (%d esperando)",
+        "You drew %u cards: they wait until plays make room (%d waiting)": "Você comprou %u cartas: elas esperam até jogadas abrirem espaço (%d esperando)",
+        "Hand full: %u card waiting to be drawn": "Mão cheia: %u carta esperando para ser comprada",
+        "Hand full: %u cards waiting to be drawn": "Mão cheia: %u cartas esperando para ser compradas",
+        "Extra hand: START to skip": "Mão extra: START para pular",
+        "START: play no card this turn": "START: não jogar carta neste turno",
+        "Monster played: magic, trap and equip cards only": "Monstro jogado: só cartas de magia, armadilha e equipamento",
+        "Hand limit: discard %u card": "Limite da mão: descarte %u carta",
+        "Hand limit: discard %u cards": "Limite da mão: descarte %u cartas",
+        "UP: mark   X: discard the marked cards": "CIMA: marcar   X: descartar as marcadas",
+        "Cards %d–%d of %d": "Cartas %d–%d de %d",
+        "%s   START: phases": "%s   START: fases",
+        "Main Phase 1": "Fase Principal 1",
+        "Battle Phase": "Fase de Batalha",
+        "Main Phase 2": "Fase Principal 2",
+        "End Phase": "Fase Final",
+        "X: select   O: back": "X: escolher   O: voltar"
     }
 }

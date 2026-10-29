@@ -368,6 +368,17 @@ static void limits_ten(int side, int *max, int *keep)
     *max = 10;
     *keep = 6;
 }
+/* The host's words in the player's language (API 22), as a lang file of
+ * the mod's would give them; what it does not have stays English. */
+static const char *fake_text(const MemoriesModHost *h, const char *english)
+{
+    (void)h;
+    if (!strcmp(english, "Cards %d\xE2\x80\x93%d of %d")) return "Cartas %d\xE2\x80\x93%d de %d";
+    if (!strcmp(english, "Main Phase 1")) return "Fase Principal 1";
+    if (!strcmp(english, "%s   START: phases")) return "%s   START: fases";
+    if (!strcmp(english, "Hand limit: discard %u cards")) return "Limite da m\xC3\xA3o: descarte %u cartas";
+    return english;
+}
 static MemoriesModHost fake_host;
 typedef void (*Step)(void);
 static Step step_startup, step_draw, step_resolution, step_hand, step_field;
@@ -1429,6 +1440,31 @@ int main(void)
         memset(S.xhand, -1, sizeof S.xhand);
     }
 
-    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five and up to 40 (draws, packing, records, snapshot, window, scrolling, marks off screen, discard, Exodia, fusion helper, API 6), phases (menu, Main Phase 2, on screen) passed\n");
+    /* The mod's words in the player's language, from a host that has them
+     * (API 22); a host before it keeps them English, as every check above. */
+    {
+        fake_host.api = 22;
+        fake_host.text = fake_text;
+        provided->set_hand_limits(limits_forty);
+        phases_on = 1;
+        provided->set_phases(phases_answer);
+        player_hand(23);
+        overlay_lines();
+        assert(drew("Cartas 1\xE2\x80\x93" "10 de 23") && drew("Fase Principal 1   START: fases"));
+        assert(!drew("Cards 1\xE2\x80\x93" "10 of 23"));
+        S.discard = 1;
+        S.discard_left = 3;
+        overlay_lines();
+        assert(drew("Limite da m\xC3\xA3o: descarte 3 cartas") && drew("UP: mark   X: discard the marked cards"));
+        S.discard = 0;
+        S.discard_left = 0;
+        fake_host.api = 4;
+        overlay_lines();
+        assert(drew("Cards 1\xE2\x80\x93" "10 of 23"));
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five and up to 40 (draws, packing, records, snapshot, window, scrolling, marks off screen, discard, Exodia, fusion helper, API 6), phases (menu, Main Phase 2, on screen), words in the player's language passed\n");
     return 0;
 }

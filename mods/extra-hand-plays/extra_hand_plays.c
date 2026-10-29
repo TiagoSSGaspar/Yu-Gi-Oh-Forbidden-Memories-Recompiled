@@ -107,6 +107,10 @@ static void *original_dim, *original_window;
 static ExtraHandTurnDraws turn_draws;
 static ExtraHandOptionalPlay optional_play;
 
+/* A text the mod draws, in the player's language (host API 22: its
+ * lang/<language>.json's "texts"); the English on an older host. */
+static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+
 static int setting(const char *key, int fallback, int low, int high)
 {
     int n = host->setting(host, key, fallback);
@@ -692,7 +696,7 @@ static unsigned hint_signature(void) { return hint_bits() | (full_notice_shown()
  * screen for a few seconds, so the draw is seen to have happened. */
 static void full_notice(void)
 {
-    char title[48], text[96];
+    char title[96], text[160];
     int width, height, scale, big, small, frame, pad, w, x, y, panel_w, panel_h, waiting = S.queued[D_8009B1D5];
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
@@ -700,11 +704,11 @@ static void full_notice(void)
     small = scale;
     frame = 2 * scale;
     pad = 10 * scale;
-    snprintf(title, sizeof title, "Hand full (%d cards)", Ehp_HandMax());
+    snprintf(title, sizeof title, T("Hand full (%d cards)"), Ehp_HandMax());
     if (full_notice_drawn == 1)
-        snprintf(text, sizeof text, "You drew a card: it waits until a play makes room (%d waiting)", waiting);
+        snprintf(text, sizeof text, T("You drew a card: it waits until a play makes room (%d waiting)"), waiting);
     else
-        snprintf(text, sizeof text, "You drew %u cards: they wait until plays make room (%d waiting)",
+        snprintf(text, sizeof text, T("You drew %u cards: they wait until plays make room (%d waiting)"),
                  full_notice_drawn, waiting);
     w = host->text_width(host, title, big);
     if (host->text_width(host, text, small) > w) w = host->text_width(host, text, small);
@@ -728,7 +732,7 @@ static void full_notice(void)
  * hints' size, the foot's twice. */
 static void phase_menu(int phase)
 {
-    static const char foot[] = "X: select   O: back";
+    const char *foot = T("X: select   O: back");
     int width, height, scale, big, small, frame, items[2], n, i, w, row, pad, gap, x, y, panel_w, panel_h, top;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
@@ -736,9 +740,9 @@ static void phase_menu(int phase)
     small = 2 * scale;
     frame = 3 * scale;
     n = Ehp_PhaseItems(phase == PHASE_BATTLE, items);
-    w = host->text_width(host, phase_names[phase], big);
+    w = host->text_width(host, T(phase_names[phase]), big);
     for (i = 0; i < n; i++)
-        if (host->text_width(host, phase_names[items[i]], big) > w) w = host->text_width(host, phase_names[items[i]], big);
+        if (host->text_width(host, T(phase_names[items[i]]), big) > w) w = host->text_width(host, T(phase_names[items[i]]), big);
     if (host->text_width(host, foot, small) > w) w = host->text_width(host, foot, small);
     row = 16 * big;
     pad = 14 * scale;
@@ -753,14 +757,14 @@ static void phase_menu(int phase)
     host->fill(host, x, y, frame, panel_h, MENU_FRAME_RGB, 255);
     host->fill(host, x + panel_w - frame, y, frame, panel_h, MENU_FRAME_RGB, 255);
     top = y + pad;
-    host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[phase], big)) / 2, top + row / 2,
-                    phase_names[phase], MENU_TITLE_RGB, big);
+    host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_names[phase]), big)) / 2, top + row / 2,
+                    T(phase_names[phase]), MENU_TITLE_RGB, big);
     host->fill(host, x + pad, top + row + gap / 2, panel_w - 2 * pad, scale, MENU_FRAME_RGB, 160);
     top += row + gap;
     for (i = 0; i < n; i++, top += row) {
         if (i + 1 == S.menu) host->fill(host, x + pad / 2, top, panel_w - pad, row, MENU_BAR_RGB, 230);
-        host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[items[i]], big)) / 2, top + row / 2,
-                        phase_names[items[i]], i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB, big);
+        host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_names[items[i]]), big)) / 2, top + row / 2,
+                        T(phase_names[items[i]]), i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB, big);
     }
     host->draw_text(host, x + (panel_w - host->text_width(host, foot, small)) / 2, top + gap + 6 * small, foot,
                     MENU_OTHER_RGB, small);
@@ -774,33 +778,37 @@ static void window_line(unsigned shown, char *text, size_t size)
     if (!e) return;
     count = (int)((e - 1) / 31) + EHP_VIEW + 1;
     view = (int)((e - 1) % 31);
-    snprintf(text, size, "Cards %d\xE2\x80\x93%d of %d", view + 1, view + EHP_VIEW, count);
+    snprintf(text, size, T("Cards %d\xE2\x80\x93%d of %d"), view + 1, view + EHP_VIEW, count);
 }
 static void draw_hint(void)
 {
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
     int phase = shown >> 16 & 7, row = 0;
-    char text[64], window[32];
+    char text[128], window[64];
     if (shown & 1u << 26) full_notice();
     shown &= ~(1u << 26);
     window_line(shown, window, sizeof window);
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
-        snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
+        snprintf(text, sizeof text, left == 1 ? T("Hand limit: discard %u card") : T("Hand limit: discard %u cards"),
+                 left);
         line(text, row++, HINT_RGB);
-        line("UP: mark   X: discard the marked cards", row++, HINT_RGB);
+        line(T("UP: mark   X: discard the marked cards"), row++, HINT_RGB);
         if (*window) line(window, row, HINT_RGB);
         return;
     }
     if (phase) {
-        snprintf(text, sizeof text, "%s   START: phases", phase_names[phase]);
+        snprintf(text, sizeof text, T("%s   START: phases"), T(phase_names[phase]));
         line(text, row++, HINT_RGB);
         if (S.menu) phase_menu(phase);
     }
-    if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++, HINT_RGB);
-    if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);
+    if (shown & 1)
+        line(extra_hand() ? T("Extra hand: START to skip") : T("START: play no card this turn"), row++, HINT_RGB);
+    if (shown & 2) line(T("Monster played: magic, trap and equip cards only"), row++, HINT_RGB);
     if (waiting) {
-        snprintf(text, sizeof text, "Hand full: %u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
+        snprintf(text, sizeof text,
+                 waiting == 1 ? T("Hand full: %u card waiting to be drawn") : T("Hand full: %u cards waiting to be drawn"),
+                 waiting);
         line(text, row++, HINT_RGB);
     }
     if (*window) line(window, row, HINT_RGB);
