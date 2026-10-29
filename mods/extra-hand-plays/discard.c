@@ -70,7 +70,7 @@ static void cpu_discard(int side, int count)
 {
     while (count-- > 0) {
         int slot, worst = -1;
-        for (slot = 0; slot < EHP_SLOTS; slot++)
+        for (slot = 0; slot < EHP_HAND; slot++)
             if (Ehp_Get(side, slot) >= 0 &&
                 (worst < 0 || value(Ehp_CardId(Ehp_Get(side, slot))) < value(Ehp_CardId(Ehp_Get(side, worst)))))
                 worst = slot;

@@ -48,7 +48,7 @@ u8 D_800907CC[2 * HAND_SIZE + 2] = {0, 1, 2, 3, 4, 0x80, 0x81, 0x82, 0x83, 0x84}
 u8 gDuel_bWinnerSide;
 DuelDeckCardRecord gDuel_aDeckCardRecords[80];
 #define deck gDuel_aDeckCardRecords
-static DuelCardDisplayObject drawn_objects[64];
+static DuelCardDisplayObject drawn_objects[1024];
 static int drawn;
 /* What big_hand.c and discard.c reach of the game. */
 u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT];
@@ -232,7 +232,7 @@ u8 *Duel_SetupCardRecord(s32 index, s32 position) { return setup(index, position
 DuelCardDisplayObject *func_80018004(DuelCardRecord *record, s32 x, s32 y)
 {
     (void)record; (void)x; (void)y;
-    assert(drawn < 64);
+    assert(drawn < 1024);
     return &drawn_objects[drawn++];
 }
 void Duel_UpdateDrawCardSlide(DisplayObject *object) { (void)object; }
@@ -340,6 +340,17 @@ static int draw_one(int side, int turn, int room)
     (void)side; (void)room;
     return turn == 1 ? HAND_SIZE : 1;
 }
+static void limits_forty(int side, int *max, int *keep)
+{
+    (void)side;
+    *max = 99;      /* held to 40 */
+    *keep = 0;
+}
+static int draw_many(int side, int turn, int room)
+{
+    (void)side; (void)turn;
+    return room;
+}
 static void limits_ten(int side, int *max, int *keep)
 {
     (void)side;
@@ -382,6 +393,17 @@ static void to_hand(void)
     assert(gDuel_wSceneStateFlags == STATE_HAND);
     step_hand();                         /* the hand state's setup */
     step_hand();                         /* its first idle step */
+}
+/* The draw and its resolution, for draws longer than to_hand() waits for. */
+static void draw_through(void)
+{
+    step_draw();
+    D_8009B162 = 0;
+    step_draw();
+    for (int frames = 0; (gDuel_wSceneStateFlags & STATE_MASK) == 3; frames++) {
+        assert(frames < 1000);
+        step_resolution();
+    }
 }
 /* The play: the hand puts card `slot` down -- a monster, through
  * placement, when the hand state is up -- and the field starts. */
@@ -1134,6 +1156,47 @@ int main(void)
         assert(!i || boxes[i].y >= boxes[i - 1].y + boxes[i - 1].h);
     }
     S.discard = 0;
+
+    /* A hand of up to 40: the CPU draws to 40, past the window's ten with
+     * nothing on screen; its snapshot takes the 35 past the fifth ahead of
+     * the deck; Exodia is found anywhere in the 40. */
+    {
+        static const int pieces[5] = {0, 12, 20, 30, 39};
+        AiActiveCard out[80];
+        int k;
+        memset(&S, 0, sizeof S);
+        memset(S.xhand, -1, sizeof S.xhand);
+        provided->set_hand_limits(limits_forty);
+        provided->set_turn_draws(draw_many);
+        new_turn(1, 1);
+        for (k = 0; k < HAND_SIZE; k++) D_800E9FF0[1].hand[k] = (s8)(DECK_SIZE + k);
+        D_800E9FF0[1].deck_draw_cursor = HAND_SIZE;
+        drawn = 0;
+        draw_through();
+        assert(gDuel_wSceneStateFlags == STATE_HAND);
+        assert(Ehp_Count(1) == EHP_HAND && S.queued[1] == 0 && S.layout == EHP_VIEW && S.view == 0);
+        assert(D_800E9FF0[1].deck_draw_cursor == DECK_SIZE);
+        for (k = 0; k < EHP_EXTRA; k++) assert(S.xhand[1][k] == DECK_SIZE + HAND_SIZE + k);
+        for (k = 0; k < EHP_BORROWED; k++) assert(S.xslot[k].object);
+        assert(drawn == EHP_BORROWED);             /* cards 6-10 made; nothing past the tenth */
+        snapshot(out, 1);
+        for (k = 0; k < EHP_EXTRA; k++)
+            assert(out[2 * DUEL_FIELD_ROW_SIZE + HAND_SIZE + k].card_id == deck[DECK_SIZE + HAND_SIZE + k].id &&
+                   out[2 * DUEL_FIELD_ROW_SIZE + HAND_SIZE + k].deck_index == DECK_SIZE + HAND_SIZE + k);
+        assert(out[2 * DUEL_FIELD_ROW_SIZE + EHP_HAND].card_id == 0);   /* no deck left: the terminator */
+        for (k = 0; k < 5; k++) deck[DECK_SIZE + pieces[k]].id = (s16)(EXODIA_FIRST_CARD_ID + k);
+        assert(exodia());
+        deck[DECK_SIZE + pieces[4]].id = 1;
+        assert(!exodia());
+        for (k = 0; k < 80; k++) deck[k].id = (s16)(100 + k);
+        /* The CPU's discard down to six, over all forty. */
+        D_800E9FF0[1].hand[3] = -1;
+        cpu_discard(1, Ehp_Count(1) - 6);
+        assert(Ehp_Count(1) == 6 && D_800E9FF0[1].hand[3] >= 0 && S.xhand[1][1] < 0);
+        provided->set_hand_limits(NULL);
+        provided->set_turn_draws(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
 
     printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper), phases (menu, Main Phase 2, on screen) passed\n");
     return 0;

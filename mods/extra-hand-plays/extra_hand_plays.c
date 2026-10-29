@@ -139,7 +139,7 @@ static int monsters_spent(void) { return S.monsters >= setting("monsters", 1, 1,
 static int playable_left(void)
 {
     int slot;
-    for (slot = 0; slot < EHP_SLOTS; slot++)
+    for (slot = 0; slot < EHP_HAND; slot++)
         if (Ehp_Get(D_8009B1D5, slot) >= 0 && (!monsters_spent() || !monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))))
             return 1;
     return 0;
@@ -232,7 +232,8 @@ static void startup(void)
 static void lay_out(void)
 {
     int max = Ehp_HandMax(), count = hand_count() + (S.custom ? S.to_draw : 0);
-    S.layout = (u8)(count > max ? max : count);
+    if (count > max) count = max;
+    S.layout = (u8)(count > EHP_VIEW ? EHP_VIEW : count);
     S.focus = 0;
 }
 
@@ -276,6 +277,8 @@ static void draw(void)
     }
     /* Cards past the fifth fill the five's gaps first; the rest are spawned
      * beside the five, and the borrowed records start empty. */
+    S.view = 0;
+    memset(S.mark, 0, sizeof S.mark);
     Ehp_Pack(D_8009B1D5);
     Ehp_ClearBorrowed(D_8009B1D5);
     if (!S.redraw) {
@@ -330,7 +333,7 @@ static void deal(void)
 {
     DuelSideState *side = D_8009B1C8;
     DisplayObject *object;
-    int slot, record, max;
+    int slot, record, max, position, screen;
     if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
         gDuel_wSceneStateFlags |= STATE_STARTED;
         D_8009B1ED = 1;
@@ -354,15 +357,23 @@ static void deal(void)
             gDuel_wSceneStateFlags |= DRAWN;
             return;
         }
-        record = Ehp_Record(D_8009B1D5, slot);
-        Ehp_SetupRecord(record, D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor);
-        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], Ehp_LayoutX(slot, S.layout) + SLIDE_IN, 0x92);
-        object->field_6C = 1;
-        object->field_60 = 0xC;
-        object->update = (DisplayObjectCallback)Duel_UpdateDrawCardSlide;
-        Ehp_Slot(slot)->object = (u8 *)object;
-        Ehp_Arrange(slot);
-        Ehp_Set(D_8009B1D5, slot, ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index);
+        position = D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor;
+        if (slot >= S.view + EHP_VIEW) {
+            /* Past the window: into the hand, with nothing on screen. */
+            Ehp_Set(D_8009B1D5, slot, (s8)position);
+        } else {
+            screen = slot - S.view;
+            record = Ehp_Record(D_8009B1D5, screen);
+            Ehp_SetupRecord(record, position);
+            object = (DisplayObject *)func_80018004(&D_801A7AD8[record], Ehp_LayoutX(screen, S.layout) + SLIDE_IN,
+                                                    0x92);
+            object->field_6C = 1;
+            object->field_60 = 0xC;
+            object->update = (DisplayObjectCallback)Duel_UpdateDrawCardSlide;
+            Ehp_Slot(screen)->object = (u8 *)object;
+            Ehp_Arrange(screen);
+            Ehp_Set(D_8009B1D5, slot, ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index);
+        }
         side->deck_draw_cursor++;
         if (!--S.to_draw) gDuel_wSceneStateFlags |= DRAWN;
         SD_SEPlayFull(0xA);
@@ -579,10 +590,10 @@ static void pass_hand(void)
 static int hand_slots(void) { return Ehp_BigHand() ? S.layout : HAND_SIZE; }
 static int hand_card(int slot)
 {
-    if (slot < 0 || slot >= EHP_SLOTS) return 0;
+    if (slot < 0 || slot >= EHP_HAND) return 0;
     return Ehp_CardId(Ehp_Get(D_8009B1D5, slot));
 }
-static int hand_mark(int slot) { return slot < 0 || slot >= EHP_SLOTS ? 0 : Ehp_Slot(slot)->active_09; }
+static int hand_mark(int slot) { return slot < 0 || slot >= EHP_VIEW ? 0 : Ehp_Slot(slot)->active_09; }
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                  pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark, Ehp_SetPhases};
 

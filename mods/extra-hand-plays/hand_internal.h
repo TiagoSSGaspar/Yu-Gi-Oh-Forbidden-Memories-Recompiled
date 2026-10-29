@@ -9,9 +9,13 @@
 #include "pc/mods/modapi.h"
 #include "extra_hand_plays.h"
 
-#define EHP_EXTRA 5                 /* slots past the fifth: the other side's five hand records */
-#define EHP_SLOTS (HAND_SIZE + EHP_EXTRA)
-#define EHP_STATE_VERSION 5
+/* Hand cards (0 up) are the side's hand, up to a whole deck; screen slots
+ * (0 to 9) are what is drawn of it: screen slot i shows hand card S.view + i. */
+#define EHP_HAND 40                         /* cards a hand may hold: a whole deck */
+#define EHP_EXTRA (EHP_HAND - HAND_SIZE)    /* hand cards past the fifth, in S.xhand */
+#define EHP_VIEW 10                         /* screen slots: the five and the other side's five hand records */
+#define EHP_BORROWED (EHP_VIEW - HAND_SIZE) /* screen slots past the fifth, in S.xslot */
+#define EHP_STATE_VERSION 6
 
 /* No host pointers: kept in save states (register_state). The slots' objects
  * are guest pointers, which a save state restores with the guest memory. */
@@ -37,8 +41,10 @@ typedef struct {
     u8 main2;     /* phases (phases.c): 0 Main Phase 1 or the field; 1 Main Phase 2 asked for, the field closing; 2 in Main Phase 2 */
     u8 menu;      /* the phase menu: 0 closed, else 1 + the entry under its cursor */
     u8 to_end;    /* the hand slides away into the End Phase, not the field */
-    s8 xhand[2][EHP_EXTRA]; /* each side's cards past the fifth: combined deck indices, packed, -1 empty */
-    DuelHandSlot xslot[EHP_EXTRA]; /* the side's slots past the fifth on screen, as D_800EA030 for the five */
+    u8 view;      /* the hand card on screen slot 0: the window's first (the player's only; 0 for the CPU) */
+    u8 mark[EHP_HAND]; /* the player's marks by hand card: 0 none, else the order marked */
+    s8 xhand[2][EHP_EXTRA]; /* each side's hand cards past the fifth: combined deck indices, packed, -1 empty */
+    DuelHandSlot xslot[EHP_BORROWED]; /* screen slots past the fifth, as D_800EA030 for the five */
 } EhpState;
 
 extern EhpState ehp_state;
@@ -47,14 +53,14 @@ extern EhpState ehp_state;
 extern const MemoriesModHost *ehp_host;
 
 /* big_hand.c */
-int Ehp_HandMax(void);              /* cards a hand may hold: 5, or what another mod set */
+int Ehp_HandMax(void);              /* cards a hand may hold: 5, or what another mod set (up to 40) */
 int Ehp_HandKeep(void);             /* cards kept at the end of a turn; 0 for no limit */
 int Ehp_Count(int side);            /* cards in the side's hand, past the fifth too */
 int Ehp_Extras(int side);           /* cards past the fifth */
-s8 Ehp_Get(int side, int slot);     /* the deck index in a slot, -1 empty */
-void Ehp_Set(int side, int slot, s8 deck_index);
-DuelHandSlot *Ehp_Slot(int slot);   /* the slot on screen, for the side whose turn it is */
-int Ehp_Record(int side, int slot); /* its D_801A7AD8 record */
+s8 Ehp_Get(int side, int card);     /* the deck index of a hand card, -1 empty */
+void Ehp_Set(int side, int card, s8 deck_index);
+DuelHandSlot *Ehp_Slot(int slot);   /* a screen slot, for the side whose turn it is */
+int Ehp_Record(int side, int slot); /* a screen slot's D_801A7AD8 record */
 void Ehp_SetupRecord(int record, int deck_index);
 int Ehp_LayoutX(int slot, int count); /* the slot's x on the panel, laid out for `count` cards */
 void Ehp_Pack(int side);            /* cards past the fifth into empty slots of the five, in order */

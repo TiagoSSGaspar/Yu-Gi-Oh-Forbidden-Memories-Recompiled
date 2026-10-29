@@ -1,17 +1,21 @@
 /* The hand past five cards, when another mod raises the hand limit
- * (set_hand_limits in extra_hand_plays.h).
+ * (set_hand_limits in extra_hand_plays.h), up to a whole deck of 40.
  *
  * The disc keeps five hand slots per side: DuelSideState.hand[5] (deck
  * indices), D_800EA030[5] (the slots on screen) and five card records per
- * side (D_800907CC). Cards six to ten live beside them, here:
- * - their deck indices in S.xhand, per side, packed;
- * - their slots on screen in S.xslot, for the side whose turn it is;
- * - their card records borrowed from the other side's five hand records.
- *   During a side's turn nothing reads the other side's hand records -- its
- *   draw rebuilds them from its hand when its turn comes -- so they are
- *   cleared when the turn ends and when it begins.
- * The five slots are always filled first: a draw packs the cards past the
- * fifth into the five's empty slots before it spreads the hand out.
+ * side (D_800907CC). The hand and what is drawn of it are kept apart here:
+ * - hand cards 0 to 39: the five, then S.xhand per side, packed;
+ * - screen slots 0 to 9: the five on screen, then S.xslot, for the side
+ *   whose turn it is, with their card records -- the five's own, then the
+ *   other side's five hand records, borrowed. During a side's turn nothing
+ *   reads the other side's hand records -- its draw rebuilds them from its
+ *   hand when its turn comes -- so they are cleared when the turn ends and
+ *   when it begins.
+ * Screen slot i shows hand card S.view + i: a window of ten over the hand,
+ * which the player's cursor moves past either end (Ehp_Show). The CPU's
+ * window never moves; its cards past the tenth have nothing on screen. The
+ * five slots are always filled first: a draw packs the cards past the fifth
+ * into the five's empty slots before it spreads the hand out.
  *
  * On screen the hand is laid out overlapped across the width of five
  * (Ehp_LayoutX), later cards over earlier ones and the card under the
@@ -19,11 +23,12 @@
  *
  * The player walks and picks from every card with a copy of the hand
  * state's player steps (Ehp_HandActions, from duel_scene_hand_actions.c),
- * the five-slot helpers it calls taught the rest. The CPU's hand script
- * gets the cards past the fifth in its snapshot ahead of the upcoming deck,
- * as the disc numbers deck cards it can swap into the hand: one it picks is
- * swapped with a card of the five by the disc's own swap (func_8001BAF0), so
- * the CPU always plays from the five. */
+ * the five-slot helpers it calls taught the rest; marks are kept by hand
+ * card (S.mark), so that a card keeps its mark off screen. The CPU's hand
+ * script gets the cards past the fifth in its snapshot ahead of the
+ * upcoming deck, as the disc numbers deck cards it can swap into the hand:
+ * one it picks is swapped with a card of the five by the disc's own swap
+ * (func_8001BAF0), so the CPU always plays from the five. */
 #include "hand_internal.h"
 #define D_8009B_DISPLAY_OBJECTS_VISIBLE
 #define AI_GET_HAND_SIZE_RETURNS_S32 /* Native override serves word-sized callers. */
@@ -92,7 +97,7 @@ s32 Duel_HasAllExodiaPieces(void);
 #define PANEL_IN 2
 #define PANEL_OUT 8
 #define DEPTH_STEP 1          /* later cards over earlier ones */
-#define FOCUS_DEPTH (EHP_SLOTS + 1) /* the card under the cursor over them all */
+#define FOCUS_DEPTH (EHP_VIEW + 1) /* the card under the cursor over them all */
 #define CURSOR_DEPTH 0xA      /* the hand cursor's own (the hand state's first frame) */
 
 static ExtraHandLimits limits;
@@ -105,7 +110,7 @@ static void get_limits(int side, int *max, int *keep)
     *keep = 0;
     if (limits) limits(side, max, keep);
     if (*max < HAND_SIZE) *max = HAND_SIZE;
-    if (*max > EHP_SLOTS) *max = EHP_SLOTS;
+    if (*max > EHP_HAND) *max = EHP_HAND;
     if (*keep < 0) *keep = 0;
     if (*keep > *max) *keep = *max;
 }
@@ -123,19 +128,19 @@ int Ehp_HandKeep(void)
     return keep;
 }
 
-s8 Ehp_Get(int side, int slot)
+s8 Ehp_Get(int side, int card)
 {
-    return slot < HAND_SIZE ? D_800E9FF0[side].hand[slot] : S.xhand[side][slot - HAND_SIZE];
+    return card < HAND_SIZE ? D_800E9FF0[side].hand[card] : S.xhand[side][card - HAND_SIZE];
 }
-void Ehp_Set(int side, int slot, s8 deck_index)
+void Ehp_Set(int side, int card, s8 deck_index)
 {
-    if (slot < HAND_SIZE) D_800E9FF0[side].hand[slot] = deck_index;
-    else S.xhand[side][slot - HAND_SIZE] = deck_index;
+    if (card < HAND_SIZE) D_800E9FF0[side].hand[card] = deck_index;
+    else S.xhand[side][card - HAND_SIZE] = deck_index;
 }
 int Ehp_Count(int side)
 {
-    int slot, n = 0;
-    for (slot = 0; slot < EHP_SLOTS; slot++) n += Ehp_Get(side, slot) >= 0;
+    int card, n = 0;
+    for (card = 0; card < EHP_HAND; card++) n += Ehp_Get(side, card) >= 0;
     return n;
 }
 int Ehp_Extras(int side)
@@ -167,7 +172,7 @@ static u8 *setup(s32 index, s32 position)
 {
     int record = index & 0x80 ? (index & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : index;
     if (D_8009B1D5 == 0 && record >= DUEL_CARD_SIDE_RECORD_COUNT &&
-        record < DUEL_CARD_SIDE_RECORD_COUNT + EHP_EXTRA && position >= 0 && position < DECK_SIZE)
+        record < DUEL_CARD_SIDE_RECORD_COUNT + EHP_BORROWED && position >= 0 && position < DECK_SIZE)
         position -= DECK_SIZE;
     return ((u8 *(*)(s32, s32))original_setup)(index, position);
 }
@@ -181,17 +186,17 @@ int Ehp_BigHand(void) { return S.layout > HAND_SIZE; }
 
 void Ehp_Pack(int side)
 {
-    s8 cards[EHP_SLOTS];
-    int slot, n = 0;
-    for (slot = 0; slot < EHP_SLOTS; slot++)
-        if (Ehp_Get(side, slot) >= 0) cards[n++] = Ehp_Get(side, slot);
-    for (slot = 0; slot < EHP_SLOTS; slot++) Ehp_Set(side, slot, slot < n ? cards[slot] : -1);
+    s8 cards[EHP_HAND];
+    int card, n = 0;
+    for (card = 0; card < EHP_HAND; card++)
+        if (Ehp_Get(side, card) >= 0) cards[n++] = Ehp_Get(side, card);
+    for (card = 0; card < EHP_HAND; card++) Ehp_Set(side, card, card < n ? cards[card] : -1);
 }
 
 void Ehp_ClearBorrowed(int side)
 {
     int k;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         DuelCardRecord *record = &D_801A7AD8[Ehp_Record(side, HAND_SIZE + k)];
         record->flags = 0;
         record->object = 0;
@@ -204,7 +209,7 @@ void Ehp_SpawnExtras(int y)
 {
     int side = D_8009B1D5, k, record;
     memset(S.xslot, 0, sizeof S.xslot);
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         if (S.xhand[side][k] < 0) continue;
         record = Ehp_Record(side, HAND_SIZE + k);
         Ehp_SetupRecord(record, S.xhand[side][k]);
@@ -251,7 +256,7 @@ void Ehp_RefreshExtras(void)
 {
     int side = D_8009B1D5, k, n, record;
     DuelCardDisplayObject *old;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         if ((n = S.xhand[side][k]) < 0 || !(old = (DuelCardDisplayObject *)S.xslot[k].object)) continue;
         record = Ehp_Record(side, HAND_SIZE + k);
         if (D_801A7AD8[record].card_id == Ehp_CardId(n)) continue;
@@ -288,7 +293,7 @@ void Ehp_LayOut(DuelSelectionRecord *side)
 static void release_extras(DisplayParent *parent)
 {
     int k;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         DuelHandSlot *slot = &S.xslot[k];
         if (slot->active_09 && !S.discard) {
             DisplayObject_ReleaseIfPresent(slot->child);
@@ -418,17 +423,17 @@ static void snapshot(AiActiveCard *out, s32 who)
     }
 }
 
-/* Duel_HasAllExodiaPieces over every slot. */
+/* Duel_HasAllExodiaPieces over every hand card. */
 static s32 exodia(void)
 {
-    int side = D_8009B1D5, used[EHP_SLOTS] = {0}, id, slot;
+    int side = D_8009B1D5, used[EHP_HAND] = {0}, id, card;
     if (!Ehp_Extras(side)) return ((s32 (*)(void))original_exodia)();
     for (id = EXODIA_FIRST_CARD_ID; id < EXODIA_CARD_ID_END; id++) {
         if (!Cards_ExodiaPiece(id)) return 0;
-        for (slot = 0; slot < EHP_SLOTS; slot++)
-            if (!used[slot] && Ehp_CardId(Ehp_Get(side, slot)) == id && Ehp_Get(side, slot) >= 0) break;
-        if (slot == EHP_SLOTS) return 0;
-        used[slot] = 1;
+        for (card = 0; card < EHP_HAND; card++)
+            if (!used[card] && Ehp_CardId(Ehp_Get(side, card)) == id && Ehp_Get(side, card) >= 0) break;
+        if (card == EHP_HAND) return 0;
+        used[card] = 1;
     }
     return 1;
 }
