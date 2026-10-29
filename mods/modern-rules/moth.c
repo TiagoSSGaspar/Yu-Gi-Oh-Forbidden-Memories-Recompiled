@@ -85,12 +85,81 @@ static void monster(MemoriesModEvent *e)
             Duel_ApplyCardObjectFlags((DuelCardDisplayObject *)D_801A7AD8[r].object);
         }
         S.made[side] = 0;
+    } else if (e->c == MEMORIES_MONSTER_DRAW && S.turns[r]) {
+        forget_gone();
+        if (!S.turns[r]) return;
+        S.turns[r]++;
+        if (S.turns[r] - 1 == MOTH_GREAT_TURN && S.card[r] == MOTH_COCOON) S.due[r] = MOTH_GREAT;
+        else if (S.turns[r] - 1 == MOTH_PERFECT_TURN && S.card[r] == MOTH_GREAT) S.due[r] = MOTH_PERFECT;
+    }
+}
+
+/* One frame of the evolution of S.evolving, as the ritual plays it
+ * (DuelEffect_StartRitual, DuelEffect_ApplyRitual): 1 while it goes on. */
+static int evolve(void)
+{
+    DuelCardRecord *card = &D_801A7AD8[(int)S.evolving];
+    DuelDeckCardRecord *deck = (DuelDeckCardRecord *)card->data;
+    int into = S.due[(int)S.evolving];
+    switch (S.step) {
+    case 0: {   /* the ritual's light and sound, the new card's picture asked for */
+        DuelEffectRequest *request = DuelEffect_CreateRequest(0x12);
+        if (request) {
+            request->field_00 = 0xA0;
+            request->field_02 = 0x78;
+            request->field_1A = 1;
+        }
+        SD_SEPlayFull(2);
+        func_80029164(1, into);
+        S.step = 1;
+        return 1;
+    }
+    case 1: {   /* the picture in: into the card's picture block */
+        RECT rect;
+        DuelEffectResourceRecord *resource = &D_800EA0E8[1];
+        if ((D_8009B0F4_abs & FILE_TRANSFER_REQUEST_BLOCKED_MASK) | D_8009B134_abs) return 1;
+        deck->id = (u16)into;
+        card->card_id = (s16)into;
+        rect.x = resource->src_x + 56;
+        rect.y = resource->src_y;
+        rect.w = 8;
+        rect.h = 88;
+        StoreImage(&rect, (u32 *)(D_8018C2D8 + deck->data_block_index * 1408));
+        S.step = 2;
+        return 1;
+    }
+    default: {  /* the record remade: face up, in attack, its modifiers kept */
+        u16 flags = card->flags;
+        s16 stat = card->stat_modifier, defense = card->defense_modifier;
+        DuelCard_DeactivateRecord(card);
+        func_80024D34(S.evolving, deck->deck_index);
+        card->flags = (u16)((flags | card->flags | DUEL_CARD_FLAG_OCCUPIED) &
+                            ~(DUEL_CARD_FLAG_FACE_DOWN | DUEL_CARD_FLAG_DEFENSE_POSITION));
+        card->stat_modifier = stat;
+        card->defense_modifier = defense;
+        Duel_ApplyCardObjectFlags((DuelCardDisplayObject *)card->object);
+        S.card[(int)S.evolving] = (s16)into;
+        if (into == MOTH_PERFECT) S.turns[(int)S.evolving] = 0;   /* nothing after it */
+        S.due[(int)S.evolving] = 0;
+        S.evolving = -1;
+        return 0;
+    }
     }
 }
 
 int Moth_Hold(void)
 {
-    return 0;
+    int r;
+    if (!on()) return 0;
+    forget_gone();
+    if (S.evolving < 0) {
+        for (r = 0; r < DUEL_CARD_RECORD_COUNT && !S.due[r]; r++) { }
+        if (r == DUEL_CARD_RECORD_COUNT) return 0;
+        S.evolving = (s8)r;
+        S.step = 0;
+    }
+    if (evolve()) return 1;
+    return Moth_Hold();
 }
 
 int Moth_Install(const MemoriesModHost *from, MemoriesMod *mod)

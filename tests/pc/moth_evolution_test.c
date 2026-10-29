@@ -125,6 +125,60 @@ int main(void)
     assert(S.turns[21] == 1);
     D_8009B1D5 = 0;
 
-    printf("Petit Moth's evolution: the fusion, the cocoon passed\n");
+    /* Each of its owner's turns counts; the 4th makes Great Moth, the 6th
+     * Perfectly Ultimate Great Moth. The hand waits while it evolves: the
+     * picture loaded, stored, the record remade face up, in attack, its
+     * modifiers kept. */
+    {
+        int turn, holds;
+        D_801A7AD8[6].stat_modifier = 300;
+        for (turn = 1; turn <= 3; turn++) monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);
+        assert(S.turns[6] == 4 && !S.due[6] && !Moth_Hold());
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);                 /* the 4th */
+        assert(S.due[6] == MOTH_GREAT);
+        D_8009B0F4_abs = 0x10;                                                 /* the picture still coming */
+        assert(Moth_Hold() && loads == 1 && loaded_id == MOTH_GREAT && requests == 1 && sounds == 1);
+        assert(Moth_Hold() && !stores);
+        D_8009B0F4_abs = 0;
+        assert(Moth_Hold() && stores == 1);
+        assert(!Moth_Hold() && remakes == 1);
+        assert(D_801A7AD8[6].card_id == MOTH_GREAT && S.card[6] == MOTH_GREAT && S.evolving == -1);
+        assert(!(D_801A7AD8[6].flags & (DUEL_CARD_FLAG_DEFENSE_POSITION | DUEL_CARD_FLAG_FACE_DOWN)));
+        assert(D_801A7AD8[6].stat_modifier == 300);
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_GREAT, 6);                  /* the 5th */
+        assert(!S.due[6]);
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_GREAT, 6);                  /* the 6th */
+        assert(S.due[6] == MOTH_PERFECT);
+        for (holds = 0; Moth_Hold(); holds++) assert(holds < 8);
+        assert(D_801A7AD8[6].card_id == MOTH_PERFECT && !S.turns[6]);
+    }
+    /* A cocoon destroyed before is forgotten. */
+    assert(S.turns[21] == 1);
+    D_801A7AD8[21].flags = 0;
+    assert(!Moth_Hold() && !S.turns[21]);
+    /* Two cocoons due on one turn evolve one after the other. */
+    {
+        int holds;
+        gDuel_wSceneStateFlags = 7;
+        fuse(MOTH_PETIT, MOTH_COCOON);
+        put(5, MOTH_COCOON, 0);
+        monster_event(MEMORIES_MONSTER_SUMMON, MOTH_COCOON, 5);
+        fuse(MOTH_PETIT, MOTH_COCOON);
+        put(7, MOTH_COCOON, 0);
+        monster_event(MEMORIES_MONSTER_SUMMON, MOTH_COCOON, 7);
+        S.turns[5] = S.turns[7] = 4;
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 5);
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 7);
+        for (holds = 0; Moth_Hold(); holds++) assert(holds < 16);
+        assert(D_801A7AD8[5].card_id == MOTH_GREAT && D_801A7AD8[7].card_id == MOTH_GREAT);
+    }
+    /* Off, nothing waits. */
+    moth_setting = 0;
+    S.due[5] = MOTH_PERFECT;
+    assert(!Moth_Hold());
+    moth_setting = 1;
+    S.due[5] = 0;
+
+    printf("Petit Moth's evolution: the fusion, the cocoon, the turns, the evolution passed\n");
     return 0;
 }

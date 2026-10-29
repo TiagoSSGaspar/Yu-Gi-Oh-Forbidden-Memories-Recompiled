@@ -39,6 +39,7 @@
 #include "pc/mods/modapi.h"
 #include "unmatched.h"
 #include "../extra-hand-plays/extra_hand_plays.h"
+#include "moth.h"
 #include <string.h>
 
 void DuelScene_UpdateHandActions(void);
@@ -200,6 +201,8 @@ static void hand(void)
     DuelSelectionRecord *side = (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
     u16 pressed = gInput_wPad1Pressed;
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster;
+    /* A cocoon evolving (moth.c): the hand waits for it. */
+    if (Moth_Hold()) return;
     if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
@@ -327,5 +330,6 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     if (api->version >= 5) api->set_phases(gx_phases);
     return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
-        host->hook(host, (void *)AiScript_Run, (void *)run, &original_run);
+        host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
+        Moth_Install(host, mod);
 }
