@@ -71,7 +71,8 @@ static void fake_picture_point(const MemoriesModHost *h, int x, int y, int *cx, 
 static const char *fake_text(const MemoriesModHost *h, const char *english)
 {
     (void)h;
-    if (!strcmp(english, "Cocoon: Great Moth in %d turns")) return "Casulo: Great Moth em %d turnos";
+    if (!strcmp(english, "Cocoon: Perfectly Ultimate Great Moth in %d turns"))
+        return "Casulo: Perfectly Ultimate Great Moth em %d turnos";
     return english;
 }
 static MemoriesModHost fake_host;
@@ -112,9 +113,12 @@ int main(void)
     fake_host.text = fake_text;
     assert(Moth_Install(&fake_host, &fake_mod) && fusion_cb && monster_cb && registered_size == (int)sizeof S);
 
-    /* Petit Moth and Cocoon of Evolution fuse into the cocoon, either way
-     * round; nothing else changes; off, they do not. */
+    /* The larva (Petit Moth, or Larvae Moth as the anime calls it) and
+     * Cocoon of Evolution fuse into the cocoon, either way round; nothing
+     * else changes; off, they do not. */
     assert(fuse(MOTH_PETIT, MOTH_COCOON) == MOTH_COCOON && fuse(MOTH_COCOON, MOTH_PETIT) == MOTH_COCOON);
+    assert(fuse(MOTH_LARVAE, MOTH_COCOON) == MOTH_COCOON && fuse(MOTH_COCOON, MOTH_LARVAE) == MOTH_COCOON);
+    assert(fuse(MOTH_GREAT, MOTH_COCOON) == 0);
     assert(fuse(MOTH_PETIT, 1) == 0);
     moth_setting = 0;
     assert(fuse(MOTH_PETIT, MOTH_COCOON) == 0);
@@ -153,52 +157,59 @@ int main(void)
     assert(S.turns[21] == 1);
     D_8009B1D5 = 0;
 
-    /* Each of its owner's turns counts; the 4th makes Great Moth, the 6th
-     * Perfectly Ultimate Great Moth. The hand waits while it evolves: the
-     * picture loaded, stored, the record remade face up, in attack, its
-     * modifiers kept. */
+    /* Each of its owner's turns counts; at the 5th it opens: Perfectly
+     * Ultimate Great Moth. The hand waits while it evolves: the picture
+     * loaded, stored, the record remade face up, in attack, what equips gave
+     * the cocoon kept. */
     {
         int turn, holds;
         D_801A7AD8[6].stat_modifier = 300;
-        for (turn = 1; turn <= 3; turn++) monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);
-        assert(S.turns[6] == 4 && !S.due[6] && !Moth_Hold());
-        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);                 /* the 4th */
-        assert(S.due[6] == MOTH_GREAT);
+        for (turn = 1; turn <= 4; turn++) monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);
+        assert(S.turns[6] == 5 && !S.due[6] && !Moth_Hold());
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 6);                 /* the 5th */
+        assert(S.due[6] == MOTH_PERFECT);
         D_8009B0F4_abs = 0x10;                                                 /* the picture still coming */
-        assert(Moth_Hold() && loads == 1 && loaded_id == MOTH_GREAT && requests == 1 && sounds == 1);
+        assert(Moth_Hold() && loads == 1 && loaded_id == MOTH_PERFECT && requests == 1 && sounds == 1);
         assert(Moth_Hold() && !stores);
         D_8009B0F4_abs = 0;
         assert(Moth_Hold() && stores == 1);
         assert(!Moth_Hold() && remakes == 1);
-        assert(D_801A7AD8[6].card_id == MOTH_GREAT && S.card[6] == MOTH_GREAT && S.evolving == -1);
+        assert(D_801A7AD8[6].card_id == MOTH_PERFECT && S.evolving == -1 && !S.turns[6]);
         assert(!(D_801A7AD8[6].flags & (DUEL_CARD_FLAG_DEFENSE_POSITION | DUEL_CARD_FLAG_FACE_DOWN)));
         assert(D_801A7AD8[6].stat_modifier == 300);
-        monster_event(MEMORIES_MONSTER_DRAW, MOTH_GREAT, 6);                  /* the 5th */
-        assert(!S.due[6]);
-        monster_event(MEMORIES_MONSTER_DRAW, MOTH_GREAT, 6);                  /* the 6th */
-        assert(S.due[6] == MOTH_PERFECT);
-        for (holds = 0; Moth_Hold(); holds++) assert(holds < 8);
-        assert(D_801A7AD8[6].card_id == MOTH_PERFECT && !S.turns[6]);
+        monster_event(MEMORIES_MONSTER_DRAW, MOTH_PERFECT, 6);                /* nothing after it */
+        assert(!S.turns[6] && !Moth_Hold() && remakes == 1);
+        (void)holds;
     }
-    /* A cocoon destroyed before is forgotten. */
+    /* Destroyed before 4 turns, the cocoon dies with the larva. */
     assert(S.turns[21] == 1);
     D_801A7AD8[21].flags = 0;
-    assert(!Moth_Hold() && !S.turns[21]);
-    /* Two cocoons due on one turn evolve one after the other. */
+    assert(!Moth_Hold() && !S.turns[21] && remakes == 1);
+    /* Destroyed after 4 turns, Great Moth comes out in its place, in attack;
+     * two such at once, one after the other. A cocoon fused away (its record
+     * holding another card) is only forgotten. */
     {
         int holds;
         gDuel_wSceneStateFlags = 7;
         fuse(MOTH_PETIT, MOTH_COCOON);
-        put(5, MOTH_COCOON, 0);
+        put(5, MOTH_COCOON, DUEL_CARD_FLAG_DEFENSE_POSITION);
         monster_event(MEMORIES_MONSTER_SUMMON, MOTH_COCOON, 5);
-        fuse(MOTH_PETIT, MOTH_COCOON);
+        fuse(MOTH_LARVAE, MOTH_COCOON);
         put(7, MOTH_COCOON, 0);
         monster_event(MEMORIES_MONSTER_SUMMON, MOTH_COCOON, 7);
-        S.turns[5] = S.turns[7] = 4;
-        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 5);
-        monster_event(MEMORIES_MONSTER_DRAW, MOTH_COCOON, 7);
+        fuse(MOTH_PETIT, MOTH_COCOON);
+        put(8, MOTH_COCOON, 0);
+        monster_event(MEMORIES_MONSTER_SUMMON, MOTH_COCOON, 8);
+        S.turns[5] = S.turns[7] = S.turns[8] = 5;                              /* 4 turns each */
+        D_801A7AD8[5].flags = 0;                                               /* destroyed */
+        D_801A7AD8[7].flags &= ~DUEL_CARD_FLAG_OCCUPIED;                       /* a 2D battle's loser */
+        D_801A7AD8[8].card_id = 3;                                             /* fused into 3 */
         for (holds = 0; Moth_Hold(); holds++) assert(holds < 16);
         assert(D_801A7AD8[5].card_id == MOTH_GREAT && D_801A7AD8[7].card_id == MOTH_GREAT);
+        assert(D_801A7AD8[5].flags & DUEL_CARD_FLAG_OCCUPIED);
+        assert(!(D_801A7AD8[5].flags & DUEL_CARD_FLAG_DEFENSE_POSITION));
+        assert(D_801A7AD8[8].card_id == 3 && !S.turns[5] && !S.turns[7] && !S.turns[8]);
+        assert(remakes == 3);
     }
     /* Off, nothing waits. */
     moth_setting = 0;
@@ -208,30 +219,33 @@ int main(void)
     S.due[5] = 0;
 
     /* The player's cocoons say how many turns are left, in the player's
-     * language; the CPU's do not show. The signature follows the count. */
+     * language; its last turn, that Great Moth is ready. The CPU's do not
+     * show. The signature follows the count. */
     {
         unsigned before;
         memset(S.turns, 0, sizeof S.turns);
         put(8, MOTH_COCOON, 0);
-        S.turns[8] = 2; S.card[8] = MOTH_COCOON;                  /* 1 turn gone: 3 left */
+        S.turns[8] = 2; S.card[8] = MOTH_COCOON;                  /* 1 turn gone: 4 left */
         put(22, MOTH_COCOON, 0);
         S.turns[22] = 1; S.card[22] = MOTH_COCOON;
         gDuel_wSceneStateFlags = 4;
         drawn_count = 0;
         fake_mod.overlay();
-        assert(drawn_count == 1 && !strcmp(drawn[0], "Casulo: Great Moth em 3 turnos"));
+        assert(drawn_count == 1 && !strcmp(drawn[0], "Casulo: Perfectly Ultimate Great Moth em 4 turnos"));
         before = fake_mod.overlay_signature();
-        S.turns[8] = 4;                                           /* 1 left */
+        S.turns[8] = 5;                                           /* 4 gone: the last */
         assert(fake_mod.overlay_signature() != before);
         drawn_count = 0;
         fake_mod.overlay();
-        assert(drawn_count == 1 && !strcmp(drawn[0], "Cocoon: Great Moth in 1 turn"));
-        put(8, MOTH_GREAT, 0);
-        S.turns[8] = 6; S.card[8] = MOTH_GREAT;                   /* 5 gone: 1 left */
+        assert(drawn_count == 1 &&
+               !strcmp(drawn[0], "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out"));
+        /* Lifted off its record (a battle starting): no line, not forgotten. */
+        D_801A7AD8[8].flags &= ~DUEL_CARD_FLAG_OCCUPIED;
         drawn_count = 0;
         fake_mod.overlay();
-        assert(drawn_count == 1 && !strcmp(drawn[0], "Great Moth: Perfectly Ultimate Great Moth in 1 turn"));
-        /* Not while the field is busy, nor off. */
+        assert(!drawn_count && S.turns[8] == 5);
+        D_801A7AD8[8].flags |= DUEL_CARD_FLAG_OCCUPIED;
+        /* Not while the duel is busy, nor off. */
         gDuel_wSceneStateFlags = 9;
         drawn_count = 0;
         fake_mod.overlay();
@@ -244,6 +258,6 @@ int main(void)
         moth_setting = 1;
     }
 
-    printf("Petit Moth's evolution: the fusion, the cocoon, the turns, the evolution, the turns left on screen passed\n");
+    printf("The moth's evolution: the fusion, the cocoon, the turns, Perfectly Ultimate, Great Moth from a destroyed cocoon, the turns left on screen passed\n");
     return 0;
 }

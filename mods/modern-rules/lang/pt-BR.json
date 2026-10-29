@@ -1,6 +1,6 @@
 {
     "name": "Regras do Reino dos Duelistas",
-    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até quarenta, fases do turno com uma segunda Main Phase, a evolução da Petit Moth, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
+    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até quarenta, fases do turno com uma segunda Main Phase, a evolução da mariposa, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
     "settings": {
         "optional_play": {
             "label": "Jogar uma carta é opcional",
@@ -19,14 +19,12 @@
             "description": "Cartas postas sobre um monstro precisam fundir com ele ou equipá-lo, e as cartas marcadas precisam todas fundir ou equipar nessa ordem, então nenhuma carta é jogada fora. A confirmação do jogador é recusada; a CPU joga em outro lugar, ou não joga carta."
         },
         "moth_evolution": {
-            "label": "Evolução da Petit Moth (anime)",
-            "description": "O Cocoon of Evolution jogado sobre a Petit Moth, ou os dois fundidos da mão, faz o casulo, em defesa. No 4º turno do dono depois disso, ele vira Great Moth; no 6º, Perfectly Ultimate Great Moth. Destruído antes, acaba. Um Cocoon jogado sozinho continua Cocoon."
+            "label": "Evolução da mariposa (anime)",
+            "description": "Como nos duelos do Weevil: o Cocoon of Evolution jogado sobre a Petit Moth ou a Larvae Moth, ou os dois fundidos da mão, faz o casulo, em defesa. No 5º turno do dono depois disso, ele se abre: Perfectly Ultimate Great Moth. Destruído antes, morre com a lagarta, a não ser que já tenha tido 4 desses turnos: aí sai a Great Moth no lugar dele, em ataque. Um Cocoon jogado sozinho continua Cocoon."
         }
     },
     "texts": {
-        "Cocoon: Great Moth in %d turn": "Casulo: Great Moth em %d turno",
-        "Cocoon: Great Moth in %d turns": "Casulo: Great Moth em %d turnos",
-        "Great Moth: Perfectly Ultimate Great Moth in %d turn": "Great Moth: Perfectly Ultimate Great Moth em %d turno",
-        "Great Moth: Perfectly Ultimate Great Moth in %d turns": "Great Moth: Perfectly Ultimate Great Moth em %d turnos"
+        "Cocoon: Perfectly Ultimate Great Moth in %d turns": "Casulo: Perfectly Ultimate Great Moth em %d turnos",
+        "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth"
     }
 }

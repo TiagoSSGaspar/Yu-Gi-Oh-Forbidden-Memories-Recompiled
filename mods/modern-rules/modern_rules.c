@@ -60,6 +60,7 @@ extern unsigned char D_800EAE88[];
 #define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
 #define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
 #define SPELL_ROW 3              /* and of its magic and trap cards */
+#define FIELD_IDLE 3             /* the player's field state, walking the field */
 #define FIELD_TARGETING 6        /* the player's field state: the monster an equip from the field goes onto */
 #define FIELD_TARGET_LEAVING 0x40 /* its cursor going back to the field (circle) */
 #define FIELD_CURSOR_RECORD 2    /* the side's selection records: the field cursor, */
@@ -202,8 +203,8 @@ static void hand(void)
     DuelSelectionRecord *side = (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
     u16 pressed = gInput_wPad1Pressed;
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster;
-    /* A cocoon evolving (moth.c): the hand waits for it. */
-    if (Moth_Hold()) return;
+    /* A cocoon evolving (moth.c): the hand waits for it, from its start. */
+    if (step_kind <= HAND_IDLE && Moth_Hold()) return;
     if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
@@ -233,6 +234,9 @@ static void field(void)
     DuelSelectionRecord *spell = &records[FIELD_CURSOR_RECORD], *target = &records[TARGET_CURSOR_RECORD];
     u16 pressed = gInput_wPad1Pressed;
     int equip, monster;
+    /* A cocoon destroyed in the player's battle lets its moth out (moth.c)
+     * once the field is walked again. */
+    if ((D_8009B174 & 0xF) == FIELD_IDLE && Moth_Hold()) return;
     if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         (D_8009B174 & 0xF) == FIELD_TARGETING && !(D_8009B174 & FIELD_TARGET_LEAVING) && !gDuel_bEffectState &&
