@@ -358,6 +358,8 @@ static void deal(void)
             return;
         }
         position = D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor;
+        /* The player's window moves on to the card coming in. */
+        if (slot >= S.view + EHP_VIEW && human()) Ehp_Show(slot - EHP_VIEW + 1);
         if (slot >= S.view + EHP_VIEW) {
             /* Past the window: into the hand, with nothing on screen. */
             Ehp_Set(D_8009B1D5, slot, (s8)position);

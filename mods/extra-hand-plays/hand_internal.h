@@ -67,6 +67,9 @@ void Ehp_Pack(int side);            /* cards past the fifth into empty slots of 
 void Ehp_SpawnExtras(int y);        /* objects for the cards past the fifth, as the draw spawns the five */
 void Ehp_ClearBorrowed(int side);   /* the other side's hand records the side's extras used */
 void Ehp_LayOut(DuelSelectionRecord *side); /* the hand panel's cards spread for S.layout */
+void Ehp_Show(int view);            /* the window from hand card `view` onto the screen slots, on the panel */
+int Ehp_Mark(int card);             /* the player's mark on a hand card: 0 none, else its order */
+int Ehp_Cursor(void);               /* the hand card under the player's hand cursor */
 void Ehp_Arrange(int slot);         /* a card drawn into a spread hand: its depth among the others */
 void Ehp_RefreshExtras(void);       /* the CPU's cards past the fifth, after its swap changed them */
 int Ehp_BigHand(void);              /* the hand on screen has more than five cards */

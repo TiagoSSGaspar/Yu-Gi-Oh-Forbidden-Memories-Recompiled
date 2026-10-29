@@ -286,6 +286,52 @@ void Ehp_LayOut(DuelSelectionRecord *side)
     S.focus = 0;
 }
 
+static DisplayParent *hand_parent(void)
+{
+    return (DisplayParent *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
+}
+int Ehp_Mark(int card)
+{
+    if (card < 0 || card >= EHP_HAND) return 0;
+    if (Ehp_BigHand()) return S.mark[card];
+    return card < HAND_SIZE ? D_800EA030[card].active_09 : 0;
+}
+int Ehp_Cursor(void) { return S.view + (s8)((DuelSelectionRecord *)hand_parent())->field_0E; }
+
+static void pick_number(DuelHandSlot *slot, int number);
+/* The window from hand card `view`: each screen slot's card set up again in
+ * its record and made anew where the panel lays it out, linked to it, with
+ * its pick number when it is marked. Only the player's hand moves its
+ * window, while its panel is in. */
+void Ehp_Show(int view)
+{
+    DisplayParent *parent = hand_parent();
+    DisplayObject *panel = parent->position_base, *object;
+    int side = D_8009B1D5, slot, card, record, x, y;
+    S.view = (u8)view;
+    for (slot = 0; slot < S.layout; slot++) {
+        DuelHandSlot *at = Ehp_Slot(slot);
+        DisplayObject_ReleaseIfPresent(at->child);
+        DisplayObject_ReleaseIfPresent(at->object);
+        at->object = at->child = 0;
+        at->active_09 = 0;
+        if ((card = Ehp_Get(side, view + slot)) < 0) continue;
+        record = Ehp_Record(side, slot);
+        Ehp_SetupRecord(record, card);
+        x = panel->field_30.h.field_30 + Ehp_LayoutX(slot, S.layout);
+        y = panel->field_30.h.field_32 - 0x1C;
+        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], x, y);
+        object->field_30.h.field_30 = (s16)x;
+        object->field_30.h.field_32 = (s16)y;
+        object->field_0C = DUEL_DISPLAY_COLOR_NORMAL;
+        DuelSelection_LinkDisplayObject(parent, object);
+        at->object = (u8 *)object;
+        set_depth(slot, base_depth() + slot * DEPTH_STEP);
+        if (S.mark[view + slot]) pick_number(at, S.mark[view + slot]);
+    }
+    S.focus = 0;
+}
+
 /* The panel leaving: the slots past the fifth go with it, as the five do --
  * except a card being played, which placement has taken (it clears the
  * five's own), and whose pick number goes now. In the end-of-turn discard
@@ -335,27 +381,33 @@ static void cursor(DuelHandStackState *state)
     focus(state->slot_index);
 }
 
-/* func_8001B7AC, the next pick number onto the cursor's card. */
-static void mark(DuelHandStackState *state)
+/* A card's pick number over it, as func_8001B7AC shows one: the card up 4,
+ * the number's sprite just above it. Past five (the discard's) there is no
+ * number to show: the card only goes up. */
+static void pick_number(DuelHandSlot *slot, int number)
 {
-    DuelHandSlot *slot;
-    DuelCardDisplayObject *card;
+    DuelCardDisplayObject *card = (DuelCardDisplayObject *)slot->object;
     DisplayObject *child;
-    if (state->slot_index < HAND_SIZE) {
-        ((void (*)(DuelHandStackState *))original_mark)(state);
-        return;
-    }
-    slot = Ehp_Slot(state->slot_index);
-    card = (DuelCardDisplayObject *)slot->object;
     card->out_y -= 4;
+    slot->active_09 = (u8)number;
+    if (number > HAND_SIZE) return;
     child = (DisplayObject *)DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 1);
-    DisplayObject_ConfigureScreenSprite(child, card->out_x, card->out_y, 0x10, 0x10, state->count << 4, 0xB8,
+    DisplayObject_ConfigureScreenSprite(child, card->out_x, card->out_y, 0x10, 0x10, (number - 1) << 4, 0xB8,
                                         0xB, 0x250, 0xFC);
     DisplayObject_SelectOrderingTable1(child);
     DisplayObject_SetDepthOffset(child, (s8)(((DisplayObject *)slot->object)->field_16 + 1));
     slot->child = (u8 *)child;
+}
+
+/* func_8001B7AC, the next pick number onto the cursor's card. */
+static void mark(DuelHandStackState *state)
+{
+    if (state->slot_index < HAND_SIZE) {
+        ((void (*)(DuelHandStackState *))original_mark)(state);
+        return;
+    }
     state->count++;
-    slot->active_09 = state->count;
+    pick_number(Ehp_Slot(state->slot_index), state->count);
     SD_SEPlayFull(0x2F);
 }
 
@@ -502,10 +554,17 @@ void Ehp_HandActions(DuelSelectionRecord *side)
         }
         if (gInput_wPad1Repeat & 0xA000) {
             value = at;
+            /* Past either end of the window, the window moves one card. */
             if (gInput_wPad1Repeat & 0x2000) {
-                if (++value >= count) return;
+                if (++value >= count) {
+                    if (S.view + count >= Ehp_Count(D_8009B1D5)) return;
+                    Ehp_Show(S.view + 1);
+                    value = count - 1;
+                }
             } else if (--value < 0) {
-                return;
+                if (!S.view) return;
+                Ehp_Show(S.view - 1);
+                value = 0;
             }
             side->field_0E = (u8)value;
             func_8001B780((DuelHandStackState *)side);
@@ -516,6 +575,7 @@ void Ehp_HandActions(DuelSelectionRecord *side)
         if ((gInput_wPad1Pressed & 0xFFFF) == 0x1000 && gInput_wPad1Held == 0x1000) {
             if (hand->active_09 == 0 && side->field_15 < HAND_SIZE) {
                 func_8001B7AC((DuelHandStackState *)side);
+                S.mark[S.view + at] = hand->active_09;
                 return;
             }
         } else if ((gInput_wPad1Pressed & PAD_BUTTON_CIRCLE) ||
@@ -524,17 +584,19 @@ void Ehp_HandActions(DuelSelectionRecord *side)
             if (value != 0) {
                 SD_SEPlayFull(0x2F);
                 hand->active_09 = 0;
+                S.mark[S.view + at] = 0;
                 HAND_OBJECT(hand->object)->pos.xy.y += 4;
                 DisplayObject_ReleaseIfPresent(hand->child);
                 hand->child = 0;
                 side->field_15--;
-                for (n = 0; n < count; n++) {
-                    slot = Ehp_Slot(n);
-                    v = slot->active_09;
-                    if (v >= value) {
-                        slot->active_09 = (u8)(v - 1);
-                        HAND_OBJECT(slot->child)->icon_state = (u8)((v - 2) * 0x10);
-                    }
+                /* The later marks one down, off the window too. */
+                for (n = 0; n < EHP_HAND; n++) {
+                    if ((v = S.mark[n]) <= value) continue;
+                    S.mark[n] = (u8)(v - 1);
+                    if (n < S.view || n >= S.view + count) continue;
+                    slot = Ehp_Slot(n - S.view);
+                    slot->active_09 = (u8)(v - 1);
+                    if (slot->child) HAND_OBJECT(slot->child)->icon_state = (u8)((v - 2) * 0x10);
                 }
                 return;
             }

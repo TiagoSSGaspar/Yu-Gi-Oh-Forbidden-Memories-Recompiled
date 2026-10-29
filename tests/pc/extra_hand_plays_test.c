@@ -64,13 +64,13 @@ u16 gDuel_wViewerCardID;
 u16 gInput_wPad1Held;
 u8 D_800EAE88[12];
 s16 D_8009B20C[2];
-static DisplayObject sprites[16];
+static DisplayObject sprites[256];
 static int sprite_count, switches, setup_seen, info_record = -1;
 int Cards_ExodiaPiece(int id) { (void)id; return 1; }
 void *DisplayObject_AcquireSlot(s32 index, s32 key)
 {
     (void)index; (void)key;
-    assert(sprite_count < 16);
+    assert(sprite_count < 256);
     return &sprites[sprite_count++];
 }
 s32 DisplayObject_FindFreeGeneralSlot(void) { return 0; }
@@ -351,6 +351,11 @@ static int draw_many(int side, int turn, int room)
     (void)side; (void)turn;
     return room;
 }
+static int draw_three(int side, int turn, int room)
+{
+    (void)side; (void)turn; (void)room;
+    return 3;
+}
 static void limits_ten(int side, int *max, int *keep)
 {
     (void)side;
@@ -405,6 +410,30 @@ static void draw_through(void)
         step_resolution();
     }
 }
+/* The hand panel the window lays its cards on. */
+static DisplayObject panel_object;
+/* The player's turn with a hand of `count` (the five, then hand cards from
+ * deck position 5 up), up to its first idle frame. */
+static void player_hand(int count)
+{
+    int k;
+    memset(&S, 0, sizeof S);
+    memset(S.xhand, -1, sizeof S.xhand);
+    new_turn(0, 0);
+    ((DisplayParent *)hand_record())->position_base = &panel_object;
+    for (k = HAND_SIZE; k < count; k++) S.xhand[0][k - HAND_SIZE] = (s8)k;
+    D_800E9FF0[0].deck_draw_cursor = (u8)count;
+    to_hand();
+}
+static void press(u16 pressed, u16 held, u16 repeat)
+{
+    gInput_wPad1Pressed = pressed; gInput_wPad1Held = held; gInput_wPad1Repeat = repeat;
+    step_hand();
+    gInput_wPad1Pressed = gInput_wPad1Held = gInput_wPad1Repeat = 0;
+}
+#define PAD_LEFT 0x8000
+#define PAD_UP 0x1000
+
 /* The play: the hand puts card `slot` down -- a monster, through
  * placement, when the hand state is up -- and the field starts. */
 static DisplayObject placed;
@@ -1195,6 +1224,56 @@ int main(void)
         assert(Ehp_Count(1) == 6 && D_800E9FF0[1].hand[3] >= 0 && S.xhand[1][1] < 0);
         provided->set_hand_limits(NULL);
         provided->set_turn_draws(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The player's hand of 23: ten on screen; the cursor past either end
+     * moves the window one card; a marked card keeps its mark off screen. */
+    {
+        int k;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        assert(Ehp_Count(0) == 23 && S.layout == EHP_VIEW && S.view == 0);
+        assert(helper_hand(9) == &S.xslot[4] && !helper_hand(10));
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 0 marked */
+        assert(S.mark[0] == 1 && Ehp_Mark(0) == 1 && D_800EA030[0].active_09 == 1 && side->field_15 == 1);
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        assert(S.view == 1 && (s8)side->field_0E == 9 && Ehp_Cursor() == 10);
+        assert(D_801A7AD8[Ehp_Record(0, 9)].card_id == deck[10].id);  /* hand card 10 at the right end */
+        assert(D_801A7AD8[Ehp_Record(0, 0)].card_id == deck[1].id);   /* hand card 1 at the left */
+        assert(D_800EA030[0].active_09 == 0 && S.mark[0] == 1);         /* the mark kept off screen */
+        for (k = 0; k < 20; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 13 && Ehp_Cursor() == 22);                     /* stops at the last card */
+        side->field_0E = 0;
+        for (k = 0; k < 13; k++) press(0, 0, PAD_LEFT);
+        assert(S.view == 0 && D_800EA030[0].active_09 == 1);            /* back: its number again */
+        press(0, 0, PAD_LEFT);
+        assert(S.view == 0 && (s8)side->field_0E == 0);
+        /* Unmarking renumbers by hand card, off the window too. */
+        side->field_0E = 4;
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 4: 2 */
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        press(0, 0, PAD_RIGHT);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 11: 3 */
+        assert(S.mark[4] == 2 && S.mark[11] == 3 && side->field_15 == 3);
+        side->field_0E = 2;                                          /* hand card 4 */
+        press(0x4000, 0x4000, 0);                                    /* DOWN */
+        assert(S.mark[0] == 1 && S.mark[4] == 0 && S.mark[11] == 2 && side->field_15 == 2);
+        assert(Ehp_Slot(9)->active_09 == 2 && Ehp_Mark(11) == 2);
+
+        /* A draw past the window moves it on to the card coming in. */
+        player_hand(10);
+        provided->set_turn_draws(draw_three);
+        new_turn(0, 0);
+        ((DisplayParent *)hand_record())->position_base = &panel_object;
+        draw_through();
+        assert(Ehp_Count(0) == 13 && S.view == 3 && S.layout == EHP_VIEW);
+        assert(Ehp_Get(0, 12) == 12 && D_801A7AD8[Ehp_Record(0, 9)].card_id == deck[12].id);
+        provided->set_turn_draws(NULL);
+        provided->set_hand_limits(NULL);
         memset(S.xhand, -1, sizeof S.xhand);
     }
 
