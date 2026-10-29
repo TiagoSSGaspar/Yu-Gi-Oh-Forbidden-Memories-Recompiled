@@ -1,17 +1,21 @@
 /* The hand past five cards, when another mod raises the hand limit
- * (set_hand_limits in extra_hand_plays.h).
+ * (set_hand_limits in extra_hand_plays.h), up to a whole deck of 40.
  *
  * The disc keeps five hand slots per side: DuelSideState.hand[5] (deck
  * indices), D_800EA030[5] (the slots on screen) and five card records per
- * side (D_800907CC). Cards six to ten live beside them, here:
- * - their deck indices in S.xhand, per side, packed;
- * - their slots on screen in S.xslot, for the side whose turn it is;
- * - their card records borrowed from the other side's five hand records.
- *   During a side's turn nothing reads the other side's hand records -- its
- *   draw rebuilds them from its hand when its turn comes -- so they are
- *   cleared when the turn ends and when it begins.
- * The five slots are always filled first: a draw packs the cards past the
- * fifth into the five's empty slots before it spreads the hand out.
+ * side (D_800907CC). The hand and what is drawn of it are kept apart here:
+ * - hand cards 0 to 39: the five, then S.xhand per side, packed;
+ * - screen slots 0 to 9: the five on screen, then S.xslot, for the side
+ *   whose turn it is, with their card records -- the five's own, then the
+ *   other side's five hand records, borrowed. During a side's turn nothing
+ *   reads the other side's hand records -- its draw rebuilds them from its
+ *   hand when its turn comes -- so they are cleared when the turn ends and
+ *   when it begins.
+ * Screen slot i shows hand card S.view + i: a window of ten over the hand,
+ * which the player's cursor moves past either end (Ehp_Show). The CPU's
+ * window never moves; its cards past the tenth have nothing on screen. The
+ * five slots are always filled first: a draw packs the cards past the fifth
+ * into the five's empty slots before it spreads the hand out.
  *
  * On screen the hand is laid out overlapped across the width of five
  * (Ehp_LayoutX), later cards over earlier ones and the card under the
@@ -19,11 +23,12 @@
  *
  * The player walks and picks from every card with a copy of the hand
  * state's player steps (Ehp_HandActions, from duel_scene_hand_actions.c),
- * the five-slot helpers it calls taught the rest. The CPU's hand script
- * gets the cards past the fifth in its snapshot ahead of the upcoming deck,
- * as the disc numbers deck cards it can swap into the hand: one it picks is
- * swapped with a card of the five by the disc's own swap (func_8001BAF0), so
- * the CPU always plays from the five. */
+ * the five-slot helpers it calls taught the rest; marks are kept by hand
+ * card (S.mark), so that a card keeps its mark off screen. The CPU's hand
+ * script gets the cards past the fifth in its snapshot ahead of the
+ * upcoming deck, as the disc numbers deck cards it can swap into the hand:
+ * one it picks is swapped with a card of the five by the disc's own swap
+ * (func_8001BAF0), so the CPU always plays from the five. */
 #include "hand_internal.h"
 #define D_8009B_DISPLAY_OBJECTS_VISIBLE
 #define AI_GET_HAND_SIZE_RETURNS_S32 /* Native override serves word-sized callers. */
@@ -92,7 +97,7 @@ s32 Duel_HasAllExodiaPieces(void);
 #define PANEL_IN 2
 #define PANEL_OUT 8
 #define DEPTH_STEP 1          /* later cards over earlier ones */
-#define FOCUS_DEPTH (EHP_SLOTS + 1) /* the card under the cursor over them all */
+#define FOCUS_DEPTH (EHP_VIEW + 1) /* the card under the cursor over them all */
 #define CURSOR_DEPTH 0xA      /* the hand cursor's own (the hand state's first frame) */
 
 static ExtraHandLimits limits;
@@ -105,7 +110,7 @@ static void get_limits(int side, int *max, int *keep)
     *keep = 0;
     if (limits) limits(side, max, keep);
     if (*max < HAND_SIZE) *max = HAND_SIZE;
-    if (*max > EHP_SLOTS) *max = EHP_SLOTS;
+    if (*max > EHP_HAND) *max = EHP_HAND;
     if (*keep < 0) *keep = 0;
     if (*keep > *max) *keep = *max;
 }
@@ -123,19 +128,19 @@ int Ehp_HandKeep(void)
     return keep;
 }
 
-s8 Ehp_Get(int side, int slot)
+s8 Ehp_Get(int side, int card)
 {
-    return slot < HAND_SIZE ? D_800E9FF0[side].hand[slot] : S.xhand[side][slot - HAND_SIZE];
+    return card < HAND_SIZE ? D_800E9FF0[side].hand[card] : S.xhand[side][card - HAND_SIZE];
 }
-void Ehp_Set(int side, int slot, s8 deck_index)
+void Ehp_Set(int side, int card, s8 deck_index)
 {
-    if (slot < HAND_SIZE) D_800E9FF0[side].hand[slot] = deck_index;
-    else S.xhand[side][slot - HAND_SIZE] = deck_index;
+    if (card < HAND_SIZE) D_800E9FF0[side].hand[card] = deck_index;
+    else S.xhand[side][card - HAND_SIZE] = deck_index;
 }
 int Ehp_Count(int side)
 {
-    int slot, n = 0;
-    for (slot = 0; slot < EHP_SLOTS; slot++) n += Ehp_Get(side, slot) >= 0;
+    int card, n = 0;
+    for (card = 0; card < EHP_HAND; card++) n += Ehp_Get(side, card) >= 0;
     return n;
 }
 int Ehp_Extras(int side)
@@ -167,7 +172,7 @@ static u8 *setup(s32 index, s32 position)
 {
     int record = index & 0x80 ? (index & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : index;
     if (D_8009B1D5 == 0 && record >= DUEL_CARD_SIDE_RECORD_COUNT &&
-        record < DUEL_CARD_SIDE_RECORD_COUNT + EHP_EXTRA && position >= 0 && position < DECK_SIZE)
+        record < DUEL_CARD_SIDE_RECORD_COUNT + EHP_BORROWED && position >= 0 && position < DECK_SIZE)
         position -= DECK_SIZE;
     return ((u8 *(*)(s32, s32))original_setup)(index, position);
 }
@@ -181,17 +186,17 @@ int Ehp_BigHand(void) { return S.layout > HAND_SIZE; }
 
 void Ehp_Pack(int side)
 {
-    s8 cards[EHP_SLOTS];
-    int slot, n = 0;
-    for (slot = 0; slot < EHP_SLOTS; slot++)
-        if (Ehp_Get(side, slot) >= 0) cards[n++] = Ehp_Get(side, slot);
-    for (slot = 0; slot < EHP_SLOTS; slot++) Ehp_Set(side, slot, slot < n ? cards[slot] : -1);
+    s8 cards[EHP_HAND];
+    int card, n = 0;
+    for (card = 0; card < EHP_HAND; card++)
+        if (Ehp_Get(side, card) >= 0) cards[n++] = Ehp_Get(side, card);
+    for (card = 0; card < EHP_HAND; card++) Ehp_Set(side, card, card < n ? cards[card] : -1);
 }
 
 void Ehp_ClearBorrowed(int side)
 {
     int k;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         DuelCardRecord *record = &D_801A7AD8[Ehp_Record(side, HAND_SIZE + k)];
         record->flags = 0;
         record->object = 0;
@@ -204,7 +209,7 @@ void Ehp_SpawnExtras(int y)
 {
     int side = D_8009B1D5, k, record;
     memset(S.xslot, 0, sizeof S.xslot);
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         if (S.xhand[side][k] < 0) continue;
         record = Ehp_Record(side, HAND_SIZE + k);
         Ehp_SetupRecord(record, S.xhand[side][k]);
@@ -251,7 +256,7 @@ void Ehp_RefreshExtras(void)
 {
     int side = D_8009B1D5, k, n, record;
     DuelCardDisplayObject *old;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         if ((n = S.xhand[side][k]) < 0 || !(old = (DuelCardDisplayObject *)S.xslot[k].object)) continue;
         record = Ehp_Record(side, HAND_SIZE + k);
         if (D_801A7AD8[record].card_id == Ehp_CardId(n)) continue;
@@ -281,6 +286,54 @@ void Ehp_LayOut(DuelSelectionRecord *side)
     S.focus = 0;
 }
 
+static DisplayParent *hand_parent(void)
+{
+    return (DisplayParent *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
+}
+int Ehp_Mark(int card)
+{
+    if (card < 0 || card >= EHP_HAND) return 0;
+    if (Ehp_BigHand()) return S.mark[card];
+    return card < HAND_SIZE ? D_800EA030[card].active_09 : 0;
+}
+int Ehp_Cursor(void) { return S.view + (s8)((DuelSelectionRecord *)hand_parent())->field_0E; }
+
+static void pick_number(DuelHandSlot *slot, int number);
+/* The window from hand card `view`: each screen slot's card set up again in
+ * its record and made anew where the panel lays it out, linked to it, with
+ * its pick number when it is marked. Only the player's hand moves its
+ * window, while its panel is in. */
+void Ehp_Show(int view)
+{
+    DisplayParent *parent = hand_parent();
+    DisplayObject *panel = parent->position_base, *object;
+    int side = D_8009B1D5, slot, card, record, x, y;
+    S.view = (u8)view;
+    for (slot = 0; slot < S.layout; slot++) {
+        DuelHandSlot *at = Ehp_Slot(slot);
+        DisplayObject_ReleaseIfPresent(at->child);
+        DisplayObject_ReleaseIfPresent(at->object);
+        at->object = at->child = 0;
+        at->active_09 = 0;
+        if ((card = Ehp_Get(side, view + slot)) < 0) continue;
+        record = Ehp_Record(side, slot);
+        Ehp_SetupRecord(record, card);
+        x = panel->field_30.h.field_30 + Ehp_LayoutX(slot, S.layout);
+        y = panel->field_30.h.field_32 - 0x1C;
+        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], x, y);
+        object->field_30.h.field_30 = (s16)x;
+        object->field_30.h.field_32 = (s16)y;
+        object->field_0C = DUEL_DISPLAY_COLOR_NORMAL;
+        at->object = (u8 *)object;
+        set_depth(slot, base_depth() + slot * DEPTH_STEP);
+        /* Raised before the link: the panel places a linked object once, at
+         * the offset the link takes now, and lets it go. */
+        if (S.mark[view + slot]) pick_number(at, S.mark[view + slot]);
+        DuelSelection_LinkDisplayObject(parent, object);
+    }
+    S.focus = 0;
+}
+
 /* The panel leaving: the slots past the fifth go with it, as the five do --
  * except a card being played, which placement has taken (it clears the
  * five's own), and whose pick number goes now. In the end-of-turn discard
@@ -288,7 +341,7 @@ void Ehp_LayOut(DuelSelectionRecord *side)
 static void release_extras(DisplayParent *parent)
 {
     int k;
-    for (k = 0; k < EHP_EXTRA; k++) {
+    for (k = 0; k < EHP_BORROWED; k++) {
         DuelHandSlot *slot = &S.xslot[k];
         if (slot->active_09 && !S.discard) {
             DisplayObject_ReleaseIfPresent(slot->child);
@@ -330,27 +383,33 @@ static void cursor(DuelHandStackState *state)
     focus(state->slot_index);
 }
 
-/* func_8001B7AC, the next pick number onto the cursor's card. */
-static void mark(DuelHandStackState *state)
+/* A card's pick number over it, as func_8001B7AC shows one: the card up 4,
+ * the number's sprite just above it. Past five (the discard's) there is no
+ * number to show: the card only goes up. */
+static void pick_number(DuelHandSlot *slot, int number)
 {
-    DuelHandSlot *slot;
-    DuelCardDisplayObject *card;
+    DuelCardDisplayObject *card = (DuelCardDisplayObject *)slot->object;
     DisplayObject *child;
-    if (state->slot_index < HAND_SIZE) {
-        ((void (*)(DuelHandStackState *))original_mark)(state);
-        return;
-    }
-    slot = Ehp_Slot(state->slot_index);
-    card = (DuelCardDisplayObject *)slot->object;
     card->out_y -= 4;
+    slot->active_09 = (u8)number;
+    if (number > HAND_SIZE) return;
     child = (DisplayObject *)DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 1);
-    DisplayObject_ConfigureScreenSprite(child, card->out_x, card->out_y, 0x10, 0x10, state->count << 4, 0xB8,
+    DisplayObject_ConfigureScreenSprite(child, card->out_x, card->out_y, 0x10, 0x10, (number - 1) << 4, 0xB8,
                                         0xB, 0x250, 0xFC);
     DisplayObject_SelectOrderingTable1(child);
     DisplayObject_SetDepthOffset(child, (s8)(((DisplayObject *)slot->object)->field_16 + 1));
     slot->child = (u8 *)child;
+}
+
+/* func_8001B7AC, the next pick number onto the cursor's card. */
+static void mark(DuelHandStackState *state)
+{
+    if (state->slot_index < HAND_SIZE) {
+        ((void (*)(DuelHandStackState *))original_mark)(state);
+        return;
+    }
     state->count++;
-    slot->active_09 = state->count;
+    pick_number(Ehp_Slot(state->slot_index), state->count);
     SD_SEPlayFull(0x2F);
 }
 
@@ -418,24 +477,49 @@ static void snapshot(AiActiveCard *out, s32 who)
     }
 }
 
-/* Duel_HasAllExodiaPieces over every slot. */
+/* Duel_HasAllExodiaPieces over every hand card. */
 static s32 exodia(void)
 {
-    int side = D_8009B1D5, used[EHP_SLOTS] = {0}, id, slot;
+    int side = D_8009B1D5, used[EHP_HAND] = {0}, id, card;
     if (!Ehp_Extras(side)) return ((s32 (*)(void))original_exodia)();
     for (id = EXODIA_FIRST_CARD_ID; id < EXODIA_CARD_ID_END; id++) {
         if (!Cards_ExodiaPiece(id)) return 0;
-        for (slot = 0; slot < EHP_SLOTS; slot++)
-            if (!used[slot] && Ehp_CardId(Ehp_Get(side, slot)) == id && Ehp_Get(side, slot) >= 0) break;
-        if (slot == EHP_SLOTS) return 0;
-        used[slot] = 1;
+        for (card = 0; card < EHP_HAND; card++)
+            if (!used[card] && Ehp_CardId(Ehp_Get(side, card)) == id && Ehp_Get(side, card) >= 0) break;
+        if (card == EHP_HAND) return 0;
+        used[card] = 1;
     }
     return 1;
 }
 
+/* The screen slot holding hand card `card`, for placement to take, with
+ * `number` for its pick: its own when the window shows it; else an unmarked
+ * slot's, its record set up again for the card and its object made anew
+ * where the old one was. The panel leaves once the play goes down, so the
+ * card it stood in for is not missed. */
+static DuelHandSlot *bring(int card, int number)
+{
+    int side = D_8009B1D5, slot, record;
+    DuelHandSlot *at = 0;
+    DuelCardDisplayObject *old;
+    if (card >= S.view && card < S.view + S.layout) return Ehp_Slot(card - S.view);
+    for (slot = 0; slot < S.layout; slot++) {
+        at = Ehp_Slot(slot);
+        if (at->object && !at->active_09 && !S.mark[S.view + slot]) break;
+    }
+    if (slot == S.layout) return 0;   /* not with five marked and ten on screen */
+    old = (DuelCardDisplayObject *)at->object;
+    record = Ehp_Record(side, slot);
+    Ehp_SetupRecord(record, Ehp_Get(side, card));
+    at->object = (u8 *)func_80018004(&D_801A7AD8[record], old->out_x, old->out_y);
+    DisplayObject_ReleaseIfPresent(old);
+    at->active_09 = (u8)number;
+    return at;
+}
+
 /* The hand state's zone confirm (its step 4): the marked cards, in the order
- * they were marked, or the card under the cursor, after any field card they
- * go onto, into D_800E9EF0 for placement. */
+ * they were marked -- from anywhere in the hand -- or the card under the
+ * cursor, after any field card they go onto, into D_800E9EF0 for placement. */
 static void confirm(DuelSelectionRecord *side, DuelHandSlot *hand)
 {
     DuelCardRecord *card;
@@ -459,12 +543,16 @@ static void confirm(DuelSelectionRecord *side, DuelHandSlot *hand)
     if (side->field_15 == 0) {
         hand->active_09 = 1;
         if (HAND_OBJECT(hand->object)->face != 0) D_8009B1C8->rank.face_down_plays++;
-    }
-    for (value = 1; value <= HAND_SIZE; value++) {
-        for (n = 0; n < S.layout && Ehp_Slot(n)->active_09 != value; n++) { }
-        if (n == S.layout) break;
-        Ehp_Set(D_8009B1D5, n, -1);
-        D_800E9EF0[i++] = (DisplayObject *)Ehp_Slot(n)->object;
+        Ehp_Set(D_8009B1D5, Ehp_Cursor(), -1);
+        D_800E9EF0[i] = (DisplayObject *)hand->object;
+    } else {
+        for (value = 1; value <= HAND_SIZE; value++) {
+            DuelHandSlot *at;
+            for (n = 0; n < EHP_HAND && S.mark[n] != value; n++) { }
+            if (n == EHP_HAND || !(at = bring(n, value))) break;
+            Ehp_Set(D_8009B1D5, n, -1);
+            D_800E9EF0[i++] = (DisplayObject *)at->object;
+        }
     }
     D_8009B174 = 6;
 }
@@ -497,10 +585,17 @@ void Ehp_HandActions(DuelSelectionRecord *side)
         }
         if (gInput_wPad1Repeat & 0xA000) {
             value = at;
+            /* Past either end of the window, the window moves one card. */
             if (gInput_wPad1Repeat & 0x2000) {
-                if (++value >= count) return;
+                if (++value >= count) {
+                    if (S.view + count >= Ehp_Count(D_8009B1D5)) return;
+                    Ehp_Show(S.view + 1);
+                    value = count - 1;
+                }
             } else if (--value < 0) {
-                return;
+                if (!S.view) return;
+                Ehp_Show(S.view - 1);
+                value = 0;
             }
             side->field_0E = (u8)value;
             func_8001B780((DuelHandStackState *)side);
@@ -511,6 +606,7 @@ void Ehp_HandActions(DuelSelectionRecord *side)
         if ((gInput_wPad1Pressed & 0xFFFF) == 0x1000 && gInput_wPad1Held == 0x1000) {
             if (hand->active_09 == 0 && side->field_15 < HAND_SIZE) {
                 func_8001B7AC((DuelHandStackState *)side);
+                S.mark[S.view + at] = hand->active_09;
                 return;
             }
         } else if ((gInput_wPad1Pressed & PAD_BUTTON_CIRCLE) ||
@@ -519,17 +615,19 @@ void Ehp_HandActions(DuelSelectionRecord *side)
             if (value != 0) {
                 SD_SEPlayFull(0x2F);
                 hand->active_09 = 0;
+                S.mark[S.view + at] = 0;
                 HAND_OBJECT(hand->object)->pos.xy.y += 4;
                 DisplayObject_ReleaseIfPresent(hand->child);
                 hand->child = 0;
                 side->field_15--;
-                for (n = 0; n < count; n++) {
-                    slot = Ehp_Slot(n);
-                    v = slot->active_09;
-                    if (v >= value) {
-                        slot->active_09 = (u8)(v - 1);
-                        HAND_OBJECT(slot->child)->icon_state = (u8)((v - 2) * 0x10);
-                    }
+                /* The later marks one down, off the window too. */
+                for (n = 0; n < EHP_HAND; n++) {
+                    if ((v = S.mark[n]) <= value) continue;
+                    S.mark[n] = (u8)(v - 1);
+                    if (n < S.view || n >= S.view + count) continue;
+                    slot = Ehp_Slot(n - S.view);
+                    slot->active_09 = (u8)(v - 1);
+                    if (slot->child) HAND_OBJECT(slot->child)->icon_state = (u8)((v - 2) * 0x10);
                 }
                 return;
             }
@@ -641,7 +739,7 @@ void Ehp_HandActions(DuelSelectionRecord *side)
                     D_800E9EF0[0] = (DisplayObject *)obj;
                     D_8009B18C = 0;
                     D_8009B188 = 0;
-                    Ehp_Set(D_8009B1D5, at, -1);
+                    Ehp_Set(D_8009B1D5, Ehp_Cursor(), -1);
                     D_8009B174 = 5;
                     return;
                 }

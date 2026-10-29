@@ -25,7 +25,10 @@ int main(void)
                "{\"name\":\"Palavras\",\"description\":\"Em portugu\xC3\xAAs.\",\"settings\":{"
                "\"speed\":{\"label\":\"Velocidade\",\"suffix\":\" quadros\"},"
                "\"mode\":{\"choices\":[\"Desligado\",\"Alguns\",\"Todos\"]},"
-               "\"kept\":{\"label\":\"Mantido\",\"choices\":[\"Um\"]}}}");
+               "\"kept\":{\"label\":\"Mantido\",\"choices\":[\"Um\"]}},"
+               "\"texts\":{\"Speed: %d\":\"Velocidade: %d\",\"Left %d of %s\":\"Faltam %s de %d\","
+               "\"Blank\":\"\",\"100%% sure, %-3u\":\"100%% certo, %-3u\",\"Once %d\":\"Uma %d %d\","
+               "\"Width %5d\":\"Largura %d\",\"Number\":3}}");
     write_text("mods/words/lang/pt.json", "{\"name\":\"Palavras (pt)\"}");
     write_text("mods/words/lang/zh-Hant.json", "{\"name\":\"Hant\"}");
     /* Only the language, no country: pt-BR finds it. */
@@ -88,6 +91,26 @@ int main(void)
     assert(!strcmp(Mods_OptionChoice(words, 2, 1, "?"), "Two"));
     assert(strstr(Mods_Status(words), "\"kept\" has 1 choices"));
     assert(!strcmp(Mods_OptionText(words, 9, "label", "?"), "?"));
+    /* The words the mod draws (host->text): the translation when it takes
+     * the English's printf values, in the same order; else the English. */
+    assert(!strcmp(Mods_Text(words, "Speed: %d"), "Velocidade: %d"));
+    assert(!strcmp(Mods_Text(words, "100%% sure, %-3u"), "100%% certo, %-3u"));
+    assert(!strcmp(Mods_Text(words, "Left %d of %s"), "Left %d of %s"));   /* swapped */
+    assert(!strcmp(Mods_Text(words, "Once %d"), "Once %d"));               /* one more */
+    assert(!strcmp(Mods_Text(words, "Width %5d"), "Width %5d"));           /* written otherwise */
+    assert(!strcmp(Mods_Text(words, "Blank"), "Blank"));
+    assert(!strcmp(Mods_Text(words, "Number"), "Number"));
+    {
+        static const char nowhere[] = "Not in the file";
+        assert(Mods_Text(words, nowhere) == nowhere && !strcmp(Mods_Text(-1, "x"), "x"));
+        assert(!Mods_Text(words, NULL));
+    }
+    assert(strstr(Mods_Status(words), "\"Left %d of %s\" takes other % values"));
+    assert(strstr(Mods_Status(words), "\"Once %d\" takes other % values"));
+    assert(strstr(Mods_Status(words), "\"Width %5d\" takes other % values"));
+    assert(strstr(Mods_Status(words), "\"Number\" is not a string"));
+    assert(!strstr(Mods_Status(words), "\"Speed: %d\"") && !strstr(Mods_Status(words), "100%"));
+    assert(!strcmp(Mods_Text(plain, "Speed: %d"), "Speed: %d"));            /* a file with no texts */
     /* The language without its country. */
     assert(!strcmp(Mods_Name(plain), "Plain"));
     assert(!strcmp(Mods_Metadata(plain, "description"), "S\xC3\xB3 portugu\xC3\xAAs."));
@@ -113,8 +136,13 @@ int main(void)
     assert(!strcmp(Mods_Name(words), "Palavras (pt)"));
     Mods_SetLanguage("zh_hant");   /* a script, not a country */
     assert(!strcmp(Mods_Name(words), "Hant"));
-    Mods_SetLanguage("en-US");
+    {
+        unsigned before = Mods_OverlaySignature(0);   /* the overlays drawn again in the new words */
+        Mods_SetLanguage("en-US");
+        assert(Mods_OverlaySignature(0) != before);
+    }
     assert(!strcmp(Mods_Name(words), "Words"));
+    assert(!strcmp(Mods_Text(words, "Speed: %d"), "Speed: %d"));
     assert(!setenv("MEMORIES_MODS_LANGUAGE", "pt-br", 1));
     Mods_SetLanguage("en-US");
     Mods_SetLanguage("de");

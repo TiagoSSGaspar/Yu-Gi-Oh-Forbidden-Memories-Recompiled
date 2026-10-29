@@ -19,6 +19,8 @@ from build_game32 import VERSION_PATTERN
 from package_macos import APP, EXECUTABLE, MINIMUM, ROOT, inspect_binary, inspect_icon, shipped_mod_files
 
 LANGUAGES = {f'{name}.txt' for name in ('en-eu', 'fr', 'de', 'it', 'es')}
+# and the port's own words in other languages (src/pc/platform/ui_text.h)
+LANGUAGES |= {f'ui/{path.name}' for path in (ROOT / 'languages/ui').glob('*.json')}
 LICENSES = {'SDL3.txt', 'libpng.txt', 'zlib.txt', 'FreeType.txt'}
 REQUIRED_EXPORTS = {'Duel_DrawFieldCards', 'D_800E9DB0', 'SoftGpu_Bank'}
 

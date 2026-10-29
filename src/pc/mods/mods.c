@@ -484,6 +484,12 @@ static void host_sound_free(const MemoriesModHost *host, int sound)
     Mod *mod = owner(host);
     if (mod && clip_free) clip_free((int)(mod - mods), sound);
 }
+static const char *own_text(const Mod *mod, const char *english);
+static const char *host_text(const MemoriesModHost *host, const char *english)
+{
+    Mod *mod = owner(host);
+    return mod ? own_text(mod, english) : english;
+}
 static const char *(*notes_source)(int);
 static int (*tag_source)(int, const char *, char *, size_t);
 void Mods_SetCardNotes(const char *(*notes)(int), int (*tag)(int, const char *, char *, size_t))
@@ -541,6 +547,27 @@ static void overlay_touch(int x, int y, int w, int h)
     if (y < overlay.y0) overlay.y0 = y;
     if (x1 > overlay.x1) overlay.x1 = x1;
     if (y1 > overlay.y1) overlay.y1 = y1;
+}
+
+/* The game's picture on the canvas (Mods_SetPicture); none set: the whole
+ * canvas, 4:3. */
+static struct { int x, y, w, h, columns; } picture;
+
+void Mods_SetPicture(int x, int y, int w, int h, int columns)
+{
+    picture.x = x; picture.y = y; picture.w = w; picture.h = h;
+    picture.columns = columns > 0 ? columns : 320;
+}
+
+static void host_picture_point(const MemoriesModHost *host, int x, int y, int *canvas_x, int *canvas_y)
+{
+    int px = picture.x, py = picture.y, pw = picture.w, ph = picture.h, columns = picture.columns;
+    if (!owner(host) || !overlay.canvas) { *canvas_x = *canvas_y = 0; return; }
+    if (pw <= 0 || ph <= 0) {
+        px = py = 0; pw = overlay.canvas->width; ph = overlay.canvas->height; columns = 320;
+    }
+    *canvas_x = px + pw / 2 + (x - 160) * pw / columns;
+    *canvas_y = py + y * ph / 240;
 }
 
 static void host_overlay_size(const MemoriesModHost *host, int *width, int *height, int *scale)
@@ -603,9 +630,14 @@ void Mods_DrawOverlay(MenuCanvas *canvas, int scale, void (*text)(MenuCanvas *, 
     }
 }
 
+/* Bumped whenever the mods' lang files are read again: the overlays' words
+ * (host->text) may have changed with them. */
+static unsigned language_generation;
+
 unsigned Mods_OverlaySignature(unsigned frame)
 {
-    unsigned signature = 0;
+    unsigned signature = language_generation * 2654435761u ^ (unsigned)(picture.x * 31 + picture.y) * 40503u ^
+                         (unsigned)(picture.w * 31 + picture.h) * 16777619u ^ (unsigned)picture.columns;
     if (shut_down) return 0;
     for (int i = 0; i < mod_count; i++) {
         const MemoriesMod *hooks = &mods[i].hooks;
@@ -639,6 +671,8 @@ static void fill_host(Mod *mod)
     mod->host.sound_add = host_sound_add;
     mod->host.sound_play = host_sound_play;
     mod->host.sound_free = host_sound_free;
+    mod->host.text = host_text;
+    mod->host.picture_point = host_picture_point;
     mod->host.api = MEMORIES_MOD_API;
     mod->host.id = mod->id;
     mod->host.directory = mod->directory;
@@ -1796,6 +1830,46 @@ static void current_language(char *out, size_t size)
     Language_Pick(out, size, "MEMORIES_MODS_LANGUAGE", system_language);
 }
 
+/* The next printf conversion of `text` from `*at` -- "%d", "%-3s", "%lu" --
+ * copied into `out`; 0 when there is none left. "%%" is not one. A "%" with
+ * no conversion after it is returned as far as it goes, to differ from any
+ * real one. */
+static int next_conversion(const char *text, size_t *at, char *out, size_t size)
+{
+    size_t start, length;
+    for (;;) {
+        const char *percent = strchr(text + *at, '%');
+        if (!percent) return 0;
+        start = (size_t)(percent - text);
+        if (percent[1] == '%') {
+            *at = start + 2;
+            continue;
+        }
+        length = 1 + strspn(percent + 1, "-+ #0123456789.*$hlLqjzt");
+        if (percent[length]) length++;   /* the conversion's letter */
+        *at = start + length;
+        if (length >= size) length = size - 1;
+        memcpy(out, percent, length);
+        out[length] = '\0';
+        return 1;
+    }
+}
+
+/* Whether a translation takes the same printf arguments as its English: the
+ * same conversions, written the same, in the same order. A mod passes the
+ * translation to snprintf with the English's arguments. */
+static int same_conversions(const char *english, const char *translation)
+{
+    char a[32], b[32];
+    size_t i = 0, j = 0;
+    for (;;) {
+        int more = next_conversion(english, &i, a, sizeof(a));
+        if (more != next_conversion(translation, &j, b, sizeof(b))) return 0;
+        if (!more) return 1;
+        if (strcmp(a, b)) return 0;
+    }
+}
+
 /* The mod's lang/<language>.json, else lang/<language without country>.json
  * ("pt-BR", then "pt"), checked against its manifest: what it gets wrong is
  * a warning, and the English is shown there. Never freed: the window
@@ -1831,8 +1905,23 @@ static void read_strings(Mod *mod)
     }
     for (entry = Json_At(root, 0); entry; entry = Json_Next(entry)) {
         const char *key = Json_Name(entry);
-        if (strcmp(key, "name") && strcmp(key, "description") && strcmp(key, "settings"))
+        if (strcmp(key, "name") && strcmp(key, "description") && strcmp(key, "settings") && strcmp(key, "texts"))
             warn(mod, 1, "%s: unknown key \"%s\"", name, key);
+    }
+    /* The words the mod draws (host->text): strings, taking the English's
+     * arguments. One that does not is never given; the English is. */
+    entry = Json_Member(root, "texts");
+    if (entry && Json_TypeOf(entry) != JSON_OBJECT) {
+        warn(mod, 1, "%s: \"texts\" is not an object of the mod's English words", name);
+    } else {
+        for (entry = Json_At(entry, 0); entry; entry = Json_Next(entry)) {
+            const char *word = Json_String(entry, NULL);
+            if (!word)
+                warn(mod, 1, "%s: the text \"%.40s\" is not a string", name, Json_Name(entry));
+            else if (!same_conversions(Json_Name(entry), word))
+                warn(mod, 1, "%s: the text \"%.40s\" takes other %% values than the English; it stays English",
+                     name, Json_Name(entry));
+        }
     }
     own = Json_Member(root, "settings");
     if (own && Json_TypeOf(own) != JSON_OBJECT) {
@@ -1862,6 +1951,17 @@ void Mods_SetLanguage(const char *tag)
     if (!strcmp(now, read_language)) return;   /* the files read are the ones it would read */
     for (int i = 0; i < mod_count; i++)
         if (!mods[i].removed) read_strings(&mods[i]);
+    language_generation++;
+}
+
+/* `english`, a text the mod draws, in the player's language when its lang
+ * file's "texts" has it; else `english` itself. */
+static const char *own_text(const Mod *mod, const char *english)
+{
+    const char *word;
+    if (!english) return NULL;
+    word = Json_String(Json_Member(Json_Member(Json_Root(mod->strings), "texts"), english), NULL);
+    return word && *word && same_conversions(english, word) ? word : english;
 }
 
 /* The mod's own word for `key` of its manifest ("name", "description"), or
@@ -2645,6 +2745,7 @@ const char *Mods_Name(int mod)
     return own ? own : at(mod) ? mods[mod].name : "";
 }
 const char *Mods_Status(int mod) { return at(mod) ? mods[mod].status : ""; }
+const char *Mods_Text(int mod, const char *english) { return at(mod) ? own_text(&mods[mod], english) : english; }
 int Mods_Enabled(int mod) { return at(mod) ? mods[mod].enabled : 0; }
 int Mods_RequiresRestart(int mod) { return at(mod) ? mods[mod].restart : 0; }
 

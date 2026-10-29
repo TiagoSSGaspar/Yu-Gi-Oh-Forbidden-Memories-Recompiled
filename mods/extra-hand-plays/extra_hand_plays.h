@@ -15,7 +15,7 @@ typedef int (*ExtraHandTurnDraws)(int side, int turn, int room);
  * that playing a card is optional. Asked while that hand is up. */
 typedef int (*ExtraHandOptionalPlay)(void);
 
-/* How many cards `side` may hold (`*max`, 5 to 10) and keep at the end of
+/* How many cards `side` may hold (`*max`, 5 to 40) and keep at the end of
  * its turn (`*keep`, 0 for no limit). Both come in at the disc's: 5 and 0.
  * Asked whenever they are needed. */
 typedef void (*ExtraHandLimits)(int side, int *max, int *keep);
@@ -25,9 +25,10 @@ typedef void (*ExtraHandLimits)(int side, int *max, int *keep);
 typedef int (*ExtraHandPhases)(void);
 
 /* 1: the first three entries; 2: set_optional_play; 3: pass_hand; 4: the
- * hand past five cards; 5: set_phases. New entries only go at the end, so
- * check version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 5
+ * hand past five cards; 5: set_phases; 6: hand_cursor, and the hand entries
+ * count hand cards, up to 40. New entries only go at the end, so check
+ * version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 6
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -50,13 +51,15 @@ typedef struct {
      * (D_800EAE88 all zero). Does nothing outside a hand. */
     void (*pass_hand)(void);
     /* Version 4: the hand limits, or NULL for the disc's. One mod sets it.
-     * Past five cards the hand is laid out overlapped, and the player picks
-     * from all of it; the CPU's hand script sees the cards past the fifth
-     * ahead of the upcoming deck. */
+     * Past five cards the hand is laid out overlapped, ten at most on
+     * screen: past ten, the player's cursor moves a window of ten over the
+     * hand (version 6). The player picks from all of it; the CPU's hand
+     * script sees the cards past the fifth ahead of the upcoming deck. */
     void (*set_hand_limits)(ExtraHandLimits limits);
-    /* The hand of the side whose turn it is, slot by slot (0 up): how many
-     * slots it has, the card in one (0 empty) and its place in the order
-     * the player marked cards in (0 unmarked). */
+    /* The hand of the side whose turn it is, card by card (0 up): how many
+     * there are room for, the card at one (0 empty) and its place in the
+     * order the player marked cards in (0 unmarked). Before version 6 these
+     * counted the slots on screen, ten at most. */
     int (*hand_slots)(void);
     int (*hand_card)(int slot);
     int (*hand_mark)(int slot);
@@ -68,6 +71,10 @@ typedef struct {
      * before. NULL goes back to START ending the hand or the turn. One mod
      * sets it. */
     void (*set_phases)(ExtraHandPhases fn);
+    /* Version 6: the hand card under the player's hand cursor, for
+     * hand_card and hand_mark: past ten cards the cursor's place on screen
+     * is no longer the card's. */
+    int (*hand_cursor)(void);
 } ExtraHandApi;
 
 #endif

@@ -3,7 +3,7 @@
 /* Pure hand planner. Slots identify materials, including duplicates; a slot
  * whose id is 0 is empty. A prefix is the player's actual pick order. No
  * query changes game state. */
-#define FUSION_HAND 10 /* the disc's five, or up to ten with Extra hand plays */
+#define FUSION_HAND 10 /* the disc's five, or the ten on screen with Extra hand plays */
 #define FUSION_CHAIN 5 /* the most cards a line takes: five can be marked */
 /* modifier goes to ATK and DEF; defense_modifier to DEF beyond it (an equip
  * whose DEF bonus differs, duel_card.h). */

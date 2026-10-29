@@ -116,6 +116,10 @@ void Mods_DrawOverlay(struct MenuCanvas *canvas, int scale,
                       void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
                       int (*width)(const char *, int), int *x, int *y, int *w, int *h);
 unsigned Mods_OverlaySignature(unsigned frame);
+/* Where the game's picture shows on the overlays' canvas, and how many of
+ * the disc's 320 columns its width spans (more in widescreen), for
+ * host->picture_point; set before each Mods_DrawOverlay. */
+void Mods_SetPicture(int x, int y, int w, int h, int columns);
 /* Drop everything cached from the running game: a resumed save state is
  * another game. */
 void Mods_Reset(void);
@@ -181,6 +185,10 @@ const char *Mods_Metadata(int mod, const char *key);
  * lang/<language without country>.json, is read again. NULL or "" for the
  * locale's environment; MEMORIES_MODS_LANGUAGE wins over both. */
 void Mods_SetLanguage(const char *tag);
+/* `english`, a text the mod draws, from its lang file's "texts" in the
+ * player's language (host->text); `english` itself when there is none, or
+ * when the translation takes other printf values than the English. */
+const char *Mods_Text(int mod, const char *english);
 const char *Mods_Directory(int mod);
 /* Where players put new mods (MEMORIES_MODS_DIR, else the user mods
  * folder), created if missing; 0 on success. */

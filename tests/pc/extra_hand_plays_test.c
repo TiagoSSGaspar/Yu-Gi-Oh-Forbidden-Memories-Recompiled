@@ -28,6 +28,7 @@
 
 u16 gDuel_wSceneStateFlags;
 u16 D_8009B162;
+u16 D_8009B16C;
 u8 D_8009B174;
 DuelCardPickCursor *D_8009B1B4;
 u8 D_8009B1D5;
@@ -48,7 +49,7 @@ u8 D_800907CC[2 * HAND_SIZE + 2] = {0, 1, 2, 3, 4, 0x80, 0x81, 0x82, 0x83, 0x84}
 u8 gDuel_bWinnerSide;
 DuelDeckCardRecord gDuel_aDeckCardRecords[80];
 #define deck gDuel_aDeckCardRecords
-static DuelCardDisplayObject drawn_objects[64];
+static DuelCardDisplayObject drawn_objects[1024];
 static int drawn;
 /* What big_hand.c and discard.c reach of the game. */
 u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT];
@@ -64,13 +65,13 @@ u16 gDuel_wViewerCardID;
 u16 gInput_wPad1Held;
 u8 D_800EAE88[12];
 s16 D_8009B20C[2];
-static DisplayObject sprites[16];
+static DisplayObject sprites[256];
 static int sprite_count, switches, setup_seen, info_record = -1;
 int Cards_ExodiaPiece(int id) { (void)id; return 1; }
 void *DisplayObject_AcquireSlot(s32 index, s32 key)
 {
     (void)index; (void)key;
-    assert(sprite_count < 16);
+    assert(sprite_count < 256);
     return &sprites[sprite_count++];
 }
 s32 DisplayObject_FindFreeGeneralSlot(void) { return 0; }
@@ -232,7 +233,7 @@ u8 *Duel_SetupCardRecord(s32 index, s32 position) { return setup(index, position
 DuelCardDisplayObject *func_80018004(DuelCardRecord *record, s32 x, s32 y)
 {
     (void)record; (void)x; (void)y;
-    assert(drawn < 64);
+    assert(drawn < 1024);
     return &drawn_objects[drawn++];
 }
 void Duel_UpdateDrawCardSlide(DisplayObject *object) { (void)object; }
@@ -270,8 +271,19 @@ static void *fake_symbol(const MemoriesModHost *h, const char *name)
     (void)h;
     return !strcmp(name, "FusionHelper_SetHand") ? (void *)set_helper_hand : NULL;
 }
+/* The host's clock, which the hand-full notice runs by: held still while
+ * the notice is checked, then a notice's length on at every reading, so a
+ * later full hand's notice is gone by the time the overlay is drawn. */
+static uint64_t fake_clock;
+static int clock_runs;
+static uint64_t fake_now_us(const MemoriesModHost *h)
+{
+    (void)h;
+    if (clock_runs) fake_clock += 4000000;
+    return fake_clock;
+}
 /* The overlay: a 1280x960 window at the port's scale 2; the hints' boxes. */
-static struct { int x, y, w, h; } boxes[16];
+static struct { int x, y, w, h; } boxes[256];
 static int box_count;
 static void fake_overlay_size(const MemoriesModHost *h, int *width, int *height, int *scale)
 { (void)h; *width = 1280; *height = 960; *scale = 2; }
@@ -280,16 +292,17 @@ static int fake_text_width(const MemoriesModHost *h, const char *text, int scale
 static void fake_fill(const MemoriesModHost *h, int x, int y, int w, int hh, uint32_t rgb, unsigned alpha)
 {
     (void)h; (void)rgb; (void)alpha;
-    assert(box_count < 16);
+    assert(box_count < 256);
     boxes[box_count].x = x; boxes[box_count].y = y; boxes[box_count].w = w; boxes[box_count++].h = hh;
 }
 static char texts[12][64];
-static int text_count, text_middle[12];
+static int text_count, text_middle[12], text_x[12];
 static void fake_draw_text(const MemoriesModHost *h, int x, int middle, const char *text, uint32_t rgb, int scale)
 {
-    (void)h; (void)x; (void)rgb; (void)scale;
+    (void)h; (void)rgb; (void)scale;
     assert(text_count < 12);
     text_middle[text_count] = middle;
+    text_x[text_count] = x;
     snprintf(texts[text_count++], sizeof texts[0], "%s", text);
 }
 /* The overlay's lines this frame, after `mod_overlay` drew them. */
@@ -302,6 +315,13 @@ static int drew_at(const char *text)
     return -1;
 }
 static int drew(const char *text) { return drew_at(text) >= 0; }
+/* The texts drawn that are a number alone: the hand's arrows' counts. */
+static int numbers_drawn(void)
+{
+    int i, n = 0;
+    for (i = 0; i < text_count; i++) n += texts[i][0] && strspn(texts[i], "0123456789") == strlen(texts[i]);
+    return n;
+}
 /* The phase menu's panel: the biggest box drawn. */
 static int menu_box(void)
 {
@@ -329,11 +349,52 @@ static int draw_one(int side, int turn, int room)
     (void)side; (void)room;
     return turn == 1 ? HAND_SIZE : 1;
 }
+static void limits_forty(int side, int *max, int *keep)
+{
+    (void)side;
+    *max = 99;      /* held to 40 */
+    *keep = 0;
+}
+static int draw_many(int side, int turn, int room)
+{
+    (void)side; (void)turn;
+    return room;
+}
+static void limits_forty_keep6(int side, int *max, int *keep)
+{
+    (void)side;
+    *max = 40;
+    *keep = 6;
+}
+static int draw_three(int side, int turn, int room)
+{
+    (void)side; (void)turn; (void)room;
+    return 3;
+}
 static void limits_ten(int side, int *max, int *keep)
 {
     (void)side;
     *max = 10;
     *keep = 6;
+}
+/* The host's words in the player's language (API 22), as a lang file of
+ * the mod's would give them; what it does not have stays English. */
+static const char *fake_text(const MemoriesModHost *h, const char *english)
+{
+    (void)h;
+    if (!strcmp(english, "End turn")) return "Passar a vez";
+    if (!strcmp(english, "Main Phase 1")) return "Fase Principal 1";
+    if (!strcmp(english, "%s   START: phases")) return "%s   START: fases";
+    if (!strcmp(english, "Hand limit: discard %u cards")) return "Limite da m\xC3\xA3o: descarte %u cartas";
+    return english;
+}
+/* The picture as the host places it (API 22): a 16:9 window, 1706 wide,
+ * the picture 4:3 in its middle. */
+static void fake_picture_point(const MemoriesModHost *h, int x, int y, int *cx, int *cy)
+{
+    (void)h;
+    *cx = 213 + x * 4;
+    *cy = y * 4;
 }
 static MemoriesModHost fake_host;
 typedef void (*Step)(void);
@@ -372,6 +433,44 @@ static void to_hand(void)
     step_hand();                         /* the hand state's setup */
     step_hand();                         /* its first idle step */
 }
+/* The draw and its resolution, for draws longer than to_hand() waits for. */
+static void draw_through(void)
+{
+    step_draw();
+    D_8009B162 = 0;
+    step_draw();
+    for (int frames = 0; (gDuel_wSceneStateFlags & STATE_MASK) == 3; frames++) {
+        assert(frames < 1000);
+        step_resolution();
+    }
+}
+/* The hand panel the window lays its cards on. */
+static DisplayObject panel_object;
+/* The player's turn with a hand of `count` (the five, then hand cards from
+ * deck position 5 up), up to its first idle frame. */
+static void player_hand(int count)
+{
+    int k;
+    memset(&S, 0, sizeof S);
+    memset(S.xhand, -1, sizeof S.xhand);
+    new_turn(0, 0);
+    memset(hand_record(), 0, DUEL_SELECTION_SIDE_SIZE);        /* as the hand state's setup leaves it */
+    memset(drawn_objects, 0, sizeof drawn_objects);              /* the last hand's objects are gone */
+    drawn = sprite_count = 0;
+    ((DisplayParent *)hand_record())->position_base = &panel_object;
+    for (k = HAND_SIZE; k < count; k++) S.xhand[0][k - HAND_SIZE] = (s8)k;
+    D_800E9FF0[0].deck_draw_cursor = (u8)count;
+    to_hand();
+}
+static void press(u16 pressed, u16 held, u16 repeat)
+{
+    gInput_wPad1Pressed = pressed; gInput_wPad1Held = held; gInput_wPad1Repeat = repeat;
+    step_hand();
+    gInput_wPad1Pressed = gInput_wPad1Held = gInput_wPad1Repeat = 0;
+}
+#define PAD_LEFT 0x8000
+#define PAD_UP 0x1000
+
 /* The play: the hand puts card `slot` down -- a monster, through
  * placement, when the hand state is up -- and the field starts. */
 static DisplayObject placed;
@@ -401,6 +500,7 @@ int main(void)
     fake_host.symbol = fake_symbol;
     fake_host.overlay_size = fake_overlay_size; fake_host.text_width = fake_text_width;
     fake_host.fill = fake_fill; fake_host.draw_text = fake_draw_text;
+    fake_host.now_us = fake_now_us;
     assert(MemoriesModInit(&fake_host, &mod));
     mod_overlay = mod.overlay;
     assert(helper_hand && helper_hand(0) == &D_800EA030[0] && helper_hand(4) == &D_800EA030[4] && !helper_hand(5));
@@ -588,10 +688,18 @@ int main(void)
     to_hand();
     assert(D_800E9FF0[0].deck_draw_cursor == 11 && D_800E9FF0[0].hand[3] == 10);
     assert(D_800E9FF0[0].hand[4] < 0 && D_800EA030[3].object && !D_800EA030[4].object);
-    /* A full hand has no room: the turn's card waits instead. */
+    /* A full hand has no room: the turn's card waits instead, and a notice
+     * says it was drawn, for three seconds. */
+    fake_clock = 1000000;
     new_turn(0, 0);
     to_hand();
     assert(D_800E9FF0[0].deck_draw_cursor == 11 && provided->queued(0) == 1);
+    assert(hint_signature() & 1u << 26);
+    overlay_lines();
+    assert(drew_at("Hand full (5 cards)") >= 0);
+    fake_clock += FULL_NOTICE_US;
+    assert(!(hint_signature() & 1u << 26));
+    clock_runs = 1;
 
     /* A bonus hand (a draw-two card used from the hand): it draws the two and
      * the waiting card as far as there is room, and is not counted as a play. */
@@ -1071,19 +1179,24 @@ int main(void)
          * games, the phase on top, the entry under the cursor on a bar,
          * the buttons at its foot. */
         assert(drew("Main Phase 1   START: phases") && drew("Main Phase 1"));
-        assert(drew("Battle Phase") && drew("End Phase") && drew("X: select   O: back"));
+        assert(drew("Attack") && drew("End turn") && drew("X: confirm   O: close"));
         {
             int p = menu_box(), cx = boxes[p].x + boxes[p].w / 2, cy = boxes[p].y + boxes[p].h / 2;
             assert(cx > 600 && cx < 680 && cy > 420 && cy < 540);
-            assert(boxes[p].y < text_middle[drew_at("Battle Phase")] &&
-                   boxes[p].y + boxes[p].h > text_middle[drew_at("X: select   O: back")]);
+            assert(boxes[p].y < text_middle[drew_at("Attack")] &&
+                   boxes[p].y + boxes[p].h > text_middle[drew_at("X: confirm   O: close")]);
         }
-        assert(on_bar("Battle Phase") && !on_bar("End Phase"));
+        assert(on_bar("Attack") && !on_bar("End turn"));
+        /* The duel's first turn: no attack, so the entry is the field. */
+        D_8009B16C = 0x1000;
+        overlay_lines();
+        assert(drew("Go to the field") && !drew("Attack") && on_bar("Go to the field"));
+        D_8009B16C = 0;
         before = hint_signature();
         gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand(); gInput_wPad1Pressed = 0;
         assert(hint_signature() != before);
         overlay_lines();
-        assert(!on_bar("Battle Phase") && on_bar("End Phase"));
+        assert(!on_bar("Attack") && on_bar("End turn"));
         gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); gInput_wPad1Pressed = 0;
         gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
         gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand(); gInput_wPad1Pressed = 0;
@@ -1115,6 +1228,283 @@ int main(void)
     }
     S.discard = 0;
 
-    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five (draws, packing, records, snapshot, window, layout, discard, Exodia, fusion helper), phases (menu, Main Phase 2, on screen) passed\n");
+    /* A hand of up to 40: the CPU draws to 40, past the window's ten with
+     * nothing on screen; its snapshot takes the 35 past the fifth ahead of
+     * the deck; Exodia is found anywhere in the 40. */
+    {
+        static const int pieces[5] = {0, 12, 20, 30, 39};
+        AiActiveCard out[80];
+        int k;
+        memset(&S, 0, sizeof S);
+        memset(S.xhand, -1, sizeof S.xhand);
+        provided->set_hand_limits(limits_forty);
+        provided->set_turn_draws(draw_many);
+        new_turn(1, 1);
+        for (k = 0; k < HAND_SIZE; k++) D_800E9FF0[1].hand[k] = (s8)(DECK_SIZE + k);
+        D_800E9FF0[1].deck_draw_cursor = HAND_SIZE;
+        drawn = 0;
+        draw_through();
+        assert(gDuel_wSceneStateFlags == STATE_HAND);
+        assert(Ehp_Count(1) == EHP_HAND && S.queued[1] == 0 && S.layout == EHP_VIEW && S.view == 0);
+        assert(D_800E9FF0[1].deck_draw_cursor == DECK_SIZE);
+        for (k = 0; k < EHP_EXTRA; k++) assert(S.xhand[1][k] == DECK_SIZE + HAND_SIZE + k);
+        for (k = 0; k < EHP_BORROWED; k++) assert(S.xslot[k].object);
+        assert(drawn == EHP_BORROWED);             /* cards 6-10 made; nothing past the tenth */
+        snapshot(out, 1);
+        for (k = 0; k < EHP_EXTRA; k++)
+            assert(out[2 * DUEL_FIELD_ROW_SIZE + HAND_SIZE + k].card_id == deck[DECK_SIZE + HAND_SIZE + k].id &&
+                   out[2 * DUEL_FIELD_ROW_SIZE + HAND_SIZE + k].deck_index == DECK_SIZE + HAND_SIZE + k);
+        assert(out[2 * DUEL_FIELD_ROW_SIZE + EHP_HAND].card_id == 0);   /* no deck left: the terminator */
+        for (k = 0; k < 5; k++) deck[DECK_SIZE + pieces[k]].id = (s16)(EXODIA_FIRST_CARD_ID + k);
+        assert(exodia());
+        deck[DECK_SIZE + pieces[4]].id = 1;
+        assert(!exodia());
+        for (k = 0; k < 80; k++) deck[k].id = (s16)(100 + k);
+        /* The CPU's discard down to six, over all forty. */
+        D_800E9FF0[1].hand[3] = -1;
+        cpu_discard(1, Ehp_Count(1) - 6);
+        assert(Ehp_Count(1) == 6 && D_800E9FF0[1].hand[3] >= 0 && S.xhand[1][1] < 0);
+        provided->set_hand_limits(NULL);
+        provided->set_turn_draws(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The player's hand of 23: ten on screen; the cursor past either end
+     * moves the window one card; a marked card keeps its mark off screen. */
+    {
+        int k;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        assert(Ehp_Count(0) == 23 && S.layout == EHP_VIEW && S.view == 0);
+        assert(helper_hand(9) == &S.xslot[4] && !helper_hand(10));
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 0 marked */
+        assert(S.mark[0] == 1 && Ehp_Mark(0) == 1 && D_800EA030[0].active_09 == 1 && side->field_15 == 1);
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        assert(S.view == 1 && (s8)side->field_0E == 9 && Ehp_Cursor() == 10);
+        assert(D_801A7AD8[Ehp_Record(0, 9)].card_id == deck[10].id);  /* hand card 10 at the right end */
+        assert(D_801A7AD8[Ehp_Record(0, 0)].card_id == deck[1].id);   /* hand card 1 at the left */
+        assert(D_800EA030[0].active_09 == 0 && S.mark[0] == 1);         /* the mark kept off screen */
+        for (k = 0; k < 20; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 13 && Ehp_Cursor() == 22);                     /* stops at the last card */
+        side->field_0E = 0;
+        for (k = 0; k < 13; k++) press(0, 0, PAD_LEFT);
+        assert(S.view == 0 && D_800EA030[0].active_09 == 1);            /* back: its number again */
+        press(0, 0, PAD_LEFT);
+        assert(S.view == 0 && (s8)side->field_0E == 0);
+        /* Unmarking renumbers by hand card, off the window too. */
+        side->field_0E = 4;
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 4: 2 */
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        press(0, 0, PAD_RIGHT);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 11: 3 */
+        assert(S.mark[4] == 2 && S.mark[11] == 3 && side->field_15 == 3);
+        side->field_0E = 2;                                          /* hand card 4 */
+        press(0x4000, 0x4000, 0);                                    /* DOWN */
+        assert(S.mark[0] == 1 && S.mark[4] == 0 && S.mark[11] == 2 && side->field_15 == 2);
+        assert(Ehp_Slot(9)->active_09 == 2 && Ehp_Mark(11) == 2);
+
+        /* A draw past the window moves it on to the card coming in. */
+        player_hand(10);
+        provided->set_turn_draws(draw_three);
+        new_turn(0, 0);
+        ((DisplayParent *)hand_record())->position_base = &panel_object;
+        draw_through();
+        assert(Ehp_Count(0) == 13 && S.view == 3 && S.layout == EHP_VIEW);
+        assert(Ehp_Get(0, 12) == 12 && D_801A7AD8[Ehp_Record(0, 9)].card_id == deck[12].id);
+        provided->set_turn_draws(NULL);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The play: marked cards go down in mark order from anywhere in the
+     * hand; one off the window takes an unmarked slot's place on screen. */
+    {
+        int k, id0, id15, magic = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 0: 1 */
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 6);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 15: 2 */
+        assert(S.mark[0] == 1 && S.mark[15] == 2 && side->field_15 == 2);
+        assert(confirm_has_monster(side));
+        gDuel_adwCardStats[deck[0].id - 1] = gDuel_adwCardStats[deck[15].id - 1] = magic;
+        assert(!confirm_has_monster(side));
+        gDuel_adwCardStats[deck[0].id - 1] = gDuel_adwCardStats[deck[15].id - 1] = 50;
+        id0 = Ehp_CardId(Ehp_Get(0, 0));
+        id15 = Ehp_CardId(Ehp_Get(0, 15));
+        memset(D_800907D8, DUEL_CARD_SIDE_RECORD_COUNT - 1, sizeof D_800907D8);   /* empty zones */
+        D_801A7AD8[DUEL_CARD_SIDE_RECORD_COUNT - 1].flags = 0;
+        D_8009B1B4 = SIDE_CURSOR(D_800E9F48);
+        D_8009B1B4->row = 2;
+        D_8009B1B4->col = 0;
+        confirm(side, Ehp_Slot((s8)side->field_0E));
+        assert(D_8009B174 == 6 && !D_800E9EF0[2]);
+        assert(D_800E9EF0[0] == (DisplayObject *)Ehp_Slot(0)->object && Ehp_Slot(0)->active_09 == 1);
+        assert(D_801A7AD8[Ehp_Record(0, 0)].card_id == id0);           /* hand card 0, in hand card 6's place */
+        assert(D_800E9EF0[1] == (DisplayObject *)Ehp_Slot(9)->object && Ehp_Slot(9)->active_09 == 2);
+        assert(D_801A7AD8[Ehp_Record(0, 9)].card_id == id15);
+        assert(Ehp_Get(0, 0) < 0 && Ehp_Get(0, 15) < 0 && Ehp_Count(0) == 21);
+
+        /* No mark: the card under the cursor, in the window. */
+        player_hand(23);
+        side = hand_record();
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        side->field_0E = 2;
+        assert(Ehp_Cursor() == 8 && confirm_has_monster(side));
+        confirm(side, Ehp_Slot(2));
+        assert(D_800E9EF0[0] == (DisplayObject *)Ehp_Slot(2)->object && !D_800E9EF0[1]);
+        assert(Ehp_Get(0, 8) < 0 && Ehp_Count(0) == 22);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The end-of-turn discard of a hand of 23 down to six: its window
+     * scrolls, marks past five only raise the card, and the marked cards go
+     * from anywhere in the hand. */
+    {
+        int k, steps;
+        provided->set_hand_limits(limits_forty_keep6);
+        player_hand(23);
+        assert(Ehp_Discard() && S.discard == DISCARD_PANEL_IN && S.discard_left == 17);
+        assert(S.layout == EHP_VIEW && S.view == 0 && S.xslot[4].object);
+        D_8009B162 = 0;
+        assert(Ehp_Discard() && S.discard == DISCARD_PICK);
+        side = hand_record();
+        for (k = 0; k < 17; k++) {
+            gInput_wPad1Pressed = PAD_UP;
+            assert(Ehp_Discard());
+            gInput_wPad1Pressed = 0;
+            gInput_wPad1Repeat = PAD_RIGHT;
+            assert(Ehp_Discard());
+            gInput_wPad1Repeat = 0;
+        }
+        assert(side->field_15 == 17 && S.view == 8 && S.mark[16] == 17 && !S.mark[17]);
+        gInput_wPad1Pressed = PAD_UP;                               /* no more than 17 */
+        Ehp_Discard();
+        gInput_wPad1Pressed = 0;
+        assert(side->field_15 == 17 && !S.mark[18]);
+        /* The window back to the start shows the first marks' numbers. */
+        side->field_0E = 0;
+        for (k = 0; k < 8; k++) {
+            gInput_wPad1Repeat = PAD_LEFT;
+            Ehp_Discard();
+        }
+        gInput_wPad1Repeat = 0;
+        assert(S.view == 0 && D_800EA030[2].active_09 == 3 && D_800EA030[2].child && S.xslot[4].active_09 == 10 &&
+               !S.xslot[4].child);
+        gInput_wPad1Pressed = PAD_BUTTON_CONFIRM_MASK;
+        Ehp_Discard();
+        gInput_wPad1Pressed = 0;
+        assert(S.discard == DISCARD_PANEL_OUT);
+        D_8009B162 = 0;
+        for (steps = 0; Ehp_Discard(); steps++) assert(steps < 4);
+        assert(Ehp_Count(0) == 6 && S.discard == DISCARD_NONE);
+        for (k = 0; k < 6; k++) assert(Ehp_Get(0, k) == 17 + k);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* A long hand's cards off the window: an arrow beside each end that has
+     * some, the number of them under it, beside the hand, below the hints;
+     * they blink. */
+    {
+        unsigned sig;
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        overlay_lines();
+        assert(drew("13") && !drew("0") && text_x[drew_at("13")] > 1180 && text_middle[drew_at("13")] > 600);
+        for (int i = 0; i < text_count; i++) assert(strncmp(texts[i], "Cards ", 6));
+        sig = hint_signature();
+        side->field_0E = 9;
+        press(0, 0, PAD_RIGHT);
+        assert(hint_signature() != sig);
+        overlay_lines();
+        assert(drew("1") && drew("12") && !drew("13") && text_x[drew_at("1")] < 100);
+        clock_runs = 0;
+        fake_clock = (fake_clock / 1000000 + 1) * 1000000;
+        sig = overlay_signature();
+        fake_clock += 500000;
+        assert(overlay_signature() != sig);
+        fake_clock += 500000;
+        assert(overlay_signature() == sig);
+        /* 40 cards at the end of the window: the largest place there is. */
+        player_hand(40);
+        side = hand_record();
+        side->field_0E = 9;
+        for (int k = 0; k < 30; k++) press(0, 0, PAD_RIGHT);
+        assert(S.view == 30);
+        overlay_lines();
+        assert(drew("30") && text_x[drew_at("30")] < 100 && numbers_drawn() == 1);
+        /* Ten fit: no arrows, and nothing blinks. */
+        player_hand(10);
+        overlay_lines();
+        assert(!numbers_drawn());
+        sig = overlay_signature();
+        fake_clock += 500000;
+        assert(overlay_signature() == sig);
+        clock_runs = 1;
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The API counts hand cards (version 6), and says which one is under
+     * the cursor. */
+    {
+        int k;
+        assert(provided->version == 6);
+        provided->set_hand_limits(limits_forty);
+        player_hand(23);
+        side = hand_record();
+        side->field_0E = 9;
+        for (k = 0; k < 6; k++) press(0, 0, PAD_RIGHT);
+        press(PAD_UP, PAD_UP, 0);                                   /* hand card 15 */
+        assert(provided->hand_slots() == 23 && provided->hand_card(22) == deck[22].id && !provided->hand_card(23));
+        assert(provided->hand_mark(15) == 1 && !provided->hand_mark(9));
+        side->field_0E = 2;
+        assert(provided->hand_cursor() == 8);
+        player_hand(HAND_SIZE);
+        assert(provided->hand_slots() == HAND_SIZE && provided->hand_cursor() == 0);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    /* The mod's words in the player's language, from a host that has them
+     * (API 22); a host before it keeps them English, as every check above. */
+    {
+        fake_host.api = 22;
+        fake_host.text = fake_text;
+        fake_host.picture_point = fake_picture_point;
+        provided->set_hand_limits(limits_forty);
+        phases_on = 1;
+        provided->set_phases(phases_answer);
+        player_hand(23);
+        overlay_lines();
+        assert(drew("13") && text_x[drew_at("13")] > 213 + 1180 && drew("Fase Principal 1   START: fases"));
+        gInput_wPad1Pressed = PAD_BUTTON_START; step_hand(); gInput_wPad1Pressed = 0;
+        overlay_lines();
+        assert(drew("Passar a vez") && !drew("End turn"));
+        gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); gInput_wPad1Pressed = 0;
+        S.discard = 1;
+        S.discard_left = 3;
+        overlay_lines();
+        assert(drew("Limite da m\xC3\xA3o: descarte 3 cartas") && drew("UP: mark   X: discard the marked cards"));
+        S.discard = 0;
+        S.discard_left = 0;
+        fake_host.api = 4;
+        overlay_lines();
+        assert(drew("13") && text_x[drew_at("13")] > 1180 && text_x[drew_at("13")] < 1280);
+        provided->set_hand_limits(NULL);
+        memset(S.xhand, -1, sizeof S.xhand);
+    }
+
+    printf("Extra hand plays: rebuilt hands, limits, monster plays, sides, START, CPU window, optional first play, turn draws, bonus hands, queued draws, hands past five and up to 40 (draws, packing, records, snapshot, window, scrolling, marks off screen, discard, Exodia, fusion helper, API 6), phases (menu, Main Phase 2, on screen), the hand's arrows, words in the player's language passed\n");
     return 0;
 }

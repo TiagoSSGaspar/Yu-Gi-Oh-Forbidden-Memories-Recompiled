@@ -21,7 +21,9 @@ separate materials. It never plays cards for you.
 The hand is the disc's five slots, or, while a mod keeps a hand past five,
 every slot that mod hands over with `FusionHelper_SetHand`
 (`fusion_helper.h`): [Extra hand plays](../mods/extra-hand-plays/README.md)
-does, for a hand of up to ten. A ten-card search is long, so the rules'
+does, with the ten cards on screen: past ten, the hand's window (a hand
+holds up to forty there), so the helper searches the cards the player sees.
+A ten-card search is long, so the rules'
 answer for each pair is asked once per plan, and the plan is made again only
 when the hand, the picks or the stat caps change.
 

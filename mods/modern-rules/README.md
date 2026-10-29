@@ -1,9 +1,17 @@
-# Modern rules
+# Duelist Kingdom rules
 
-An optional code mod for SLUS_01411 that brings in rules from the later
-games. It needs **Extra hand plays** (`mods/extra-hand-plays`), which it
-lists under `requires`: enable both in the Mods window. The mod adds a card,
-so applying or removing it takes a restart. It ships disabled.
+Its id stays `modern-rules`; it was named Modern rules before 0.5.0.
+
+An optional code mod for SLUS_01411 that brings in the rules of the anime's
+Duelist Kingdom, as far as they fit the game: life points stay at 8000. It
+needs **Extra hand plays** (`mods/extra-hand-plays`), which it lists under
+`requires`: enable both in the Mods window. Applying or removing it takes a
+restart.
+
+The Battle City's rules come later, as a mod of their own: the hand limit
+of six at the end of a turn and Pot of Greed (this mod's Treasure Trickster
+until 0.5.0, which moves there). Copies of Treasure Trickster stay in the
+saves (`notes/more-cards.md`) under `modern-rules:pot-of-greed:1`.
 
 Extra hand plays brings the hand back after each play: one monster a turn
 by default, and any number of magic, trap and equip cards. These rules
@@ -13,23 +21,21 @@ come on top.
 
 | Setting | Behavior |
 |---|---|
-| Playing a card is optional | START in the first hand of a turn plays no card and goes to the field, as in the later games. Without it, a full monster row with nothing that fuses would leave the player no legal play, since a monster can no longer be replaced. |
-| Phases like the GX games | On by default. START opens a menu of the next phases instead of ending the hand or the turn: from the hand (Main Phase 1) the Battle Phase (the field) or the End Phase; from the field Main Phase 2, to play from the hand again after attacking, or the End Phase. UP/DOWN pick, X takes, circle closes. The turn's monster still counts once across both Main Phases. The CPU plays as before. See Extra hand plays' README. |
-| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to ten cards. Off refills the hand to five each turn, as on the disc. |
-| Hand limit at the end of a turn | 0–10, default 6. With one card drawn a turn, a side ending its turn with more cards discards down to this many: the player picks them, the CPU throws away its weakest. 0 turns the limit off. |
+| Playing a card is optional | START in the first hand of a turn plays no card and goes to the field, as in the anime. Without it, a full monster row with nothing that fuses would leave the player no legal play, since a monster can no longer be replaced. |
+| Turn phases | On by default. START opens a menu of the next phases instead of ending the hand or the turn: from the hand (Main Phase 1) the Battle Phase (the field) or the End Phase; from the field Main Phase 2, to play from the hand again after attacking, or the End Phase. UP/DOWN pick, X takes, circle closes. The turn's monster still counts once across both Main Phases. The CPU plays as before. See Extra hand plays' README. |
+| Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to forty cards. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. An equip used from the field must equip the monster the player puts it onto. |
-| Treasure Trickster draws two | Using Treasure Trickster draws two cards, and the hand comes back up for one more play that does not count against the plays per turn. The CPU uses it too, as soon as it holds one. |
 
 ## Rules
 
-- **Drawing.** The hand holds up to ten cards (Extra hand plays lays them
-  out overlapped past five). A card drawn with no room waits, and is drawn
+- **Drawing.** The hand holds up to forty cards, a whole deck (Extra hand
+  plays lays them out overlapped past five, ten at a time on screen, in a
+  window the cursor moves). A card drawn with no room waits, and is drawn
   into the next hand: the next bonus or extra hand, or the next turn, on
   top of that turn's card. The hand shows how many are waiting. Drawing
   with no cards left in the deck loses the duel, as at a turn's draw.
-- **Hand limit.** At the end of a turn a side keeps at most six cards
-  (the setting): passing turns without playing, the hand grows 5, 6, then
-  7 during the turn and back to 6 at its end.
+- **No hand limit.** The hand is not cut down at the end of a turn: passing
+  turns without playing, it grows by one each turn, up to forty.
 - **Fusion chains.** Cards are played in the order they were marked, as in
   the original game. Each next card must either fuse with the card the
   chain has made so far, or one of the two must equip the other. Chains of
@@ -46,34 +52,20 @@ come on top.
   equip; a chain that breaks is played as far as it keeps every card. With
   no such zone it plays no card, when playing a card is optional (with that
   setting off, its own choice stands).
-- **Treasure Trickster.** The mod's own card in Pot of Greed's part from
-  the later games: a Magic card that draws two, played from the hand face
-  up, or set and activated later. It is won in duels and dealt to
-  opponents in place of Sparks, and sold on the Password screen for 300
-  StarChips (password `55144522`). Its picture is the mod's own
-  (`images/treasure_trickster.png`), with a close-up of the trickster's face
-  for the small picture the hand and field show
-  (`images/treasure_trickster_thumb.png`). Its identity in saves is still
-  `modern-rules:pot-of-greed:1`, the card's first name, so copies saved
-  under that name stay. Without the mod's code, for example with the
-  setting off, it does nothing.
 
 ## How it works
 
 Extra hand plays owns the turn: the draw, bringing the hand back up, and
 dealing cards into the first empty slots. It provides a table,
 `extra-hand-plays:api` (`mods/extra-hand-plays/extra_hand_plays.h`). This
-mod uses it in three places:
+mod uses it in two places:
 
 - It sets the turn draws: 6 on a side's first draw (nothing drawn yet:
-  the five and the turn's card), 1 after; and the hand limits, ten held and
-  six kept.
-- It answers Treasure Trickster's use, through the card-effect event, with a
-  bonus hand that draws two.
-- It wraps the CPU's hand decision (`AiScript_Run`). When the CPU holds a
-  Treasure Trickster, its decision becomes "use it, face up". The
-  CPU decides its play again in the bonus hand that follows. The manifest
-  loads this mod after AI Hard Mode, so it also wraps that mod's planner.
+  the five and the turn's card), 1 after; and the hand limits, forty held and
+  none kept at the end of a turn.
+- It wraps the CPU's hand decision (`AiScript_Run`) for the fusion check
+  below. The manifest loads this mod after AI Hard Mode, so it also wraps
+  that mod's planner.
 
 The fusion check wraps the hand state (`DuelScene_UpdateHandActions`) and
 the field state's equip target (`DuelScene_UpdateFieldActions`, step 6) for
@@ -91,5 +83,5 @@ python3 tools/pc/build_mod.py mods/modern-rules --out tmp/pc/modern-rules
 ```
 
 `tests/pc/modern_rules_test.c` (ctest `pc_modern_rules`) checks the turn
-draws, the chain check, the effect and the CPU's use. Drawing, queueing and
-bonus hands are checked in Extra hand plays' test.
+draws, the hand limits and the chain check. Drawing, queueing and bonus
+hands are checked in Extra hand plays' test.

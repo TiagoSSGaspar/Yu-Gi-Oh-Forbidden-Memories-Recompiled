@@ -39,6 +39,7 @@
 #include "game/duel_apply_card_object_flags.h"
 #include "game/duel_card.h"
 #include "game/duel_card_layout.h"
+#include "game/duel_check_quit_input.h"
 #include "game/duel_display.h"
 #include "game/duel_hand.h"
 #include "game/duel_scene_state.h"
@@ -107,6 +108,10 @@ static void *original_dim, *original_window;
 static ExtraHandTurnDraws turn_draws;
 static ExtraHandOptionalPlay optional_play;
 
+/* A text the mod draws, in the player's language (host API 22: its
+ * lang/<language>.json's "texts"); the English on an older host. */
+static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+
 static int setting(const char *key, int fallback, int low, int high)
 {
     int n = host->setting(host, key, fallback);
@@ -139,7 +144,7 @@ static int monsters_spent(void) { return S.monsters >= setting("monsters", 1, 1,
 static int playable_left(void)
 {
     int slot;
-    for (slot = 0; slot < EHP_SLOTS; slot++)
+    for (slot = 0; slot < EHP_HAND; slot++)
         if (Ehp_Get(D_8009B1D5, slot) >= 0 && (!monsters_spent() || !monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))))
             return 1;
     return 0;
@@ -232,18 +237,30 @@ static void startup(void)
 static void lay_out(void)
 {
     int max = Ehp_HandMax(), count = hand_count() + (S.custom ? S.to_draw : 0);
-    S.layout = (u8)(count > max ? max : count);
+    if (count > max) count = max;
+    S.layout = (u8)(count > EHP_VIEW ? EHP_VIEW : count);
     S.focus = 0;
 }
+
+/* The player's draw that found the hand full: when the notice of it goes,
+ * and how many cards that draw left waiting (draw_hint). Not saved: a
+ * notice, not the duel's state. */
+#define FULL_NOTICE_US 3000000
+static uint64_t full_notice_until;
+static unsigned full_notice_drawn;
 
 /* How many of `total` wanted cards fit; the rest wait. */
 static void plan_draws(int total)
 {
-    int side = D_8009B1D5, room = Ehp_HandMax() - hand_count();
+    int side = D_8009B1D5, room = Ehp_HandMax() - hand_count(), before = S.queued[side];
     if (total > 255) total = 255;
     S.to_draw = (u8)(total < room ? total : room);
     S.queued[side] = (u8)(total - S.to_draw);
     S.custom = 1;
+    if (S.queued[side] > before && human()) {
+        full_notice_until = host->now_us(host) + FULL_NOTICE_US;
+        full_notice_drawn = (unsigned)(S.queued[side] - before);
+    }
 }
 
 /* State 2. A real draw starts a new turn. A rebuilt hand takes the draw's
@@ -265,6 +282,8 @@ static void draw(void)
     }
     /* Cards past the fifth fill the five's gaps first; the rest are spawned
      * beside the five, and the borrowed records start empty. */
+    S.view = 0;
+    memset(S.mark, 0, sizeof S.mark);
     Ehp_Pack(D_8009B1D5);
     Ehp_ClearBorrowed(D_8009B1D5);
     if (!S.redraw) {
@@ -319,7 +338,7 @@ static void deal(void)
 {
     DuelSideState *side = D_8009B1C8;
     DisplayObject *object;
-    int slot, record, max;
+    int slot, record, max, position, screen;
     if (!(gDuel_wSceneStateFlags & STATE_STARTED)) {
         gDuel_wSceneStateFlags |= STATE_STARTED;
         D_8009B1ED = 1;
@@ -343,15 +362,25 @@ static void deal(void)
             gDuel_wSceneStateFlags |= DRAWN;
             return;
         }
-        record = Ehp_Record(D_8009B1D5, slot);
-        Ehp_SetupRecord(record, D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor);
-        object = (DisplayObject *)func_80018004(&D_801A7AD8[record], Ehp_LayoutX(slot, S.layout) + SLIDE_IN, 0x92);
-        object->field_6C = 1;
-        object->field_60 = 0xC;
-        object->update = (DisplayObjectCallback)Duel_UpdateDrawCardSlide;
-        Ehp_Slot(slot)->object = (u8 *)object;
-        Ehp_Arrange(slot);
-        Ehp_Set(D_8009B1D5, slot, ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index);
+        position = D_8009B1D5 * DECK_SIZE + side->deck_draw_cursor;
+        /* The player's window moves on to the card coming in. */
+        if (slot >= S.view + EHP_VIEW && human()) Ehp_Show(slot - EHP_VIEW + 1);
+        if (slot >= S.view + EHP_VIEW) {
+            /* Past the window: into the hand, with nothing on screen. */
+            Ehp_Set(D_8009B1D5, slot, (s8)position);
+        } else {
+            screen = slot - S.view;
+            record = Ehp_Record(D_8009B1D5, screen);
+            Ehp_SetupRecord(record, position);
+            object = (DisplayObject *)func_80018004(&D_801A7AD8[record], Ehp_LayoutX(screen, S.layout) + SLIDE_IN,
+                                                    0x92);
+            object->field_6C = 1;
+            object->field_60 = 0xC;
+            object->update = (DisplayObjectCallback)Duel_UpdateDrawCardSlide;
+            Ehp_Slot(screen)->object = (u8 *)object;
+            Ehp_Arrange(screen);
+            Ehp_Set(D_8009B1D5, slot, ((DuelDeckCardRecord *)D_801A7AD8[record].data)->deck_index);
+        }
         side->deck_draw_cursor++;
         if (!--S.to_draw) gDuel_wSceneStateFlags |= DRAWN;
         SD_SEPlayFull(0xA);
@@ -459,10 +488,10 @@ static void hand_state(void)
  * marked ones, or the one under the cursor when none is marked. */
 static int confirm_has_monster(DuelSelectionRecord *side)
 {
-    int slot, slots = Ehp_BigHand() ? S.layout : HAND_SIZE;
-    if (side->field_15 == 0) return monster(Ehp_CardId(Ehp_Get(D_8009B1D5, (s8)side->field_0E)));
-    for (slot = 0; slot < slots; slot++)
-        if (Ehp_Slot(slot)->active_09 && monster(Ehp_CardId(Ehp_Get(D_8009B1D5, slot)))) return 1;
+    int card;
+    if (side->field_15 == 0) return monster(Ehp_CardId(Ehp_Get(D_8009B1D5, Ehp_Cursor())));
+    for (card = 0; card < EHP_HAND; card++)
+        if (Ehp_Mark(card) && monster(Ehp_CardId(Ehp_Get(D_8009B1D5, card)))) return 1;
     return 0;
 }
 
@@ -565,15 +594,21 @@ static void pass_hand(void)
         return;
     slide_away(hand_record());
 }
-static int hand_slots(void) { return Ehp_BigHand() ? S.layout : HAND_SIZE; }
-static int hand_card(int slot)
+/* Up to the last card held: five for a hand that never passed them. */
+static int hand_slots(void)
 {
-    if (slot < 0 || slot >= EHP_SLOTS) return 0;
-    return Ehp_CardId(Ehp_Get(D_8009B1D5, slot));
+    int n = Ehp_BigHand() ? EHP_HAND : HAND_SIZE;
+    while (n > HAND_SIZE && Ehp_Get(D_8009B1D5, n - 1) < 0) n--;
+    return n;
 }
-static int hand_mark(int slot) { return slot < 0 || slot >= EHP_SLOTS ? 0 : Ehp_Slot(slot)->active_09; }
+static int hand_card(int card)
+{
+    if (card < 0 || card >= EHP_HAND) return 0;
+    return Ehp_CardId(Ehp_Get(D_8009B1D5, card));
+}
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
-                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, hand_mark, Ehp_SetPhases};
+                                 pass_hand, Ehp_SetLimits, hand_slots, hand_card, Ehp_Mark, Ehp_SetPhases,
+                                 Ehp_Cursor};
 
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the
@@ -609,6 +644,16 @@ static int field_idle(void)
         (D_8009B174 & 0xF) == FIELD_IDLE;
 }
 static const char *const phase_names[] = {"", "Main Phase 1", "Battle Phase", "Main Phase 2", "End Phase"};
+/* The menu's entries say what each next phase does for the player. On the
+ * duel's first turn no monster may attack (D_8009B16C's bit, which the disc
+ * sets as the duel starts and clears as that turn ends; the field refuses
+ * an attack while it is set), so the Battle Phase is only the field. */
+static const char *const phase_actions[] = {"", "", "Attack", "Play more cards", "End turn"};
+#define DUEL_FIRST_TURN 0x1000
+static const char *phase_action(int phase)
+{
+    return phase == PHASE_BATTLE && (D_8009B16C & DUEL_FIRST_TURN) ? "Go to the field" : phase_actions[phase];
+}
 /* The phase on screen, in phases: the hand's Main Phase or the field's
  * Battle Phase; 0 for none. */
 static int phase_shown(void)
@@ -618,15 +663,28 @@ static int phase_shown(void)
     if (hand_idle()) return S.main2 == 2 ? PHASE_MAIN2 : PHASE_MAIN1;
     return 0;
 }
+/* The window's place, for a player's hand past ten: bits 10-15 and 27-30
+ * of the hints hold (count - 11) * 31 + view + 1 (1 to 930), 0 for none. */
+static unsigned window_bits(void)
+{
+    int count = Ehp_Count(D_8009B1D5);
+    unsigned e;
+    if (!human() || count <= EHP_VIEW) return 0;
+    e = (unsigned)((count - EHP_VIEW - 1) * 31 + S.view + 1);
+    return (e & 0x3F) << 10 | (e >> 6) << 27;
+}
+
 /* Bit 0: the skip hint; bit 1: the monsters are spent; bits 2-9: cards
- * waiting to be drawn; bits 16-18: the phase shown; 19-20: the phase
- * menu's cursor, 21-22 its entries, 23-25 its first. The discard: bit 31,
- * with the cards still to mark. */
-static unsigned hint_signature(void)
+ * waiting to be drawn; bits 10-15 and 27-30: the window (window_bits);
+ * bits 16-18: the phase shown; 19-20: the phase menu's cursor, 21-22 its
+ * entries, 23-25 its first. The discard: bit 31, with the cards still to
+ * mark and the window. The hand-full notice is hint_signature's bit 26,
+ * beside all of these. */
+static unsigned hint_bits(void)
 {
     unsigned shown = 0;
     int phase = phase_shown(), items[2];
-    if (S.discard && human()) return 0x80000000u | S.discard_left;
+    if (S.discard && human()) return 0x80000000u | S.discard_left | window_bits();
     if (phase) {
         shown = (unsigned)phase << 16;
         if (S.menu) {
@@ -640,15 +698,62 @@ static unsigned hint_signature(void)
         shown |= 1;
     }
     if (setting("hint", 1, 0, 1) && monsters_spent()) shown |= 2;
-    return shown | (unsigned)S.queued[D_8009B1D5] << 2;
+    return shown | (unsigned)S.queued[D_8009B1D5] << 2 | window_bits();
+}
+static int full_notice_shown(void) { return full_notice_until && host->now_us(host) < full_notice_until; }
+static unsigned hint_signature(void) { return hint_bits() | (full_notice_shown() ? 1u << 26 : 0); }
+/* The hand's arrows (hand_arrows) blink: dim every other half second. */
+#define WINDOW_BITS (0x3Fu << 10 | 0xFu << 27)
+#define ARROW_BLINK_US 500000
+static int arrows_dim(void) { return (int)(host->now_us(host) / ARROW_BLINK_US & 1); }
+/* What the overlay shows, the arrows' blink with it. */
+static unsigned overlay_signature(void)
+{
+    unsigned shown = hint_signature();
+    return shown & WINDOW_BITS && arrows_dim() ? ~shown : shown;
+}
+
+/* A drawn card that found no room: a panel high in the middle of the
+ * screen for a few seconds, so the draw is seen to have happened. */
+static void full_notice(void)
+{
+    char title[96], text[160];
+    int width, height, scale, big, small, frame, pad, w, x, y, panel_w, panel_h, waiting = S.queued[D_8009B1D5];
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    big = 2 * scale;
+    small = scale;
+    frame = 2 * scale;
+    pad = 10 * scale;
+    snprintf(title, sizeof title, T("Hand full (%d cards)"), Ehp_HandMax());
+    if (full_notice_drawn == 1)
+        snprintf(text, sizeof text, T("You drew a card: it waits until a play makes room (%d waiting)"), waiting);
+    else
+        snprintf(text, sizeof text, T("You drew %u cards: they wait until plays make room (%d waiting)"),
+                 full_notice_drawn, waiting);
+    w = host->text_width(host, title, big);
+    if (host->text_width(host, text, small) > w) w = host->text_width(host, text, small);
+    panel_w = w + 2 * pad;
+    panel_h = pad + 16 * big + 4 * scale + 12 * small + pad;
+    x = (width - panel_w) / 2;
+    y = height * 70 / 240;
+    host->fill(host, x, y, panel_w, panel_h, MENU_PANEL_RGB, 235);
+    host->fill(host, x, y, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y + panel_h - frame, panel_w, frame, MENU_FRAME_RGB, 255);
+    host->fill(host, x, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    host->fill(host, x + panel_w - frame, y, frame, panel_h, MENU_FRAME_RGB, 255);
+    host->draw_text(host, x + (panel_w - host->text_width(host, title, big)) / 2, y + pad + 8 * big, title,
+                    MENU_TITLE_RGB, big);
+    host->draw_text(host, x + (panel_w - host->text_width(host, text, small)) / 2,
+                    y + pad + 16 * big + 4 * scale + 6 * small, text, MENU_PICKED_RGB, small);
 }
 /* The phase menu, as in the GX games: a panel in the middle of the screen,
- * the phase now on top, the next phases under it with the one under the
- * cursor on a bar, the buttons at the foot. Its text is three times the
+ * the phase now on top, what the next phases do under it with the one
+ * under the cursor on a bar, the buttons at the foot. Its text is three times the
  * hints' size, the foot's twice. */
 static void phase_menu(int phase)
 {
-    static const char foot[] = "X: select   O: back";
+    const char *foot = T("X: confirm   O: close");
     int width, height, scale, big, small, frame, items[2], n, i, w, row, pad, gap, x, y, panel_w, panel_h, top;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
@@ -656,9 +761,10 @@ static void phase_menu(int phase)
     small = 2 * scale;
     frame = 3 * scale;
     n = Ehp_PhaseItems(phase == PHASE_BATTLE, items);
-    w = host->text_width(host, phase_names[phase], big);
+    w = host->text_width(host, T(phase_names[phase]), big);
     for (i = 0; i < n; i++)
-        if (host->text_width(host, phase_names[items[i]], big) > w) w = host->text_width(host, phase_names[items[i]], big);
+        if (host->text_width(host, T(phase_action(items[i])), big) > w)
+            w = host->text_width(host, T(phase_action(items[i])), big);
     if (host->text_width(host, foot, small) > w) w = host->text_width(host, foot, small);
     row = 16 * big;
     pad = 14 * scale;
@@ -673,41 +779,106 @@ static void phase_menu(int phase)
     host->fill(host, x, y, frame, panel_h, MENU_FRAME_RGB, 255);
     host->fill(host, x + panel_w - frame, y, frame, panel_h, MENU_FRAME_RGB, 255);
     top = y + pad;
-    host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[phase], big)) / 2, top + row / 2,
-                    phase_names[phase], MENU_TITLE_RGB, big);
+    host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_names[phase]), big)) / 2, top + row / 2,
+                    T(phase_names[phase]), MENU_TITLE_RGB, big);
     host->fill(host, x + pad, top + row + gap / 2, panel_w - 2 * pad, scale, MENU_FRAME_RGB, 160);
     top += row + gap;
     for (i = 0; i < n; i++, top += row) {
         if (i + 1 == S.menu) host->fill(host, x + pad / 2, top, panel_w - pad, row, MENU_BAR_RGB, 230);
-        host->draw_text(host, x + (panel_w - host->text_width(host, phase_names[items[i]], big)) / 2, top + row / 2,
-                        phase_names[items[i]], i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB, big);
+        host->draw_text(host, x + (panel_w - host->text_width(host, T(phase_action(items[i])), big)) / 2,
+                        top + row / 2, T(phase_action(items[i])), i + 1 == S.menu ? MENU_PICKED_RGB : MENU_OTHER_RGB,
+                        big);
     }
     host->draw_text(host, x + (panel_w - host->text_width(host, foot, small)) / 2, top + gap + 6 * small, foot,
                     MENU_OTHER_RGB, small);
+}
+/* Where a point of the game's picture (320 x 240) is on the canvas: the
+ * host's answer from API 22, else a 4:3 picture as tall as the canvas, in
+ * its middle. */
+static void picture_point(int x, int y, int *cx, int *cy)
+{
+    int width, height, scale;
+    if (host->api >= 22) {
+        host->picture_point(host, x, y, cx, cy);
+        return;
+    }
+    host->overlay_size(host, &width, &height, &scale);
+    *cx = (width - height * 4 / 3) / 2 + x * height / 240;
+    *cy = y * height / 240;
+}
+/* The cards off the window at either end of a long hand: a red arrow (the
+ * cursor's red) pointing that way, with how many there are under it, in
+ * the gutters beside the ten cards on screen (Ehp_LayoutX), above the
+ * cursor's height. The arrows blink. */
+#define ARROW_RGB 0xE81810
+#define ARROW_LEFT_X 8
+#define ARROW_RIGHT_X 312
+#define ARROW_TOP 154
+#define ARROW_BOTTOM 166
+#define ARROW_HALF_WIDTH 3
+#define ARROW_NUMBER_Y 176
+static void hidden_cards(int at, int left, int cards)
+{
+    char number[8];
+    int width, height, scale, x0, y0, x1, y1, cx, cy, tw, box_w, row, half, alpha = arrows_dim() ? 110 : 255;
+    host->overlay_size(host, &width, &height, &scale);
+    if (scale < 1) scale = 1;
+    snprintf(number, sizeof number, "%d", cards);
+    tw = host->text_width(host, number, scale);
+    picture_point(at - ARROW_HALF_WIDTH, ARROW_TOP, &x0, &y0);
+    picture_point(at + ARROW_HALF_WIDTH, ARROW_BOTTOM, &x1, &y1);
+    picture_point(at, ARROW_NUMBER_Y, &cx, &cy);
+    box_w = (tw > x1 - x0 ? tw : x1 - x0) + 6 * scale;
+    host->fill(host, cx - box_w / 2, y0 - 3 * scale, box_w, cy + 10 * scale - (y0 - 3 * scale), 0x000000, 160);
+    half = (y1 - y0) / 2;
+    for (row = y0; row < y1 && half > 0; row++) {
+        int d = row - (y0 + half), w = (x1 - x0) * (half - (d < 0 ? -d : d)) / half;
+        if (w > 0) host->fill(host, left ? x1 - w : x0, row, w, 1, ARROW_RGB, alpha);
+    }
+    host->draw_text(host, cx - tw / 2, cy, number, HINT_RGB, scale);
+}
+/* The arrows for window_bits' share of the hints; none for none. */
+static void hand_arrows(unsigned shown)
+{
+    unsigned e = (shown >> 10 & 0x3F) | (shown >> 27 & 0xF) << 6;
+    int count, view;
+    if (!(shown & WINDOW_BITS)) return;
+    count = (int)((e - 1) / 31) + EHP_VIEW + 1;
+    view = (int)((e - 1) % 31);
+    if (view > 0) hidden_cards(ARROW_LEFT_X, 1, view);
+    if (count - view - EHP_VIEW > 0) hidden_cards(ARROW_RIGHT_X, 0, count - view - EHP_VIEW);
 }
 static void draw_hint(void)
 {
     unsigned shown = hint_signature(), waiting = shown >> 2 & 0xFF;
     int phase = shown >> 16 & 7, row = 0;
-    char text[64];
+    char text[128];
+    if (shown & 1u << 26) full_notice();
+    shown &= ~(1u << 26);
     if (shown & 0x80000000u) {
         unsigned left = shown & 0xFF;
-        snprintf(text, sizeof text, "Hand limit: discard %u card%s", left, left == 1 ? "" : "s");
+        snprintf(text, sizeof text, left == 1 ? T("Hand limit: discard %u card") : T("Hand limit: discard %u cards"),
+                 left);
         line(text, row++, HINT_RGB);
-        line("UP: mark   X: discard the marked cards", row, HINT_RGB);
+        line(T("UP: mark   X: discard the marked cards"), row, HINT_RGB);
+        hand_arrows(shown);
         return;
     }
     if (phase) {
-        snprintf(text, sizeof text, "%s   START: phases", phase_names[phase]);
+        snprintf(text, sizeof text, T("%s   START: phases"), T(phase_names[phase]));
         line(text, row++, HINT_RGB);
         if (S.menu) phase_menu(phase);
     }
-    if (shown & 1) line(extra_hand() ? "Extra hand: START to skip" : "START: play no card this turn", row++, HINT_RGB);
-    if (shown & 2) line("Monster played: magic, trap and equip cards only", row++, HINT_RGB);
+    if (shown & 1)
+        line(extra_hand() ? T("Extra hand: START to skip") : T("START: play no card this turn"), row++, HINT_RGB);
+    if (shown & 2) line(T("Monster played: magic, trap and equip cards only"), row++, HINT_RGB);
     if (waiting) {
-        snprintf(text, sizeof text, "%u card%s waiting to be drawn", waiting, waiting == 1 ? "" : "s");
-        line(text, row, HINT_RGB);
+        snprintf(text, sizeof text,
+                 waiting == 1 ? T("Hand full: %u card waiting to be drawn") : T("Hand full: %u cards waiting to be drawn"),
+                 waiting);
+        line(text, row++, HINT_RGB);
     }
+    hand_arrows(shown);
 }
 
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
@@ -716,7 +887,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     host = ehp_host = from;
     mod->api = 4;
     mod->overlay = draw_hint;
-    mod->overlay_signature = hint_signature;
+    mod->overlay_signature = overlay_signature;
     memset(S.xhand, -1, sizeof S.xhand);
     return host->register_state(host, &S, sizeof S, EHP_STATE_VERSION) &&
         host->provide(host, "api", (void *)&api) &&

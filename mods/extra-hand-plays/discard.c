@@ -2,10 +2,12 @@
  * switch (scene state 10) a side holding more cards discards down to it.
  *
  * The player's hand comes up on its panel as a draw puts it up, with the
- * hand cursor. UP marks a card to throw away (its pick number shows the
- * order), DOWN or circle takes the mark back, and X or square throws the
- * marked cards away once there are as many as the limit asks for; the
- * panel then slides away with them. The CPU throws away its weakest cards
+ * hand cursor; past ten cards its window moves as the hand state's does
+ * (Ehp_Show). UP marks a card to throw away (its pick number shows the
+ * order, up to five; later marks only raise the card), DOWN or circle takes
+ * the mark back, and X or square throws the marked cards away -- off the
+ * window too -- once there are as many as the limit asks for; the panel
+ * then slides away with them. The CPU throws away its weakest cards
  * at once: monsters by their better stat, any other card counted as 1500.
  * The game has no graveyard: a discarded card leaves the duel. */
 #include "hand_internal.h"
@@ -16,6 +18,7 @@
 #include "game/display_object_helpers.h"
 #include "game/display_object_work_slots.h"
 #include "game/duel_card.h"
+#include "game/duel_card_display_state.h"
 #include "game/duel_card_layout.h"
 #include "game/duel_card_pick_cursor.h"
 #include "game/duel_card_record_lifecycle.h"
@@ -70,7 +73,7 @@ static void cpu_discard(int side, int count)
 {
     while (count-- > 0) {
         int slot, worst = -1;
-        for (slot = 0; slot < EHP_SLOTS; slot++)
+        for (slot = 0; slot < EHP_HAND; slot++)
             if (Ehp_Get(side, slot) >= 0 &&
                 (worst < 0 || value(Ehp_CardId(Ehp_Get(side, slot))) < value(Ehp_CardId(Ehp_Get(side, worst)))))
                 worst = slot;
@@ -90,6 +93,9 @@ static void spread(int side)
     memset(S.xslot, 0, sizeof S.xslot);
     Ehp_ClearBorrowed(side);
     count = Ehp_Count(side);
+    if (count > EHP_VIEW) count = EHP_VIEW;   /* the window's ten; the rest come with it */
+    S.view = 0;
+    memset(S.mark, 0, sizeof S.mark);
     for (slot = 0; slot < count; slot++) {
         card = Ehp_Record(side, slot);
         Ehp_SetupRecord(card, Ehp_Get(side, slot));
@@ -124,7 +130,16 @@ static void pick(DuelSelectionRecord *record, int side)
     DuelHandSlot *hand = Ehp_Slot(at), *slot;
     if (gInput_wPad1Repeat & 0xA000) {
         value = at + (gInput_wPad1Repeat & 0x2000 ? 1 : -1);
-        if (value < 0 || value >= count) return;
+        /* Past either end of the window, the window moves one card. */
+        if (value >= count) {
+            if (S.view + count >= Ehp_Count(side)) return;
+            Ehp_Show(S.view + 1);
+            value = count - 1;
+        } else if (value < 0) {
+            if (!S.view) return;
+            Ehp_Show(S.view - 1);
+            value = 0;
+        }
         record->field_0E = (u8)value;
         func_8001B780((DuelHandStackState *)record);
         func_80023144((DuelFieldDisplaySource *)record, Ehp_Record(side, value));
@@ -132,23 +147,37 @@ static void pick(DuelSelectionRecord *record, int side)
         return;
     }
     if ((gInput_wPad1Pressed & 0xFFFF) == 0x1000) {
-        if (!hand->active_09 && record->field_15 < S.discard_left) func_8001B7AC((DuelHandStackState *)record);
+        if (hand->active_09 || record->field_15 >= S.discard_left) return;
+        if (record->field_15 < HAND_SIZE) {
+            func_8001B7AC((DuelHandStackState *)record);
+        } else {   /* past five there is no number: the card only goes up */
+            record->field_15++;
+            ((DuelCardDisplayObject *)hand->object)->out_y -= 4;
+            hand->active_09 = record->field_15;
+            SD_SEPlayFull(0x2F);
+        }
+        S.mark[S.view + at] = hand->active_09;
         return;
     }
     if ((gInput_wPad1Pressed & PAD_BUTTON_CIRCLE) || (gInput_wPad1Pressed & 0xFFFF) == 0x4000) {
         if (!(value = hand->active_09)) return;
         SD_SEPlayFull(0x2F);
         hand->active_09 = 0;
+        S.mark[S.view + at] = 0;
         ((HandCardObject *)hand->object)->pos.xy.y += 4;
         DisplayObject_ReleaseIfPresent(hand->child);
         hand->child = 0;
         record->field_15--;
-        for (n = 0; n < count; n++) {
-            slot = Ehp_Slot(n);
-            if ((v = slot->active_09) >= value) {
-                slot->active_09 = (u8)(v - 1);
-                ((HandCardObject *)slot->child)->icon_state = (u8)((v - 2) * 0x10);
-            }
+        /* The later marks one down, off the window too. A mark that comes
+         * down to five has no number yet: it shows when the window comes
+         * back to it. */
+        for (n = 0; n < EHP_HAND; n++) {
+            if ((v = S.mark[n]) <= value) continue;
+            S.mark[n] = (u8)(v - 1);
+            if (n < S.view || n >= S.view + count) continue;
+            slot = Ehp_Slot(n - S.view);
+            slot->active_09 = (u8)(v - 1);
+            if (slot->child) ((HandCardObject *)slot->child)->icon_state = (u8)((v - 2) * 0x10);
         }
         return;
     }
@@ -158,8 +187,8 @@ static void pick(DuelSelectionRecord *record, int side)
             return;
         }
         SD_SEPlayFull(7);
-        for (n = 0; n < count; n++)
-            if (Ehp_Slot(n)->active_09) Ehp_Set(side, n, -1);
+        for (n = 0; n < EHP_HAND; n++)
+            if (S.mark[n]) Ehp_Set(side, n, -1);
         D_8009B1B4 = (DuelCardPickCursor *)record;
         D_8009B162 = PANEL_OUT;
         S.discard = DISCARD_PANEL_OUT;
