@@ -18,6 +18,11 @@ static DuelEffectRequest effect;
 void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
 DuelEffectRequest *DuelEffect_CreateRequest(s32 id) { (void)id; lights++; return &effect; }
 void Duel_ApplyCardObjectFlags(DuelCardDisplayObject *object) { (void)object; applied++; }
+/* The game's check before a position change: occupied, not used. */
+int DuelCard_CanActThisTurn(DuelCardRecord *card)
+{
+    return (card->flags & DUEL_CARD_FLAG_OCCUPIED) && !(card->flags & DUEL_CARD_FLAG_USED_THIS_TURN);
+}
 /* The game's remake of a record from its deck card: occupied, face down. */
 void func_80024D34(s32 record, s32 deck_index)
 {
@@ -68,7 +73,7 @@ int main(void)
     fake_host.applied = fake_applied;
     fake_host.card_id = fake_card_id;
     fake_host.hook = fake_hook;
-    assert(Multiply_Install(&fake_host, &fake_mod) && !hooked);
+    assert(Multiply_Install(&fake_host, &fake_mod) && hooked == (void *)can_act);
     assert(Multiply_Is(MULTIPLY_ID) && !Multiply_Is(301) && !Multiply_Is(0));
     Multiply_Is(MULTIPLY_ID);
     assert(identity_asks == 1);   /* asked once, then kept */
@@ -97,7 +102,9 @@ int main(void)
     /* Nothing more while it is there. */
     Multiply_Hold();
     assert(remakes == 1);
-    /* Put in attack by its player: back to defense. */
+    /* Its position cannot be changed; another monster's can. */
+    assert(!can_act(&D_801A7AD8[MONSTER_RECORD(0, 2)]) && can_act(&D_801A7AD8[MONSTER_RECORD(0, 0)]));
+    /* Put in attack some other way: back to defense. */
     D_801A7AD8[MONSTER_RECORD(0, 2)].flags &= (u16)~DUEL_CARD_FLAG_DEFENSE_POSITION;
     Multiply_Hold();
     assert(defending(MONSTER_RECORD(0, 2)) && remakes == 1);
@@ -140,7 +147,7 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 3 && !Multiply_Is(MULTIPLY_ID));
 
-    printf("Kuriboh and Multiply: the identity, the wall up, in defense, born again, a free zone, others not, "
+    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, born again, a free zone, others not, "
            "the wall as models, Multiply gone, sides, off passed\n");
     return 0;
 }

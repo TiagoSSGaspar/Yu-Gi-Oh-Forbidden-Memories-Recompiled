@@ -8,9 +8,9 @@
  * Multiply is an equip of Kuriboh's alone, added by the manifest, with no
  * bonus: it stays on the field as every equip does (equips.c), and is not
  * destroyed with its Kuriboh. While it is on the field its Kuriboh stays in
- * defense, so a battle with it costs no life points, and a Kuriboh that
- * leaves the field is born again in its zone, with the ritual's light and
- * sound: the side always has one, so there is no direct attack on it. The
+ * defense, and cannot leave it to attack, so a battle with it costs no life
+ * points, and a Kuriboh that leaves the field is born again in its zone,
+ * with the ritual's light and sound: the side always has one, so there is no direct attack on it. The
  * wall itself takes no monster zone and has no cards: with 3D Monsters it is
  * five more Kuribohs floating in front of the side's zones, more of the
  * Kuriboh's model (monsters_3d.h). It falls with Multiply. A second Multiply
@@ -25,6 +25,7 @@
 #include "game/display_object_work_slots.h"
 #include "psyq/libgte.h"
 #include "game/duel_card.h"
+#include "game/duel_card_can_act_this_turn.h"
 #include "game/duel_apply_card_object_flags.h"
 #include "game/duel_card_layout.h"
 #include "game/duel_card_record_lifecycle.h"
@@ -47,6 +48,7 @@
 
 static const MemoriesModHost *host;
 static int multiply_id;
+static void *original_can_act;
 
 static int on(void) { return host && host->applied(host) && host->setting(host, "multiply", 1); }
 
@@ -115,6 +117,15 @@ static int model_copies(int record, int x, int z, Monsters3dCopy *copies, int ro
         copies[i].yaw = clone_yaw[i];
     }
     return i;
+}
+
+/* The wall's Kuriboh does not leave defense: its position cannot be
+ * changed (L1 and R1, DuelScene_UpdateFieldActions), and in defense it does
+ * not attack. */
+static int can_act(DuelCardRecord *card)
+{
+    if (walled((int)(card - D_801A7AD8))) return 0;
+    return ((int (*)(DuelCardRecord *))original_can_act)(card);
 }
 
 /* 3D Monsters, when it is loaded, is asked to draw them. */
@@ -203,5 +214,5 @@ int Multiply_Install(const MemoriesModHost *from, MemoriesMod *mod)
     memset(&K, 0, sizeof K);
     K.zone[0] = K.zone[1] = K.deck[0] = K.deck[1] = -1;
     ask_models();
-    return 1;
+    return host->hook(host, (void *)DuelCard_CanActThisTurn, (void *)can_act, &original_can_act);
 }
