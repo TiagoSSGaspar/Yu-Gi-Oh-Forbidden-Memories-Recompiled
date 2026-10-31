@@ -37,15 +37,30 @@ void DuelScene_UpdateBattle(void)
     if (battle_ends) gDuel_wSceneStateFlags = 5;
 }
 
+/* The field's card drawing: where each card was drawn. */
+static int drawn_cards;
+static s16 drawn_x[16], drawn_z[16];
+void func_80015EF4(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color)
+{
+    u8 *object = (u8 *)((DuelCardRecord *)record)->object;
+    (void)prim; (void)sprite; (void)color;
+    if (object && drawn_cards < 16) {
+        drawn_x[drawn_cards] = *(s16 *)(object + 0x30);
+        drawn_z[drawn_cards] = *(s16 *)(object + 0x34);
+    }
+    drawn_cards++;
+}
+
 static int multiply_setting = 1, identity_asks;
-static void *hooked;
+static void *hooked[2];
+static int hooks;
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
 { (void)h; return !strcmp(key, "multiply") ? multiply_setting : fallback; }
 static int fake_applied(const MemoriesModHost *h) { (void)h; return 1; }
 static int fake_card_id(const MemoriesModHost *h, const char *identity)
 { (void)h; identity_asks++; return !strcmp(identity, "modern-rules:multiply:1") ? MULTIPLY_ID : 0; }
 static int fake_hook(const MemoriesModHost *h, void *function, void *replacement, void **original)
-{ (void)h; *original = function; hooked = replacement; return 1; }
+{ (void)h; *original = function; hooked[hooks++ % 2] = replacement; return 1; }
 static char drawn[96];
 static int drawn_count, earlier;
 static void fake_overlay_size(const MemoriesModHost *h, int *w, int *hh, int *scale)
@@ -106,7 +121,8 @@ int main(void)
     fake_host.picture_point = fake_picture_point;
     fake_host.text = fake_text;
     fake_mod.overlay = earlier_overlay;
-    assert(Multiply_Install(&fake_host, &fake_mod) && hooked == (void *)battle && fake_mod.overlay == overlay);
+    assert(Multiply_Install(&fake_host, &fake_mod) && hooked[0] == (void *)battle && hooked[1] == (void *)draw_card &&
+           fake_mod.overlay == overlay);
     assert(Multiply_Is(MULTIPLY_ID) && !Multiply_Is(301) && !Multiply_Is(0));
     Multiply_Is(MULTIPLY_ID);
     assert(identity_asks == 1);   /* asked once, then kept */
@@ -132,6 +148,38 @@ int main(void)
     drawn_count = 0;
     overlay();
     assert(drawn_count == 0);
+    /* The wall drawn: the Kuriboh, then nine more in front of it, toward
+     * the player (the CPU's side: z lower), its own place given back. */
+    {
+        static u8 kuriboh_object[0x70];
+        int i;
+        D_801A7AD8[MONSTER_RECORD(1, 2)].object = kuriboh_object;
+        *(s16 *)(kuriboh_object + 0x30) = 0;
+        *(s16 *)(kuriboh_object + 0x34) = 95;
+        drawn_cards = 0;
+        draw_card(&D_801A7AD8[MONSTER_RECORD(1, 2)], 0, 0, 0);
+        assert(drawn_cards == 1 + CLONES && drawn_x[0] == 0 && drawn_z[0] == 95);
+        for (i = 1; i <= CLONES; i++) assert(drawn_z[i] < 95 && drawn_z[i] > 0);
+        assert(*(s16 *)(kuriboh_object + 0x30) == 0 && *(s16 *)(kuriboh_object + 0x34) == 95);
+        /* At the field's edge the wall stays on the field. */
+        *(s16 *)(kuriboh_object + 0x30) = -140;
+        drawn_cards = 0;
+        draw_card(&D_801A7AD8[MONSTER_RECORD(1, 2)], 0, 0, 0);
+        for (i = 1; i <= CLONES; i++) assert(drawn_x[i] >= -140);
+        *(s16 *)(kuriboh_object + 0x30) = 0;
+        /* The Guardian: drawn once. */
+        D_801A7AD8[MONSTER_RECORD(1, 0)].object = kuriboh_object;
+        drawn_cards = 0;
+        draw_card(&D_801A7AD8[MONSTER_RECORD(1, 0)], 0, 0, 0);
+        assert(drawn_cards == 1);
+        D_801A7AD8[MONSTER_RECORD(1, 0)].object = 0;
+        assert(Multiply_Up(1) && !Multiply_Up(0));
+        {
+            int chain[2] = {KURIBOH, MULTIPLY_ID};
+            assert(Multiply_InChain(chain, 2) && !Multiply_InChain(chain, 1));
+        }
+    }
+
     /* The Celtic Guardian beside it is attacked as any monster is, as at
      * the end of the anime's duel. */
     attack(MONSTER_RECORD(1, 0));
@@ -154,8 +202,12 @@ int main(void)
     assert(D_8009B22A == 683 && !K.blocking);
     end();
     trap_found = 0;
-    /* Multiply gone: the attack on the Kuriboh goes through. */
+    /* Multiply gone: the attack on the Kuriboh goes through, and no wall is
+     * drawn. */
     empty(SPELL_RECORD(1, 2));
+    drawn_cards = 0;
+    draw_card(&D_801A7AD8[MONSTER_RECORD(1, 2)], 0, 0, 0);
+    assert(drawn_cards == 1);
     attack(MONSTER_RECORD(1, 2));
     assert(D_8009B22A == 0 && !K.blocking);
     end();
@@ -170,7 +222,7 @@ int main(void)
     assert(D_8009B22A == 0 && !Multiply_Is(MULTIPLY_ID));
     end();
 
-    printf("Kuriboh and Multiply: the identity, the wall up, attacks on Kuriboh stopped, others not, direct stopped, "
+    printf("Kuriboh and Multiply: the identity, the wall up, the wall drawn, attacks on Kuriboh stopped, others not, direct stopped, "
            "a trap of its own, Multiply gone, sides, off passed\n");
     return 0;
 }

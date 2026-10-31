@@ -18,6 +18,15 @@ static int equips_on, equips_kept, equips_free = 5, equips_in_zone = -1;
 int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+/* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
+static int multiply_up;
+int Multiply_Up(int side) { (void)side; return multiply_up; }
+int Multiply_InChain(const int *ids, int count)
+{
+    int i;
+    for (i = 0; i < count; i++) if (ids[i] == 6) return 1;
+    return 0;
+}
 int Equips_On(void) { return equips_on; }
 int Equips_Hold(void) { return 0; }
 int Equips_Kept(int first, const int *ids, int count) { (void)first; (void)ids; (void)count; return equips_kept; }
@@ -322,6 +331,12 @@ int main(void)
         equips_on = 0;
         assert(confirm());
         equips_kept = 0; equips_free = 5;
+        /* A second Multiply (card 6 here) while the wall is up: refused,
+         * the equips setting on or off. */
+        multiply_up = 1;
+        assert(!confirm() && sounds == 1);
+        multiply_up = 0;
+        assert(confirm());
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
     }
 

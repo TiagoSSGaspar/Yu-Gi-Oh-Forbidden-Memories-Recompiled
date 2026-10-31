@@ -12,7 +12,11 @@
  * the wall: the battle shows the Kuriboh (Multiply with none left)
  * springing as a trap does, with Fake Trap's way of stopping an attack (an
  * explosion on the target, nothing destroyed, no damage). The wall takes no
- * monster zone. It falls with Multiply.
+ * monster zone: it is drawn, nine more Kuribohs in two rows in front of
+ * the Kuriboh, toward the other side (the field's cards are drawn one by one
+ * by func_80015EF4 from their display object's place, 0x30 and 0x34, so the
+ * Kuriboh is drawn again at those places). It falls with Multiply. A second
+ * Multiply on a side that has one cannot be played (modern_rules.c).
  *
  * The battle (DuelScene_UpdateBattle) clears the trap that springs as it
  * starts and looks for one; once the opponent's trap, if any, has been
@@ -24,6 +28,8 @@
 #include "types.h"
 #include "game/display_object.h"
 #include "game/display_object_work_slots.h"
+#include "psyq/libgte.h"
+#include "game/func_80015EF4.h"
 #include "game/duel_card.h"
 #include "game/duel_card_layout.h"
 #include "game/duel_effect_request.h"
@@ -49,7 +55,7 @@
 #define SPELL_RECORD(side, col) ((side) * DUEL_CARD_SIDE_RECORD_COUNT + 2 * DUEL_FIELD_ROW_SIZE + (col))
 
 static const MemoriesModHost *host;
-static void *original_battle;
+static void *original_battle, *original_draw_card;
 static void (*next_overlay)(void);
 static unsigned (*next_signature)(void);
 static int multiply_id;
@@ -82,6 +88,50 @@ static int wall(int side)
         if (occupied(SPELL_RECORD(side, col)) && Multiply_Is(D_801A7AD8[SPELL_RECORD(side, col)].card_id))
             return SPELL_RECORD(side, col);
     return -1;
+}
+
+int Multiply_Up(int side) { return wall(side) >= 0; }
+
+int Multiply_InChain(const int *ids, int count)
+{
+    int i;
+    for (i = 0; i < count; i++)
+        if (Multiply_Is(ids[i])) return 1;
+    return 0;
+}
+
+/* The wall: the Kuriboh again at these places, from its own (x, and z
+ * toward the other side), a little turned each. */
+#define CLONES 9
+static const s16 clone_x[CLONES] = {-70, -35, 0, 35, 70, -52, -17, 17, 52};
+static const s16 clone_z[CLONES] = {40, 42, 38, 42, 40, 72, 70, 74, 70};
+static const s8 clone_turn[CLONES] = {3, -2, 1, -3, 2, -1, 3, -2, 1};
+#define WALL_HALF 70   /* the wall's middle stays this far from the field's edges */
+
+static void draw_card(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color)
+{
+    DuelCardRecord *card = (DuelCardRecord *)record;
+    u8 *object;
+    s16 x, z, middle;
+    u8 turn;
+    int r = (int)(card - D_801A7AD8), side, i;
+    ((void (*)(void *, POLY_GT4 *, POLY_FT4 *, s32 *))original_draw_card)(record, prim, sprite, color);
+    if (r < 0 || r >= DUEL_CARD_RECORD_COUNT || !(object = (u8 *)card->object)) return;
+    side = r / DUEL_CARD_SIDE_RECORD_COUNT;
+    if (card->card_id != KURIBOH || Multiply_Kuriboh(side) != r || wall(side) < 0) return;
+    x = *(s16 *)(object + 0x30);
+    z = *(s16 *)(object + 0x34);
+    turn = object[0x21];
+    middle = x < -WALL_HALF ? -WALL_HALF : x > WALL_HALF ? WALL_HALF : x;
+    for (i = 0; i < CLONES; i++) {
+        *(s16 *)(object + 0x30) = (s16)(middle + clone_x[i]);
+        *(s16 *)(object + 0x34) = (s16)(side ? z - clone_z[i] : z + clone_z[i]);
+        object[0x21] = (u8)(turn + clone_turn[i]);
+        ((void (*)(void *, POLY_GT4 *, POLY_FT4 *, s32 *))original_draw_card)(record, prim, sprite, color);
+    }
+    *(s16 *)(object + 0x30) = x;
+    *(s16 *)(object + 0x34) = z;
+    object[0x21] = turn;
 }
 
 void Multiply_Landed(int monster)
@@ -167,5 +217,6 @@ int Multiply_Install(const MemoriesModHost *from, MemoriesMod *mod)
     next_signature = mod->overlay_signature;
     mod->overlay = overlay;
     mod->overlay_signature = overlay_signature;
-    return host->hook(host, (void *)DuelScene_UpdateBattle, (void *)battle, &original_battle);
+    return host->hook(host, (void *)DuelScene_UpdateBattle, (void *)battle, &original_battle) &&
+        host->hook(host, (void *)func_80015EF4, (void *)draw_card, &original_draw_card);
 }

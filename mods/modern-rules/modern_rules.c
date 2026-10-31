@@ -211,9 +211,11 @@ static int chain_cards(DuelSelectionRecord *side, int *ids)
 }
 
 /* Whether the equips that would stay on the field after `ids` go down onto
- * `first` (a monster, or 0) each have a free magic and trap zone. */
+ * `first` (a monster, or 0) each have a free magic and trap zone, and no
+ * second Multiply goes to a side whose wall is up (multiply.c). */
 static int equips_fit(int first, const int *ids, int count)
 {
+    if (Multiply_InChain(ids, count) && Multiply_Up(D_8009B1D5 & 1)) return 0;
     return !Equips_On() || Equips_Kept(first, ids, count) <= Equips_FreeZones(D_8009B1D5 & 1);
 }
 

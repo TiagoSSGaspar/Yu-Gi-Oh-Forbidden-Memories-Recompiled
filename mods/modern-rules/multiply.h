@@ -10,6 +10,10 @@ int Multiply_Is(int card);
 /* Multiply has landed in its zone, on the Kuriboh in `monster`: the wall
  * comes up. */
 void Multiply_Landed(int monster);
+/* Whether `side` has a Multiply on the field: its wall up. */
+int Multiply_Up(int side);
+/* Whether `ids` hold a Multiply. */
+int Multiply_InChain(const int *ids, int count);
 /* A Kuriboh of `side` on the field, as a record, or -1. */
 int Multiply_Kuriboh(int side);
 #endif
