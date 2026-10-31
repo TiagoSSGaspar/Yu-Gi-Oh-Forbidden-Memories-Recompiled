@@ -58,9 +58,11 @@ typedef struct {
     s16 total;         /* the two together */
 } SwampState;
 
-/* Kuriboh and Multiply: the wall stopping the battle under way. */
+/* Kuriboh and Multiply: each side's wall Kuriboh, by its zone's record, and
+ * the deck card a new one is made from; -1 for none. */
 typedef struct {
-    u8 blocking;
+    s8 zone[2];
+    s8 deck[2];
 } MultiplyState;
 
 typedef struct {

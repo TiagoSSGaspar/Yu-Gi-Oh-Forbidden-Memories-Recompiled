@@ -99,6 +99,7 @@
 #include "pc/cards/cards.h"
 #include "field_art.h"
 #include "fight_sounds.h"
+#include "monsters_3d.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -170,11 +171,12 @@ static const struct {
  * entry used the moment a zone takes it, so every model a frame asks for (ten
  * at most) stays put until that frame is drawn. */
 #define CACHE 12
+#define COPY_TAG 16   /* the copies' entries (draw_copies): kept past a fight */
 
 typedef struct {
     int card;      /* one-based card id; 0 when the entry is free */
     int position;  /* 0 face-up attack, 1 face-up defence */
-    int tag;       /* 0 on the field; side + 1 on a big card the attack plays on */
+    int tag;       /* 0 on the field; side + 1 on a big card the attack plays on; COPY_TAG on, a copy */
     unsigned used; /* frame number of the last draw, for replacement */
     int bank;      /* its texture bank in the software GPU */
     u8 *arena;
@@ -703,11 +705,13 @@ static u32 packet_room(void)
     return at < base || at >= end ? 0 : end - at;
 }
 
+static int copying; /* drawing copies (draw_copies): an eighth again, not a quarter */
+
 static int packets_fit(const Monster *monster)
 {
     static unsigned said = ~0u;
     u32 need = monster->packet_bytes > PACKET_FLOOR ? monster->packet_bytes : PACKET_FLOOR;
-    need += need / 4 + PACKET_SLACK;
+    need += (copying ? need / 8 : need / 4) + PACKET_SLACK;
     if (packet_room() >= need) {
         return 1;
     }
@@ -991,9 +995,17 @@ static void draw_monster(Monster *monster, int x, int z, int yaw, int share, int
 
     *slot = monster->slot;
     /* The body offset was measured facing up the field, so turning the
-     * monster turns it too. */
-    place_flat(slot, turned ? x + body_x : x - body_x, -body_y - lifted,
-               turned ? z + body_z : z - body_z, yaw, monster->scale * share / MODEL_FIXED_ONE, height);
+     * monster turns it too; a monster turned some other way (a copy,
+     * draw_copies) as draw_fighter turns it. */
+    if (yaw == 0 || turned) {
+        x = turned ? x + body_x : x - body_x;
+        z = turned ? z + body_z : z - body_z;
+    } else {
+        int c = rcos(yaw), s = rsin(yaw);
+        x -= (c * body_x + s * body_z) / MODEL_FIXED_ONE;
+        z -= (c * body_z - s * body_x) / MODEL_FIXED_ONE;
+    }
+    place_flat(slot, x, -body_y - lifted, z, yaw, monster->scale * share / MODEL_FIXED_ONE, height);
     monster->fade = fade;
     sort_monster(monster, D_800E9D90[2], at);
     monster->fade = 0;
@@ -1064,6 +1076,7 @@ typedef struct {
     int x, z, yaw;
     int summon; /* its zone in summons[] */
     int at;     /* its ordering-table entry, or -1 for its own depth */
+    int share, fade, lifted; /* as it was drawn, for its copies */
 } Standing;
 
 /* The five monster zones of a side, in card-record order. */
@@ -1733,7 +1746,7 @@ static void attack_finish(void)
     fight_restore();
     FightSounds_Release();
     for (i = 0; i < CACHE; i++) {
-        if (cache[i].tag) {
+        if (cache[i].tag && cache[i].tag < COPY_TAG) {
             cache[i].card = 0;
         }
     }
@@ -2752,12 +2765,90 @@ static int draw_fighters(void)
     return count;
 }
 
+/* More of a standing monster, where another mod asks for them
+ * (monsters_3d.h): each its own entry of the cache (tag COPY_TAG and on, as
+ * the fighters have theirs), so each is placed and animated apart, the first
+ * asked for first, while the cache and the packets have room. The frame's
+ * packet buffer has little room left for more models, so once it is full
+ * they are built in the other one of the pair, past the scratch table
+ * sort_monster uses at its start: the frame being built is not in it, and
+ * the port's DrawOTag copies a frame's packets out as it is called
+ * (src/pc/sdk/libgpu.c). That is also where fit() measures a monster as it
+ * is loaded, so the copies are drawn after everything else in the pass. */
+static Monsters3dCopies copies;
+static u32 copy_work;   /* where the next copy's packets go in the other buffer; 0 before the first */
+static void set_copies(Monsters3dCopies fn) { copies = fn; }
+static const Monsters3dApi api = {MONSTERS_3D_API_VERSION, set_copies};
+
+/* Whether `card` in `position` with `tag` can be had without taking an entry
+ * drawn this frame. */
+static int cache_spares(int card, int position, int tag)
+{
+    int i;
+    for (i = 0; i < CACHE; i++) {
+        if ((cache[i].card == card && cache[i].position == position && cache[i].tag == tag) ||
+            !cache[i].card || cache[i].used != frame) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Room for a copy's packets: what it took at most, an eighth again and
+ * PACKET_SLACK (the copies keep less in hand than the field's own). */
+static int copy_room(const Monster *monster)
+{
+    u32 need = monster->packet_bytes > PACKET_FLOOR ? monster->packet_bytes : PACKET_FLOOR;
+    return packet_room() >= need + need / 8 + PACKET_SLACK;
+}
+
+static void draw_copies(const Standing *standing, int height)
+{
+    Monsters3dCopy more[MONSTERS_3D_COPIES];
+    const Monster *original = standing->monster;
+    u32 work = D_800FE240;
+    int n, i, aside = 0, record = SIDE_ZONE(standing->summon / MONSTER_ZONES, standing->summon % MONSTER_ZONES);
+    if (!copies) {
+        return;
+    }
+    n = copies(record, standing->x, standing->z, more, MONSTERS_3D_COPIES);
+    for (i = 0; i < n && i < MONSTERS_3D_COPIES; i++) {
+        Monster *copy;
+        if (!cache_spares(original->card, original->position, COPY_TAG + i) ||
+            !(copy = acquire(original->card, original->position, COPY_TAG + i))) {
+            break;
+        }
+        if (!aside && !copy_room(copy)) {
+            aside = 1;
+            work = D_800FE240;
+            if (copy_work) {
+                D_800FE240 = copy_work;
+            } else {
+                GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
+            }
+        }
+        if (!copy_room(copy)) {
+            break;
+        }
+        copy->stepped = 0;
+        copying = 1;
+        draw_monster(copy, more[i].x, more[i].z, (standing->yaw + more[i].yaw) & MODEL_ANGLE_MASK,
+                     standing->share, standing->fade, standing->lifted, standing->at, height);
+        copying = 0;
+    }
+    if (aside) {
+        copy_work = D_800FE240;
+        D_800FE240 = work;
+    }
+}
+
 static void draw_frame(void)
 {
     static ModelSlot borrowed;
     Standing standing[DUEL_SIDE_COUNT * MONSTER_ZONES];
     u32 work_base;
     int count = 0, i, side, zone, summoning, frames, field, overhead, board_share = MODEL_FIXED_ONE;
+    int standing_count;
     int height = MODEL_FIXED_ONE;
 
     if (inside) {
@@ -2802,6 +2893,7 @@ static void draw_frame(void)
     borrowed = D_800F2C40[0];
     work_base = D_800FE240;
     scratch = &D_800A5768[GsGetActiveBuff() * GRAPHICS_PACKET_BUFFER_SIZE];
+    copy_work = 0;
 
     /* The projection the duel draws its own field with. */
     GsSetRefView2(&D_800F2848.view);
@@ -2907,13 +2999,20 @@ static void draw_frame(void)
         lifted = lifted * board_share / MODEL_FIXED_ONE;
         draw_monster(standing[i].monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted,
                      standing[i].at, height);
+        standing[i].share = share;
+        standing[i].fade = fade;
+        standing[i].lifted = lifted;
         if (summon->elapsed < 0xFFFFu) {
             summon->elapsed++;
         }
     }
+    standing_count = count;
     if (field) {
         fight_begin();
         count += draw_fighters();
+    }
+    for (i = 0; i < standing_count; i++) {
+        draw_copies(&standing[i], height);
     }
 
     D_800F2C40[0] = borrowed;
@@ -2991,6 +3090,9 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->applied = applied;
     FieldArt_Init(from);
     FightSounds_Init(from);
+    if (from->api >= 4 && !from->provide(from, "api", (void *)&api)) {
+        say("the copies cannot be shared: provide failed\n");
+    }
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
     if (from->api >= 4 && !original_card &&

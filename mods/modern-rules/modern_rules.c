@@ -253,7 +253,7 @@ static void hand(void)
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster, ids[HAND_SIZE], count;
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
-    if (step_kind <= HAND_IDLE && (Moth_Hold() || Equips_Hold())) return;
+    if (step_kind <= HAND_IDLE && (Moth_Hold() || Multiply_Hold() || Equips_Hold())) return;
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
@@ -294,7 +294,7 @@ static void field(void)
     /* An equip destroyed with its monster (equips.c), before the player
      * walks the field or the CPU picks its next move. */
     if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
-        Equips_Hold())
+        (Multiply_Hold() || Equips_Hold()))
         return;
     /* An equip on the field is not used again. */
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && (D_8009B174 & 0xF) == FIELD_IDLE &&

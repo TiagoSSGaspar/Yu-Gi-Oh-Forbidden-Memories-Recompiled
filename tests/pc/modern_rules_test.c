@@ -18,6 +18,7 @@ static int equips_on, equips_kept, equips_free = 5, equips_in_zone = -1;
 int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Multiply_Hold(void) { return 0; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }
