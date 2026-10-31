@@ -95,9 +95,11 @@ static int hand_cursor_api(void)
 {
     return (s8)((DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE))->field_0E;
 }
+static int menu_is_open;
+static int menu_open_api(void) { return menu_is_open; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api};
+                                      set_phases, hand_cursor_api, menu_open_api};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
@@ -303,6 +305,9 @@ int main(void)
         side->field_0E = 3;                      /* 6 equips onto 1 */
         equips_on = 1; equips_kept = 1; equips_free = 0;
         assert(!confirm() && sounds == 1);
+        menu_is_open = 1;                        /* the phase menu's X is the menu's */
+        assert(confirm());
+        menu_is_open = 0;
         equips_free = 1;
         assert(confirm());
         field_cursor.col = 3;                    /* onto an empty zone too */
@@ -369,6 +374,10 @@ int main(void)
         sounds = 0;
         field();
         assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 1;                                                   /* the phase menu's X */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 0;
         equips_in_zone = 2;                                                 /* another zone */
         field();
         assert(seen_pressed == PAD_BUTTON_CROSS);

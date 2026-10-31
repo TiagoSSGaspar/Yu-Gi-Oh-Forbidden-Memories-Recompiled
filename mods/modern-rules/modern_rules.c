@@ -109,6 +109,9 @@ static int hand_mark(int slot) { return api->version >= 4 ? api->hand_mark(slot)
 /* The card under the player's hand cursor: its place on screen is the
  * card's until the hand passes ten (Extra hand plays version 6). */
 static int hand_cursor(DuelSelectionRecord *side) { return api->version >= 6 ? api->hand_cursor() : (s8)side->field_0E; }
+/* The phase menu open (Extra hand plays version 7): the confirm is the
+ * menu's, never refused. */
+static int menu_open(void) { return api->version >= 7 && api->menu_open(); }
 
 static int draw_one(void) { return host->applied(host) && setting("draw_one", 1); }
 
@@ -244,7 +247,7 @@ static void hand(void)
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
     if (step_kind <= HAND_IDLE && (Moth_Hold() || Equips_Hold())) return;
-    if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
+    if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
         int guard = setting("fusion_guard", 1);
@@ -288,6 +291,7 @@ static void field(void)
         return;
     /* An equip on the field is not used again. */
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && (D_8009B174 & 0xF) == FIELD_IDLE &&
+        !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         !gDuel_bEffectState && !gDuel_bQuitDialogState && spell->row == SPELL_ROW &&
         Equips_InZone(D_8009B1D5 & 1, spell->col)) {

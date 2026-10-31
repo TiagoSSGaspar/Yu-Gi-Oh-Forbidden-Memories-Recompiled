@@ -1061,10 +1061,12 @@ int main(void)
         hands = 0;
         gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
         assert(S.menu == 1 && !S.skipping && hands == 0);
+        assert(provided->version >= 7 && provided->menu_open());   /* the menu says it is open */
         assert(Ehp_PhaseItems(0, items) == 2 && items[0] == PHASE_BATTLE && items[1] == PHASE_END);
         gInput_wPad1Pressed = PAD_DIRECTION_DOWN; step_hand(); assert(S.menu == 2);
         gInput_wPad1Pressed = PAD_DIRECTION_UP; step_hand(); assert(S.menu == 1);
         gInput_wPad1Pressed = PAD_BUTTON_CIRCLE; step_hand(); assert(S.menu == 0 && !S.skipping);
+        assert(!provided->menu_open());
         gInput_wPad1Pressed = PAD_BUTTON_START; step_hand();
         gInput_wPad1Pressed = PAD_BUTTON_CROSS; step_hand();
         gInput_wPad1Pressed = 0;
@@ -1459,7 +1461,7 @@ int main(void)
      * the cursor. */
     {
         int k;
-        assert(provided->version == 6);
+        assert(provided->version >= 6);
         provided->set_hand_limits(limits_forty);
         player_hand(23);
         side = hand_record();
