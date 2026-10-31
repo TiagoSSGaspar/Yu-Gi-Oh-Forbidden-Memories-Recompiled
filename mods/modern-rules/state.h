@@ -86,7 +86,7 @@ typedef struct {
     s8 target;         /* the record aimed at */
     s8 picks[3];       /* the combo's hand cards */
     s8 said;           /* the record the line on screen is about, or -1 */
-    u8 said_frames;
+    u8 said_frames;    /* the line is up (until the host's clock says it is over) */
     s16 said_loss;     /* what it lost, 0 when it was just infected */
     s16 zombie[ARROW_ZONES]; /* the Zombie shot into it, drawn in its chest with 3D Monsters */
     s16 base[ARROW_ZONES];   /* its ATK when it was infected: how far it has rotted */

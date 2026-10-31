@@ -59,7 +59,7 @@
 #define REFUSED_SOUND 8
 #define MOVE_SOUND 0xB
 #define ARROW_SOUND 0x1F
-#define SAID_FRAMES 180
+#define SAID_US 3000000u   /* how long the line stays */
 #define INFECTED_COLOR 0x40A040u
 #define TEXT_Y 52
 
@@ -135,11 +135,17 @@ static int combo(int marked, s8 picks[3])
     return zombie_attack ? zombie_attack : 1;
 }
 
+/* The line's end, by the host's clock: the overlay is not drawn every frame
+ * when it has not changed, so it cannot count frames. */
+static uint64_t said_until;
+static uint64_t now(void) { return host->api >= 2 && host->now_us ? host->now_us(host) : 0; }
+
 static void say(int r, int loss)
 {
     A.said = (s8)r;
     A.said_loss = (s16)loss;
-    A.said_frames = SAID_FRAMES;
+    A.said_frames = 1;
+    said_until = now() + SAID_US;
 }
 
 static void infect(int owner, int r, int loss, int zombie_card)
@@ -319,6 +325,12 @@ static int line(char *text, size_t size)
         return 1;
     }
     if (!A.said_frames || A.said < 0) return 0;
+    /* Over, or its monster gone: fused into another, say, which is not the
+     * one infected. */
+    if (now() >= said_until || !still_there(ZONE_OF((int)A.said))) {
+        A.said_frames = 0;
+        return 0;
+    }
     name(D_801A7AD8[(int)A.said].card_id, card, sizeof card);
     if (A.said_loss)
         snprintf(text, size, T("%s rots: -%d ATK"), card, A.said_loss);
@@ -332,7 +344,6 @@ static void overlay(void)
     char text[160];
     int width, height, scale, w, cx, cy;
     if (next_overlay) next_overlay();
-    if (A.said_frames && !A.aiming) A.said_frames--;
     if (!line(text, sizeof text)) return;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
@@ -349,7 +360,8 @@ static void overlay(void)
 static unsigned overlay_signature(void)
 {
     unsigned s = next_signature ? next_signature() : 0;
-    if (!on() || (!A.aiming && !A.said_frames)) return s;
+    char text[160];
+    if (!line(text, sizeof text)) return s;
     return s * 31u + 1u + (unsigned)A.target * 7u + (unsigned)A.said * 13u + (unsigned)A.said_loss + A.aiming;
 }
 

@@ -77,6 +77,8 @@ static int fake_card_id(const MemoriesModHost *h, const char *identity)
 static int fake_hook(const MemoriesModHost *h, void *function, void *replacement, void **original)
 { (void)h; *original = function; hooked = replacement; return 1; }
 static const char *fake_text(const MemoriesModHost *h, const char *english) { (void)h; return english; }
+static uint64_t clock_us;
+static uint64_t fake_now(const MemoriesModHost *h) { (void)h; return clock_us; }
 static MemoriesModHost fake_host;
 static MemoriesMod fake_mod;
 
@@ -135,6 +137,7 @@ int main(void)
     fake_host.card_id = fake_card_id;
     fake_host.hook = fake_hook;
     fake_host.text = fake_text;
+    fake_host.now_us = fake_now;
     assert(Arrow_Install(&fake_host, &fake_mod, &fake_ehp) && hooked == (void *)draw_card);
     assert(living(DRAGON) && living(WARRIOR) && !living(MAMMOTH) && !living(ROBOT) && !living(GOLEM) &&
            !living(POLY) && zombie(GRAVEYARD) && !living(GRAVEYARD));
@@ -220,6 +223,25 @@ int main(void)
         char text[160];
         assert(line(text, sizeof text) && strstr(text, "rots") && strstr(text, "-900"));
     }
+    /* The line goes after a while. */
+    clock_us += SAID_US;
+    {
+        char text[160];
+        assert(!line(text, sizeof text));
+    }
+    /* Fused into another monster: no longer the one infected, no line about
+     * it, no Mammoth in its chest, no rot. */
+    Arrow_TurnStarts(1);
+    put(MONSTER_RECORD(1, 1), WARRIOR, 9, 0);
+    {
+        char text[160];
+        Monsters3dExtra extra;
+        unsigned char rgb[3];
+        assert(!line(text, sizeof text) && !model_extras(MONSTER_RECORD(1, 1), 0, 95, &extra, 1) &&
+               !model_tint(MONSTER_RECORD(1, 1), rgb));
+        Arrow_TurnStarts(1);
+        assert(!A.card[ZONE_OF(MONSTER_RECORD(1, 1))] && attack_of(MONSTER_RECORD(1, 1)) == 1000);
+    }
     /* It leaves the field: the infection goes with it. */
     empty(MONSTER_RECORD(1, 1));
     Arrow_TurnStarts(1);
@@ -264,6 +286,6 @@ int main(void)
     assert(!press(PAD_BUTTON_CROSS) && !Arrow_Cpu());
 
     printf("Living Arrow: living creatures only, the combo, the aim, cancel, the infection, rotting to 0, "
-           "gone with its monster, no target, the CPU, off passed\n");
+           "the line over, fused into another, gone with its monster, no target, the CPU, off passed\n");
     return 0;
 }
