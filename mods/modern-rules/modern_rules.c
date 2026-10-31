@@ -24,7 +24,8 @@
  * - Equips that stay on the field: equips.c. An equip that would have no
  *   free magic and trap zone to stay in is refused, for the player and the
  *   CPU alike, and one on the field is not used again.
- * - The swamp brothers fight together: swamp.c. */
+ * - The swamp brothers fight together: swamp.c.
+ * - Kuriboh and Multiply, a wall of Kuribohs: multiply.c. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -47,6 +48,7 @@
 #include "moth.h"
 #include "equips.h"
 #include "swamp.h"
+#include "multiply.h"
 #include "state.h"
 #include <string.h>
 
@@ -248,7 +250,7 @@ static void hand(void)
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster, ids[HAND_SIZE], count;
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
-    if (step_kind <= HAND_IDLE && (Moth_Hold() || Equips_Hold())) return;
+    if (step_kind <= HAND_IDLE && (Moth_Hold() || Multiply_Hold() || Equips_Hold())) return;
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
@@ -289,7 +291,7 @@ static void field(void)
     /* An equip destroyed with its monster (equips.c), before the player
      * walks the field or the CPU picks its next move. */
     if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
-        Equips_Hold())
+        (Multiply_Hold() || Equips_Hold()))
         return;
     /* An equip on the field is not used again. */
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && (D_8009B174 & 0xF) == FIELD_IDLE &&
@@ -410,7 +412,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
-        Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) &&
+        Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

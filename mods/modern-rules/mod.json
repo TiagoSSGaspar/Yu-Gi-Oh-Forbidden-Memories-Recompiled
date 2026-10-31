@@ -25,7 +25,20 @@
       "monster_effects": [
         { "when": "draw", "do": "boost", "target": "opponent", "attack": -300 }
       ]
+    },
+    {
+      "id": "multiply",
+      "copy": "Legendary Sword",
+      "name": "Multiply",
+      "art": "images/multiply.png",
+      "description": "Equip Kuriboh only. Its owner's free monster zones fill with Kuriboh, in defense. While this card is on the field, every Kuriboh destroyed comes back as two.",
+      "password": "40703222",
+      "drops": true,
+      "opponents": true
     }
+  ],
+  "equips": [
+    { "card": "modern-rules:multiply:1", "add": ["Kuriboh"], "replace": true, "bonus": 0 }
   ],
   "settings": [
     {
@@ -76,6 +89,13 @@
       "type": "bool",
       "default": 1,
       "description": "As in Joey's duel with Rex Raptor: with Swamp Battleguard and Lava Battleguard on the same side, a monster attacking one of them meets both. The attacked one fights in attack position with its brother's ATK added (1800 + 1550 = 3350), even from defense; the weaker side loses its monster and the difference."
+    },
+    {
+      "key": "multiply",
+      "label": "Kuriboh and Multiply (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in Yugi's duel with Kaiba at the castle: Multiply, an equip of Kuriboh's, fills its owner's free monster zones with Kuriboh in defense; while it is on the field, every Kuriboh destroyed comes back as two. Only destroying Multiply breaks the wall."
     }
   ]
 }

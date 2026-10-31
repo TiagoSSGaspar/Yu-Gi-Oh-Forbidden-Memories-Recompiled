@@ -29,6 +29,10 @@
         "swamp_brothers": {
             "label": "Irmãos do pântano (anime)",
             "description": "Como no duelo do Joey com o Rex Raptor: com Swamp Battleguard e Lava Battleguard do mesmo lado, um monstro que ataca um deles enfrenta os dois. O atacado luta em ataque com o ATK do irmão somado (1800 + 1550 = 3350), mesmo se estiver em defesa; o lado mais fraco perde o monstro e a diferença."
+        },
+        "multiply": {
+            "label": "Kuriboh e Multiply (anime)",
+            "description": "Como no duelo do Yugi com o Kaiba no castelo: o Multiply, equipamento do Kuriboh, enche as zonas de monstro livres do dono com Kuribohs em defesa; enquanto ele estiver no campo, cada Kuriboh destruído volta como dois. Só destruir o Multiply derruba a parede."
         }
     },
     "texts": {
@@ -36,6 +40,7 @@
         "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth",
         "Equipped to: %s": "Equipado em: %s",
         "Equipped with: ": "Equipamentos: ",
-        "The swamp brothers join: %d": "Os irmãos do pântano se unem: %d"
+        "The swamp brothers join: %d": "Os irmãos do pântano se unem: %d",
+        "Multiply: every Kuriboh destroyed comes back as two": "Multiply: cada Kuriboh destruído volta como dois"
     }
 }

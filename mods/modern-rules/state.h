@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 4
+#define MODERN_RULES_STATE_VERSION 5
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -58,10 +58,18 @@ typedef struct {
     s16 total;         /* the two together */
 } SwampState;
 
+/* Kuriboh and Multiply: the Kuribohs each side had when last looked at,
+ * and the deck card new ones are made from. */
+typedef struct {
+    u8 kuribohs[2];
+    s8 deck[2];        /* -1 for none seen yet */
+} MultiplyState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
     SwampState swamp;
+    MultiplyState multiply;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;
