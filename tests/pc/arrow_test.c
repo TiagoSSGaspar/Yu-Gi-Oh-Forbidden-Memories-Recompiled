@@ -8,6 +8,10 @@
 #include <string.h>
 #include "../../mods/modern-rules/arrow.c"
 
+/* The CPU's level (cpu.c, tested in multiply_test.c). */
+static int cpu_level = CPU_BOSS;
+int Cpu_Level(void) { return cpu_level; }
+
 #define POLY 800
 #define ARROW 801
 #define DRAGON 1     /* Blue-Eyes Ultimate, as it were: 4500 */
@@ -278,7 +282,13 @@ int main(void)
     put(MONSTER_RECORD(0, 2), DRAGON, 2, 0);
     put(MONSTER_RECORD(0, 3), ROBOT, 3, 0);
     put(MONSTER_RECORD(1, 4), BIG, 5, 0);
+    cpu_level = CPU_MIDDLE;   /* a middle one: only when behind */
     assert(!Arrow_Cpu());
+    cpu_level = CPU_BEGINNER;
+    empty(MONSTER_RECORD(1, 4));
+    put(MONSTER_RECORD(1, 4), WARRIOR, 5, 0);
+    assert(!Arrow_Cpu());   /* a beginner: never */
+    cpu_level = CPU_MIDDLE;
     empty(MONSTER_RECORD(1, 4));
     put(MONSTER_RECORD(1, 4), WARRIOR, 5, 0);
     assert(Arrow_Cpu() && take_count == 3 && taken[0] == 1 && taken[1] == 4 && taken[2] == 2);

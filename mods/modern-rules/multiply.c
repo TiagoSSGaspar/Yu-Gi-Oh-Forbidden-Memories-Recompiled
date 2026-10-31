@@ -40,6 +40,7 @@
 #include "game/sound.h"
 #include "unmatched.h"
 #include "multiply.h"
+#include "cpu.h"
 #include "../3d-monsters/monsters_3d.h"
 #include "state.h"
 #include <string.h>
@@ -248,7 +249,8 @@ void Multiply_BattleBegan(void)
     kuriboh->defense_modifier = (s16)(kuriboh->defense_modifier + K.lift);
     gDuel_awSavedDefenseModifier[1] = (s16)(gDuel_awSavedDefenseModifier[1] + K.lift);
     K.guard = (s8)r;
-    K.learned[a / DUEL_CARD_SIDE_RECORD_COUNT] = 1;   /* it has seen the wall hold */
+    if (K.learned[a / DUEL_CARD_SIDE_RECORD_COUNT] < 255)
+        K.learned[a / DUEL_CARD_SIDE_RECORD_COUNT]++;   /* it has seen the wall hold */
 }
 
 void Multiply_BattleOver(void)
@@ -279,74 +281,45 @@ void Multiply_BattleOver(void)
     SD_SEPlayFull(DESTROY_SOUND);
 }
 
-/* The CPU, as Kaiba did: an opponent that has attacked the wall once and
- * seen it hold aims elsewhere: at the monster of the player's its attacker
- * beats by the most, the wall's Kuriboh left out, or at none. Its field
- * decision (D_800EAE88): the attacker at 9 (1-5, its monster row), the
- * target at 10 (0x38 up: 0x3C less the column of the other side's monster
- * row); 10 and 11 both 0 is no action, the attacker spent. */
-extern unsigned char D_800EAE88[];   /* the CPU's decision (ai.h's AiSelection) */
-#define AI_ATTACKER 9
-#define AI_TARGET 10
-#define AI_TARGET_FLAG 11
-#define AI_TARGET_ROW 0x38
-#define AI_TARGET_BASE 0x3C
-#define GRID(side, row, col) D_800907D8[(row) * DUEL_FIELD_ROW_SIZE + (col) + (side) * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]
+/* The CPU (cpu.c): the wall's Kuriboh, and how often the other side has
+ * attacked the wall. */
+int Multiply_Walled(int r) { return walled(r); }
+int Multiply_Attacks(int side) { return K.learned[side & 1]; }
 
-void Multiply_CpuAttack(void)
-{
-    int side = D_8009B1D5 & 1, from = D_800EAE88[AI_ATTACKER], to = D_800EAE88[AI_TARGET], col, attack, best = -1,
-        margin = 0;
-    if (!on() || !K.learned[side] || from < 1 || from > DUEL_FIELD_ROW_SIZE || to < AI_TARGET_ROW ||
-        to > AI_TARGET_BASE || !walled(GRID(side, 1, AI_TARGET_BASE - to)))
-        return;
-    attack = Duel_CalcCardStats(&D_801A7AD8[GRID(side, 2, from - 1)]) & 0xFFFF;
-    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
-        int r = GRID(side, 1, col), value, stats;
-        if (!occupied(r) || walled(r)) continue;
-        stats = Duel_CalcCardStats(&D_801A7AD8[r]);
-        value = D_801A7AD8[r].flags & DUEL_CARD_FLAG_DEFENSE_POSITION ? (stats >> 16) & 0xFFFF : stats & 0xFFFF;
-        if (attack - value > margin) {
-            margin = attack - value;
-            best = col;
-        }
-    }
-    if (best >= 0) {
-        D_800EAE88[AI_TARGET] = (u8)(AI_TARGET_BASE - best);
-    } else {
-        D_800EAE88[AI_TARGET] = D_800EAE88[AI_TARGET_FLAG] = 0;
-    }
-}
-
-/* The strongest opponents, those the game's own table gives the most will
- * to use Harpie's Feather Duster (byte 7 of gDuel_aOpponentData: 75), play
- * it first when the player's wall is up, to break it. Its hand decision: the
- * cards at 0-4 (snapshot slots, 11-15 the hand), the zone at 6 (6 up the
- * magic and trap row), face down at 8. */
+/* The bosses break the player's wall first, with Harpie's Feather Duster
+ * when they hold it. */
 #define HARPIES_FEATHER_DUSTER 672
-#define DUSTER_WILL 7
-#define STRONG_WILL 75
-#define AI_HAND_FIRST 11
-#define AI_ZONE 6
-#define AI_FACE_DOWN 8
-#define AI_SPELL_ZONE 6
-#define AI_SELECTION_SIZE 12
 
 int Multiply_CpuBreak(void)
 {
-    int side = D_8009B1D5 & 1, id = gDuel_bOpponentID, slot, col;
-    if (!on() || id < 1 || id >= AI_OPPONENT_COUNT || gDuel_aOpponentData[id].values[DUSTER_WILL] < STRONG_WILL ||
-        wall(side ^ 1) < 0)
+    int side = D_8009B1D5 & 1, slot, col;
+    if (!on() || Cpu_Level() != CPU_BOSS || wall(side ^ 1) < 0 || !(slot = Cpu_HandSlot(HARPIES_FEATHER_DUSTER)) ||
+        (col = Cpu_FreeZone(1)) < 0)
         return 0;
-    for (slot = AI_HAND_FIRST; slot < AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE; slot++)
-        if (gDuel_aActiveCards[slot].card_id == HARPIES_FEATHER_DUSTER) break;
-    if (slot == AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE) return 0;
-    for (col = 0; col < DUEL_FIELD_ROW_SIZE && occupied(SPELL_RECORD(side, col)); col++) { }
-    if (col == DUEL_FIELD_ROW_SIZE) return 0;
-    memset(D_800EAE88, 0, AI_SELECTION_SIZE);
-    D_800EAE88[0] = (u8)slot;
-    D_800EAE88[AI_ZONE] = (u8)(AI_SPELL_ZONE + col);
-    D_800EAE88[AI_FACE_DOWN] = 0;
+    Cpu_Play(slot, col, 1);
+    return 1;
+}
+
+/* The CPU raises a wall of its own: a boss as soon as it can, a middle one
+ * when behind. Multiply onto its face-up Kuriboh, or that Kuriboh down
+ * first (the next hand play brings Multiply). */
+int Multiply_CpuRaise(void)
+{
+    int side = D_8009B1D5 & 1, level, multiply, col, kuriboh;
+    Multiply_Is(1);   /* the card's id, looked up once */
+    if (!on() || wall(side) >= 0 || (level = Cpu_Level()) == CPU_BEGINNER || (level == CPU_MIDDLE && !Cpu_Behind()) ||
+        !(multiply = Cpu_HandSlot(multiply_id)))
+        return 0;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
+        int r = D_800907D8[2 * DUEL_FIELD_ROW_SIZE + col + side * DUEL_FIELD_SIDE_GRID_SLOT_COUNT];
+        if (occupied(r) && D_801A7AD8[r].card_id == KURIBOH && !(D_801A7AD8[r].flags & DUEL_CARD_FLAG_FACE_DOWN)) {
+            if (Cpu_FreeZone(1) < 0) return 0;
+            Cpu_Play(multiply, col, 0);
+            return 1;
+        }
+    }
+    if (!(kuriboh = Cpu_HandSlot(KURIBOH)) || (col = Cpu_FreeZone(0)) < 0) return 0;
+    Cpu_Play(kuriboh, col, 0);
     return 1;
 }
 

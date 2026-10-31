@@ -51,6 +51,7 @@
 #include "swamp.h"
 #include "multiply.h"
 #include "arrow.h"
+#include "cpu.h"
 #include "state.h"
 #include <string.h>
 
@@ -397,11 +398,11 @@ static void hold_cpu_to_rule(void)
 static s32 run(void)
 {
     s32 result = ((s32 (*)(void))original_run)();
-    /* Against the wall of Kuribohs (multiply.c): the attacks of a CPU that
-     * has learned it holds go elsewhere. */
+    /* An attack the wall of Kuribohs or the swamp brothers make useless,
+     * for a CPU that sees it, goes elsewhere (cpu.c). */
     if (result && result != AI_END_FIELD && gAiScript_State.script_base == D_801A9800 &&
         (gDuel_wSceneStateFlags & STATE_MASK) == STATE_FIELD)
-        Multiply_CpuAttack();
+        Cpu_Attack();
     /* An equip on the field is not used again: should the CPU's field
      * script still pick one, its field turn ends there. */
     if (result == AI_PLAY_FIELD_CARD && gAiScript_State.script_base == D_801A9800 &&
@@ -411,8 +412,9 @@ static s32 run(void)
         return AI_END_FIELD;
     if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return result;
-    /* The strongest break the wall first (multiply.c). */
-    if (Multiply_CpuBreak()) return result;
+    /* The anime's plays, as the CPU's level allows (cpu.c): the player's
+     * wall broken, a wall of its own, the swamp brothers together. */
+    if (Multiply_CpuBreak() || Multiply_CpuRaise() || Cpu_Brothers()) return result;
     /* Living Arrow (arrow.c), played instead of the script's cards. */
     if (Arrow_Cpu()) {
         memset(D_800EAE88, 0, AI_SELECTION_SIZE);
@@ -440,7 +442,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
-        Arrow_Install(host, mod, api) &&
+        Arrow_Install(host, mod, api) && (Cpu_Install(host), 1) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

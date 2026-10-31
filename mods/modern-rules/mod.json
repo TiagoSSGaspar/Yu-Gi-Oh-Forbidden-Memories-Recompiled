@@ -140,5 +140,107 @@
       "default": 1,
       "description": "As in Yugi's duel with Kaiba at the castle: Polymerization, Living Arrow and a Zombie (Mammoth Graveyard too, as in the anime) marked in the hand fuse the Zombie into a face-up living monster of the opponent's (not a Zombie, a Machine or a Rock), picked with left and right. At the end of each of your turns it loses the Zombie's ATK, down to 0, until it leaves the field. The CPU plays it too."
     }
-  ]
+  ],
+  "decks": {
+    "Heishin": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Mai Valentine": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Yami Bakura": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Pegasus": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Isis": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Kaiba": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Labyrinth Mage": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Heishin 2nd": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Seto 3rd": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    },
+    "Nitemare": {
+      "Kuriboh": 100,
+      "modern-rules:multiply:1": 100,
+      "modern-rules:polymerization:1": 100,
+      "modern-rules:living_arrow:1": 100,
+      "Mammoth Graveyard": 100,
+      "Swamp Battleguard": 90,
+      "Lava Battleguard": 90,
+      "Harpie's Feather Duster": 60
+    }
+  }
 }

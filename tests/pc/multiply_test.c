@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../mods/modern-rules/multiply.c"
+#include "../../mods/modern-rules/cpu.c"
 
 #define MULTIPLY_ID 723
 ModernRulesState gModernRules_State;
@@ -38,6 +39,18 @@ u8 D_8009B1D5;
 u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
     25, 26, 27, 28, 29, 20, 21, 22, 23, 24, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
     10, 11, 12, 13, 14, 5, 6, 7, 8, 9, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
+/* The swamp brothers (swamp.c): Swamp (12) and Lava (554). */
+int Swamp_Brother(int id) { return id == 12 ? 554 : id == 554 ? 12 : 0; }
+int Swamp_Together(int r)
+{
+    int side = r / DUEL_CARD_SIDE_RECORD_COUNT, col, brother = Swamp_Brother(D_801A7AD8[r].card_id);
+    if (!brother) return 0;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++)
+        if ((D_801A7AD8[MONSTER_RECORD(side, col)].flags & DUEL_CARD_FLAG_OCCUPIED) &&
+            D_801A7AD8[MONSTER_RECORD(side, col)].card_id == brother)
+            return 1800 + 1550;
+    return 0;
+}
 s32 Duel_CalcCardStats(DuelCardRecord *card)
 {
     int attack = card->card_id == KURIBOH ? 300 : card->card_id == 36 ? 1400 : card->card_id == 380 ? 4500 : 1000;
@@ -224,8 +237,10 @@ int main(void)
     empty(SPELL_RECORD(0, 2));
     empty(MONSTER_RECORD(0, 3));
 
-    /* The CPU learns: once it has attacked the wall, an attack on it goes to
-     * the player's monster its attacker beats by the most, or to none. A new
+    /* The CPU's level: the opponent table's byte 7 (75 a boss, 50 middle,
+     * 25 a beginner). A boss learns the wall at its first attack, a middle
+     * one at its second, a beginner never: an attack on it then goes to the
+     * player's monster the attacker beats by the most, or to none. A new
      * wall: learnt again. */
     for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) {
         empty(MONSTER_RECORD(0, i));
@@ -233,39 +248,74 @@ int main(void)
         empty(SPELL_RECORD(0, i));
         empty(SPELL_RECORD(1, i));
     }
+    gDuel_aOpponentData[17].values[DUSTER_WILL] = 75;
+    gDuel_aOpponentData[12].values[DUSTER_WILL] = 50;
+    gDuel_aOpponentData[1].values[DUSTER_WILL] = 25;
+    gDuel_bOpponentID = 17;
+    assert(Cpu_Level() == CPU_BOSS);
+    gDuel_bOpponentID = 12;
+    assert(Cpu_Level() == CPU_MIDDLE);
+    gDuel_bOpponentID = 1;
+    assert(Cpu_Level() == CPU_BEGINNER);
     put(SPELL_RECORD(0, 2), MULTIPLY_ID, 9);
     put(MONSTER_RECORD(0, 3), KURIBOH, 12);
     put(MONSTER_RECORD(1, 0), 380, 1);
+    put(MONSTER_RECORD(0, 0), 36, 4);
     Multiply_Landed(MONSTER_RECORD(0, 3));
     D_8009B1D5 = 1;
-    memset(D_800EAE88, 0, sizeof D_800EAE88);
-    D_800EAE88[AI_ATTACKER] = 1;
-    D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 3;   /* row 1, column 3: the wall's Kuriboh */
-    D_800EAE88[AI_TARGET_FLAG] = 1;
-    Multiply_CpuAttack();
-    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 3);   /* not yet learnt */
     attacker_object.field_6A = MONSTER_RECORD(1, 0);
     attacked_object.field_6A = MONSTER_RECORD(0, 3);
     D_800E9EF0[0] = &attacker_object;
     D_800E9EF0[1] = &attacked_object;
-    Multiply_BattleBegan();
-    Multiply_BattleOver();
-    assert(K.learned[1] && !K.learned[0]);
-    Multiply_CpuAttack();
-    assert(D_800EAE88[AI_TARGET] == 0 && D_800EAE88[AI_TARGET_FLAG] == 0);   /* nothing else: no attack */
+#define AIM_AT_WALL() (memset(D_800EAE88, 0, sizeof D_800EAE88), D_800EAE88[AI_ATTACKER] = 1, \
+                       D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 3, D_800EAE88[AI_TARGET_FLAG] = 1, Cpu_Attack())
+    {
+        static const int ids[3] = {17, 12, 1}, learns[3] = {1, 2, 99};
+        int l;
+        for (l = 0; l < 3; l++) {
+            int n;
+            gDuel_bOpponentID = (s8)ids[l];
+            Multiply_Landed(MONSTER_RECORD(0, 3));   /* a new wall: nothing learnt */
+            for (n = 0; n < 3; n++) {
+                AIM_AT_WALL();
+                assert(D_800EAE88[AI_TARGET] == (n >= learns[l] ? AI_TARGET_BASE - 0 : AI_TARGET_BASE - 3));
+                Multiply_BattleBegan();
+                Multiply_BattleOver();
+            }
+        }
+    }
+    /* Nothing else to attack: no attack. */
+    gDuel_bOpponentID = 17;
+    empty(MONSTER_RECORD(0, 0));
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == 0 && D_800EAE88[AI_TARGET_FLAG] == 0);
+    /* The swamp brothers: a boss does not attack them with less than their
+     * 3350 together; the Celtic Guardian instead. A beginner does. */
+    empty(SPELL_RECORD(0, 2));
+    empty(MONSTER_RECORD(0, 3));
+    put(MONSTER_RECORD(0, 3), 12, 12);
+    put(MONSTER_RECORD(0, 4), 554, 13);
     put(MONSTER_RECORD(0, 0), 36, 4);
-    put(MONSTER_RECORD(0, 1), 380, 6);
-    D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 3;
-    D_800EAE88[AI_TARGET_FLAG] = 1;
-    Multiply_CpuAttack();
-    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0);   /* the Celtic Guardian, not the dragon it ties */
-    Multiply_Landed(MONSTER_RECORD(0, 3));
-    assert(!K.learned[1]);
+    D_801A7AD8[MONSTER_RECORD(1, 0)].card_id = 36;   /* 1400 */
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == 0 && D_800EAE88[AI_TARGET_FLAG] == 0);   /* the Guardian ties: none */
+    D_801A7AD8[MONSTER_RECORD(1, 0)].card_id = 380;   /* 4500 */
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 3);   /* 4500 beats them together */
+    D_801A7AD8[MONSTER_RECORD(1, 0)].stat_modifier = -1500;   /* 3000 */
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0);   /* the Guardian instead */
+    gDuel_bOpponentID = 1;
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 3);   /* a beginner does not see it */
+    D_801A7AD8[MONSTER_RECORD(1, 0)].stat_modifier = 0;
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) empty(MONSTER_RECORD(0, i));
 
-    /* The strongest (the table's will to use Harpie's Feather Duster at 75)
-     * play it first against the wall; the others do not, nor with no wall. */
-    gDuel_aOpponentData[17].values[DUSTER_WILL] = 75;
-    gDuel_aOpponentData[1].values[DUSTER_WILL] = 25;
+    /* The CPU's plays: a boss breaks the player's wall with Harpie's Feather
+     * Duster; a beginner does not; nor anyone with no wall. */
+    put(SPELL_RECORD(0, 2), MULTIPLY_ID, 9);
+    put(MONSTER_RECORD(0, 3), KURIBOH, 12);
+    Multiply_Landed(MONSTER_RECORD(0, 3));
     gDuel_aActiveCards[12].card_id = HARPIES_FEATHER_DUSTER;
     gDuel_bOpponentID = 1;
     assert(!Multiply_CpuBreak());
@@ -274,11 +324,38 @@ int main(void)
            D_800EAE88[AI_FACE_DOWN] == 0);
     empty(SPELL_RECORD(0, 2));
     assert(!Multiply_CpuBreak());
-    D_8009B1D5 = 0;
-    empty(MONSTER_RECORD(0, 0));
-    empty(MONSTER_RECORD(0, 1));
-    empty(MONSTER_RECORD(0, 3));
+    gDuel_aActiveCards[12].card_id = 0;
+    /* A wall of its own: a boss puts Kuriboh down, then Multiply onto it; a
+     * middle one only when behind; a beginner never. */
+    gDuel_aActiveCards[11].card_id = KURIBOH;
+    gDuel_aActiveCards[13].card_id = MULTIPLY_ID;
+    gDuel_bOpponentID = 1;
+    assert(!Multiply_CpuRaise());
+    gDuel_bOpponentID = 12;
+    assert(!Multiply_CpuRaise());   /* not behind */
+    gDuel_bOpponentID = 17;
     empty(MONSTER_RECORD(1, 0));
+    assert(Multiply_CpuRaise() && D_800EAE88[0] == 11 && D_800EAE88[AI_ZONE] == 1);
+    put(MONSTER_RECORD(1, 2), KURIBOH, 3);
+    assert(Multiply_CpuRaise() && D_800EAE88[0] == 13 && D_800EAE88[AI_ZONE] == 3);
+    put(SPELL_RECORD(1, 0), MULTIPLY_ID, 4);
+    assert(!Multiply_CpuRaise());   /* up already */
+    gDuel_aActiveCards[11].card_id = gDuel_aActiveCards[13].card_id = 0;
+    /* The swamp brothers together: a boss plays the brother of the one on
+     * its field. */
+    put(MONSTER_RECORD(1, 2), 12, 3);
+    gDuel_aActiveCards[14].card_id = 554;
+    assert(Cpu_Brothers() && D_800EAE88[0] == 14 && D_800EAE88[AI_ZONE] == 1);
+    gDuel_bOpponentID = 1;
+    assert(!Cpu_Brothers());
+    gDuel_aActiveCards[14].card_id = 0;
+    D_8009B1D5 = 0;
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) {
+        empty(MONSTER_RECORD(0, i));
+        empty(MONSTER_RECORD(1, i));
+        empty(SPELL_RECORD(0, i));
+        empty(SPELL_RECORD(1, i));
+    }
 
     /* The CPU's own, apart; off: nothing. */
     put(MONSTER_RECORD(1, 4), KURIBOH, 2);
@@ -292,7 +369,7 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 3 && !Multiply_Is(MULTIPLY_ID));
 
-    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, the CPU learning, the strongest breaking it, born again, a free zone, others not, "
+    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, the CPU by its level (learning the wall, the brothers, breaking the wall, a wall of its own, the brothers together), born again, a free zone, others not, "
            "the wall as models, Multiply gone, sides, off passed\n");
     return 0;
 }

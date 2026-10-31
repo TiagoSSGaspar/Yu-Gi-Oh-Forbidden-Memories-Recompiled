@@ -15,7 +15,8 @@
  * of each turn of the side that infected it (the other side's turn
  * beginning, turn_draws) it loses the Zombie's ATK, down to 0, until it
  * leaves the field. The CPU plays the combo too, on the player's strongest
- * living monster when that is stronger than all of its own.
+ * living monster: a boss as soon as it can, a middle one when that monster
+ * is stronger than all of its own (cpu.c).
  *
  * Polymerization and Living Arrow are magic cards with no effect of their
  * own (mod.json): outside the combo they are not played. An infected card is drawn green
@@ -39,6 +40,7 @@
 #include "pc/cards/cards.h"
 #include "unmatched.h"
 #include "arrow.h"
+#include "cpu.h"
 #include "../3d-monsters/monsters_3d.h"
 #include "state.h"
 #include <stdio.h>
@@ -298,7 +300,11 @@ int Arrow_Cpu(void)
         if (target(side, r) && (best < 0 || attack_of(r) > attack_of(best))) best = r;
         if ((D_801A7AD8[mine].flags & DUEL_CARD_FLAG_OCCUPIED) && attack_of(mine) > own) own = attack_of(mine);
     }
-    if (best < 0 || attack_of(best) <= own || A.card[ZONE_OF(best)]) return 0;
+    /* A boss as soon as it can; a middle one when the target is stronger
+     * than all of its own; a beginner never. */
+    if (best < 0 || A.card[ZONE_OF(best)] || Cpu_Level() == CPU_BEGINNER ||
+        (Cpu_Level() == CPU_MIDDLE && attack_of(best) <= own))
+        return 0;
     infect(side, best, loss, combo_zombie);
     cards[0] = picks[0];
     cards[1] = picks[1];

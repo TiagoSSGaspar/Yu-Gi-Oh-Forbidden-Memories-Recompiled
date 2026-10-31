@@ -49,6 +49,24 @@ static int brother_of(int id)
     return id == SWAMP_BATTLEGUARD ? LAVA_BATTLEGUARD : id == LAVA_BATTLEGUARD ? SWAMP_BATTLEGUARD : 0;
 }
 
+/* What a monster attacking record `r` meets: a battleguard with its brother
+ * on its side, their ATKs together (in attack position); 0 otherwise. */
+int Swamp_Together(int r)
+{
+    int side, col, brother;
+    if (!on() || r < 0 || r >= DUEL_CARD_RECORD_COUNT || !(brother = brother_of(D_801A7AD8[r].card_id))) return 0;
+    side = r / DUEL_CARD_SIDE_RECORD_COUNT;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
+        DuelCardRecord *other = &D_801A7AD8[MONSTER_RECORD(side, col)];
+        if (MONSTER_RECORD(side, col) != r && (other->flags & DUEL_CARD_FLAG_OCCUPIED) && other->card_id == brother)
+            return (Duel_CalcCardStats(&D_801A7AD8[r]) & 0xFFFF) + (Duel_CalcCardStats(other) & 0xFFFF);
+    }
+    return 0;
+}
+
+/* The brother of card `id`, or 0. */
+int Swamp_Brother(int id) { return on() ? brother_of(id) : 0; }
+
 /* The battle has begun: the attacked battleguard takes its brother's ATK. */
 static void join(void)
 {

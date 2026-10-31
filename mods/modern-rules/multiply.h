@@ -26,10 +26,15 @@ int Multiply_Wall(int side);
 void Multiply_BattleBegan(void);
 /* The battle is over: a clone dies. */
 void Multiply_BattleOver(void);
-/* The CPU's field decision: an attack on the wall it has learned is
- * useless goes elsewhere, or not at all. */
-void Multiply_CpuAttack(void);
-/* The CPU's hand decision: the strongest opponents play Harpie's Feather
- * Duster first against the player's wall. 1 when it did. */
+/* For the CPU (cpu.c): whether record `r` is the wall's Kuriboh, and how
+ * often `side` has attacked the other side's wall. */
+int Multiply_Walled(int r);
+int Multiply_Attacks(int side);
+/* The CPU's hand decision: a boss plays Harpie's Feather Duster first
+ * against the player's wall. 1 when it did. */
 int Multiply_CpuBreak(void);
+/* The CPU's hand decision: a wall of its own (a boss as soon as it can, a
+ * middle one when behind): Multiply onto its Kuriboh, or the Kuriboh first.
+ * 1 when it did. */
+int Multiply_CpuRaise(void);
 #endif
