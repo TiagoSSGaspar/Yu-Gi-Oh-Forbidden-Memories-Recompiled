@@ -17,7 +17,11 @@
  *   while nothing is in play: a battle lifts its monsters off their records
  *   as it starts;
  * - an equip on the field is not used again: the player's confirm on it is
- *   refused (modern_rules.c), and the CPU sees it as used this turn.
+ *   refused (modern_rules.c), and the CPU sees it as used this turn;
+ * - with the player's field cursor on an equip, its monster glows gold (and
+ *   a line names it); on a monster, its equips do. The field's cards take
+ *   their colour from their display objects each frame
+ *   (Duel_DrawFieldCards), so the glow is put on for the drawing only.
  * With no free zone the equip cannot be played (modern_rules.c); should one
  * still come down, it keeps the disc's way. */
 #include "types.h"
@@ -28,11 +32,13 @@
 #include "game/duel_apply_card_object_flags.h"
 #include "game/duel_card.h"
 #include "game/duel_card_checks.h"
+#include "game/duel_card_display_state.h"
 #include "game/duel_card_layout.h"
 #include "game/duel_card_object_helpers.h"
 #include "game/duel_card_record_lifecycle.h"
 #include "game/duel_card_state_helpers.h"
 #include "game/duel_deck_card.h"
+#include "game/duel_display.h"
 #include "game/duel_effect_request.h"
 #include "game/duel_scene_callbacks.h"
 #include "game/duel_scene_card_placement.h"
@@ -69,7 +75,7 @@
 #define SPELL_RECORD(side, col) ((side) * DUEL_CARD_SIDE_RECORD_COUNT + 2 * DUEL_FIELD_ROW_SIZE + (col))
 
 static const MemoriesModHost *host;
-static void *original_placement, *original_landing, *original_snapshot;
+static void *original_placement, *original_landing, *original_snapshot, *original_draw;
 static void (*next_overlay)(void);
 static unsigned (*next_signature)(void);
 
@@ -358,6 +364,64 @@ static int line_for(int r, char *text, size_t size)
     return n > 0;
 }
 
+/* The records to glow for the record under the cursor: an equip's monster,
+ * or a monster's equips. Their count. */
+static int glowing(int r, u8 *lit)
+{
+    int s, n = 0;
+    memset(lit, 0, DUEL_CARD_RECORD_COUNT);
+    if (r < 0) return 0;
+    if (E.link[r].equip_card && equip_here(r) && monster_here(r)) {
+        lit[(int)E.link[r].monster] = 1;
+        return 1;
+    }
+    for (s = 0; s < DUEL_CARD_RECORD_COUNT; s++)
+        if (E.link[s].equip_card && E.link[s].monster == r && equip_here(s) && monster_here(s)) {
+            lit[s] = 1;
+            n++;
+        }
+    return n;
+}
+
+#define GLOW_PERIOD 48   /* frames of one pulse */
+static unsigned glow_frame;
+
+/* Gold, pulsing from a little over the cards' grey to full: CVECTOR order,
+ * red in the low byte. */
+static u32 glow_color(void)
+{
+    int phase = (int)(glow_frame % GLOW_PERIOD), k = phase < GLOW_PERIOD / 2 ? phase : GLOW_PERIOD - phase;
+    int level = 8 + k;   /* 8..32 of 32 */
+    u32 red = 0x80 + 0x60 * level / 32, green = 0x80 + 0x48 * level / 32, blue = 0x80 - 0x40 * level / 32;
+    return red | green << 8 | blue << 16;
+}
+
+static void draw_field(void)
+{
+    u8 lit[DUEL_CARD_RECORD_COUNT];
+    u32 saved[DUEL_CARD_RECORD_COUNT];
+    int r;
+    glow_frame++;
+    if (!glowing(cursor_record(), lit)) {
+        ((void (*)(void))original_draw)();
+        return;
+    }
+    for (r = 0; r < DUEL_CARD_RECORD_COUNT; r++) {
+        DuelCardDisplayObject *object = (DuelCardDisplayObject *)D_801A7AD8[r].object;
+        /* Only a card in its plain colour or dimmed: not one fading. */
+        if (!lit[r] || !object || (object->color != DUEL_DISPLAY_COLOR_NORMAL &&
+                                   object->color != DUEL_DISPLAY_COLOR_DIMMED)) {
+            lit[r] = 0;
+            continue;
+        }
+        saved[r] = object->color;
+        object->color = glow_color();
+    }
+    ((void (*)(void))original_draw)();
+    for (r = 0; r < DUEL_CARD_RECORD_COUNT; r++)
+        if (lit[r]) ((DuelCardDisplayObject *)D_801A7AD8[r].object)->color = saved[r];
+}
+
 static void picture_point(int x, int y, int *cx, int *cy)
 {
     int width, height, scale;
@@ -405,5 +469,6 @@ int Equips_Install(const MemoriesModHost *from, MemoriesMod *mod)
     mod->overlay_signature = overlay_signature;
     return host->hook(host, (void *)DuelScene_UpdateCardPlacement, (void *)placement, &original_placement) &&
         host->hook(host, (void *)func_8001B170, (void *)landing, &original_landing) &&
-        host->hook(host, (void *)func_80028220, (void *)snapshot, &original_snapshot);
+        host->hook(host, (void *)func_80028220, (void *)snapshot, &original_snapshot) &&
+        host->hook(host, (void *)Duel_DrawFieldCards, (void *)draw_field, &original_draw);
 }

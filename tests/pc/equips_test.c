@@ -79,9 +79,17 @@ void func_8001B170(void)
     gDuel_wSceneStateFlags = SCENE_FIELD;
 }
 void func_80028220(void) { snapshots++; }
+/* The field drawn: the colour each record's card is drawn with. */
+static u32 drawn_color[DUEL_CARD_RECORD_COUNT];
+void Duel_DrawFieldCards(void)
+{
+    int r;
+    for (r = 0; r < DUEL_CARD_RECORD_COUNT; r++)
+        drawn_color[r] = D_801A7AD8[r].object ? ((DuelCardDisplayObject *)D_801A7AD8[r].object)->color : 0;
+}
 
 static int equips_setting = 1, applied = 1;
-static void *hooked[3];
+static void *hooked[4];
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
 { (void)h; return !strcmp(key, "equips_stay") ? equips_setting : fallback; }
 static int fake_applied(const MemoriesModHost *h) { (void)h; return applied; }
@@ -90,7 +98,7 @@ static int fake_hook(const MemoriesModHost *h, void *function, void *replacement
     static int n;
     (void)h;
     *original = function;
-    hooked[n++ % 3] = replacement;
+    hooked[n++ % 4] = replacement;
     return 1;
 }
 static char drawn[4][160];
@@ -218,7 +226,7 @@ int main(void)
     fake_host.text = fake_text;
     fake_mod.overlay = earlier_overlay;
     assert(Equips_Install(&fake_host, &fake_mod) && hooked[0] == (void *)placement &&
-           hooked[1] == (void *)landing && hooked[2] == (void *)snapshot);
+           hooked[1] == (void *)landing && hooked[2] == (void *)snapshot && hooked[3] == (void *)draw_field);
     assert(fake_mod.overlay == overlay);
 
     /* The equips that would stay: those after the last fusion. */
@@ -346,10 +354,28 @@ int main(void)
         drawn_count = 0;
         overlay();
         assert(drawn_count == 1 && !strcmp(drawn[0], "Equipped with: Legendary Sword, Legendary Sword"));
+        /* The glow: on the monster, its two equips; drawn so, then back. */
+        for (i = 0; i < DUEL_CARD_RECORD_COUNT; i++)
+            if (D_801A7AD8[i].object) ((DuelCardDisplayObject *)D_801A7AD8[i].object)->color = DUEL_DISPLAY_COLOR_NORMAL;
+        draw_field();
+        assert(drawn_color[SPELL_RECORD(0, 1)] != DUEL_DISPLAY_COLOR_NORMAL &&
+               drawn_color[SPELL_RECORD(0, 2)] != DUEL_DISPLAY_COLOR_NORMAL &&
+               (drawn_color[SPELL_RECORD(0, 2)] & 0xFF) > 0x80 && drawn_color[MONSTER_RECORD(0, 2)] == DUEL_DISPLAY_COLOR_NORMAL);
+        assert(((DuelCardDisplayObject *)D_801A7AD8[SPELL_RECORD(0, 1)].object)->color == DUEL_DISPLAY_COLOR_NORMAL);
+        cursor->row = 3;                          /* on an equip: its monster */
+        draw_field();
+        assert(drawn_color[MONSTER_RECORD(0, 2)] != DUEL_DISPLAY_COLOR_NORMAL &&
+               drawn_color[SPELL_RECORD(0, 1)] == DUEL_DISPLAY_COLOR_NORMAL);
+        ((DuelCardDisplayObject *)D_801A7AD8[MONSTER_RECORD(0, 2)].object)->color = 0x203040;   /* fading */
+        draw_field();
+        assert(drawn_color[MONSTER_RECORD(0, 2)] == 0x203040);
+        cursor->row = 2;
         cursor->col = 0;
         drawn_count = 0;
         overlay();
         assert(drawn_count == 0);
+        draw_field();
+        assert(drawn_color[SPELL_RECORD(0, 1)] == DUEL_DISPLAY_COLOR_NORMAL);
         D_8009B174 = 6;   /* picking an equip's monster, not walking the field */
         cursor->col = 2;
         overlay();
@@ -357,6 +383,6 @@ int main(void)
     }
 
     printf("Equips on the field: placement, landing, nearest zone, from the field, fusion, Reverse Trap, "
-           "off, equip destroyed, monster destroyed, CPU view, whose equip passed\n");
+           "off, equip destroyed, monster destroyed, CPU view, whose equip, the glow passed\n");
     return 0;
 }
