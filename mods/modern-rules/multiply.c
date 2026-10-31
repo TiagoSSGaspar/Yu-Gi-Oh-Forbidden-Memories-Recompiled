@@ -1,19 +1,21 @@
 /* Kuriboh and Multiply, as in Yugi's duel with Kaiba at Pegasus's castle
  * (the setting "multiply"; episode 24): Multiply makes a wall of hundreds of
- * Kuribohs in front of Yugi's monsters, and every attack of Blue-Eyes
- * Ultimate Dragon's hits the wall, a Kuriboh gone and another in its place.
+ * Kuribohs, and every attack of Blue-Eyes Ultimate Dragon's on them hits the
+ * wall, a Kuriboh gone and another in its place. The wall is the Kuribohs
+ * alone: the Celtic Guardian Yugi summons at the end is attacked as any
+ * monster is.
  *
  * Multiply is an equip of Kuriboh's alone, added by the manifest, with no
  * bonus: it stays on the field as every equip does (equips.c), and is not
- * destroyed with its Kuriboh. While it is on the field, every attack on its
- * side is stopped by the wall: the battle shows a Kuriboh springing as a
- * trap does, with Fake Trap's way of stopping an attack (an explosion on the
- * target, nothing destroyed, no damage). The wall takes no monster zone. It
- * falls only with Multiply.
+ * destroyed with its Kuriboh. While it is on the field, every attack on a
+ * Kuriboh of its side is stopped by the wall: the battle shows the Kuriboh
+ * springing as a trap does, with Fake Trap's way of stopping an attack (an
+ * explosion on the target, nothing destroyed, no damage). The wall takes no
+ * monster zone. It falls with Multiply; with no Kuriboh there is none.
  *
  * The battle (DuelScene_UpdateBattle) clears the trap that springs as it
  * starts and looks for one; once the opponent's trap, if any, has been
- * chosen, an attack on the wall's side gets Fake Trap's effect
+ * chosen, an attack on a Kuriboh of the wall's side gets Fake Trap's effect
  * (D_8009B22A) and the Kuriboh as the card shown (D_8009B1B8). The trap's
  * own presentation, which takes the card off the field, comes before the
  * battle, so nothing is taken. */
@@ -95,19 +97,20 @@ void Multiply_Landed(int monster)
     SD_SEPlayFull(RITUAL_SOUND);
 }
 
-/* The battle has begun: an attack on the wall's side is stopped by it. */
+/* The battle has begun: an attack on a Kuriboh of the wall's side is
+ * stopped by it. */
 static void block(void)
 {
     DisplayObject *attacked = D_800E9EF0[1];
-    int side, shown;
+    int r;
     K.blocking = 0;
-    if (!on() || D_8009B22A || !D_800E9EF0[0]) return;
-    side = attacked ? attacked->field_6A / DUEL_CARD_SIDE_RECORD_COUNT : (D_8009B1D5 & 1) ^ 1;
-    if ((shown = wall(side)) < 0) return;
-    if (attacked && D_801A7AD8[attacked->field_6A].card_id == KURIBOH) shown = attacked->field_6A;
-    else if (Multiply_Kuriboh(side) >= 0) shown = Multiply_Kuriboh(side);
+    if (!on() || D_8009B22A || !D_800E9EF0[0] || !attacked) return;
+    r = attacked->field_6A;
+    if (r >= DUEL_CARD_RECORD_COUNT || D_801A7AD8[r].card_id != KURIBOH ||
+        wall(r / DUEL_CARD_SIDE_RECORD_COUNT) < 0)
+        return;
     D_8009B22A = FAKE_TRAP;
-    D_8009B1B8 = (u8)shown;
+    D_8009B1B8 = (u8)r;
     K.blocking = 1;
 }
 

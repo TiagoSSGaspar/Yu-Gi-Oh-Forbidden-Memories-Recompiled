@@ -363,7 +363,7 @@ static int line_for(int r, char *text, size_t size)
     size_t used;
     if (r < 0) return 0;
     if (E.link[r].equip_card && equip_here(r) && Multiply_Is(E.link[r].equip_card)) {
-        snprintf(text, size, "%s", T("Multiply: a wall of Kuribohs stops every attack on this side"));
+        snprintf(text, size, "%s", T("Multiply: a wall of Kuribohs stops every attack on Kuriboh"));
         return 1;
     }
     if (E.link[r].equip_card && equip_here(r) && monster_here(r)) {

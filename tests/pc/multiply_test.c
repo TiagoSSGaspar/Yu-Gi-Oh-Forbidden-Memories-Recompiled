@@ -115,14 +115,14 @@ int main(void)
     Multiply_Landed(MONSTER_RECORD(1, 2));
     assert(lights == 1 && sounds == 1);
 
-    /* The CPU's Kuriboh (record 22) and Multiply (record 27); its Dark
-     * Magician (record 20). The player's attack on the magician: the wall
+    /* The CPU's Kuriboh (record 22) and Multiply (record 27); its Celtic
+     * Guardian (record 20). The player's attack on the Kuriboh: the wall
      * stops it as Fake Trap would, the Kuriboh shown. */
     put(MONSTER_RECORD(1, 0), 36);
     put(MONSTER_RECORD(1, 2), KURIBOH);
     put(SPELL_RECORD(1, 2), MULTIPLY_ID);
     put(MONSTER_RECORD(0, 0), 1);
-    attack(MONSTER_RECORD(1, 0));
+    attack(MONSTER_RECORD(1, 2));
     assert(D_8009B22A == FAKE_TRAP && D_8009B1B8 == MONSTER_RECORD(1, 2) && K.blocking);
     drawn_count = 0;
     overlay();
@@ -132,46 +132,39 @@ int main(void)
     drawn_count = 0;
     overlay();
     assert(drawn_count == 0);
-    /* On the Kuriboh itself: it is the one shown. */
-    attack(MONSTER_RECORD(1, 2));
-    assert(D_8009B22A == FAKE_TRAP && D_8009B1B8 == MONSTER_RECORD(1, 2));
-    end();
-    /* No Kuriboh left (a Raigeki): the wall stands while Multiply does,
-     * Multiply shown. */
-    empty(MONSTER_RECORD(1, 2));
-    attack(MONSTER_RECORD(1, 0));
-    assert(D_8009B22A == FAKE_TRAP && D_8009B1B8 == SPELL_RECORD(1, 2));
-    end();
-    /* A direct attack on that side: stopped too. */
-    D_8009B1D5 = 0;
-    empty(MONSTER_RECORD(1, 0));
-    attack(-1);
-    assert(D_8009B22A == FAKE_TRAP && K.blocking);
-    end();
-    /* A trap of the CPU's own sprang: it stands. */
-    put(MONSTER_RECORD(1, 0), 36);
-    trap_found = 683;
-    attack(MONSTER_RECORD(1, 0));
-    assert(D_8009B22A == 683 && !K.blocking);
-    end();
-    trap_found = 0;
-    /* Multiply gone: the attack goes through. */
-    empty(SPELL_RECORD(1, 2));
+    /* The Celtic Guardian beside it is attacked as any monster is, as at
+     * the end of the anime's duel. */
     attack(MONSTER_RECORD(1, 0));
     assert(D_8009B22A == 0 && !K.blocking);
     end();
-    /* The other side's wall does not count; off: nothing. */
+    /* A direct attack (no Kuriboh left): nothing stops it. */
+    D_8009B1D5 = 0;
+    attack(-1);
+    assert(D_8009B22A == 0 && !K.blocking);
+    end();
+    /* A trap of the CPU's own sprang: it stands. */
+    trap_found = 683;
+    attack(MONSTER_RECORD(1, 2));
+    assert(D_8009B22A == 683 && !K.blocking);
+    end();
+    trap_found = 0;
+    /* Multiply gone: the attack on the Kuriboh goes through. */
+    empty(SPELL_RECORD(1, 2));
+    attack(MONSTER_RECORD(1, 2));
+    assert(D_8009B22A == 0 && !K.blocking);
+    end();
+    /* The other side's Multiply does not count; off: nothing. */
     put(SPELL_RECORD(0, 1), MULTIPLY_ID);
-    attack(MONSTER_RECORD(1, 0));
+    attack(MONSTER_RECORD(1, 2));
     assert(D_8009B22A == 0);
     end();
     put(SPELL_RECORD(1, 2), MULTIPLY_ID);
     multiply_setting = 0;
-    attack(MONSTER_RECORD(1, 0));
+    attack(MONSTER_RECORD(1, 2));
     assert(D_8009B22A == 0 && !Multiply_Is(MULTIPLY_ID));
     end();
 
-    printf("Kuriboh and Multiply: the identity, the wall up, attacks stopped, the Kuriboh shown, without Kuriboh, "
-           "direct, a trap of its own, Multiply gone, sides, off passed\n");
+    printf("Kuriboh and Multiply: the identity, the wall up, attacks on Kuriboh stopped, others not, direct, "
+           "a trap of its own, Multiply gone, sides, off passed\n");
     return 0;
 }
