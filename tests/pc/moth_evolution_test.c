@@ -8,6 +8,8 @@
 #include <string.h>
 #include "../../mods/modern-rules/moth.c"
 
+ModernRulesState gModernRules_State;
+
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B1D5;
 DuelSideState D_800E9FF0[DUEL_SIDE_COUNT];
@@ -111,7 +113,7 @@ int main(void)
     fake_host.draw_text = fake_draw_text;
     fake_host.picture_point = fake_picture_point;
     fake_host.text = fake_text;
-    assert(Moth_Install(&fake_host, &fake_mod) && fusion_cb && monster_cb && registered_size == (int)sizeof S);
+    assert(Moth_Install(&fake_host, &fake_mod) && fusion_cb && monster_cb);
 
     /* The larva (Petit Moth, or Larvae Moth as the anime calls it) and
      * Cocoon of Evolution fuse into the cocoon, either way round; nothing

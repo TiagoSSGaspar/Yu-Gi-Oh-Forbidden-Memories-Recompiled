@@ -12,6 +12,15 @@
 /* Petit Moth's evolution is tested on its own (moth_evolution_test.c). */
 int Moth_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Moth_Hold(void) { return 0; }
+/* The equips are tested on their own too (equips_test.c): here, how many
+ * stay and how many zones are free, as each test sets them. */
+static int equips_on, equips_kept, equips_free = 5, equips_in_zone = -1;
+int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Equips_On(void) { return equips_on; }
+int Equips_Hold(void) { return 0; }
+int Equips_Kept(int first, const int *ids, int count) { (void)first; (void)ids; (void)count; return equips_kept; }
+int Equips_FreeZones(int side) { (void)side; return equips_free; }
+int Equips_InZone(int side, int col) { (void)side; return equips_on && col == equips_in_zone; }
 
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B174;
@@ -55,7 +64,8 @@ void DuelScene_UpdateFieldActions(void) { seen_pressed = gInput_wPad1Pressed; }
 /* The CPU's hand decision the stand-in script makes: picks, then [6] the
  * zone (1-5 the monster zones), [8] face down. */
 static unsigned char ai_choice[12] = {13, 0, 0, 0, 0, 0, 2};
-s32 AiScript_Run(void) { memcpy(D_800EAE88, ai_choice, 12); return 1; }
+static s32 ai_result = 1;   /* 1 a hand decision, 2 a field card used */
+s32 AiScript_Run(void) { memcpy(D_800EAE88, ai_choice, 12); return ai_result; }
 AiActiveCard gDuel_aActiveCards[80];
 s32 gDuel_adwCardStats[900];
 static int passes, guard_setting = 1, optional_setting = 1;
@@ -85,9 +95,11 @@ static int hand_cursor_api(void)
 {
     return (s8)((DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE))->field_0E;
 }
+static int menu_is_open;
+static int menu_open_api(void) { return menu_is_open; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api};
+                                      set_phases, hand_cursor_api, menu_open_api};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
@@ -287,6 +299,27 @@ int main(void)
         field_cursor.row = MONSTER_ROW;
         D_8009B174 = HAND_PLACING | HAND_STEP_DONE | HAND_PLACING_MOVING;
         assert(confirm());                       /* the cursor is still moving */
+        /* The equips that would stay on the field need free magic and trap
+         * zones. */
+        D_8009B174 = HAND_PLACING | HAND_STEP_DONE;
+        side->field_0E = 3;                      /* 6 equips onto 1 */
+        equips_on = 1; equips_kept = 1; equips_free = 0;
+        assert(!confirm() && sounds == 1);
+        menu_is_open = 1;                        /* the phase menu's X is the menu's */
+        assert(confirm());
+        menu_is_open = 0;
+        equips_free = 1;
+        assert(confirm());
+        field_cursor.col = 3;                    /* onto an empty zone too */
+        equips_free = 0;
+        assert(!confirm());
+        field_cursor.row = 3;                    /* a card set in the spell row */
+        assert(confirm());
+        field_cursor.row = MONSTER_ROW;
+        field_cursor.col = 2;
+        equips_on = 0;
+        assert(confirm());
+        equips_kept = 0; equips_free = 5;
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
     }
 
@@ -334,6 +367,29 @@ int main(void)
         D_8009B174 = FIELD_TARGETING | FIELD_TARGET_LEAVING;               /* going back */
         field();
         assert(seen_pressed == PAD_BUTTON_CROSS);
+        /* An equip in use is not used again: the player's confirm on it,
+         * walking the field, is refused. */
+        D_8009B174 = FIELD_IDLE;
+        equips_on = 1; equips_in_zone = 1;
+        sounds = 0;
+        field();
+        assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 1;                                                   /* the phase menu's X */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 0;
+        equips_in_zone = 2;                                                 /* another zone */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        equips_in_zone = 1;
+        D_8009B360[0] = 1;                                                  /* the CPU's own path */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        D_8009B360[0] = -1;
+        equips_on = 0;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        equips_in_zone = -1;
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
         gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
         for (i = 5; i < 15; i++) D_801A7AD8[i].flags = 0;
@@ -401,11 +457,33 @@ int main(void)
         guard_setting = 1;
         ai_choice[0] = AI_ENEMY_SLOT_FIRST + 4;                            /* not its card: left alone */
         assert(run() == 1 && D_800EAE88[0] == AI_ENEMY_SLOT_FIRST + 4 && D_800EAE88[6] == 1);
+        /* An equip with no free zone to stay in: the CPU plays it
+         * elsewhere, or no card. */
+        ai_choice[0] = 13; ai_choice[6] = 3;                              /* 6 onto 1 */
+        equips_on = 1; equips_kept = 1; equips_free = 0; passes = 0;
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 0);
+        equips_free = 1;
+        assert(run() == 1 && D_800EAE88[0] == 13 && D_800EAE88[6] == 3);
+        guard_setting = 0; equips_free = 0; passes = 0;                    /* without the fusion guard too */
+        assert(run() == 1 && passes == 1);
+        guard_setting = 1; equips_kept = 0; equips_free = 5;
+        /* Its field script picking an equip in use: its field turn ends. */
+        gAiScript_State.script_base = D_801A9800;
+        gDuel_wSceneStateFlags = STATE_FIELD | STATE_STARTED;
+        ai_result = 2; ai_choice[9] = AI_SPELL_SLOT + 1; equips_in_zone = 1;
+        assert(run() == AI_END_FIELD);
+        equips_in_zone = 2;
+        assert(run() == 2);
+        equips_on = 0; equips_in_zone = 1;
+        assert(run() == 2);
+        ai_result = 1; equips_in_zone = -1;
+        gAiScript_State.script_base = D_801A8000;
+        gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
         for (i = 5; i < 10; i++) D_801A7AD8[i].flags = 0;
         memset(ai_choice, 0, sizeof ai_choice);
         ai_choice[0] = 13; ai_choice[6] = 2;
     }
 
-    printf("Duelist Kingdom rules: optional play, turn draws, hand limits, fusion guard on the hand, the field and the CPU, phases passed\n");
+    printf("Duelist Kingdom rules: optional play, turn draws, hand limits, fusion guard on the hand, the field and the CPU, the equips' zones and equips in use, phases passed\n");
     return 0;
 }

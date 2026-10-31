@@ -146,6 +146,9 @@ offers:
   player's turn runs in phases (above).
 - `hand_cursor` (version 6): the hand card under the player's hand cursor.
   Past ten cards the cursor's place on screen is not the card's.
+- `menu_open` (version 7): whether the phase menu is open. Its X is the
+  menu's, so a mod that refuses a confirm in the hand or on the field (the
+  Duelist Kingdom rules) leaves it alone.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw

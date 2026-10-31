@@ -28,7 +28,7 @@ typedef int (*ExtraHandPhases)(void);
  * hand past five cards; 5: set_phases; 6: hand_cursor, and the hand entries
  * count hand cards, up to 40. New entries only go at the end, so check
  * version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 6
+#define EXTRA_HAND_API_VERSION 7
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -75,6 +75,10 @@ typedef struct {
      * hand_card and hand_mark: past ten cards the cursor's place on screen
      * is no longer the card's. */
     int (*hand_cursor)(void);
+    /* Version 7: whether the phase menu is open. Its buttons are the
+     * menu's then, not the hand's or the field's: a mod that refuses a
+     * confirm in those states leaves this one alone. */
+    int (*menu_open)(void);
 } ExtraHandApi;
 
 #endif

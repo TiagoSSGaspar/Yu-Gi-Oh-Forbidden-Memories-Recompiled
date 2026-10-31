@@ -1,9 +1,9 @@
 {
   "id": "modern-rules",
   "name": "Duelist Kingdom rules",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "author": "DecompRecomp",
-  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, the moth's evolution, and no card lost to a fusion that does not work. Needs Extra hand plays.",
+  "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, the moth's evolution, equips that stay on the field, and no card lost to a fusion that does not work. Needs Extra hand plays.",
   "min_api": 10,
   "game": "slus_01411",
   "library": "modern-rules",
@@ -12,7 +12,7 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.7.0"
+      "min_version": "0.8.0"
     }
   ],
   "after": [
@@ -62,6 +62,13 @@
       "type": "bool",
       "default": 1,
       "description": "As in Weevil's duels: Cocoon of Evolution put onto Petit Moth or Larvae Moth, or the two fused from the hand, makes the cocoon, in defense. At its owner's 5th turn after, it opens: Perfectly Ultimate Great Moth. Destroyed before, it dies with the larva, unless it has had 4 of those turns: then Great Moth comes out in its place, in attack. A Cocoon played alone stays a Cocoon."
+    },
+    {
+      "key": "equips_stay",
+      "label": "Equips stay on the field",
+      "type": "bool",
+      "default": 1,
+      "description": "As in the anime and the card game: an equip goes to the magic and trap zone behind its monster (or the nearest free one) and stays there. Destroyed, it takes its bonus with it; the monster leaving the field destroys its equips. With no free zone, the equip cannot be played. An equip on the field is not used again."
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "extra-hand-plays",
   "name": "Extra hand plays",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "author": "DecompRecomp",
   "description": "Play magic, trap and equip cards freely each turn, and up to five monsters. After a play the hand comes back up; the player may skip the rest with START. The CPU plays its extra cards through its own hand script. Lets another mod hold up to forty cards in hand, ten of them on screen at a time.",
   "min_api": 4,
