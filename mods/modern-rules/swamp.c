@@ -25,6 +25,7 @@
 #include "game/duel_scene_field_actions.h"
 #include "unmatched.h"
 #include "swamp.h"
+#include "multiply.h"
 #include "state.h"
 #include <stdio.h>
 #include <string.h>
@@ -94,8 +95,14 @@ static void battle(void)
 {
     int starting = !(gDuel_wSceneStateFlags & SCENE_STARTED);
     ((void (*)(void))original_battle)();
-    if (starting) join();
-    else if (W.record >= 0 && (gDuel_wSceneStateFlags & SCENE_MASK) != SCENE_BATTLE) part();
+    /* The wall of Kuribohs (multiply.c) takes its battles here too. */
+    if (starting) {
+        join();
+        Multiply_BattleBegan();
+    } else if ((gDuel_wSceneStateFlags & SCENE_MASK) != SCENE_BATTLE) {
+        if (W.record >= 0) part();
+        Multiply_BattleOver();
+    }
 }
 
 /* The line while the brothers fight together. */

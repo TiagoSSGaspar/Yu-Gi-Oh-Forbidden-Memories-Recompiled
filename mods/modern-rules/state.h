@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 5
+#define MODERN_RULES_STATE_VERSION 6
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -59,10 +59,17 @@ typedef struct {
 } SwampState;
 
 /* Kuriboh and Multiply: each side's wall Kuriboh, by its zone's record, and
- * the deck card a new one is made from; -1 for none. */
+ * the deck card a new one is made from; -1 for none. In a battle with it,
+ * its record and the DEF it was given; then the clone that died, and the
+ * frames until another takes its place. */
 typedef struct {
     s8 zone[2];
     s8 deck[2];
+    s8 guard;          /* the wall's Kuriboh in this battle, or -1 */
+    s8 dead;           /* the clone that died, or -1 */
+    u8 dead_frames;
+    u8 next;           /* the clone the next attack takes */
+    s16 lift;          /* DEF added for the battle */
 } MultiplyState;
 
 typedef struct {

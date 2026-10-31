@@ -26,6 +26,10 @@ s32 Duel_CalcCardStats(DuelCardRecord *card)
     return (attack & 0xFFFF) | (1500 + card->stat_modifier) << 16;
 }
 void Duel_ApplyCardObjectFlags(DuelCardDisplayObject *object) { (void)object; applied_flags++; }
+/* The wall of Kuribohs is tested on its own (multiply_test.c). */
+static int multiply_began, multiply_over;
+void Multiply_BattleBegan(void) { multiply_began++; }
+void Multiply_BattleOver(void) { multiply_over++; }
 
 /* The battle as the game plays it: its first frame lifts the two monsters
  * off their records keeping the attacked one's modifier and flags; its last

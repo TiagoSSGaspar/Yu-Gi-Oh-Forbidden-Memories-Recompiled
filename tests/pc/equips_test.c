@@ -16,19 +16,12 @@
 
 ModernRulesState gModernRules_State;
 /* Multiply is tested on its own (multiply_test.c): here card 77, and the
- * Kuriboh it goes on to the first of the side's records holding 58. */
+ * wall's Kuriboh whatever the test says. */
 #define MULTIPLY_TEST 77
-static int multiply_landed = -1;
+static int multiply_landed = -1, wall_kuriboh = -1;
 int Multiply_Is(int card) { return card == MULTIPLY_TEST; }
 void Multiply_Landed(int monster) { multiply_landed = monster; }
-int Multiply_Kuriboh(int side)
-{
-    int col;
-    for (col = 0; col < 5; col++)
-        if ((D_801A7AD8[side * 15 + 5 + col].flags & DUEL_CARD_FLAG_OCCUPIED) && D_801A7AD8[side * 15 + 5 + col].card_id == 58)
-            return side * 15 + 5 + col;
-    return -1;
-}
+int Multiply_Wall(int side) { (void)side; return wall_kuriboh; }
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B174;
 u8 D_8009B1D5;
@@ -341,7 +334,8 @@ int main(void)
     assert(removed == 1);
 
     /* Multiply: landed, it tells multiply.c; its Kuriboh gone, it is not
-     * destroyed but goes on to another Kuriboh, or waits for one. */
+     * destroyed, nor goes on to the side's other Kuriboh: it waits for the
+     * one born again in its place. */
     clear();
     put(MONSTER_RECORD(0, 1), 58, 3);
     put(MONSTER_RECORD(0, 3), 58, 4);
@@ -365,9 +359,12 @@ int main(void)
     assert(multiply_landed == MONSTER_RECORD(0, 1) && linked(1));
     D_801A7AD8[MONSTER_RECORD(0, 1)].flags = 0;      /* its Kuriboh destroyed */
     removed = 0;
-    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].monster == MONSTER_RECORD(0, 3));
-    D_801A7AD8[MONSTER_RECORD(0, 3)].flags = 0;      /* no Kuriboh left: it waits */
-    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].equip_card == MULTIPLY_TEST);
+    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].monster == MONSTER_RECORD(0, 1) &&
+           E.link[SPELL_RECORD(0, 1)].equip_card == MULTIPLY_TEST);
+    put(MONSTER_RECORD(0, 4), 58, 5);                 /* born again, in another zone */
+    wall_kuriboh = MONSTER_RECORD(0, 4);
+    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].monster == MONSTER_RECORD(0, 4));
+    wall_kuriboh = -1;
     gDuel_wSceneStateFlags = SCENE_FIELD;
     D_8009B174 = FIELD_IDLE;
     {

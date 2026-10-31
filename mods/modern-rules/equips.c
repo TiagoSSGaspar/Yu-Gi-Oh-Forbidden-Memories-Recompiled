@@ -24,8 +24,8 @@
  *   (Duel_DrawFieldCards), so the glow is put on for the drawing only.
  * With no free zone the equip cannot be played (modern_rules.c); should one
  * still come down, it keeps the disc's way. Multiply (multiply.c) is the one
- * equip not destroyed with its monster: it goes on to another Kuriboh of its
- * side, or stays alone. */
+ * equip not destroyed with its monster: it waits for the Kuriboh born again
+ * in its place, and goes on to it. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -287,7 +287,7 @@ int Equips_Hold(void)
                 continue;
             }
             if (Multiply_Is(link->equip_card)) {
-                int k = Multiply_Kuriboh(r / DUEL_CARD_SIDE_RECORD_COUNT);
+                int k = Multiply_Wall(r / DUEL_CARD_SIDE_RECORD_COUNT);
                 if (k >= 0) {
                     link->monster = (s8)k;
                     link->monster_card = D_801A7AD8[k].card_id;

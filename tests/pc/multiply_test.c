@@ -18,6 +18,16 @@ static DuelEffectRequest effect;
 void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
 DuelEffectRequest *DuelEffect_CreateRequest(s32 id) { (void)id; lights++; return &effect; }
 void Duel_ApplyCardObjectFlags(DuelCardDisplayObject *object) { (void)object; applied++; }
+/* The battle's stats: ATK and DEF straight from the record. */
+DisplayObject *D_800E9EF0[7];
+s16 gDuel_awSavedDefenseModifier[2];
+static s32 base_def(DuelCardRecord *c) { return c->card_id == KURIBOH ? 200 : 1000; }
+s32 Duel_CalcBattleAttack(DuelCardRecord *card, DuelCardRecord *opponent)
+{ (void)opponent; return (card->card_id == KURIBOH ? 300 : 4500) + card->stat_modifier; }
+s32 Duel_CalcBattleDefense(DuelCardRecord *card, DuelCardRecord *opponent)
+{ (void)opponent; return base_def(card) + card->defense_modifier; }
+s32 Duel_GetCardEffectVariant(CardObject *object) { (void)object; return 0; }
+static DisplayObject attacker_object, attacked_object;
 /* The game's check before a position change: occupied, not used. */
 int DuelCard_CanActThisTurn(DuelCardRecord *card)
 {
@@ -135,6 +145,69 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 2);
 
+    /* Two Kuribohs: the wall is the one Multiply went onto. The other is a
+     * monster as any other: its position changes, and destroyed it is not
+     * born again; the wall's, destroyed, is born again in its own zone. */
+    put(SPELL_RECORD(0, 2), MULTIPLY_ID, 9);
+    put(MONSTER_RECORD(0, 0), KURIBOH, 11);
+    put(MONSTER_RECORD(0, 3), KURIBOH, 12);
+    Multiply_Landed(MONSTER_RECORD(0, 3));
+    assert(Multiply_Wall(0) == MONSTER_RECORD(0, 3) && !can_act(&D_801A7AD8[MONSTER_RECORD(0, 3)]) &&
+           can_act(&D_801A7AD8[MONSTER_RECORD(0, 0)]));
+    {
+        Monsters3dCopy more[MONSTERS_3D_COPIES];
+        assert(model_copies(MONSTER_RECORD(0, 0), 0, -95, more, MONSTERS_3D_COPIES) == 0);
+    }
+    remakes = 0;
+    empty(MONSTER_RECORD(0, 0));
+    Multiply_Hold();
+    assert(remakes == 0 && Multiply_Wall(0) == MONSTER_RECORD(0, 3));
+    empty(MONSTER_RECORD(0, 3));
+    Multiply_Hold();
+    assert(remakes == 1 && Multiply_Wall(0) == MONSTER_RECORD(0, 3) &&
+           D_801A7AD8[MONSTER_RECORD(0, 3)].data == &deck_cards[0][12]);
+    empty(SPELL_RECORD(0, 2));
+    empty(MONSTER_RECORD(0, 3));
+    remakes = 2;
+
+    /* A battle with the wall's Kuriboh: its DEF meets the attack, so
+     * neither is destroyed; over, it has its own back, and a clone dies,
+     * to stand again some frames later. Another monster's battle: nothing. */
+    put(SPELL_RECORD(0, 2), MULTIPLY_ID, 9);
+    put(MONSTER_RECORD(0, 3), KURIBOH, 12);
+    Multiply_Landed(MONSTER_RECORD(0, 3));
+    put(MONSTER_RECORD(1, 0), 380, 1);
+    attacker_object.field_6A = MONSTER_RECORD(1, 0);
+    attacked_object.field_6A = MONSTER_RECORD(0, 3);
+    D_800E9EF0[0] = &attacker_object;
+    D_800E9EF0[1] = &attacked_object;
+    gDuel_awSavedDefenseModifier[1] = 0;
+    models_asked = 1;
+    Multiply_BattleBegan();
+    assert(Duel_CalcBattleDefense(&D_801A7AD8[MONSTER_RECORD(0, 3)], 0) == 4500 &&
+           gDuel_awSavedDefenseModifier[1] == 4300);
+    lights = sounds = 0;
+    Multiply_BattleOver();
+    assert(D_801A7AD8[MONSTER_RECORD(0, 3)].defense_modifier == 0 && K.dead >= 0 && sounds == 1);
+    {
+        Monsters3dCopy more[MONSTERS_3D_COPIES];
+        int dead = K.dead;
+        assert(model_copies(MONSTER_RECORD(0, 3), 70, -95, more, MONSTERS_3D_COPIES) == CLONES - 1);
+        for (i = 0; i < CLONES - 1; i++) assert(more[i].x != clone_x[dead]);
+        for (i = 0; i < CLONE_GONE; i++) model_copies(MONSTER_RECORD(0, 3), 70, -95, more, MONSTERS_3D_COPIES);
+        assert(model_copies(MONSTER_RECORD(0, 3), 70, -95, more, MONSTERS_3D_COPIES) == CLONES);
+    }
+    attacked_object.field_6A = MONSTER_RECORD(0, 0);
+    put(MONSTER_RECORD(0, 0), 36, 4);
+    Multiply_BattleBegan();
+    assert(K.guard == -1 && D_801A7AD8[MONSTER_RECORD(0, 0)].defense_modifier == 0);
+    Multiply_BattleOver();
+    models_asked = 0;
+    empty(MONSTER_RECORD(0, 0));
+    empty(MONSTER_RECORD(1, 0));
+    empty(SPELL_RECORD(0, 2));
+    empty(MONSTER_RECORD(0, 3));
+
     /* The CPU's own, apart; off: nothing. */
     put(MONSTER_RECORD(1, 4), KURIBOH, 2);
     put(SPELL_RECORD(1, 4), MULTIPLY_ID, 3);
@@ -147,7 +220,7 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 3 && !Multiply_Is(MULTIPLY_ID));
 
-    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, born again, a free zone, others not, "
+    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, born again, a free zone, others not, "
            "the wall as models, Multiply gone, sides, off passed\n");
     return 0;
 }
