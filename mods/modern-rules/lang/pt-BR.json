@@ -1,6 +1,6 @@
 {
     "name": "Regras do Reino dos Duelistas",
-    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até quarenta, fases do turno com uma segunda Main Phase, a evolução da mariposa, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
+    "description": "Regras do anime no Reino dos Duelistas: uma carta comprada por turno depois das cinco iniciais, uma mão de até quarenta, fases do turno com uma segunda Main Phase, a evolução da mariposa, equipamentos que ficam no campo, e nenhuma carta perdida numa fusão que não funciona. Precisa de Jogadas extras da mão.",
     "settings": {
         "optional_play": {
             "label": "Jogar uma carta é opcional",
@@ -21,6 +21,10 @@
         "moth_evolution": {
             "label": "Evolução da mariposa (anime)",
             "description": "Como nos duelos do Weevil: o Cocoon of Evolution jogado sobre a Petit Moth ou a Larvae Moth, ou os dois fundidos da mão, faz o casulo, em defesa. No 5º turno do dono depois disso, ele se abre: Perfectly Ultimate Great Moth. Destruído antes, morre com a lagarta, a não ser que já tenha tido 4 desses turnos: aí sai a Great Moth no lugar dele, em ataque. Um Cocoon jogado sozinho continua Cocoon."
+        },
+        "equips_stay": {
+            "label": "Equipamentos ficam no campo",
+            "description": "Como no anime e no card game: o equipamento vai para a zona de magia e armadilha atrás do monstro (ou a livre mais perto) e fica lá. Destruído, leva o bônus junto; o monstro saindo do campo destrói os equipamentos dele. Sem zona livre, o equipamento não pode ser jogado. Um equipamento no campo não é usado de novo."
         }
     },
     "texts": {

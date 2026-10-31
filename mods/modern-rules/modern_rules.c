@@ -41,6 +41,7 @@
 #include "unmatched.h"
 #include "../extra-hand-plays/extra_hand_plays.h"
 #include "moth.h"
+#include "state.h"
 #include <string.h>
 
 void DuelScene_UpdateHandActions(void);
@@ -74,6 +75,7 @@ extern unsigned char D_800EAE88[];
 #define OPENING_HAND 5
 #define HAND_MAX 40
 
+ModernRulesState gModernRules_State;
 static const MemoriesModHost *host;
 static const ExtraHandApi *api;
 static void *original_hand, *original_run, *original_field;
@@ -336,5 +338,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
-        Moth_Install(host, mod);
+        Moth_Install(host, mod) &&
+        (host->api < 10 ||
+         host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

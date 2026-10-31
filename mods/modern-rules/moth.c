@@ -32,6 +32,7 @@
 #include "psyq/libgpu.h"
 #include "unmatched.h"
 #include "moth.h"
+#include "state.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -44,17 +45,9 @@
 #define MOTH_PERFECT_TURN 5   /* it opens: Perfectly Ultimate Great Moth */
 #define SCENE_MASK 0xF
 #define SCENE_PLACEMENT 7
-#define MOTH_STATE_VERSION 2
 
 static const MemoriesModHost *host;
-static struct {
-    u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
-    s16 card[DUEL_CARD_RECORD_COUNT];  /* the card the record held when last seen */
-    s16 due[DUEL_CARD_RECORD_COUNT];   /* the card it is to become, 0 for none */
-    u8 made[2];                        /* turns_taken + 1 of the side whose placement fused the cocoon */
-    s8 evolving;                       /* the record evolving, -1 for none */
-    u8 step;
-} S;
+#define S (gModernRules_State.moth)
 
 static int on(void) { return host->applied(host) && host->setting(host, "moth_evolution", 1); }
 static int larva(int id) { return id == MOTH_PETIT || id == MOTH_LARVAE; }
@@ -241,6 +234,5 @@ int Moth_Install(const MemoriesModHost *from, MemoriesMod *mod)
     mod->overlay_signature = overlay_signature;
     if (host->api < 10) return 1;   /* no monster events: no evolution, nothing else changes */
     return host->subscribe(host, MEMORIES_EVENT_FUSION, 0, fusion) > 0 &&
-        host->subscribe(host, MEMORIES_EVENT_MONSTER, 0, monster) > 0 &&
-        host->register_state(host, &S, sizeof S, MOTH_STATE_VERSION);
+        host->subscribe(host, MEMORIES_EVENT_MONSTER, 0, monster) > 0;
 }
