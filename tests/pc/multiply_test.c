@@ -28,6 +28,22 @@ s32 Duel_CalcBattleDefense(DuelCardRecord *card, DuelCardRecord *opponent)
 { (void)opponent; return base_def(card) + card->defense_modifier; }
 s32 Duel_GetCardEffectVariant(CardObject *object) { (void)object; return 0; }
 static DisplayObject attacker_object, attacked_object;
+/* The CPU: its decision, its snapshot, the opponents' table, the grid (the
+ * CPU's: row 1 the player's monsters, row 2 its own), the stats. */
+unsigned char D_800EAE88[12];
+AiActiveCard gDuel_aActiveCards[80];
+AiOpponentData gDuel_aOpponentData[AI_OPPONENT_COUNT];
+s8 gDuel_bOpponentID;
+u8 D_8009B1D5;
+u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
+    25, 26, 27, 28, 29, 20, 21, 22, 23, 24, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    10, 11, 12, 13, 14, 5, 6, 7, 8, 9, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
+s32 Duel_CalcCardStats(DuelCardRecord *card)
+{
+    int attack = card->card_id == KURIBOH ? 300 : card->card_id == 36 ? 1400 : card->card_id == 380 ? 4500 : 1000;
+    int defense = card->card_id == KURIBOH ? 200 : card->card_id == 36 ? 1200 : 1000;
+    return ((defense + card->defense_modifier) << 16) | (attack + card->stat_modifier);
+}
 /* The game's check before a position change: occupied, not used. */
 int DuelCard_CanActThisTurn(DuelCardRecord *card)
 {
@@ -208,6 +224,62 @@ int main(void)
     empty(SPELL_RECORD(0, 2));
     empty(MONSTER_RECORD(0, 3));
 
+    /* The CPU learns: once it has attacked the wall, an attack on it goes to
+     * the player's monster its attacker beats by the most, or to none. A new
+     * wall: learnt again. */
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) {
+        empty(MONSTER_RECORD(0, i));
+        empty(MONSTER_RECORD(1, i));
+        empty(SPELL_RECORD(0, i));
+        empty(SPELL_RECORD(1, i));
+    }
+    put(SPELL_RECORD(0, 2), MULTIPLY_ID, 9);
+    put(MONSTER_RECORD(0, 3), KURIBOH, 12);
+    put(MONSTER_RECORD(1, 0), 380, 1);
+    Multiply_Landed(MONSTER_RECORD(0, 3));
+    D_8009B1D5 = 1;
+    memset(D_800EAE88, 0, sizeof D_800EAE88);
+    D_800EAE88[AI_ATTACKER] = 1;
+    D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 3;   /* row 1, column 3: the wall's Kuriboh */
+    D_800EAE88[AI_TARGET_FLAG] = 1;
+    Multiply_CpuAttack();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 3);   /* not yet learnt */
+    attacker_object.field_6A = MONSTER_RECORD(1, 0);
+    attacked_object.field_6A = MONSTER_RECORD(0, 3);
+    D_800E9EF0[0] = &attacker_object;
+    D_800E9EF0[1] = &attacked_object;
+    Multiply_BattleBegan();
+    Multiply_BattleOver();
+    assert(K.learned[1] && !K.learned[0]);
+    Multiply_CpuAttack();
+    assert(D_800EAE88[AI_TARGET] == 0 && D_800EAE88[AI_TARGET_FLAG] == 0);   /* nothing else: no attack */
+    put(MONSTER_RECORD(0, 0), 36, 4);
+    put(MONSTER_RECORD(0, 1), 380, 6);
+    D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 3;
+    D_800EAE88[AI_TARGET_FLAG] = 1;
+    Multiply_CpuAttack();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0);   /* the Celtic Guardian, not the dragon it ties */
+    Multiply_Landed(MONSTER_RECORD(0, 3));
+    assert(!K.learned[1]);
+
+    /* The strongest (the table's will to use Harpie's Feather Duster at 75)
+     * play it first against the wall; the others do not, nor with no wall. */
+    gDuel_aOpponentData[17].values[DUSTER_WILL] = 75;
+    gDuel_aOpponentData[1].values[DUSTER_WILL] = 25;
+    gDuel_aActiveCards[12].card_id = HARPIES_FEATHER_DUSTER;
+    gDuel_bOpponentID = 1;
+    assert(!Multiply_CpuBreak());
+    gDuel_bOpponentID = 17;
+    assert(Multiply_CpuBreak() && D_800EAE88[0] == 12 && D_800EAE88[1] == 0 && D_800EAE88[AI_ZONE] == AI_SPELL_ZONE &&
+           D_800EAE88[AI_FACE_DOWN] == 0);
+    empty(SPELL_RECORD(0, 2));
+    assert(!Multiply_CpuBreak());
+    D_8009B1D5 = 0;
+    empty(MONSTER_RECORD(0, 0));
+    empty(MONSTER_RECORD(0, 1));
+    empty(MONSTER_RECORD(0, 3));
+    empty(MONSTER_RECORD(1, 0));
+
     /* The CPU's own, apart; off: nothing. */
     put(MONSTER_RECORD(1, 4), KURIBOH, 2);
     put(SPELL_RECORD(1, 4), MULTIPLY_ID, 3);
@@ -220,7 +292,7 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 3 && !Multiply_Is(MULTIPLY_ID));
 
-    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, born again, a free zone, others not, "
+    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, the CPU learning, the strongest breaking it, born again, a free zone, others not, "
            "the wall as models, Multiply gone, sides, off passed\n");
     return 0;
 }

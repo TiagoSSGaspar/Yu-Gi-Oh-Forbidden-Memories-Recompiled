@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 8
+#define MODERN_RULES_STATE_VERSION 9
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -70,6 +70,7 @@ typedef struct {
     u8 dead_frames;
     u8 next;           /* the clone the next attack takes */
     s16 lift;          /* DEF added for the battle */
+    u8 learned[2];     /* a side has attacked the other side's wall: it aims elsewhere now */
 } MultiplyState;
 
 /* Living Arrow: each monster zone's infection (by side * 5 + column): the

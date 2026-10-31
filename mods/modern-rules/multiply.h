@@ -26,4 +26,10 @@ int Multiply_Wall(int side);
 void Multiply_BattleBegan(void);
 /* The battle is over: a clone dies. */
 void Multiply_BattleOver(void);
+/* The CPU's field decision: an attack on the wall it has learned is
+ * useless goes elsewhere, or not at all. */
+void Multiply_CpuAttack(void);
+/* The CPU's hand decision: the strongest opponents play Harpie's Feather
+ * Duster first against the player's wall. 1 when it did. */
+int Multiply_CpuBreak(void);
 #endif

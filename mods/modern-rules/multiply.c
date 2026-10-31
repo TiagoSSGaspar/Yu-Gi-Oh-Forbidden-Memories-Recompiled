@@ -28,6 +28,9 @@
 #include "game/duel_card_can_act_this_turn.h"
 #include "game/duel_card_object_helpers.h"
 #include "game/duel_scene_field_actions.h"
+#include "game/ai.h"
+#include "game/ai_opponent_data.h"
+#include "game/duel_grid.h"
 #include "game/duel_apply_card_object_flags.h"
 #include "game/duel_card_layout.h"
 #include "game/duel_card_record_lifecycle.h"
@@ -156,6 +159,7 @@ void Multiply_Landed(int monster)
     /* The wall comes up: the ritual's light and sound; the Kuriboh to
      * defense. */
     K.zone[side] = (s8)monster;
+    K.learned[side ^ 1] = 0;   /* a new wall: the other side has to learn it */
     if (D_801A7AD8[monster].data) K.deck[side] = ((DuelDeckCardRecord *)D_801A7AD8[monster].data)->deck_index;
     defend(monster);
     light();
@@ -232,13 +236,19 @@ void Multiply_BattleBegan(void)
     if (!on() || !attacker || !attacked) return;
     r = attacked->field_6A;
     a = attacker->field_6A;
-    if (!walled(r) || a < 0 || a >= DUEL_CARD_RECORD_COUNT) return;
+    /* The battle has lifted both off their records already (swamp.c): the
+     * wall's Kuriboh by its zone and its card. */
+    if (r < 0 || r >= DUEL_CARD_RECORD_COUNT || r != K.zone[r / DUEL_CARD_SIDE_RECORD_COUNT] ||
+        D_801A7AD8[r].card_id != KURIBOH || wall(r / DUEL_CARD_SIDE_RECORD_COUNT) < 0 || a < 0 ||
+        a >= DUEL_CARD_RECORD_COUNT)
+        return;
     kuriboh = &D_801A7AD8[r];
     against = &D_801A7AD8[a];
     K.lift = (s16)(Duel_CalcBattleAttack(against, kuriboh) - Duel_CalcBattleDefense(kuriboh, against));
     kuriboh->defense_modifier = (s16)(kuriboh->defense_modifier + K.lift);
     gDuel_awSavedDefenseModifier[1] = (s16)(gDuel_awSavedDefenseModifier[1] + K.lift);
     K.guard = (s8)r;
+    K.learned[a / DUEL_CARD_SIDE_RECORD_COUNT] = 1;   /* it has seen the wall hold */
 }
 
 void Multiply_BattleOver(void)
@@ -250,7 +260,7 @@ void Multiply_BattleOver(void)
     kuriboh = &D_801A7AD8[(int)K.guard];
     side = K.guard / DUEL_CARD_SIDE_RECORD_COUNT;
     K.guard = -1;
-    if (!occupied((int)(kuriboh - D_801A7AD8)) || kuriboh->card_id != KURIBOH) return;
+    if (kuriboh->card_id != KURIBOH) return;
     kuriboh->defense_modifier = (s16)(kuriboh->defense_modifier - K.lift);
     if (!models_asked || !(object = (DisplayObject *)kuriboh->object)) return;
     /* A clone dies in its place. */
@@ -269,6 +279,77 @@ void Multiply_BattleOver(void)
     SD_SEPlayFull(DESTROY_SOUND);
 }
 
+/* The CPU, as Kaiba did: an opponent that has attacked the wall once and
+ * seen it hold aims elsewhere: at the monster of the player's its attacker
+ * beats by the most, the wall's Kuriboh left out, or at none. Its field
+ * decision (D_800EAE88): the attacker at 9 (1-5, its monster row), the
+ * target at 10 (0x38 up: 0x3C less the column of the other side's monster
+ * row); 10 and 11 both 0 is no action, the attacker spent. */
+extern unsigned char D_800EAE88[];   /* the CPU's decision (ai.h's AiSelection) */
+#define AI_ATTACKER 9
+#define AI_TARGET 10
+#define AI_TARGET_FLAG 11
+#define AI_TARGET_ROW 0x38
+#define AI_TARGET_BASE 0x3C
+#define GRID(side, row, col) D_800907D8[(row) * DUEL_FIELD_ROW_SIZE + (col) + (side) * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]
+
+void Multiply_CpuAttack(void)
+{
+    int side = D_8009B1D5 & 1, from = D_800EAE88[AI_ATTACKER], to = D_800EAE88[AI_TARGET], col, attack, best = -1,
+        margin = 0;
+    if (!on() || !K.learned[side] || from < 1 || from > DUEL_FIELD_ROW_SIZE || to < AI_TARGET_ROW ||
+        to > AI_TARGET_BASE || !walled(GRID(side, 1, AI_TARGET_BASE - to)))
+        return;
+    attack = Duel_CalcCardStats(&D_801A7AD8[GRID(side, 2, from - 1)]) & 0xFFFF;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
+        int r = GRID(side, 1, col), value, stats;
+        if (!occupied(r) || walled(r)) continue;
+        stats = Duel_CalcCardStats(&D_801A7AD8[r]);
+        value = D_801A7AD8[r].flags & DUEL_CARD_FLAG_DEFENSE_POSITION ? (stats >> 16) & 0xFFFF : stats & 0xFFFF;
+        if (attack - value > margin) {
+            margin = attack - value;
+            best = col;
+        }
+    }
+    if (best >= 0) {
+        D_800EAE88[AI_TARGET] = (u8)(AI_TARGET_BASE - best);
+    } else {
+        D_800EAE88[AI_TARGET] = D_800EAE88[AI_TARGET_FLAG] = 0;
+    }
+}
+
+/* The strongest opponents, those the game's own table gives the most will
+ * to use Harpie's Feather Duster (byte 7 of gDuel_aOpponentData: 75), play
+ * it first when the player's wall is up, to break it. Its hand decision: the
+ * cards at 0-4 (snapshot slots, 11-15 the hand), the zone at 6 (6 up the
+ * magic and trap row), face down at 8. */
+#define HARPIES_FEATHER_DUSTER 672
+#define DUSTER_WILL 7
+#define STRONG_WILL 75
+#define AI_HAND_FIRST 11
+#define AI_ZONE 6
+#define AI_FACE_DOWN 8
+#define AI_SPELL_ZONE 6
+#define AI_SELECTION_SIZE 12
+
+int Multiply_CpuBreak(void)
+{
+    int side = D_8009B1D5 & 1, id = gDuel_bOpponentID, slot, col;
+    if (!on() || id < 1 || id >= AI_OPPONENT_COUNT || gDuel_aOpponentData[id].values[DUSTER_WILL] < STRONG_WILL ||
+        wall(side ^ 1) < 0)
+        return 0;
+    for (slot = AI_HAND_FIRST; slot < AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE; slot++)
+        if (gDuel_aActiveCards[slot].card_id == HARPIES_FEATHER_DUSTER) break;
+    if (slot == AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE) return 0;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE && occupied(SPELL_RECORD(side, col)); col++) { }
+    if (col == DUEL_FIELD_ROW_SIZE) return 0;
+    memset(D_800EAE88, 0, AI_SELECTION_SIZE);
+    D_800EAE88[0] = (u8)slot;
+    D_800EAE88[AI_ZONE] = (u8)(AI_SPELL_ZONE + col);
+    D_800EAE88[AI_FACE_DOWN] = 0;
+    return 1;
+}
+
 int Multiply_Install(const MemoriesModHost *from, MemoriesMod *mod)
 {
     (void)mod;
@@ -278,6 +359,7 @@ int Multiply_Install(const MemoriesModHost *from, MemoriesMod *mod)
     memset(&K, 0, sizeof K);
     K.zone[0] = K.zone[1] = K.deck[0] = K.deck[1] = -1;
     K.guard = K.dead = -1;
+    K.learned[0] = K.learned[1] = 0;
     ask_models();
     return host->hook(host, (void *)DuelCard_CanActThisTurn, (void *)can_act, &original_can_act);
 }

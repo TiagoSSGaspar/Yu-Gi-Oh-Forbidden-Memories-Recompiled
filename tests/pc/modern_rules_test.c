@@ -19,6 +19,8 @@ int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m;
 int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Hold(void) { return 0; }
+void Multiply_CpuAttack(void) {}
+int Multiply_CpuBreak(void) { return 0; }
 /* Living Arrow is tested on its own (arrow_test.c). */
 static int arrow_turns[2];
 int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }

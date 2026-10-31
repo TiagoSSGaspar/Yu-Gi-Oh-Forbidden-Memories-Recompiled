@@ -397,6 +397,11 @@ static void hold_cpu_to_rule(void)
 static s32 run(void)
 {
     s32 result = ((s32 (*)(void))original_run)();
+    /* Against the wall of Kuribohs (multiply.c): the attacks of a CPU that
+     * has learned it holds go elsewhere. */
+    if (result && result != AI_END_FIELD && gAiScript_State.script_base == D_801A9800 &&
+        (gDuel_wSceneStateFlags & STATE_MASK) == STATE_FIELD)
+        Multiply_CpuAttack();
     /* An equip on the field is not used again: should the CPU's field
      * script still pick one, its field turn ends there. */
     if (result == AI_PLAY_FIELD_CARD && gAiScript_State.script_base == D_801A9800 &&
@@ -406,6 +411,8 @@ static s32 run(void)
         return AI_END_FIELD;
     if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return result;
+    /* The strongest break the wall first (multiply.c). */
+    if (Multiply_CpuBreak()) return result;
     /* Living Arrow (arrow.c), played instead of the script's cards. */
     if (Arrow_Cpu()) {
         memset(D_800EAE88, 0, AI_SELECTION_SIZE);
