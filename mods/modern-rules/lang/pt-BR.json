@@ -29,6 +29,8 @@
     },
     "texts": {
         "Cocoon: Perfectly Ultimate Great Moth in %d turns": "Casulo: Perfectly Ultimate Great Moth em %d turnos",
-        "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth"
+        "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth",
+        "Equipped to: %s": "Equipado em: %s",
+        "Equipped with: ": "Equipamentos: "
     }
 }

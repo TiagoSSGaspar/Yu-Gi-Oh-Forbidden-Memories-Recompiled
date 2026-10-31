@@ -20,7 +20,10 @@
  *   field must equip the monster the player puts it onto (or fuse with it),
  *   which the disc would throw away otherwise. The CPU's hand decision is
  *   held to the same rule: its cards go where none is lost, or it passes.
- * - Petit Moth's evolution, as in the anime: moth.c. */
+ * - Petit Moth's evolution, as in the anime: moth.c.
+ * - Equips that stay on the field: equips.c. An equip that would have no
+ *   free magic and trap zone to stay in is refused, for the player and the
+ *   CPU alike, and one on the field is not used again. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -41,6 +44,7 @@
 #include "unmatched.h"
 #include "../extra-hand-plays/extra_hand_plays.h"
 #include "moth.h"
+#include "equips.h"
 #include "state.h"
 #include <string.h>
 
@@ -49,6 +53,7 @@ void DuelScene_UpdateFieldActions(void);
 extern u8 gDuel_bEffectState;
 extern u8 gDuel_bQuitDialogState;
 extern unsigned char D_800EAE88[];
+extern u8 D_801A9800[];   /* the CPU's field script */
 
 #define STATE_HAND 4
 #define STATE_FIELD 5
@@ -61,6 +66,7 @@ extern unsigned char D_800EAE88[];
 #define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
 #define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
 #define SPELL_ROW 3              /* and of its magic and trap cards */
+#define FIELD_CPU 2              /* the CPU's field state, its script picking a move */
 #define FIELD_IDLE 3             /* the player's field state, walking the field */
 #define FIELD_TARGETING 6        /* the player's field state: the monster an equip from the field goes onto */
 #define FIELD_TARGET_LEAVING 0x40 /* its cursor going back to the field (circle) */
@@ -69,6 +75,10 @@ extern unsigned char D_800EAE88[];
 #define AI_SELECTION_SIZE 12
 #define AI_PICKS 5               /* D_800EAE88[0..4]: the cards, in the order they go down */
 #define AI_ZONE 6                /* D_800EAE88[6]: the zone, 1-5 the monster row's columns */
+#define AI_FIELD_CARD 9          /* D_800EAE88[9]: the field card the CPU uses, 6-10 its magic and trap zones */
+#define AI_SPELL_SLOT 6
+#define AI_PLAY_FIELD_CARD 2     /* AiScript_Run: a field card played, */
+#define AI_END_FIELD 3           /* the field turn over */
 #define AI_HAND_SLOT_FIRST 11    /* snapshot slots: 11-15 the hand, 16 up the upcoming deck */
 #define AI_ENEMY_SLOT_FIRST 56
 #define REFUSED_SOUND 8          /* the hand's cancel sound */
@@ -173,6 +183,32 @@ static int chain_keeps_every_card(DuelSelectionRecord *side, int first)
     return 1;
 }
 
+/* The cards going down from the hand, in order: the marked cards in the
+ * order they were marked, or the card under the cursor when none is
+ * marked. Their count. */
+static int chain_cards(DuelSelectionRecord *side, int *ids)
+{
+    int pick, slot, count = 0;
+    if (side->field_15 == 0) {
+        ids[0] = hand_card(hand_cursor(side));
+        return ids[0] ? 1 : 0;
+    }
+    for (pick = 1; pick <= HAND_SIZE; pick++) {
+        int slots = hand_slots();
+        for (slot = 0; slot < slots && hand_mark(slot) != pick; slot++) { }
+        if (slot == slots) break;
+        ids[count++] = hand_card(slot);
+    }
+    return count;
+}
+
+/* Whether the equips that would stay on the field after `ids` go down onto
+ * `first` (a monster, or 0) each have a free magic and trap zone. */
+static int equips_fit(int first, const int *ids, int count)
+{
+    return !Equips_On() || Equips_Kept(first, ids, count) <= Equips_FreeZones(D_8009B1D5 & 1);
+}
+
 /* The monster in column `col` of the side's own monster row, or 0. */
 static int monster_at(int col)
 {
@@ -204,17 +240,23 @@ static void hand(void)
 {
     DuelSelectionRecord *side = (DuelSelectionRecord *)(D_800E9F10 + D_8009B1D5 * DUEL_SELECTION_SIDE_SIZE);
     u16 pressed = gInput_wPad1Pressed;
-    int step_kind = D_8009B174 & 0xF, refuse = 0, monster;
-    /* A cocoon evolving (moth.c): the hand waits for it, from its start. */
-    if (step_kind <= HAND_IDLE && Moth_Hold()) return;
-    if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
+    int step_kind = D_8009B174 & 0xF, refuse = 0, monster, ids[HAND_SIZE], count;
+    /* A cocoon evolving (moth.c), an equip destroyed with its monster
+     * (equips.c): the hand waits for it, from its start. */
+    if (step_kind <= HAND_IDLE && (Moth_Hold() || Equips_Hold())) return;
+    if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
+        int guard = setting("fusion_guard", 1);
         if (step_kind == HAND_IDLE)
-            refuse = side->field_15 >= 2 && !chain_keeps_every_card(side, 0);
-        else if (step_kind == HAND_PLACING && !(D_8009B174 & HAND_PLACING_MOVING) &&
-                 (monster = monster_under_cursor()) != 0)
-            refuse = !chain_keeps_every_card(side, monster);
+            refuse = guard && side->field_15 >= 2 && !chain_keeps_every_card(side, 0);
+        else if (step_kind == HAND_PLACING && !(D_8009B174 & HAND_PLACING_MOVING)) {
+            monster = monster_under_cursor();
+            if (guard && monster) refuse = !chain_keeps_every_card(side, monster);
+            /* The equips that stay need free magic and trap zones. */
+            if (!refuse && D_8009B1B4->row == MONSTER_ROW && (count = chain_cards(side, ids)) > 0)
+                refuse = !equips_fit(monster, ids, count);
+        }
     }
     if (refuse) {
         SD_SEPlayFull(REFUSED_SOUND);
@@ -239,6 +281,22 @@ static void field(void)
     /* A cocoon destroyed in the player's battle lets its moth out (moth.c)
      * once the field is walked again. */
     if ((D_8009B174 & 0xF) == FIELD_IDLE && Moth_Hold()) return;
+    /* An equip destroyed with its monster (equips.c), before the player
+     * walks the field or the CPU picks its next move. */
+    if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
+        Equips_Hold())
+        return;
+    /* An equip on the field is not used again. */
+    if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && (D_8009B174 & 0xF) == FIELD_IDLE &&
+        (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
+        !gDuel_bEffectState && !gDuel_bQuitDialogState && spell->row == SPELL_ROW &&
+        Equips_InZone(D_8009B1D5 & 1, spell->col)) {
+        SD_SEPlayFull(REFUSED_SOUND);
+        gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
+        ((void (*)(void))original_field)();
+        gInput_wPad1Pressed = pressed;
+        return;
+    }
     if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         (D_8009B174 & 0xF) == FIELD_TARGETING && !(D_8009B174 & FIELD_TARGET_LEAVING) && !gDuel_bEffectState &&
@@ -260,10 +318,11 @@ static void field(void)
 static int keeps_every_card(int first, const int *ids, int count)
 {
     int i, current = first;
+    if (!setting("fusion_guard", 1)) return equips_fit(first, ids, count);
     if (!first && count == 1 && kind(ids[0]) == CARD_TYPE_EQUIP) return 0;
     for (i = 0; i < count; i++)
         if (!(current = step(current, ids[i]))) return 0;
-    return 1;
+    return equips_fit(first, ids, count);
 }
 
 /* The zone (D_800EAE88[6]) the first `count` picks can go to without a
@@ -315,9 +374,16 @@ static void hold_cpu_to_rule(void)
 static s32 run(void)
 {
     s32 result = ((s32 (*)(void))original_run)();
+    /* An equip on the field is not used again: should the CPU's field
+     * script still pick one, its field turn ends there. */
+    if (result == AI_PLAY_FIELD_CARD && gAiScript_State.script_base == D_801A9800 &&
+        (gDuel_wSceneStateFlags & STATE_MASK) == STATE_FIELD && D_800EAE88[AI_FIELD_CARD] >= AI_SPELL_SLOT &&
+        D_800EAE88[AI_FIELD_CARD] < AI_SPELL_SLOT + DUEL_FIELD_ROW_SIZE &&
+        Equips_InZone(D_8009B1D5 & 1, D_800EAE88[AI_FIELD_CARD] - AI_SPELL_SLOT))
+        return AI_END_FIELD;
     if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return result;
-    if (setting("fusion_guard", 1)) hold_cpu_to_rule();
+    if (setting("fusion_guard", 1) || Equips_On()) hold_cpu_to_rule();
     return result;
 }
 
@@ -338,7 +404,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
-        Moth_Install(host, mod) &&
+        Moth_Install(host, mod) && Equips_Install(host, mod) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }
