@@ -31,7 +31,7 @@
       "copy": "Legendary Sword",
       "name": "Multiply",
       "art": "images/multiply.png",
-      "description": "Equip Kuriboh only. Its owner's free monster zones fill with Kuriboh, in defense. While this card is on the field, every Kuriboh destroyed comes back as two.",
+      "description": "Equip Kuriboh only. Kuriboh multiplies into a wall of hundreds: while this card is on the field, no attack on its side gets through.",
       "password": "40703222",
       "drops": true,
       "opponents": true
@@ -95,7 +95,7 @@
       "label": "Kuriboh and Multiply (anime)",
       "type": "bool",
       "default": 1,
-      "description": "As in Yugi's duel with Kaiba at the castle: Multiply, an equip of Kuriboh's, fills its owner's free monster zones with Kuriboh in defense; while it is on the field, every Kuriboh destroyed comes back as two. Only destroying Multiply breaks the wall."
+      "description": "As in Yugi's duel with Kaiba at the castle: Multiply, an equip of Kuriboh's, raises a wall of Kuribohs that takes no monster zone; while it is on the field every attack on its side is stopped, nothing destroyed and no damage. Only destroying Multiply breaks the wall."
     }
   ]
 }

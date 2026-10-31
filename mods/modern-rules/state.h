@@ -58,11 +58,9 @@ typedef struct {
     s16 total;         /* the two together */
 } SwampState;
 
-/* Kuriboh and Multiply: the Kuribohs each side had when last looked at,
- * and the deck card new ones are made from. */
+/* Kuriboh and Multiply: the wall stopping the battle under way. */
 typedef struct {
-    u8 kuribohs[2];
-    s8 deck[2];        /* -1 for none seen yet */
+    u8 blocking;
 } MultiplyState;
 
 typedef struct {

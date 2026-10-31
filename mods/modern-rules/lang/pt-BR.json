@@ -32,7 +32,7 @@
         },
         "multiply": {
             "label": "Kuriboh e Multiply (anime)",
-            "description": "Como no duelo do Yugi com o Kaiba no castelo: o Multiply, equipamento do Kuriboh, enche as zonas de monstro livres do dono com Kuribohs em defesa; enquanto ele estiver no campo, cada Kuriboh destruído volta como dois. Só destruir o Multiply derruba a parede."
+            "description": "Como no duelo do Yugi com o Kaiba no castelo: o Multiply, equipamento do Kuriboh, levanta uma muralha de Kuribohs que não ocupa zona de monstro; enquanto ele estiver no campo, todo ataque contra aquele lado é bloqueado, sem nada destruído e sem dano. Só destruir o Multiply derruba a muralha."
         }
     },
     "texts": {
@@ -41,6 +41,7 @@
         "Equipped to: %s": "Equipado em: %s",
         "Equipped with: ": "Equipamentos: ",
         "The swamp brothers join: %d": "Os irmãos do pântano se unem: %d",
-        "Multiply: every Kuriboh destroyed comes back as two": "Multiply: cada Kuriboh destruído volta como dois"
+        "Multiply: a wall of Kuribohs stops every attack on this side": "Multiply: uma muralha de Kuribohs bloqueia todo ataque contra este lado",
+        "The wall of Kuribohs stops the attack": "A muralha de Kuribohs bloqueia o ataque"
     }
 }

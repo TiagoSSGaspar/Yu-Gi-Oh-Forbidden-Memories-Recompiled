@@ -25,7 +25,7 @@
  * With no free zone the equip cannot be played (modern_rules.c); should one
  * still come down, it keeps the disc's way. Multiply (multiply.c) is the one
  * equip not destroyed with its monster: it goes on to another Kuriboh of its
- * side, or waits for one. */
+ * side, or stays alone. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -363,7 +363,7 @@ static int line_for(int r, char *text, size_t size)
     size_t used;
     if (r < 0) return 0;
     if (E.link[r].equip_card && equip_here(r) && Multiply_Is(E.link[r].equip_card)) {
-        snprintf(text, size, "%s", T("Multiply: every Kuriboh destroyed comes back as two"));
+        snprintf(text, size, "%s", T("Multiply: a wall of Kuribohs stops every attack on this side"));
         return 1;
     }
     if (E.link[r].equip_card && equip_here(r) && monster_here(r)) {
