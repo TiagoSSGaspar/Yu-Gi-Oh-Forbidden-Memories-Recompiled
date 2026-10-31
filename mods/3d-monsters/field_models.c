@@ -172,7 +172,7 @@ static const struct {
  * at most) stays put until that frame is drawn. */
 #define CACHE 12
 #define COPY_TAG 16   /* the copies' entries (draw_copies): kept past a fight */
-#define EXTRA_TAG 32  /* the other models' (draw_copies) */
+#define EXTRA_TAG 256 /* the other models' (draw_copies): past every copy's */
 
 typedef struct {
     int card;      /* one-based card id; 0 when the entry is free */
@@ -2878,67 +2878,78 @@ static int copy_room(const Monster *monster)
     return packet_room() >= need + need / 8 + PACKET_SLACK;
 }
 
-static void draw_copies(const Standing *standing, int height)
-{
+/* What draw_copies draws for a standing monster, asked for and loaded first
+ * (ready_copies), for every standing monster, before any is drawn: loading
+ * a model measures it in the other buffer (sort_aside), where the copies
+ * already drawn would be. Each monster's copies and extras are entries of
+ * their own (by its zone in the tag), so two walls, or two infected, do not
+ * share a model. */
+typedef struct {
     Monsters3dCopy more[MONSTERS_3D_COPIES];
+    Monsters3dExtra other[MONSTERS_3D_EXTRAS];
+    Monster *copy[MONSTERS_3D_COPIES], *extra[MONSTERS_3D_EXTRAS];
+    int copies, extras;
+} Ready;
+static Ready ready[DUEL_SIDE_COUNT * MONSTER_ZONES];
+
+static void ready_copies(const Standing *standing, Ready *r)
+{
     const Monster *original = standing->monster;
-    u32 work = D_800FE240;
-    int n, i, aside = 0, record = SIDE_ZONE(standing->summon / MONSTER_ZONES, standing->summon % MONSTER_ZONES);
-    if (!copies && !extras) {
-        return;
-    }
-    n = copies ? copies(record, standing->x, standing->z, more, MONSTERS_3D_COPIES) : 0;
+    int n, i, zone = standing->summon, record = SIDE_ZONE(zone / MONSTER_ZONES, zone % MONSTER_ZONES);
+    r->copies = r->extras = 0;
+    n = copies ? copies(record, standing->x, standing->z, r->more, MONSTERS_3D_COPIES) : 0;
     for (i = 0; i < n && i < MONSTERS_3D_COPIES; i++) {
-        Monster *copy;
-        if (!cache_spares(original->card, original->position, COPY_TAG + i) ||
-            !(copy = acquire(original->card, original->position, COPY_TAG + i))) {
+        int tag = COPY_TAG + zone * MONSTERS_3D_COPIES + i;
+        if (!cache_spares(original->card, original->position, tag) ||
+            !(r->copy[i] = acquire(original->card, original->position, tag))) {
             break;
         }
-        if (!aside && !copy_room(copy)) {
-            aside = 1;
-            work = D_800FE240;
-            if (copy_work) {
-                D_800FE240 = copy_work;
-            } else {
-                GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
-            }
-        }
-        if (!copy_room(copy)) {
+        r->copies = i + 1;
+    }
+    n = extras ? extras(record, standing->x, standing->z, r->other, MONSTERS_3D_EXTRAS) : 0;
+    for (i = 0; i < n && i < MONSTERS_3D_EXTRAS; i++) {
+        int id = Cards_ModelId(r->other[i].card), tag = EXTRA_TAG + zone * MONSTERS_3D_EXTRAS + i;
+        if (id <= 0 || !cache_spares(id, 0, tag) || !(r->extra[i] = acquire(id, 0, tag))) {
             break;
         }
-        copy->stepped = 0;
+        r->extras = i + 1;
+    }
+}
+
+/* Room for one more model of the copies: in the frame's buffer while it
+ * has room, then in the other one; 0 when neither has. */
+static int copy_space(const Monster *model, int *aside, u32 *work)
+{
+    if (!*aside && !copy_room(model)) {
+        *aside = 1;
+        *work = D_800FE240;
+        if (copy_work) {
+            D_800FE240 = copy_work;
+        } else {
+            GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
+        }
+    }
+    return copy_room(model);
+}
+
+static void draw_copies(const Standing *standing, const Ready *r, int height)
+{
+    u32 work = D_800FE240;
+    int i, aside = 0;
+    for (i = 0; i < r->copies && copy_space(r->copy[i], &aside, &work); i++) {
+        r->copy[i]->stepped = 0;
         copying = 1;
-        draw_monster(copy, more[i].x, more[i].z, (standing->yaw + more[i].yaw) & MODEL_ANGLE_MASK,
+        draw_monster(r->copy[i], r->more[i].x, r->more[i].z, (standing->yaw + r->more[i].yaw) & MODEL_ANGLE_MASK,
                      standing->share, standing->fade, standing->lifted, standing->at, height);
         copying = 0;
     }
-    if (extras) {
-        Monsters3dExtra other[MONSTERS_3D_EXTRAS];
-        n = extras(record, standing->x, standing->z, other, MONSTERS_3D_EXTRAS);
-        for (i = 0; i < n && i < MONSTERS_3D_EXTRAS; i++) {
-            Monster *model;
-            int id = Cards_ModelId(other[i].card), share = standing->share * other[i].share / MODEL_FIXED_ONE;
-            if (id <= 0 || !cache_spares(id, 0, EXTRA_TAG + i) || !(model = acquire(id, 0, EXTRA_TAG + i))) {
-                break;
-            }
-            if (!aside && !copy_room(model)) {
-                aside = 1;
-                work = D_800FE240;
-                if (copy_work) {
-                    D_800FE240 = copy_work;
-                } else {
-                    GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
-                }
-            }
-            if (!copy_room(model)) {
-                break;
-            }
-            model->stepped = 0;
-            copying = 1;
-            draw_monster(model, other[i].x, other[i].z, (standing->yaw + other[i].yaw) & MODEL_ANGLE_MASK, share,
-                         standing->fade, standing->lifted + other[i].y, -1, height);
-            copying = 0;
-        }
+    for (i = 0; i < r->extras && copy_space(r->extra[i], &aside, &work); i++) {
+        r->extra[i]->stepped = 0;
+        copying = 1;
+        draw_monster(r->extra[i], r->other[i].x, r->other[i].z, (standing->yaw + r->other[i].yaw) & MODEL_ANGLE_MASK,
+                     standing->share * r->other[i].share / MODEL_FIXED_ONE, standing->fade,
+                     standing->lifted + r->other[i].y, -1, height);
+        copying = 0;
     }
     if (aside) {
         copy_work = D_800FE240;
@@ -3117,8 +3128,13 @@ static void draw_frame(void)
         fight_begin();
         count += draw_fighters();
     }
-    for (i = 0; i < standing_count; i++) {
-        draw_copies(&standing[i], height);
+    if (copies || extras) {
+        for (i = 0; i < standing_count; i++) {
+            ready_copies(&standing[i], &ready[i]);
+        }
+        for (i = 0; i < standing_count; i++) {
+            draw_copies(&standing[i], &ready[i], height);
+        }
     }
 
     D_800F2C40[0] = borrowed;
