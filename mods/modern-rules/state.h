@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 7
+#define MODERN_RULES_STATE_VERSION 8
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -88,6 +88,12 @@ typedef struct {
     s8 said;           /* the record the line on screen is about, or -1 */
     u8 said_frames;
     s16 said_loss;     /* what it lost, 0 when it was just infected */
+    s16 zombie[ARROW_ZONES]; /* the Zombie shot into it, drawn in its chest with 3D Monsters */
+    s16 base[ARROW_ZONES];   /* its ATK when it was infected: how far it has rotted */
+    s8 flying;         /* the zone the Zombie flies to, or -1 */
+    u8 fly_frames;     /* frames of the flight gone */
+    s8 pulse;          /* the zone flashing green as it rots, or -1 */
+    u8 pulse_frames;
 } ArrowState;
 
 typedef struct {

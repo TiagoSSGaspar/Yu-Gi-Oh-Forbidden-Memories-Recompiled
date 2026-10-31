@@ -182,6 +182,29 @@ int main(void)
     draw_card(&D_801A7AD8[MONSTER_RECORD(1, 0)], 0, 0, 0);
     assert(drawn_color == 0x808080);
 
+    /* With 3D Monsters: the Mammoth flies from behind the player's
+     * monsters, shrinking, into the dragon's chest, and stays there; the
+     * dragon is drawn rotting, more as its ATK goes. */
+    {
+        Monsters3dExtra extra;
+        unsigned char rgb[3], before[3];
+        int zone = ZONE_OF(MONSTER_RECORD(1, 1)), first_z, k;
+        assert(A.flying == zone && !model_tint(MONSTER_RECORD(1, 1), rgb));
+        assert(model_extras(MONSTER_RECORD(1, 1), 0, 95, &extra, 1) == 1 && extra.card == MAMMOTH);
+        first_z = extra.z;
+        assert(first_z < 0 && extra.share == ONE);
+        for (k = 1; k < FLY_FRAMES; k++) model_extras(MONSTER_RECORD(1, 1), 0, 95, &extra, 1);
+        assert(extra.share < ONE && extra.z > first_z);
+        assert(model_extras(MONSTER_RECORD(1, 1), 0, 95, &extra, 1) == 1 && extra.share == INSIDE &&
+               extra.y == CHEST && extra.z == 95 - FRONT);
+        assert(model_extras(MONSTER_RECORD(1, 0), 0, 95, &extra, 1) == 0);
+        A.pulse = -1;
+        assert(model_tint(MONSTER_RECORD(1, 1), before) && before[0] < 128 && !model_tint(MONSTER_RECORD(1, 0), rgb));
+        D_801A7AD8[MONSTER_RECORD(1, 1)].stat_modifier = -3000;
+        assert(model_tint(MONSTER_RECORD(1, 1), rgb) && rgb[0] < before[0]);
+        D_801A7AD8[MONSTER_RECORD(1, 1)].stat_modifier = 0;
+    }
+
     /* The player's turns end (the CPU's begin): 4500, 3300, 2100, 900, 0.
      * The player's own turn beginning takes nothing. */
     Arrow_TurnStarts(0);

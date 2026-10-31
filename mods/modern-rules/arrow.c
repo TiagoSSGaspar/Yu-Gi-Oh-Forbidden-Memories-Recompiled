@@ -39,6 +39,7 @@
 #include "pc/cards/cards.h"
 #include "unmatched.h"
 #include "arrow.h"
+#include "../3d-monsters/monsters_3d.h"
 #include "state.h"
 #include <stdio.h>
 #include <string.h>
@@ -113,6 +114,7 @@ static int target(int side, int r)
 /* The combo in the hand of the side whose turn it is: the player's marked
  * cards, exactly the three; the CPU's first of each. Their hand cards in
  * picks, and the Zombie's ATK; 0 when it is not there. */
+static int combo_zombie;   /* the combo's Zombie, as combo() last found it */
 static int combo(int marked, s8 picks[3])
 {
     int slot, slots = ehp->hand_slots(), count = 0, zombie_attack = 0;
@@ -126,6 +128,7 @@ static int combo(int marked, s8 picks[3])
         else if (zombie(id) && picks[2] < 0) {
             picks[2] = (s8)slot;
             zombie_attack = base_attack(id);
+            combo_zombie = id;
         }
     }
     if (picks[0] < 0 || picks[1] < 0 || picks[2] < 0 || (marked && count != 3)) return 0;
@@ -139,7 +142,7 @@ static void say(int r, int loss)
     A.said_frames = SAID_FRAMES;
 }
 
-static void infect(int owner, int r, int loss)
+static void infect(int owner, int r, int loss, int zombie_card)
 {
     int zone = ZONE_OF(r);
     DuelCardRecord *card = &D_801A7AD8[r];
@@ -147,6 +150,11 @@ static void infect(int owner, int r, int loss)
     A.deck[zone] = (u8)deck_of(card);
     A.owner[zone] = (s8)owner;
     A.loss[zone] = (s16)loss;
+    A.zombie[zone] = (s16)zombie_card;
+    A.base[zone] = (s16)attack_of(r);
+    /* With 3D Monsters the Zombie flies into it first (extras below). */
+    A.flying = (s8)zone;
+    A.fly_frames = 0;
     say(r, 0);
     SD_SEPlayFull(ARROW_SOUND);
 }
@@ -177,6 +185,8 @@ void Arrow_TurnStarts(int side)
         lost = attack < A.loss[zone] ? attack : A.loss[zone];
         card->stat_modifier = (s16)(card->stat_modifier - lost);
         say(RECORD_OF(zone), lost);
+        A.pulse = (s8)zone;
+        A.pulse_frames = 0;
     }
 }
 
@@ -220,7 +230,7 @@ int Arrow_Hand(void)
             int cards[3];
             A.aiming = 0;
             if (!(loss = combo(1, picks))) return 1;
-            infect(side, A.target, loss);
+            infect(side, A.target, loss, combo_zombie);
             cards[0] = picks[0];
             cards[1] = picks[1];
             cards[2] = picks[2];
@@ -260,13 +270,15 @@ int Arrow_Cpu(void)
         if ((D_801A7AD8[mine].flags & DUEL_CARD_FLAG_OCCUPIED) && attack_of(mine) > own) own = attack_of(mine);
     }
     if (best < 0 || attack_of(best) <= own || A.card[ZONE_OF(best)]) return 0;
-    infect(side, best, loss);
+    infect(side, best, loss, combo_zombie);
     cards[0] = picks[0];
     cards[1] = picks[1];
     cards[2] = picks[2];
     ehp->take_hand(cards, 3);
     return 1;
 }
+
+static void ask_models(void);
 
 /* An infected card, green. */
 static void draw_card(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color)
@@ -277,6 +289,7 @@ static void draw_card(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color
     u32 kept;
     void (*original)(void *, POLY_GT4 *, POLY_FT4 *, s32 *) =
         (void (*)(void *, POLY_GT4 *, POLY_FT4 *, s32 *))original_draw_card;
+    ask_models();
     if (!on() || r < 0 || r >= DUEL_CARD_RECORD_COUNT || r % DUEL_CARD_SIDE_RECORD_COUNT < DUEL_FIELD_ROW_SIZE ||
         r % DUEL_CARD_SIDE_RECORD_COUNT >= 2 * DUEL_FIELD_ROW_SIZE || !object ||
         !(still_there(zone = ZONE_OF(r)) || (A.aiming && r == A.target))) {
@@ -340,13 +353,103 @@ static unsigned overlay_signature(void)
     return s * 31u + 1u + (unsigned)A.target * 7u + (unsigned)A.said * 13u + (unsigned)A.said_loss + A.aiming;
 }
 
+/* With 3D Monsters (monsters_3d.h): the Zombie flies from its side into the
+ * infected monster's chest and stays there, small; the monster rots, its
+ * colour going from its own to a dead green-brown as its ATK goes, and
+ * flashes green each time it loses some. */
+#define FLY_FRAMES 48
+#define IMPACT_FRAMES 24
+#define PULSE_FRAMES 40
+#define CHEST 30        /* field units above the card: the chest */
+#define FRONT 14        /* field units out of it, towards the other side */
+#define INSIDE 1400     /* the Zombie's share of its own size, inside (4096 whole) */
+#define START_Z 210     /* where the flight starts: behind its side's monsters, */
+#define START_Y 90      /* and above */
+#define ONE 4096
+
+static int ease(int t) { return t * t / ONE * (3 * ONE - 2 * t) / ONE; }   /* smoothstep, t of ONE */
+
+static int model_extras(int record, int x, int z, Monsters3dExtra *extras, int room)
+{
+    int zone, side, toward;
+    if (!on() || room < 1 || record % DUEL_CARD_SIDE_RECORD_COUNT < DUEL_FIELD_ROW_SIZE ||
+        record % DUEL_CARD_SIDE_RECORD_COUNT >= 2 * DUEL_FIELD_ROW_SIZE || !still_there(zone = ZONE_OF(record)) ||
+        A.zombie[zone] <= 0)
+        return 0;
+    side = record / DUEL_CARD_SIDE_RECORD_COUNT;
+    toward = side ? -1 : 1;   /* its front faces the other side */
+    extras->card = A.zombie[zone];
+    extras->yaw = 0;
+    if (A.flying == zone && A.fly_frames < FLY_FRAMES) {
+        /* Its flight, from behind the other side's monsters (whose combo it
+         * was), in an arc. */
+        int t = ease(A.fly_frames * ONE / FLY_FRAMES), from_z = toward * START_Z, to_z = z + toward * FRONT;
+        int arc = 4 * t * (ONE - t) / ONE;   /* 0 at either end, ONE in the middle */
+        extras->x = (short)(x * t / ONE);
+        extras->z = (short)(from_z + (to_z - from_z) * t / ONE);
+        extras->y = (short)(START_Y + (CHEST - START_Y) * t / ONE + 60 * arc / ONE);
+        extras->share = (short)(ONE - (ONE - INSIDE) * t / ONE);
+        extras->yaw = (short)(side ? 0 : 2048);   /* facing where it flies */
+        if (++A.fly_frames == FLY_FRAMES) {
+            SD_SEPlayFull(ARROW_SOUND);
+            A.pulse = (s8)zone;
+            A.pulse_frames = PULSE_FRAMES - IMPACT_FRAMES;
+        }
+        return 1;
+    }
+    extras->x = (short)x;
+    extras->z = (short)(z + toward * FRONT);
+    extras->y = CHEST;
+    extras->share = INSIDE;
+    return 1;
+}
+
+static int model_tint(int record, unsigned char rgb[3])
+{
+    static const int rotten[3] = {44, 60, 30}, flashed[3] = {230, 255, 200};
+    int zone, rot, i, flash = 0;
+    if (!on() || record % DUEL_CARD_SIDE_RECORD_COUNT < DUEL_FIELD_ROW_SIZE ||
+        record % DUEL_CARD_SIDE_RECORD_COUNT >= 2 * DUEL_FIELD_ROW_SIZE || !still_there(zone = ZONE_OF(record)))
+        return 0;
+    if (A.flying == zone && A.fly_frames < FLY_FRAMES) return 0;   /* not yet */
+    rot = A.base[zone] > 0 ? (A.base[zone] - attack_of(record)) * ONE / A.base[zone] : 0;
+    rot = rot < 0 ? 0 : rot > ONE ? ONE : rot;
+    /* Rotting from the start: a third of the way at once. */
+    rot = ONE / 3 + rot * 2 / 3;
+    if (A.pulse == zone && A.pulse_frames < PULSE_FRAMES) {
+        int p = A.pulse_frames++;
+        flash = (p < PULSE_FRAMES / 2 ? p : PULSE_FRAMES - p) * ONE / (PULSE_FRAMES / 2);
+    }
+    for (i = 0; i < 3; i++) {
+        int c = 128 + (rotten[i] - 128) * rot / ONE;
+        c += (flashed[i] - c) * flash / ONE;   /* the flash: a pale green light */
+        rgb[i] = (unsigned char)(c < 0 ? 0 : c > 255 ? 255 : c);
+    }
+    return 1;
+}
+
+static int models_asked;
+static void ask_models(void)
+{
+    const Monsters3dApi *models;
+    if (models_asked || host->api < 4 || !host->find) return;
+    models = (const Monsters3dApi *)host->find(host, "3d-monsters:api");
+    if (!models) return;
+    models_asked = 1;
+    if (models->version >= 2) {
+        models->set_extras(model_extras);
+        models->set_tint(model_tint);
+    }
+}
+
 int Arrow_Install(const MemoriesModHost *from, MemoriesMod *mod, const ExtraHandApi *api)
 {
     host = from;
     ehp = api;
     polymerization_id = arrow_id = 0;
+    models_asked = 0;
     memset(&A, 0, sizeof A);
-    A.target = A.said = -1;
+    A.target = A.said = A.flying = A.pulse = -1;
     next_overlay = mod->overlay;
     next_signature = mod->overlay_signature;
     mod->overlay = overlay;

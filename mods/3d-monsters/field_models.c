@@ -172,6 +172,7 @@ static const struct {
  * at most) stays put until that frame is drawn. */
 #define CACHE 12
 #define COPY_TAG 16   /* the copies' entries (draw_copies): kept past a fight */
+#define EXTRA_TAG 32  /* the other models' (draw_copies) */
 
 typedef struct {
     int card;      /* one-based card id; 0 when the entry is free */
@@ -729,6 +730,60 @@ static int packets_fit(const Monster *monster)
 static Monster *effect_monster;
 static void effect_run(void);
 
+/* The colour a monster is drawn in, while `tinted` (draw_tinted): each
+ * polygon's colours, which the GPU multiplies its texels by, multiplied by
+ * tint[] / 128 (monsters_3d.h's set_tint). */
+static int tinted;
+static u8 tint[3];
+
+static void tint_word(u32 *word)
+{
+    unsigned i, out = *word & 0xFF000000u;
+    for (i = 0; i < 3; i++) {
+        unsigned c = ((*word >> (8 * i)) & 0xFF) * tint[i] / 128;
+        out |= (c > 255 ? 255 : c) << (8 * i);
+    }
+    *word = out;
+}
+
+static void tint_packets(const u32 *from, const u32 *to)
+{
+    while (from < to) {
+        unsigned words = *from >> 24, at = 1;
+        while (at <= words) {
+            u32 command = from[at];
+            unsigned op = command >> 24, length = Memories_GpuCommandWords(command);
+            if (!length || at + length > words + 1) {
+                break;
+            }
+            if (op >= 0x20 && op <= 0x3f) {
+                /* The command word holds the first corner's colour; a shaded
+                 * polygon's other corners each start with theirs. A raw
+                 * texture (bit 0) takes no colour: it is drawn modulated
+                 * instead, by the tint alone, which is the same at 128. */
+                unsigned corners = (op & 8) ? 4 : 3, per = (op & 4) ? 2 : 1, index = at, corner, raw = op & 1;
+                u32 *word = (u32 *)&from[index];
+                if (raw) {
+                    *word = ((u32)(op & ~1u) << 24) | ((u32)tint[2] << 16) | ((u32)tint[1] << 8) | tint[0];
+                } else {
+                    tint_word(word);
+                }
+                for (corner = 1; corner < corners && (op & 0x10); corner++) {
+                    index += 1 + per;
+                    word = (u32 *)&from[index];
+                    if (raw) {
+                        *word = (*word & 0xFF000000u) | ((u32)tint[2] << 16) | ((u32)tint[1] << 8) | tint[0];
+                    } else {
+                        tint_word(word);
+                    }
+                }
+            }
+            at += length;
+        }
+        from += words + 1;
+    }
+}
+
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
     const u32 *from = (const u32 *)(uintptr_t)D_800FE240;
@@ -797,6 +852,9 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     *last = (*last & ~LINK_MASK) | (*entry & LINK_MASK);
     *entry = (*entry & ~LINK_MASK) | first;
     stamp_bank(from, (const u32 *)(uintptr_t)D_800FE240, monster->bank, monster->fade);
+    if (tinted) {
+        tint_packets(from, (const u32 *)(uintptr_t)D_800FE240);
+    }
 }
 
 
@@ -2776,9 +2834,27 @@ static int draw_fighters(void)
  * (src/pc/sdk/libgpu.c). That is also where fit() measures a monster as it
  * is loaded, so the copies are drawn after everything else in the pass. */
 static Monsters3dCopies copies;
+static Monsters3dExtras extras;
+static Monsters3dTint tints;
 static u32 copy_work;   /* where the next copy's packets go in the other buffer; 0 before the first */
 static void set_copies(Monsters3dCopies fn) { copies = fn; }
-static const Monsters3dApi api = {MONSTERS_3D_API_VERSION, set_copies};
+static void set_extras(Monsters3dExtras fn) { extras = fn; }
+static void set_tint(Monsters3dTint fn) { tints = fn; }
+static const Monsters3dApi api = {MONSTERS_3D_API_VERSION, set_copies, set_extras, set_tint};
+
+/* Whether the monster on field record `record` is drawn in a colour of
+ * another mod's: tint[] set, and tinted for the next sort_monster. */
+static int draw_tinted(int record)
+{
+    unsigned char rgb[3];
+    tinted = tints && tints(record, rgb);
+    if (tinted) {
+        tint[0] = rgb[0];
+        tint[1] = rgb[1];
+        tint[2] = rgb[2];
+    }
+    return tinted;
+}
 
 /* Whether `card` in `position` with `tag` can be had without taking an entry
  * drawn this frame. */
@@ -2808,10 +2884,10 @@ static void draw_copies(const Standing *standing, int height)
     const Monster *original = standing->monster;
     u32 work = D_800FE240;
     int n, i, aside = 0, record = SIDE_ZONE(standing->summon / MONSTER_ZONES, standing->summon % MONSTER_ZONES);
-    if (!copies) {
+    if (!copies && !extras) {
         return;
     }
-    n = copies(record, standing->x, standing->z, more, MONSTERS_3D_COPIES);
+    n = copies ? copies(record, standing->x, standing->z, more, MONSTERS_3D_COPIES) : 0;
     for (i = 0; i < n && i < MONSTERS_3D_COPIES; i++) {
         Monster *copy;
         if (!cache_spares(original->card, original->position, COPY_TAG + i) ||
@@ -2835,6 +2911,34 @@ static void draw_copies(const Standing *standing, int height)
         draw_monster(copy, more[i].x, more[i].z, (standing->yaw + more[i].yaw) & MODEL_ANGLE_MASK,
                      standing->share, standing->fade, standing->lifted, standing->at, height);
         copying = 0;
+    }
+    if (extras) {
+        Monsters3dExtra other[MONSTERS_3D_EXTRAS];
+        n = extras(record, standing->x, standing->z, other, MONSTERS_3D_EXTRAS);
+        for (i = 0; i < n && i < MONSTERS_3D_EXTRAS; i++) {
+            Monster *model;
+            int id = Cards_ModelId(other[i].card), share = standing->share * other[i].share / MODEL_FIXED_ONE;
+            if (id <= 0 || !cache_spares(id, 0, EXTRA_TAG + i) || !(model = acquire(id, 0, EXTRA_TAG + i))) {
+                break;
+            }
+            if (!aside && !copy_room(model)) {
+                aside = 1;
+                work = D_800FE240;
+                if (copy_work) {
+                    D_800FE240 = copy_work;
+                } else {
+                    GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
+                }
+            }
+            if (!copy_room(model)) {
+                break;
+            }
+            model->stepped = 0;
+            copying = 1;
+            draw_monster(model, other[i].x, other[i].z, (standing->yaw + other[i].yaw) & MODEL_ANGLE_MASK, share,
+                         standing->fade, standing->lifted + other[i].y, -1, height);
+            copying = 0;
+        }
     }
     if (aside) {
         copy_work = D_800FE240;
@@ -2997,8 +3101,10 @@ static void draw_frame(void)
         }
         share = share * board_share / MODEL_FIXED_ONE;
         lifted = lifted * board_share / MODEL_FIXED_ONE;
+        draw_tinted(SIDE_ZONE(standing[i].summon / MONSTER_ZONES, standing[i].summon % MONSTER_ZONES));
         draw_monster(standing[i].monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted,
                      standing[i].at, height);
+        tinted = 0;
         standing[i].share = share;
         standing[i].fade = fade;
         standing[i].lifted = lifted;
