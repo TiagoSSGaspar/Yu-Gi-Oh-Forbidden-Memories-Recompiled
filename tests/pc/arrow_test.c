@@ -51,6 +51,8 @@ static int hand_slots(void) { return 8; }
 static int hand_card(int slot) { return hand[slot]; }
 static int hand_mark(int slot) { return marks[slot]; }
 static int menu_open(void) { return 0; }
+static int cursor;
+static int hand_cursor(void) { return cursor; }
 static void take_hand(const int *cards, int count)
 {
     int i;
@@ -123,13 +125,14 @@ int main(void)
     stats(WARRIOR, 1000, CARD_TYPE_WARRIOR);
     stats(BIG, 5000, CARD_TYPE_WARRIOR);
     stats(GRAVEYARD, 1200, CARD_TYPE_DINOSAUR);
-    stats(POLY, 0, CARD_TYPE_EQUIP);
-    stats(ARROW, 0, CARD_TYPE_EQUIP);
+    stats(POLY, 0, CARD_TYPE_MAGIC);
+    stats(ARROW, 0, CARD_TYPE_MAGIC);
     fake_ehp.version = 8;
     fake_ehp.hand_slots = hand_slots;
     fake_ehp.hand_card = hand_card;
     fake_ehp.hand_mark = hand_mark;
     fake_ehp.menu_open = menu_open;
+    fake_ehp.hand_cursor = hand_cursor;
     fake_ehp.take_hand = take_hand;
     fake_host.api = 22;
     fake_host.setting = fake_setting;
@@ -153,11 +156,19 @@ int main(void)
     put(MONSTER_RECORD(1, 3), DRAGON, 4, 1);
     player_hand();
 
-    /* Two of the three marked: not the combo. */
+    /* Two of the three marked: not the combo, and Polymerization and Living
+     * Arrow are not played without it. Polymerization alone under the
+     * cursor: the same. Another card alone: played. */
     marks[0] = 0;
-    assert(!press(PAD_BUTTON_CROSS) && !A.aiming);
+    refused = 0;
+    assert(press(PAD_BUTTON_CROSS) && !A.aiming && refused == 1);
+    memset(marks, 0, sizeof marks);
+    cursor = 3;
+    assert(press(PAD_BUTTON_CROSS) && refused == 2);
+    cursor = 1;
+    assert(!press(PAD_BUTTON_CROSS));
+    player_hand();
     /* The three: the aim, on the only living face-up one. */
-    marks[0] = 3;
     assert(press(PAD_BUTTON_CROSS) && A.aiming && A.target == MONSTER_RECORD(1, 1));
     /* Left and right stay on it; no button reaches the hand meanwhile. */
     assert(press(PAD_DIRECTION_RIGHT) && A.target == MONSTER_RECORD(1, 1));
@@ -285,7 +296,7 @@ int main(void)
     put(MONSTER_RECORD(1, 1), DRAGON, 2, 0);
     assert(!press(PAD_BUTTON_CROSS) && !Arrow_Cpu());
 
-    printf("Living Arrow: living creatures only, the combo, the aim, cancel, the infection, rotting to 0, "
+    printf("Living Arrow: living creatures only, not played alone, the combo, the aim, cancel, the infection, rotting to 0, "
            "the line over, fused into another, gone with its monster, no target, the CPU, off passed\n");
     return 0;
 }

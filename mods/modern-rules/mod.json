@@ -36,30 +36,34 @@
       "copy": "Legendary Sword",
       "name": "Multiply",
       "art": "images/multiply.png",
-      "description": "Equip Kuriboh only. Kuriboh multiplies into a wall of hundreds: it stays in defense, and an attack on it only destroys one of the many, while this card is on the field.",
+      "description": "Equip Kuriboh only. It multiplies into a wall of hundreds: it stays in defense, and an attack on it destroys only one of the many.",
       "password": "40703222",
       "drops": true,
       "opponents": true
     },
     {
       "id": "polymerization",
-      "copy": "Legendary Sword",
+      "copy": "Hinotama",
       "name": "Polymerization",
       "art": "images/polymerization.png",
       "description": "Fuses monsters. With Living Arrow and a Zombie from your hand, it fuses the Zombie into a living monster of your opponent's, which rots from within.",
       "password": "24094653",
       "drops": true,
-      "opponents": true
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
     },
     {
       "id": "living_arrow",
-      "copy": "Legendary Sword",
+      "copy": "Hinotama",
       "name": "Living Arrow",
       "art": "images/living_arrow.png",
-      "description": "With Polymerization and a Zombie from your hand, shoots the Zombie into a living monster of your opponent's: it loses the Zombie's ATK at the end of each of your turns.",
+      "description": "With Polymerization and a Zombie from your hand: shoots the Zombie into a living monster, which loses the Zombie's ATK every turn of yours.",
       "password": "41180607",
       "drops": true,
-      "opponents": true
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
     }
   ],
   "equips": [
@@ -68,18 +72,6 @@
       "add": [
         "Kuriboh"
       ],
-      "replace": true,
-      "bonus": 0
-    },
-    {
-      "card": "modern-rules:polymerization:1",
-      "add": [],
-      "replace": true,
-      "bonus": 0
-    },
-    {
-      "card": "modern-rules:living_arrow:1",
-      "add": [],
       "replace": true,
       "bonus": 0
     }

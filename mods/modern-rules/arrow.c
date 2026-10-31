@@ -17,8 +17,8 @@
  * leaves the field. The CPU plays the combo too, on the player's strongest
  * living monster when that is stronger than all of its own.
  *
- * Polymerization and Living Arrow are equips of no monster (mod.json): on
- * their own they cannot be played. An infected card is drawn green
+ * Polymerization and Living Arrow are magic cards with no effect of their
+ * own (mod.json): outside the combo they are not played. An infected card is drawn green
  * (func_80015EF4, its display object's colour for the drawing only), and a
  * line says what happened. */
 #include "types.h"
@@ -208,6 +208,22 @@ static int next_target(int side, int from, int step)
     return -1;
 }
 
+/* Whether the player's confirm would play Polymerization or Living Arrow:
+ * one of the marked cards, or the card under the cursor when none is. */
+static int picks_spent(void)
+{
+    int slot, slots = ehp->hand_slots(), marked = 0, id;
+    for (slot = 0; slot < slots; slot++) {
+        if (!ehp->hand_mark(slot)) continue;
+        marked = 1;
+        id = ehp->hand_card(slot);
+        if (is_polymerization(id) || is_arrow(id)) return 1;
+    }
+    if (marked) return 0;
+    id = ehp->hand_card(ehp->hand_cursor());
+    return is_polymerization(id) || is_arrow(id);
+}
+
 int Arrow_Hand(void)
 {
     u16 pressed = gInput_wPad1Pressed;
@@ -247,8 +263,15 @@ int Arrow_Hand(void)
     if (D_8009B360[D_8009B1D5] >= 0 || !(pressed & PAD_BUTTON_CONFIRM_MASK) || ehp->menu_open() ||
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) != (STATE_HAND | STATE_STARTED) ||
         (D_8009B174 & 0xF) != HAND_IDLE || !(D_8009B174 & HAND_STEP_DONE) || gDuel_bEffectState ||
-        gDuel_bQuitDialogState || !combo(1, picks))
+        gDuel_bQuitDialogState)
         return 0;
+    if (!combo(1, picks)) {
+        /* Polymerization or Living Arrow outside the combo does nothing:
+         * it is not played. */
+        if (!picks_spent()) return 0;
+        SD_SEPlayFull(REFUSED_SOUND);
+        return 1;
+    }
     if ((A.target = (s8)next_target(side, -1, 1)) < 0) {
         SD_SEPlayFull(REFUSED_SOUND);
         return 1;
