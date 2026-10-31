@@ -50,6 +50,7 @@
 #include "equips.h"
 #include "swamp.h"
 #include "multiply.h"
+#include "arrow.h"
 #include "state.h"
 #include <string.h>
 
@@ -129,6 +130,7 @@ static int draw_one(void) { return host->applied(host) && setting("draw_one", 1)
 static int turn_draws(int side, int turn, int room)
 {
     (void)turn;
+    Arrow_TurnStarts(side);
     if (!draw_one()) return -1;
     if (D_800E9FF0[side].deck_draw_cursor != 0) return 1;
     return api->version >= 4 ? OPENING_HAND + 1 : room;
@@ -254,6 +256,16 @@ static void hand(void)
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
     if (step_kind <= HAND_IDLE && (Moth_Hold() || Multiply_Hold() || Equips_Hold())) return;
+    /* Living Arrow's combo and its aim (arrow.c): no button reaches the hand. */
+    if (Arrow_Hand()) {
+        u16 repeat = gInput_wPad1Repeat, held = gInput_wPad1Held;
+        gInput_wPad1Pressed = gInput_wPad1Repeat = gInput_wPad1Held = 0;
+        ((void (*)(void))original_hand)();
+        gInput_wPad1Pressed = pressed;
+        gInput_wPad1Repeat = repeat;
+        gInput_wPad1Held = held;
+        return;
+    }
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED | STATE_LOOKING)) == (STATE_HAND | STATE_STARTED) &&
         (D_8009B174 & HAND_STEP_DONE) && !gDuel_bEffectState && !gDuel_bQuitDialogState) {
@@ -394,6 +406,11 @@ static s32 run(void)
         return AI_END_FIELD;
     if (!result || gAiScript_State.script_base != D_801A8000 || (gDuel_wSceneStateFlags & STATE_MASK) != STATE_HAND)
         return result;
+    /* Living Arrow (arrow.c), played instead of the script's cards. */
+    if (Arrow_Cpu()) {
+        memset(D_800EAE88, 0, AI_SELECTION_SIZE);
+        return result;
+    }
     if (setting("fusion_guard", 1) || Equips_On()) hold_cpu_to_rule();
     return result;
 }
@@ -416,6 +433,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
+        Arrow_Install(host, mod, api) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

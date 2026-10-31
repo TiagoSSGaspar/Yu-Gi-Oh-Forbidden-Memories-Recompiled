@@ -607,9 +607,25 @@ static int hand_card(int card)
     return Ehp_CardId(Ehp_Get(D_8009B1D5, card));
 }
 static int menu_open(void) { return S.menu != 0; }
+/* The cards out of the hand; the panel slides away as for a pass, but the
+ * turn goes on: the bonus hand brings it back rebuilt, from the field's
+ * first frame (bonus_play), or the field goes on when nothing is left. */
+static void take_hand(const int *cards, int count)
+{
+    int i;
+    if ((gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) != (STATE_HAND | STATE_STARTED) || S.skipping)
+        return;
+    for (i = 0; i < count; i++)
+        if (cards[i] >= 0 && cards[i] < EHP_HAND) Ehp_Set(D_8009B1D5, cards[i], -1);
+    if (S.bonus < 255) S.bonus++;
+    S.menu = 0;
+    S.skipping = 1;
+    D_8009B1B4 = (DuelCardPickCursor *)hand_record();
+    D_8009B162 = PANEL_SLIDE_OUT;
+}
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                  pass_hand, Ehp_SetLimits, hand_slots, hand_card, Ehp_Mark, Ehp_SetPhases,
-                                 Ehp_Cursor, menu_open};
+                                 Ehp_Cursor, menu_open, take_hand};
 
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the

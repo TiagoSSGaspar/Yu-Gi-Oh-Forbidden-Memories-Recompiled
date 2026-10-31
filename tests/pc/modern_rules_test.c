@@ -19,6 +19,12 @@ int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m;
 int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Multiply_Hold(void) { return 0; }
+/* Living Arrow is tested on its own (arrow_test.c). */
+static int arrow_turns[2];
+int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
+int Arrow_Hand(void) { return 0; }
+int Arrow_Cpu(void) { return 0; }
+void Arrow_TurnStarts(int side) { arrow_turns[side & 1]++; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }
@@ -47,7 +53,7 @@ u8 D_801A8000[16], D_801A9800[16];
 AiScriptState gAiScript_State;
 u8 gDuel_bEffectState;
 u8 gDuel_bQuitDialogState;
-u16 gInput_wPad1Pressed;
+u16 gInput_wPad1Pressed, gInput_wPad1Repeat, gInput_wPad1Held;
 unsigned char D_800EAE88[12];
 DuelCardPickCursor *D_8009B1B4;
 /* Side 0's grid: rows of five, the monsters (row 2) on records 5-9. */
@@ -111,7 +117,7 @@ static int menu_is_open;
 static int menu_open_api(void) { return menu_is_open; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api, menu_open_api};
+                                      set_phases, hand_cursor_api, menu_open_api, 0};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)

@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 6
+#define MODERN_RULES_STATE_VERSION 7
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -72,11 +72,30 @@ typedef struct {
     s16 lift;          /* DEF added for the battle */
 } MultiplyState;
 
+/* Living Arrow: each monster zone's infection (by side * 5 + column): the
+ * card infected and its deck card, the side whose combo it was, and the
+ * ATK it loses at the end of each of that side's turns; 0 card for none.
+ * The player's aim while they pick a target, and the line on screen. */
+#define ARROW_ZONES 10
+typedef struct {
+    s16 card[ARROW_ZONES];
+    s16 loss[ARROW_ZONES];
+    u8 deck[ARROW_ZONES];
+    s8 owner[ARROW_ZONES];
+    u8 aiming;         /* the player picks the target */
+    s8 target;         /* the record aimed at */
+    s8 picks[3];       /* the combo's hand cards */
+    s8 said;           /* the record the line on screen is about, or -1 */
+    u8 said_frames;
+    s16 said_loss;     /* what it lost, 0 when it was just infected */
+} ArrowState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
     SwampState swamp;
     MultiplyState multiply;
+    ArrowState arrow;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

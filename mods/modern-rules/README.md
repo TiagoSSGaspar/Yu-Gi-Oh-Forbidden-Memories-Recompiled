@@ -27,6 +27,7 @@ come on top.
 | Equips stay on the field | On by default. As in the anime and the card game: an equip goes to the magic and trap zone behind the monster it equips (the nearest free one when that is taken; one used from the field keeps its own zone), face up, and stays there. Destroyed (Harpie's Feather Duster, a card put over it), it takes its own bonus off the monster; the monster leaving the field (a battle, Raigeki, a fusion onto it) destroys its equips, each with the game's explosion. With no free zone for it, an equip cannot be played: the player's confirm is refused, and the CPU plays elsewhere, or no card. An equip on the field is not used again. With the field cursor on an equip, a line says which monster it equips; on a monster, its equips. |
 | The swamp brothers | On by default. As in Joey's duel with Rex Raptor: with Swamp Battleguard and Lava Battleguard on the same side, a monster attacking one of them meets both. The attacked one fights in attack position with its brother's ATK added (1800 + 1550 = 3350), even from defense, and a line says so during the battle; the weaker side loses its monster and the difference in life points. A battleguard that survives gets its own ATK and position back. Both sides. |
 | Kuriboh and Multiply | On by default. As in Yugi's duel with Kaiba at the castle (episode 24): Blue-Eyes Ultimate Dragon attacks the wall of Kuribohs, a Kuriboh dies, another takes its place, and Yugi loses no life points. Multiply, a card of this mod's (password 40703222, won in duels and dealt to opponents in Legendary Sword's place), is an equip of Kuriboh's alone with no bonus, and stays on the field as every equip does; it is not destroyed with its Kuriboh. While it is on the field, with 3D Monsters on, a wall of five more Kuribohs floats in front of the side's zones, with no cards under them and taking no monster zone; the Kuriboh stays in defense and cannot leave it; an attack on it goes to the wall, where a clone dies and another takes its place, and costs no life points; and should the wall's Kuriboh leave the field, another is born in its zone, so the side always has one and takes no direct attack. Another Kuriboh of the side is a monster as any other. The side's other monsters are attacked as ever, as Yugi's Celtic Guardian was. Destroying Multiply breaks the wall. A second Multiply cannot be played on a side whose wall is up, by the player or the CPU. |
+| Living Arrow | On by default. As in Yugi's duel with Kaiba at the castle: Polymerization and Living Arrow fuse Mammoth Graveyard into Blue-Eyes Ultimate Dragon, which rots from within. Mark Polymerization, Living Arrow and a Zombie (Mammoth Graveyard counts, as in the anime) in the hand and confirm: pick a face-up living monster of the opponent's with left and right (not a Zombie, a Machine or a Rock: only living flesh rots), cross to infect, circle to cancel. The three cards leave the hand and the hand comes back. At the end of each of your turns the infected loses the Zombie's ATK, down to 0, until it leaves the field. Polymerization (password 24094653) and Living Arrow (41180607), cards of this mod's, are won in duels and dealt to opponents; alone they cannot be played. The CPU plays the combo on the player's strongest living monster when it is stronger than all of its own. Needs Extra hand plays 0.9.0. |
 | Great Moth's poison dust | Always, with the mod. As in Yugi's duel with Weevil, where its scales wore Gaia the Dragon Champion down from 2600 to 1900: at the start of each of its owner's turns, the opponent's monsters lose 300 ATK, and keep the loss when it is gone. The card's text says so. |
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to forty cards. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. An equip used from the field must equip the monster the player puts it onto. |
@@ -110,8 +111,16 @@ pair. Multiply makes a new Kuriboh from the
 Kuriboh's deck card (`func_80024D34`) while the hand or the field is idle,
 as the equips are looked at.
 
-The moth's evolution, the equips, the swamp brothers and Multiply share the
-mod's one state buffer (`state.h`, version 5), saved in save states.
+Living Arrow (`arrow.c`) takes the player's confirm in the idle hand when
+the three marked cards are the combo, and the buttons while they aim; the
+cards leave through Extra hand plays' `take_hand` (API 8). The CPU's combo
+is played from its hand script, its decision emptied. The ATK goes at the
+start of the other side's turn (the turn draws Extra hand plays asks for),
+and an infected card is drawn green (`func_80015EF4`).
+
+The moth's evolution, the equips, the swamp brothers, Multiply and Living
+Arrow share the mod's one state buffer (`state.h`, version 7), saved in save
+states.
 
 ## Build and checks
 
@@ -123,5 +132,6 @@ python3 tools/pc/build_mod.py mods/modern-rules --out tmp/pc/modern-rules
 draws, the hand limits, the chain check and the equips' zones;
 `tests/pc/equips_test.c` (ctest `pc_equips`) the equips on the field;
 `tests/pc/swamp_test.c` (ctest `pc_swamp`) the swamp brothers;
-`tests/pc/multiply_test.c` (ctest `pc_multiply`) Kuriboh and Multiply. Drawing, queueing and bonus
+`tests/pc/multiply_test.c` (ctest `pc_multiply`) Kuriboh and Multiply;
+`tests/pc/arrow_test.c` (ctest `pc_arrow`) Living Arrow. Drawing, queueing and bonus
 hands are checked in Extra hand plays' test.
