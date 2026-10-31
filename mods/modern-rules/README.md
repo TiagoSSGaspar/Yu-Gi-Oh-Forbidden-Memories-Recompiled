@@ -25,6 +25,7 @@ come on top.
 | Turn phases | On by default. START opens a menu of the next phases instead of ending the hand or the turn: from the hand (Main Phase 1) the Battle Phase (the field) or the End Phase; from the field Main Phase 2, to play from the hand again after attacking, or the End Phase. UP/DOWN pick, X takes, circle closes. The turn's monster still counts once across both Main Phases. The CPU plays as before. See Extra hand plays' README. |
 | The moth's evolution | On by default. As in Weevil's duels in the anime: Cocoon of Evolution put onto Petit Moth or Larvae Moth (the anime's name for it), or the two fused from the hand, make the cocoon, which comes down in defense (the Forest's field bonus raises it, as in the anime). At its owner's 5th turn after, it opens: Perfectly Ultimate Great Moth, face up in attack, with what equips gave the cocoon. Destroyed before, it dies with the larva, unless it has had 4 of those turns: then Great Moth comes out in its place, in attack, as when Yugi destroyed Weevil's cocoon. A line above the hand says how many turns the player's cocoons have left. A Cocoon played alone stays a Cocoon. The CPU's cocoons evolve too. |
 | Equips stay on the field | On by default. As in the anime and the card game: an equip goes to the magic and trap zone behind the monster it equips (the nearest free one when that is taken; one used from the field keeps its own zone), face up, and stays there. Destroyed (Harpie's Feather Duster, a card put over it), it takes its own bonus off the monster; the monster leaving the field (a battle, Raigeki, a fusion onto it) destroys its equips, each with the game's explosion. With no free zone for it, an equip cannot be played: the player's confirm is refused, and the CPU plays elsewhere, or no card. An equip on the field is not used again. With the field cursor on an equip, a line says which monster it equips; on a monster, its equips. |
+| The swamp brothers | On by default. As in Joey's duel with Rex Raptor: with Swamp Battleguard and Lava Battleguard on the same side, a monster attacking one of them meets both. The attacked one fights in attack position with its brother's ATK added (1800 + 1550 = 3350), even from defense, and a line says so during the battle; the weaker side loses its monster and the difference in life points. A battleguard that survives gets its own ATK and position back. Both sides. |
 | Great Moth's poison dust | Always, with the mod. As in Yugi's duel with Weevil, where its scales wore Gaia the Dragon Champion down from 2600 to 1900: at the start of each of its owner's turns, the opponent's monsters lose 300 ATK, and keep the loss when it is gone. The card's text says so. |
 | Draw one card a turn | Each side opens with five cards, then draws one card a turn. The side that goes first starts with its five and draws nothing on the duel's first turn; the other side's first draw is its five and its turn's card. The hand holds up to forty cards. Off refills the hand to five each turn, as on the disc. |
 | Keep cards a fusion cannot use | When the player confirms two or more marked cards, or puts cards onto one of their monsters, the chain is checked first. A chain that would throw a card away is refused with the cancel sound. The player's marks stay as they were, to be changed. A monster on the field is never replaced by one that does not fuse with it or equip it, on either side: the CPU plays its cards elsewhere, or none. An equip used from the field must equip the monster the player puts it onto. |
@@ -93,8 +94,15 @@ time (`DuelEffect_CreateRequest(0xB)`, `DuelCard_RemoveFromField`); the
 equip's no longer holding it takes the bonus off. The CPU's view of the
 field (`func_80028220`) shows its equips in use as used this turn.
 
-The moth's evolution and the equips share the mod's one state buffer
-(`state.h`, version 3), saved in save states.
+The swamp brothers (`swamp.c`) wrap the battle (`DuelScene_UpdateBattle`).
+The battle keeps the attacked monster's `stat_modifier` and flags as it
+starts (`D_8009B170[1]`, `D_8009B178[1]`) and puts them back from those
+before it works the battle out again for the models, so the brother's ATK
+goes into the record and the kept values alike, and defense comes off both;
+once the battle is over a battleguard still there gets its own back.
+
+The moth's evolution, the equips and the swamp brothers share the mod's one
+state buffer (`state.h`, version 4), saved in save states.
 
 ## Build and checks
 
@@ -104,5 +112,6 @@ python3 tools/pc/build_mod.py mods/modern-rules --out tmp/pc/modern-rules
 
 `tests/pc/modern_rules_test.c` (ctest `pc_modern_rules`) checks the turn
 draws, the hand limits, the chain check and the equips' zones;
-`tests/pc/equips_test.c` (ctest `pc_equips`) the equips on the field. Drawing, queueing and bonus
+`tests/pc/equips_test.c` (ctest `pc_equips`) the equips on the field;
+`tests/pc/swamp_test.c` (ctest `pc_swamp`) the swamp brothers. Drawing, queueing and bonus
 hands are checked in Extra hand plays' test.

@@ -23,7 +23,8 @@
  * - Petit Moth's evolution, as in the anime: moth.c.
  * - Equips that stay on the field: equips.c. An equip that would have no
  *   free magic and trap zone to stay in is refused, for the player and the
- *   CPU alike, and one on the field is not used again. */
+ *   CPU alike, and one on the field is not used again.
+ * - The swamp brothers fight together: swamp.c. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -45,6 +46,7 @@
 #include "../extra-hand-plays/extra_hand_plays.h"
 #include "moth.h"
 #include "equips.h"
+#include "swamp.h"
 #include "state.h"
 #include <string.h>
 
@@ -408,7 +410,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     return host->hook(host, (void *)DuelScene_UpdateHandActions, (void *)hand, &original_hand) &&
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
-        Moth_Install(host, mod) && Equips_Install(host, mod) &&
+        Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

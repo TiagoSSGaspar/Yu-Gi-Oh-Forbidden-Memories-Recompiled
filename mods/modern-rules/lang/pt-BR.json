@@ -25,12 +25,17 @@
         "equips_stay": {
             "label": "Equipamentos ficam no campo",
             "description": "Como no anime e no card game: o equipamento vai para a zona de magia e armadilha atrás do monstro (ou a livre mais perto) e fica lá. Destruído, leva o bônus junto; o monstro saindo do campo destrói os equipamentos dele. Sem zona livre, o equipamento não pode ser jogado. Um equipamento no campo não é usado de novo."
+        },
+        "swamp_brothers": {
+            "label": "Irmãos do pântano (anime)",
+            "description": "Como no duelo do Joey com o Rex Raptor: com Swamp Battleguard e Lava Battleguard do mesmo lado, um monstro que ataca um deles enfrenta os dois. O atacado luta em ataque com o ATK do irmão somado (1800 + 1550 = 3350), mesmo se estiver em defesa; o lado mais fraco perde o monstro e a diferença."
         }
     },
     "texts": {
         "Cocoon: Perfectly Ultimate Great Moth in %d turns": "Casulo: Perfectly Ultimate Great Moth em %d turnos",
         "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth",
         "Equipped to: %s": "Equipado em: %s",
-        "Equipped with: ": "Equipamentos: "
+        "Equipped with: ": "Equipamentos: ",
+        "The swamp brothers join: %d": "Os irmãos do pântano se unem: %d"
     }
 }

@@ -69,6 +69,13 @@
       "type": "bool",
       "default": 1,
       "description": "As in the anime and the card game: an equip goes to the magic and trap zone behind its monster (or the nearest free one) and stays there. Destroyed, it takes its bonus with it; the monster leaving the field destroys its equips. With no free zone, the equip cannot be played. An equip on the field is not used again."
+    },
+    {
+      "key": "swamp_brothers",
+      "label": "The swamp brothers (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in Joey's duel with Rex Raptor: with Swamp Battleguard and Lava Battleguard on the same side, a monster attacking one of them meets both. The attacked one fights in attack position with its brother's ATK added (1800 + 1550 = 3350), even from defense; the weaker side loses its monster and the difference."
     }
   ]
 }

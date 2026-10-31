@@ -16,6 +16,7 @@ int Moth_Hold(void) { return 0; }
  * stay and how many zones are free, as each test sets them. */
 static int equips_on, equips_kept, equips_free = 5, equips_in_zone = -1;
 int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
 int Equips_On(void) { return equips_on; }
 int Equips_Hold(void) { return 0; }
 int Equips_Kept(int first, const int *ids, int count) { (void)first; (void)ids; (void)count; return equips_kept; }

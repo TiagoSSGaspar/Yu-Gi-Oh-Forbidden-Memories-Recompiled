@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 3
+#define MODERN_RULES_STATE_VERSION 4
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -48,9 +48,20 @@ typedef struct {
     u8 cooldown;              /* frames before the next equip is destroyed */
 } EquipState;
 
+/* The swamp brothers' battle: the attacked battleguard holding its
+ * brother's ATK while the battle lasts. */
+typedef struct {
+    s8 record;         /* the attacked battleguard's record, -1 for none */
+    u8 was_defense;    /* it was in defense before */
+    s16 card;
+    s16 boost;         /* its brother's ATK, added for the battle */
+    s16 total;         /* the two together */
+} SwampState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
+    SwampState swamp;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;
