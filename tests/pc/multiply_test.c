@@ -137,11 +137,17 @@ int main(void)
     attack(MONSTER_RECORD(1, 0));
     assert(D_8009B22A == 0 && !K.blocking);
     end();
-    /* A direct attack (no Kuriboh left): nothing stops it. */
+    /* A direct attack: stopped, Yugi untouched; with no Kuriboh left (a
+     * Raigeki), Multiply is the card shown. */
     D_8009B1D5 = 0;
     attack(-1);
-    assert(D_8009B22A == 0 && !K.blocking);
+    assert(D_8009B22A == FAKE_TRAP && D_8009B1B8 == MONSTER_RECORD(1, 2) && K.blocking);
     end();
+    empty(MONSTER_RECORD(1, 2));
+    attack(-1);
+    assert(D_8009B22A == FAKE_TRAP && D_8009B1B8 == SPELL_RECORD(1, 2));
+    end();
+    put(MONSTER_RECORD(1, 2), KURIBOH);
     /* A trap of the CPU's own sprang: it stands. */
     trap_found = 683;
     attack(MONSTER_RECORD(1, 2));
@@ -164,7 +170,7 @@ int main(void)
     assert(D_8009B22A == 0 && !Multiply_Is(MULTIPLY_ID));
     end();
 
-    printf("Kuriboh and Multiply: the identity, the wall up, attacks on Kuriboh stopped, others not, direct, "
+    printf("Kuriboh and Multiply: the identity, the wall up, attacks on Kuriboh stopped, others not, direct stopped, "
            "a trap of its own, Multiply gone, sides, off passed\n");
     return 0;
 }
