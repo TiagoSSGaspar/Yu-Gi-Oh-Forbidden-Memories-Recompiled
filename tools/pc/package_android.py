@@ -42,6 +42,9 @@ KEYSTORE = os.path.join(ROOT, "tmp", "pc", "android-deps", "debug.keystore")
 # ReportProvider, which hands the crash report to the app the player shares
 # it with (android_report.c).
 JAVA = os.path.join(ROOT, "src", "pc", "platform", "android")
+# The launcher icon (mipmap-*, made by tools/pc/android/make_icon.py),
+# compiled by aapt2 and named by the manifest's android:icon.
+RES = os.path.join(JAVA, "res")
 DEBUG_DN = "CN=Android Debug, O=Android, C=US"
 # The alias of the release key when MEMORIES_ANDROID_KEY_ALIAS is unset.
 RELEASE_ALIAS = "yfm"
@@ -100,7 +103,7 @@ MANIFEST = f"""<?xml version="1.0" encoding="utf-8"?>
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
-    <application android:label="{LABEL}" android:hasCode="true" android:allowBackup="false"
+    <application android:label="{LABEL}" android:icon="@mipmap/ic_launcher" android:hasCode="true" android:allowBackup="false"
         android:extractNativeLibs="true" android:hardwareAccelerated="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name="org.libsdl.app.SDLActivity" android:exported="true"
@@ -435,10 +438,12 @@ def package(build, abi, library, game, assets):
     with open(os.path.join(work, "AndroidManifest.xml"), "w", encoding="utf-8") as handle:
         handle.write(MANIFEST.replace("@VERSION_CODE@", str(code)).replace("@VERSION_NAME@", version_name)
                      .replace("@CONFIG_CHANGES@", CONFIG_CHANGES))
+    resources = os.path.join(work, "res.zip")
+    run([tool(build_tools, "aapt2"), "compile", "--dir", RES, "-o", resources])
     unaligned = os.path.join(work, "unaligned.apk")
     run([tool(build_tools, "aapt2"), "link", "-o", unaligned, "-I", android_jar, "--manifest",
          os.path.join(work, "AndroidManifest.xml"), "--min-sdk-version", str(build_android_deps.API),
-         "--target-sdk-version", str(TARGET_SDK)])
+         "--target-sdk-version", str(TARGET_SDK), resources])
     deps_lib = os.path.join(build_android_deps.OUT, abi, "lib")
     with zipfile.ZipFile(unaligned, "a", zipfile.ZIP_DEFLATED) as apk:
         apk.write(os.path.join(work, "dex", "classes.dex"), "classes.dex")
