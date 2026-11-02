@@ -25,6 +25,7 @@ int Multiply_CpuRaise(void) { return 0; }
 void Cpu_Install(const MemoriesModHost *h) { (void)h; }
 void Cpu_Attack(void) {}
 int Cpu_Brothers(void) { return 0; }
+int Cpu_LightCastle(void) { return 0; }
 /* Living Arrow is tested on its own (arrow_test.c). */
 static int arrow_turns[2];
 int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
@@ -41,6 +42,7 @@ int Castle_Refuses(int row, int col) { return row == 1 && col == castle_dark_col
 /* Mirror Force too (mirror_test.c). */
 int Mirror_Install(const MemoriesModHost *h) { (void)h; return 1; }
 int Mirror_Hold(void) { return 0; }
+void Mirror_TurnStarts(void) {}
 /* Change of Heart and Monster Reborn too (spells_test.c). */
 int Spells_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
 int Spells_Refuses(int card, int side) { (void)card; (void)side; return 0; }

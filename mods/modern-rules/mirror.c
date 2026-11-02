@@ -48,6 +48,7 @@ static s32 select_trap(u8 *attacker)
         is_mirror(D_801A7AD8[D_8009B1B8].card_id)) {
         M.side = (s8)(D_8009B1D5 & 1);
         M.cooldown = DESTROY_GAP;   /* after the trap's own explosion */
+        if (M.burned[M.side] < 255) M.burned[M.side]++;   /* the CPU learns (cpu.c) */
     }
     return sprang;
 }
@@ -84,6 +85,16 @@ int Mirror_Hold(void)
     }
     M.side = -1;
     return 0;
+}
+
+void Mirror_TurnStarts(void)
+{
+    /* A new duel: nothing learnt yet. */
+    if (!D_800E9FF0[0].rank.turns_taken && !D_800E9FF0[1].rank.turns_taken && !D_800E9FF0[0].deck_draw_cursor &&
+        !D_800E9FF0[1].deck_draw_cursor) {
+        M.burned[0] = M.burned[1] = 0;
+        M.wary_turn[0] = M.wary_turn[1] = 0;
+    }
 }
 
 int Mirror_Install(const MemoriesModHost *from)

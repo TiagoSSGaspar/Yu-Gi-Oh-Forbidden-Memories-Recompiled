@@ -17,7 +17,9 @@ int Cpu_Behind(void);
 /* The CPU's field decision: an attack into the darkness of Castle of Dark
  * Illusions, or one that the wall of Kuribohs or the swamp brothers would
  * make useless for a CPU that sees it, goes to the player's monster the
- * attacker beats by the most, or nowhere. */
+ * attacker beats by the most, or nowhere. A CPU that has learnt Mirror
+ * Force, facing a face-down card, attacks once a turn, the others in
+ * defense. */
 void Cpu_Attack(void);
 /* The CPU's hand decision, written: the hand card in snapshot slot `slot`
  * down, face up, in monster zone `col` (onto the monster there, for an
@@ -30,4 +32,8 @@ int Cpu_FreeZone(int spell);
 /* The CPU's hand decision: the swamp brothers together on its field. 1 when
  * it played one of them. */
 int Cpu_Brothers(void);
+/* The CPU's hand decision: the player's Castle of Dark Illusions lit or
+ * cleared (Swords of Revealing Light, Raigeki, Dark Hole), by its level. 1
+ * when it played one. */
+int Cpu_LightCastle(void);
 #endif

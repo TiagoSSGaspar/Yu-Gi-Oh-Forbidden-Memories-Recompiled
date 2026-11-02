@@ -39,6 +39,9 @@ u8 D_8009B1D5;
 u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
     25, 26, 27, 28, 29, 20, 21, 22, 23, 24, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
     10, 11, 12, 13, 14, 5, 6, 7, 8, 9, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
+DuelSideState D_800E9FF0[DUEL_SIDE_COUNT];
+/* The equips that stay (equips.c): a magic card needs a free zone. */
+int Equips_On(void) { return 1; }
 /* Castle of Dark Illusions (castle.c): the record set here is in the dark. */
 static int castle_hidden = -1;
 int Castle_Hides(int r) { return r == castle_hidden; }
@@ -385,7 +388,78 @@ int main(void)
     Multiply_Hold();
     assert(remakes == 3 && !Multiply_Is(MULTIPLY_ID));
 
-    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, the CPU by its level (learning the wall, the brothers, breaking the wall, a wall of its own, the brothers together), born again, a free zone, others not, "
+    /* Mirror Force learnt (cpu.c, careful): a boss that has fallen into it
+     * once, facing a face-down card, attacks once a turn, the others in
+     * defense; the middle after twice; a beginner never; without a
+     * face-down card nothing changes. */
+    multiply_setting = 1;
+    D_8009B1D5 = 1;
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) {
+        empty(MONSTER_RECORD(0, i)); empty(MONSTER_RECORD(1, i)); empty(SPELL_RECORD(0, i)); empty(SPELL_RECORD(1, i));
+    }
+#define AIM_AT_FIRST() (memset(D_800EAE88, 0, sizeof D_800EAE88), D_800EAE88[AI_ATTACKER] = 1, \
+                        D_800EAE88[AI_TARGET] = AI_TARGET_BASE - 0, D_800EAE88[AI_TARGET_FLAG] = 1, Cpu_Attack())
+#define PUT_CPU() (put(MONSTER_RECORD(1, 0), 380, 4), put(MONSTER_RECORD(1, 1), 36, 5), put(MONSTER_RECORD(1, 2), 36, 6))
+#define IN_DEFENSE(c) ((D_801A7AD8[MONSTER_RECORD(1, c)].flags & DUEL_CARD_FLAG_DEFENSE_POSITION) != 0)
+    put(MONSTER_RECORD(0, 0), 36, 7);
+    put(SPELL_RECORD(0, 1), 726, 8);
+    D_801A7AD8[SPELL_RECORD(0, 1)].flags |= DUEL_CARD_FLAG_FACE_DOWN;
+    {
+        static const int ids[3] = {17, 12, 1}, needs[3] = {1, 2, 99};
+        int l;
+        for (l = 0; l < 3; l++) {
+            int burned;
+            gDuel_bOpponentID = (s8)ids[l];
+            for (burned = 0; burned <= 2; burned++) {
+                int fears = burned >= needs[l];
+                PUT_CPU();
+                gModernRules_State.mirror.burned[1] = (u8)burned;
+                gModernRules_State.mirror.wary_turn[1] = 0;
+                AIM_AT_FIRST();
+                assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0);
+                assert(!IN_DEFENSE(0) && IN_DEFENSE(1) == fears && IN_DEFENSE(2) == fears);
+                AIM_AT_FIRST();   /* a second attack this turn */
+                assert(D_800EAE88[AI_TARGET] == (fears ? 0 : AI_TARGET_BASE - 0));
+            }
+        }
+    }
+    /* The next turn, one attack again; no face-down card: no fear. */
+    gDuel_bOpponentID = 17;
+    PUT_CPU();
+    gModernRules_State.mirror.burned[1] = 1;
+    D_800E9FF0[1].rank.turns_taken = 6;
+    AIM_AT_FIRST();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0 && IN_DEFENSE(1));
+    PUT_CPU();
+    empty(SPELL_RECORD(0, 1));
+    D_800E9FF0[1].rank.turns_taken = 7;
+    AIM_AT_FIRST();
+    AIM_AT_FIRST();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0 && !IN_DEFENSE(1));
+
+    /* The player's castle hiding a monster (Cpu_LightCastle): a boss plays
+     * Swords of Revealing Light, else Raigeki, else Dark Hole with no
+     * monster of its own; a beginner never; nothing hidden, nothing. */
+    for (i = 11; i < 16; i++) gDuel_aActiveCards[i].card_id = 0;
+    castle_hidden = MONSTER_RECORD(0, 0);
+    gDuel_aActiveCards[13].card_id = 348;
+    gDuel_aActiveCards[12].card_id = 337;
+    assert(Cpu_LightCastle() && D_800EAE88[0] == 13 && D_800EAE88[AI_ZONE] == AI_SPELL_ZONE + 0 && !D_800EAE88[AI_FACE_DOWN]);
+    gDuel_aActiveCards[13].card_id = 0;
+    assert(Cpu_LightCastle() && D_800EAE88[0] == 12);
+    gDuel_aActiveCards[12].card_id = 336;
+    assert(!Cpu_LightCastle());                    /* Dark Hole would take its own */
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) empty(MONSTER_RECORD(1, i));
+    assert(Cpu_LightCastle() && D_800EAE88[0] == 12);
+    gDuel_bOpponentID = 1;
+    assert(!Cpu_LightCastle());
+    gDuel_bOpponentID = 17;
+    castle_hidden = -1;
+    assert(!Cpu_LightCastle());
+    gDuel_aActiveCards[12].card_id = 0;
+    D_8009B1D5 = 0;
+
+    printf("Kuriboh and Multiply: the identity, the wall up, in defense, held there, two Kuribohs, the attack held by the wall and a clone dying, the CPU by its level (learning the wall, the brothers, breaking the wall, a wall of its own, the brothers together, Mirror Force learnt, the castle lit), born again, a free zone, others not, "
            "the wall as models, Multiply gone, sides, off passed\n");
     return 0;
 }

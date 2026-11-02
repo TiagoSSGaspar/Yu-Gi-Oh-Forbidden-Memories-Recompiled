@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 14
+#define MODERN_RULES_STATE_VERSION 15
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -114,10 +114,14 @@ typedef struct {
 } CastleState;
 
 /* Mirror Force sprang: the attacker's side, whose monsters in attack
- * position go one at a time (-1 none), and the frames to the next. */
+ * position go one at a time (-1 none), and the frames to the next. How
+ * often each side has fallen into it, and the turn (turns_taken + 1) a
+ * wary CPU spent its one attack in. */
 typedef struct {
     s8 side;
     u8 cooldown;
+    u8 burned[2];
+    u8 wary_turn[2];
 } MirrorState;
 
 /* Change of Heart and Monster Reborn: the monsters lent this turn (the

@@ -13,6 +13,7 @@ ModernRulesState gModernRules_State;
 u8 D_8009B1D5, D_8009B1B8;
 s16 D_8009B22A;
 DuelCardRecord D_801A7AD8[DUEL_CARD_RECORD_COUNT];
+DuelSideState D_800E9FF0[DUEL_SIDE_COUNT];
 static DisplayObject objects[DUEL_CARD_RECORD_COUNT];
 static DuelEffectRequest request;
 static int removed, sounds, requests, trap_result;
@@ -75,6 +76,7 @@ int main(void)
     assert(removed == 2 && sounds == 2 && requests == 2);
     assert(!occupied(MONSTER_RECORD(1, 1)) && !occupied(MONSTER_RECORD(1, 3)));
     assert(occupied(MONSTER_RECORD(1, 4)) && occupied(MONSTER_RECORD(0, 2)));
+    assert(M.burned[1] == 1 && M.burned[0] == 0);   /* the CPU fell into it once */
 
     /* A Widespread Ruin of the disc's: nothing more. */
     removed = 0;
@@ -102,6 +104,10 @@ int main(void)
     sprung_record = 25;
     select_trap((u8 *)&objects[MONSTER_RECORD(0, 2)]);
     assert(hold_all() > 0 && removed == 1 && !occupied(MONSTER_RECORD(0, 2)) && occupied(MONSTER_RECORD(1, 1)));
+    /* A new duel: forgotten. */
+    assert(M.burned[0] == 1);
+    Mirror_TurnStarts();
+    assert(!M.burned[0] && !M.burned[1]);
     puts("Mirror Force: the attacker's monsters in attack position destroyed one at a time, defense spared, other traps and off untouched, both sides");
     return 0;
 }

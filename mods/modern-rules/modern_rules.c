@@ -143,6 +143,7 @@ static int turn_draws(int side, int turn, int room)
     (void)turn;
     Arrow_TurnStarts(side);
     Spells_TurnStarts(side);
+    Mirror_TurnStarts();
     if (!draw_one()) return -1;
     if (D_800E9FF0[side].deck_draw_cursor != 0) return 1;
     return api->version >= 4 ? OPENING_HAND + 1 : room;
@@ -521,7 +522,7 @@ static s32 run(void)
         return result;
     /* The anime's plays, as the CPU's level allows (cpu.c): the player's
      * wall broken, a wall of its own, the swamp brothers together. */
-    if (Multiply_CpuBreak() || Multiply_CpuRaise() || Cpu_Brothers()) return result;
+    if (Multiply_CpuBreak() || Multiply_CpuRaise() || Cpu_Brothers() || Cpu_LightCastle()) return result;
     /* Living Arrow (arrow.c), played instead of the script's cards. */
     if (Arrow_Cpu()) {
         memset(D_800EAE88, 0, AI_SELECTION_SIZE);
