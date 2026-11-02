@@ -149,6 +149,10 @@ offers:
 - `menu_open` (version 7): whether the phase menu is open. Its X is the
   menu's, so a mod that refuses a confirm in the hand or on the field (the
   Duelist Kingdom rules) leaves it alone.
+- `take_hand` (version 8): hand cards of the side whose turn it is leave
+  the duel, used up by a play of the calling mod's own (the Duelist Kingdom
+  rules' Living Arrow); the hand slides away and comes back without them,
+  as a bonus hand.
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw

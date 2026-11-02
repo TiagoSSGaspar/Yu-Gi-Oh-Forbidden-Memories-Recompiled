@@ -25,12 +25,29 @@
         "equips_stay": {
             "label": "Equipamentos ficam no campo",
             "description": "Como no anime e no card game: o equipamento vai para a zona de magia e armadilha atrás do monstro (ou a livre mais perto) e fica lá. Destruído, leva o bônus junto; o monstro saindo do campo destrói os equipamentos dele. Sem zona livre, o equipamento não pode ser jogado. Um equipamento no campo não é usado de novo."
+        },
+        "swamp_brothers": {
+            "label": "Irmãos do pântano (anime)",
+            "description": "Como no duelo do Joey com o Rex Raptor: com Swamp Battleguard e Lava Battleguard do mesmo lado, um monstro que ataca um deles enfrenta os dois. O atacado luta em ataque com o ATK do irmão somado (1800 + 1550 = 3350), mesmo se estiver em defesa; o lado mais fraco perde o monstro e a diferença."
+        },
+        "multiply": {
+            "label": "Kuriboh e Multiply (anime)",
+            "description": "Como no duelo do Yugi com o Kaiba no castelo: o Multiply, equipamento do Kuriboh, levanta uma muralha de Kuribohs que não ocupa zona de monstro (desenhada com Monstros 3D). Enquanto ele estiver no campo, o Kuriboh fica em defesa e não sai dela; um ataque nele vai para a muralha, onde um clone morre e outro toma o lugar, sem tirar pontos de vida. Os outros monstros são atacados normalmente, como o Guardião Celta do Yugi. Destruir o Multiply derruba a muralha."
+        },
+        "living_arrow": {
+            "label": "Flecha Viva (anime)",
+            "description": "Como no duelo do Yugi com o Kaiba no castelo: Polymerization, Living Arrow e um Zumbi (o Mammoth Graveyard também, como no anime) marcados na mão fundem o Zumbi num monstro vivo do oponente, virado para cima (não Zumbi, Máquina nem Rocha), escolhido com esquerda e direita. No fim de cada turno seu ele perde o ATK do Zumbi, até 0, enquanto estiver no campo. A CPU também usa."
         }
     },
     "texts": {
         "Cocoon: Perfectly Ultimate Great Moth in %d turns": "Casulo: Perfectly Ultimate Great Moth em %d turnos",
         "Cocoon: Perfectly Ultimate Great Moth next turn; destroyed now, Great Moth comes out": "Casulo: Perfectly Ultimate Great Moth no próximo turno; destruído agora, sai a Great Moth",
         "Equipped to: %s": "Equipado em: %s",
-        "Equipped with: ": "Equipamentos: "
+        "Equipped with: ": "Equipamentos: ",
+        "The swamp brothers join: %d": "Os irmãos do pântano se unem: %d",
+        "Multiply: a Kuriboh destroyed is born again": "Multiply: um Kuriboh destruído nasce de novo",
+        "Living Arrow: %s (ATK %d)  Left/Right, X: infect, O: cancel": "Flecha Viva: %s (ATK %d)  Esquerda/Direita, X: infecta, O: cancela",
+        "%s rots: -%d ATK": "%s apodrece: -%d ATK",
+        "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno"
     }
 }

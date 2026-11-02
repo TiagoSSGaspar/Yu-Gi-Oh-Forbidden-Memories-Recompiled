@@ -16,6 +16,30 @@ int Moth_Hold(void) { return 0; }
  * stay and how many zones are free, as each test sets them. */
 static int equips_on, equips_kept, equips_free = 5, equips_in_zone = -1;
 int Equips_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Swamp_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Multiply_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Multiply_Hold(void) { return 0; }
+int Multiply_CpuBreak(void) { return 0; }
+int Multiply_CpuRaise(void) { return 0; }
+/* The CPU's level and plays are tested in multiply_test.c. */
+void Cpu_Install(const MemoriesModHost *h) { (void)h; }
+void Cpu_Attack(void) {}
+int Cpu_Brothers(void) { return 0; }
+/* Living Arrow is tested on its own (arrow_test.c). */
+static int arrow_turns[2];
+int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
+int Arrow_Hand(void) { return 0; }
+int Arrow_Cpu(void) { return 0; }
+void Arrow_TurnStarts(int side) { arrow_turns[side & 1]++; }
+/* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
+static int multiply_up;
+int Multiply_Up(int side) { (void)side; return multiply_up; }
+int Multiply_InChain(const int *ids, int count)
+{
+    int i;
+    for (i = 0; i < count; i++) if (ids[i] == 6) return 1;
+    return 0;
+}
 int Equips_On(void) { return equips_on; }
 int Equips_Hold(void) { return 0; }
 int Equips_Kept(int first, const int *ids, int count) { (void)first; (void)ids; (void)count; return equips_kept; }
@@ -35,7 +59,7 @@ u8 D_801A8000[16], D_801A9800[16];
 AiScriptState gAiScript_State;
 u8 gDuel_bEffectState;
 u8 gDuel_bQuitDialogState;
-u16 gInput_wPad1Pressed;
+u16 gInput_wPad1Pressed, gInput_wPad1Repeat, gInput_wPad1Held;
 unsigned char D_800EAE88[12];
 DuelCardPickCursor *D_8009B1B4;
 /* Side 0's grid: rows of five, the monsters (row 2) on records 5-9. */
@@ -99,7 +123,7 @@ static int menu_is_open;
 static int menu_open_api(void) { return menu_is_open; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api, menu_open_api};
+                                      set_phases, hand_cursor_api, menu_open_api, 0};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
@@ -319,7 +343,61 @@ int main(void)
         field_cursor.col = 2;
         equips_on = 0;
         assert(confirm());
+        /* A magic or trap card needs a free zone: one already there is not
+         * put over (which would free its zone), and with the row full none
+         * is played. */
+        equips_on = 1; equips_kept = 0; equips_free = 4;
+        field_cursor.row = 3;
+        D_801A7AD8[12].flags = DUEL_CARD_FLAG_OCCUPIED;   /* spell row, column 2 */
+        D_801A7AD8[12].card_id = 6;
+        assert(!confirm() && sounds == 1);
+        field_cursor.col = 3;                    /* a free one */
+        assert(confirm());
+        equips_on = 0;                           /* equips gone: the disc's way */
+        field_cursor.col = 2;
+        assert(confirm());
+        D_801A7AD8[12].flags = 0;
+        /* A magic card raised face up is used straight from the hand (state
+         * 3 to 5, no zone picked): with the row full it is refused too. */
+        {
+            static const int raised[5] = {10, 11, 12, 0, 0};
+            int i;
+            gDuel_adwCardStats[10 - 1] = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+            gDuel_adwCardStats[11 - 1] = CARD_TYPE_EQUIP << CARD_STAT_TYPE_SHIFT;
+            gDuel_adwCardStats[12 - 1] = 0;                  /* a monster */
+            deal(raised, none);
+            equips_on = 1;
+            for (i = 10; i < 15; i++) D_801A7AD8[i].flags = DUEL_CARD_FLAG_OCCUPIED;
+            D_8009B174 = HAND_RAISED | HAND_STEP_DONE;
+            side->field_0E = 0;                      /* the magic card */
+            assert(!confirm() && sounds == 1);
+            D_8009B174 = HAND_RAISED | HAND_STEP_DONE | 0x40;   /* still rising: not yet */
+            assert(confirm());
+            D_8009B174 = HAND_RAISED | HAND_STEP_DONE;
+            side->field_0E = 1;                      /* an equip goes onto a monster */
+            assert(confirm());
+            side->field_0E = 2;                      /* a monster */
+            assert(confirm());
+            side->field_0E = 0;
+            D_801A7AD8[13].flags = 0;                /* one zone free */
+            assert(confirm());
+            D_801A7AD8[13].flags = DUEL_CARD_FLAG_OCCUPIED;
+            equips_on = 0;                           /* the disc's way */
+            assert(confirm());
+            for (i = 10; i < 15; i++) D_801A7AD8[i].flags = 0;
+            for (i = 10; i <= 12; i++) gDuel_adwCardStats[i - 1] = 0;
+            deal(hand_ids, none);
+            side->field_0E = 3;
+            D_8009B174 = HAND_PLACING | HAND_STEP_DONE;
+        }
+        field_cursor.row = MONSTER_ROW;
         equips_kept = 0; equips_free = 5;
+        /* A second Multiply (card 6 here) while the wall is up: refused,
+         * the equips setting on or off. */
+        multiply_up = 1;
+        assert(!confirm() && sounds == 1);
+        multiply_up = 0;
+        assert(confirm());
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
     }
 
@@ -390,6 +468,29 @@ int main(void)
         field();
         assert(seen_pressed == PAD_BUTTON_CROSS);
         equips_in_zone = -1;
+        /* A trap set on the field springs on its own: the player's confirm
+         * on it is refused. A magic card set there is still used. */
+        gDuel_adwCardStats[13 - 1] = CARD_TYPE_TRAP << CARD_STAT_TYPE_SHIFT;
+        gDuel_adwCardStats[14 - 1] = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+        D_801A7AD8[11].flags = DUEL_CARD_FLAG_OCCUPIED | DUEL_CARD_FLAG_FACE_DOWN;
+        D_801A7AD8[11].card_id = 13;                                        /* column 1 */
+        sounds = 0;
+        field();
+        assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 1;                                                   /* the phase menu's X */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        menu_is_open = 0;
+        D_801A7AD8[11].card_id = 14;                                        /* a magic card */
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        applied_flag = 0;                                                   /* the mod off: the disc's way */
+        D_801A7AD8[11].card_id = 13;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        applied_flag = 1;
+        gDuel_adwCardStats[13 - 1] = gDuel_adwCardStats[14 - 1] = 0;
+        D_801A7AD8[11].flags = 0;
         D_8009B174 = HAND_IDLE | HAND_STEP_DONE;
         gDuel_wSceneStateFlags = STATE_HAND | STATE_STARTED;
         for (i = 5; i < 15; i++) D_801A7AD8[i].flags = 0;
@@ -467,6 +568,32 @@ int main(void)
         guard_setting = 0; equips_free = 0; passes = 0;                    /* without the fusion guard too */
         assert(run() == 1 && passes == 1);
         guard_setting = 1; equips_kept = 0; equips_free = 5;
+        /* A magic or trap card to a zone already taken (the disc's pick
+         * with no free one, at random): to a free zone, or no card. */
+        gDuel_adwCardStats[8 - 1] = CARD_TYPE_MAGIC << CARD_STAT_TYPE_SHIFT;
+        gDuel_aActiveCards[14].card_id = 8;
+        memset(ai_choice, 0, sizeof ai_choice);
+        ai_choice[0] = 14; ai_choice[6] = AI_SPELL_SLOT + 2; ai_choice[AI_FACE_DOWN] = 1;   /* set */
+        for (i = 10; i < 15; i++) D_801A7AD8[i].flags = DUEL_CARD_FLAG_OCCUPIED;
+        D_801A7AD8[13].flags = 0;                                          /* column 3 free */
+        assert(run() == 1 && D_800EAE88[0] == 14 && D_800EAE88[6] == AI_SPELL_SLOT + 3);
+        ai_choice[6] = AI_SPELL_SLOT + 3;
+        assert(run() == 1 && D_800EAE88[6] == AI_SPELL_SLOT + 3);         /* its own pick free: kept */
+        ai_choice[AI_FACE_DOWN] = 0;                                       /* used from the hand, */
+        assert(run() == 1 && D_800EAE88[0] == 14);                         /* a zone free: played */
+        D_801A7AD8[13].flags = DUEL_CARD_FLAG_OCCUPIED;                    /* the row full */
+        passes = 0;
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 0);
+        ai_choice[AI_FACE_DOWN] = 1; passes = 0;                           /* set: refused as well */
+        assert(run() == 1 && passes == 1 && D_800EAE88[0] == 0);
+        equips_on = 0; passes = 0;                                         /* the disc's way */
+        assert(run() == 1 && passes == 0 && D_800EAE88[0] == 14);
+        ai_choice[AI_FACE_DOWN] = 0;
+        assert(run() == 1 && passes == 0 && D_800EAE88[0] == 14);
+        equips_on = 1;
+        for (i = 10; i < 15; i++) D_801A7AD8[i].flags = 0;
+        memset(ai_choice, 0, sizeof ai_choice);
+        ai_choice[0] = 13; ai_choice[6] = 3;
         /* Its field script picking an equip in use: its field turn ends. */
         gAiScript_State.script_base = D_801A9800;
         gDuel_wSceneStateFlags = STATE_FIELD | STATE_STARTED;

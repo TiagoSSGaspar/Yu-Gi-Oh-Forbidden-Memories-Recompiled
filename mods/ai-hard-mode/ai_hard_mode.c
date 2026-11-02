@@ -313,11 +313,16 @@ static void swap_selection(void)
     }
 }
 
+/* Shared as "ai-hard-mode:on": whether the mod is applied, for a mod whose
+ * own CPU play follows it (the Duelist Kingdom rules play their best). */
+static int hard_on(void) { return host && host->applied(host); }
+
 int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
 {
     if (from->api < 4) return 0;
     host = from; mod->api = 4;
     Hm_StarMatchup = star_matchup;
+    host->provide(host, "on", (void *)hard_on);
     return host->hook(host, (void *)AiScript_Init, (void *)initialize, &original_init) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         host->hook(host, (void *)Ai_GetHandSize, (void *)window, &original_window) &&

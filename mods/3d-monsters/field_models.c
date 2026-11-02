@@ -99,6 +99,7 @@
 #include "pc/cards/cards.h"
 #include "field_art.h"
 #include "fight_sounds.h"
+#include "monsters_3d.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -170,11 +171,13 @@ static const struct {
  * entry used the moment a zone takes it, so every model a frame asks for (ten
  * at most) stays put until that frame is drawn. */
 #define CACHE 12
+#define COPY_TAG 16   /* the copies' entries (draw_copies): kept past a fight */
+#define EXTRA_TAG 256 /* the other models' (draw_copies): past every copy's */
 
 typedef struct {
     int card;      /* one-based card id; 0 when the entry is free */
     int position;  /* 0 face-up attack, 1 face-up defence */
-    int tag;       /* 0 on the field; side + 1 on a big card the attack plays on */
+    int tag;       /* 0 on the field; side + 1 on a big card the attack plays on; COPY_TAG on, a copy */
     unsigned used; /* frame number of the last draw, for replacement */
     int bank;      /* its texture bank in the software GPU */
     u8 *arena;
@@ -197,7 +200,18 @@ typedef struct {
 
 static const MemoriesModHost *host;
 static Monster cache[CACHE];
-static u8 *record;             /* one MODEL.MRG record, read whole */
+/* MODEL.MRG records read whole, kept by where they start: a record is 276 sectors
+ * (552 KB) and reading one took about 9 ms of a load's 19 on an M1 Pro
+ * (more on a phone), while the same card is loaded again and again: once per
+ * entry that shows it (a zone, the big card of an attack, a copy) and once
+ * more each time a fight takes it back. Least recently used replaced first. */
+#define RECORDS 12
+static struct {
+    int sector;    /* where the record starts, plus one; 0 when the entry is free */
+    unsigned used; /* load count at its last use */
+    u8 *bytes;
+} records[RECORDS];
+static unsigned record_loads;
 static int mrg_start = -2;
 static unsigned frame;
 static int inside;
@@ -223,6 +237,7 @@ static void module_dropped(void);
 /* The field fight has the duel camera, which was as in fight_view
  * (draw_fighters). */
 static int fight_moved;
+static int lit_after, rest_light_kept; /* draw_slot */
 static ViewState fight_view;
 
 static void reset(void)
@@ -234,6 +249,8 @@ static void reset(void)
     dimmed[0] = dimmed[1] = NULL; /* a state was loaded over them */
     memset(summons, 0, sizeof(summons));
     fight_moved = 0; /* the state brought its own camera */
+    lit_after = 0;
+    rest_light_kept = 0;
     module_dropped();  /* and its own RAM where a module ran */
     attack_finish();
     FieldArt_Reset();
@@ -467,24 +484,58 @@ static void give_back(const u8 *staging, size_t length)
     load_rect(ROW_X, ROW_Y, ROW_W, 1, saved_row);
 }
 
+/* The MODEL.MRG record of `card`, which starts at sector `first`: kept, or
+ * read now. NULL when it cannot be read. */
+static const u8 *record_of(int card, int first)
+{
+    int i, sectors;
+    unsigned oldest = 0;
+    int pick = -1;
+    record_loads++;
+    for (i = 0; i < RECORDS; i++) {
+        if (records[i].sector == first + 1 && records[i].bytes) {
+            records[i].used = record_loads;
+            return records[i].bytes;
+        }
+    }
+    for (i = 0; i < RECORDS; i++) {
+        if (!records[i].sector) {
+            pick = i;
+            break;
+        }
+        if (pick < 0 || records[i].used < oldest) {
+            pick = i;
+            oldest = records[i].used;
+        }
+    }
+    records[pick].sector = 0;
+    if (!records[pick].bytes && !(records[pick].bytes = malloc(RECORD_SECTORS * SECTOR))) {
+        return NULL;
+    }
+    sectors = host->disc_read(host, first, RECORD_SECTORS, records[pick].bytes);
+    if (sectors != RECORD_SECTORS) {
+        say("card %d: read %d of %d sectors\n", card, sectors, RECORD_SECTORS);
+        return NULL;
+    }
+    records[pick].sector = first + 1;
+    records[pick].used = record_loads;
+    return records[pick].bytes;
+}
+
 static int load_monster(Monster *monster, int card, int position)
 {
     uint64_t started, finished;
     ModelSlot *slot = &D_800F2C40[0];
     static u8 staging[0x2000]; /* the loader's own scratch, put back after */
     u8 *payload_base;
-    int first = record_sector(card - 1), sectors;
+    const u8 *record;
+    int first = record_sector(card - 1);
 
     if (first < 0) {
         return 0;
     }
     started = host->now_us(host);
-    if (!record && !(record = malloc(RECORD_SECTORS * SECTOR))) {
-        return 0;
-    }
-    sectors = host->disc_read(host, first, RECORD_SECTORS, record);
-    if (sectors != RECORD_SECTORS) {
-        say("card %d: read %d of %d sectors\n", card, sectors, RECORD_SECTORS);
+    if (!(record = record_of(card, first))) {
         return 0;
     }
 
@@ -703,11 +754,13 @@ static u32 packet_room(void)
     return at < base || at >= end ? 0 : end - at;
 }
 
+static int copying; /* drawing copies (draw_copies): an eighth again, not a quarter */
+
 static int packets_fit(const Monster *monster)
 {
     static unsigned said = ~0u;
     u32 need = monster->packet_bytes > PACKET_FLOOR ? monster->packet_bytes : PACKET_FLOOR;
-    need += need / 4 + PACKET_SLACK;
+    need += (copying ? need / 8 : need / 4) + PACKET_SLACK;
     if (packet_room() >= need) {
         return 1;
     }
@@ -724,6 +777,60 @@ static int packets_fit(const Monster *monster)
  * texture bank. */
 static Monster *effect_monster;
 static void effect_run(void);
+
+/* The colour a monster is drawn in, while `tinted` (draw_tinted): each
+ * polygon's colours, which the GPU multiplies its texels by, multiplied by
+ * tint[] / 128 (monsters_3d.h's set_tint). */
+static int tinted;
+static u8 tint[3];
+
+static void tint_word(u32 *word)
+{
+    unsigned i, out = *word & 0xFF000000u;
+    for (i = 0; i < 3; i++) {
+        unsigned c = ((*word >> (8 * i)) & 0xFF) * tint[i] / 128;
+        out |= (c > 255 ? 255 : c) << (8 * i);
+    }
+    *word = out;
+}
+
+static void tint_packets(const u32 *from, const u32 *to)
+{
+    while (from < to) {
+        unsigned words = *from >> 24, at = 1;
+        while (at <= words) {
+            u32 command = from[at];
+            unsigned op = command >> 24, length = Memories_GpuCommandWords(command);
+            if (!length || at + length > words + 1) {
+                break;
+            }
+            if (op >= 0x20 && op <= 0x3f) {
+                /* The command word holds the first corner's colour; a shaded
+                 * polygon's other corners each start with theirs. A raw
+                 * texture (bit 0) takes no colour: it is drawn modulated
+                 * instead, by the tint alone, which is the same at 128. */
+                unsigned corners = (op & 8) ? 4 : 3, per = (op & 4) ? 2 : 1, index = at, corner, raw = op & 1;
+                u32 *word = (u32 *)&from[index];
+                if (raw) {
+                    *word = ((u32)(op & ~1u) << 24) | ((u32)tint[2] << 16) | ((u32)tint[1] << 8) | tint[0];
+                } else {
+                    tint_word(word);
+                }
+                for (corner = 1; corner < corners && (op & 0x10); corner++) {
+                    index += 1 + per;
+                    word = (u32 *)&from[index];
+                    if (raw) {
+                        *word = (*word & 0xFF000000u) | ((u32)tint[2] << 16) | ((u32)tint[1] << 8) | tint[0];
+                    } else {
+                        tint_word(word);
+                    }
+                }
+            }
+            at += length;
+        }
+        from += words + 1;
+    }
+}
 
 static void sort_monster(Monster *monster, GsOT *into, int at)
 {
@@ -793,6 +900,9 @@ static void sort_monster(Monster *monster, GsOT *into, int at)
     *last = (*last & ~LINK_MASK) | (*entry & LINK_MASK);
     *entry = (*entry & ~LINK_MASK) | first;
     stamp_bank(from, (const u32 *)(uintptr_t)D_800FE240, monster->bank, monster->fade);
+    if (tinted) {
+        tint_packets(from, (const u32 *)(uintptr_t)D_800FE240);
+    }
 }
 
 
@@ -991,9 +1101,17 @@ static void draw_monster(Monster *monster, int x, int z, int yaw, int share, int
 
     *slot = monster->slot;
     /* The body offset was measured facing up the field, so turning the
-     * monster turns it too. */
-    place_flat(slot, turned ? x + body_x : x - body_x, -body_y - lifted,
-               turned ? z + body_z : z - body_z, yaw, monster->scale * share / MODEL_FIXED_ONE, height);
+     * monster turns it too; a monster turned some other way (a copy,
+     * draw_copies) as draw_fighter turns it. */
+    if (yaw == 0 || turned) {
+        x = turned ? x + body_x : x - body_x;
+        z = turned ? z + body_z : z - body_z;
+    } else {
+        int c = rcos(yaw), s = rsin(yaw);
+        x -= (c * body_x + s * body_z) / MODEL_FIXED_ONE;
+        z -= (c * body_z - s * body_x) / MODEL_FIXED_ONE;
+    }
+    place_flat(slot, x, -body_y - lifted, z, yaw, monster->scale * share / MODEL_FIXED_ONE, height);
     monster->fade = fade;
     sort_monster(monster, D_800E9D90[2], at);
     monster->fade = 0;
@@ -1064,6 +1182,7 @@ typedef struct {
     int x, z, yaw;
     int summon; /* its zone in summons[] */
     int at;     /* its ordering-table entry, or -1 for its own depth */
+    int share, fade, lifted; /* as it was drawn, for its copies */
 } Standing;
 
 /* The five monster zones of a side, in card-record order. */
@@ -1733,7 +1852,7 @@ static void attack_finish(void)
     fight_restore();
     FightSounds_Release();
     for (i = 0; i < CACHE; i++) {
-        if (cache[i].tag) {
+        if (cache[i].tag && cache[i].tag < COPY_TAG) {
             cache[i].card = 0;
         }
     }
@@ -1847,6 +1966,55 @@ static void update_battle(void)
     }
     if (original_battle) {
         ((void (*)(void))original_battle)();
+    }
+}
+
+/* The mat lit through a fight on the field. The battle turns the ambient
+ * light of the mat (slot 2, which Duel_DrawFieldCards draws, field_DA0) down
+ * to nothing, for the big cards over the darkened field, and brings it back
+ * up slowly after. With the fight on the field that darkened the mat under
+ * the two monsters, and left it dark for a while after. The mat is drawn
+ * with the ambient the field had at rest during a battle with the fight on
+ * the field, and after it until the battle's own has come back up (at most
+ * FIGHT_LIT_AFTER frames); the slot's value is the game's again once drawn. */
+#define FIGHT_LIT_AFTER 600
+static void *original_draw_slot;
+static s32 rest_ambient[3];
+
+static void draw_slot(s32 slot)
+{
+    ModelSlot *mat = &D_800F2C40[2];
+    s32 kept[3];
+    int i, lit = 0;
+    if (slot != 2) {
+        ((void (*)(s32))original_draw_slot)(slot);
+        return;
+    }
+    if (fight_on() &&
+        ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_BATTLE || attack.phase != ATTACK_IDLE)) {
+        lit_after = FIGHT_LIT_AFTER;
+    } else if (lit_after > 0 && memcmp(mat->field_DA0, rest_ambient, sizeof(rest_ambient)) != 0) {
+        lit_after--;
+    } else {
+        lit_after = 0;
+        if ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_AFTER_BATTLE) { /* the field */
+            memcpy(rest_ambient, mat->field_DA0, sizeof(rest_ambient));
+            rest_light_kept = 1;
+        }
+    }
+    lit = lit_after > 0 && rest_light_kept;
+    if (lit) {
+        for (i = 0; i < 3; i++) {
+            kept[i] = mat->field_DA0[i];
+            /* Never darker than at rest; the battle may light it more. */
+            if (mat->field_DA0[i] < rest_ambient[i]) {
+                mat->field_DA0[i] = rest_ambient[i];
+            }
+        }
+    }
+    ((void (*)(s32))original_draw_slot)(slot);
+    if (lit) {
+        memcpy(mat->field_DA0, kept, sizeof(kept));
     }
 }
 
@@ -2752,12 +2920,147 @@ static int draw_fighters(void)
     return count;
 }
 
+/* More of a standing monster, where another mod asks for them
+ * (monsters_3d.h): each its own entry of the cache (tag COPY_TAG and on, as
+ * the fighters have theirs), so each is placed and animated apart, the first
+ * asked for first, while the cache and the packets have room. The frame's
+ * packet buffer has little room left for more models, so once it is full
+ * they are built in the other one of the pair, past the scratch table
+ * sort_monster uses at its start: the frame being built is not in it, and
+ * the port's DrawOTag copies a frame's packets out as it is called
+ * (src/pc/sdk/libgpu.c). That is also where fit() measures a monster as it
+ * is loaded, so the copies are drawn after everything else in the pass. */
+static Monsters3dCopies copies;
+static Monsters3dExtras extras;
+static Monsters3dTint tints;
+static u32 copy_work;   /* where the next copy's packets go in the other buffer; 0 before the first */
+static void set_copies(Monsters3dCopies fn) { copies = fn; }
+static void set_extras(Monsters3dExtras fn) { extras = fn; }
+static void set_tint(Monsters3dTint fn) { tints = fn; }
+static const Monsters3dApi api = {MONSTERS_3D_API_VERSION, set_copies, set_extras, set_tint};
+
+/* Whether the monster on field record `record` is drawn in a colour of
+ * another mod's: tint[] set, and tinted for the next sort_monster. */
+static int draw_tinted(int record)
+{
+    unsigned char rgb[3];
+    tinted = tints && tints(record, rgb);
+    if (tinted) {
+        tint[0] = rgb[0];
+        tint[1] = rgb[1];
+        tint[2] = rgb[2];
+    }
+    return tinted;
+}
+
+/* Whether `card` in `position` with `tag` can be had without taking an entry
+ * drawn this frame. */
+static int cache_spares(int card, int position, int tag)
+{
+    int i;
+    for (i = 0; i < CACHE; i++) {
+        if ((cache[i].card == card && cache[i].position == position && cache[i].tag == tag) ||
+            !cache[i].card || cache[i].used != frame) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Room for a copy's packets: what it took at most, an eighth again and
+ * PACKET_SLACK (the copies keep less in hand than the field's own). */
+static int copy_room(const Monster *monster)
+{
+    u32 need = monster->packet_bytes > PACKET_FLOOR ? monster->packet_bytes : PACKET_FLOOR;
+    return packet_room() >= need + need / 8 + PACKET_SLACK;
+}
+
+/* What draw_copies draws for a standing monster, asked for and loaded first
+ * (ready_copies), for every standing monster, before any is drawn: loading
+ * a model measures it in the other buffer (sort_aside), where the copies
+ * already drawn would be. Each monster's copies and extras are entries of
+ * their own (by its zone in the tag), so two walls, or two infected, do not
+ * share a model. */
+typedef struct {
+    Monsters3dCopy more[MONSTERS_3D_COPIES];
+    Monsters3dExtra other[MONSTERS_3D_EXTRAS];
+    Monster *copy[MONSTERS_3D_COPIES], *extra[MONSTERS_3D_EXTRAS];
+    int copies, extras;
+} Ready;
+static Ready ready[DUEL_SIDE_COUNT * MONSTER_ZONES];
+
+static void ready_copies(const Standing *standing, Ready *r)
+{
+    const Monster *original = standing->monster;
+    int n, i, zone = standing->summon, record = SIDE_ZONE(zone / MONSTER_ZONES, zone % MONSTER_ZONES);
+    r->copies = r->extras = 0;
+    n = copies ? copies(record, standing->x, standing->z, r->more, MONSTERS_3D_COPIES) : 0;
+    for (i = 0; i < n && i < MONSTERS_3D_COPIES; i++) {
+        int tag = COPY_TAG + zone * MONSTERS_3D_COPIES + i;
+        if (!cache_spares(original->card, original->position, tag) ||
+            !(r->copy[i] = acquire(original->card, original->position, tag))) {
+            break;
+        }
+        r->copies = i + 1;
+    }
+    n = extras ? extras(record, standing->x, standing->z, r->other, MONSTERS_3D_EXTRAS) : 0;
+    for (i = 0; i < n && i < MONSTERS_3D_EXTRAS; i++) {
+        int id = Cards_ModelId(r->other[i].card), tag = EXTRA_TAG + zone * MONSTERS_3D_EXTRAS + i;
+        if (id <= 0 || !cache_spares(id, 0, tag) || !(r->extra[i] = acquire(id, 0, tag))) {
+            break;
+        }
+        r->extras = i + 1;
+    }
+}
+
+/* Room for one more model of the copies: in the frame's buffer while it
+ * has room, then in the other one; 0 when neither has. */
+static int copy_space(const Monster *model, int *aside, u32 *work)
+{
+    if (!*aside && !copy_room(model)) {
+        *aside = 1;
+        *work = D_800FE240;
+        if (copy_work) {
+            D_800FE240 = copy_work;
+        } else {
+            GsSetWorkBase((PACKET *)(scratch + PACKETS_AT));
+        }
+    }
+    return copy_room(model);
+}
+
+static void draw_copies(const Standing *standing, const Ready *r, int height)
+{
+    u32 work = D_800FE240;
+    int i, aside = 0;
+    for (i = 0; i < r->copies && copy_space(r->copy[i], &aside, &work); i++) {
+        r->copy[i]->stepped = 0;
+        copying = 1;
+        draw_monster(r->copy[i], r->more[i].x, r->more[i].z, (standing->yaw + r->more[i].yaw) & MODEL_ANGLE_MASK,
+                     standing->share, standing->fade, standing->lifted, standing->at, height);
+        copying = 0;
+    }
+    for (i = 0; i < r->extras && copy_space(r->extra[i], &aside, &work); i++) {
+        r->extra[i]->stepped = 0;
+        copying = 1;
+        draw_monster(r->extra[i], r->other[i].x, r->other[i].z, (standing->yaw + r->other[i].yaw) & MODEL_ANGLE_MASK,
+                     standing->share * r->other[i].share / MODEL_FIXED_ONE, standing->fade,
+                     standing->lifted + r->other[i].y, -1, height);
+        copying = 0;
+    }
+    if (aside) {
+        copy_work = D_800FE240;
+        D_800FE240 = work;
+    }
+}
+
 static void draw_frame(void)
 {
     static ModelSlot borrowed;
     Standing standing[DUEL_SIDE_COUNT * MONSTER_ZONES];
     u32 work_base;
     int count = 0, i, side, zone, summoning, frames, field, overhead, board_share = MODEL_FIXED_ONE;
+    int standing_count;
     int height = MODEL_FIXED_ONE;
 
     if (inside) {
@@ -2802,6 +3105,7 @@ static void draw_frame(void)
     borrowed = D_800F2C40[0];
     work_base = D_800FE240;
     scratch = &D_800A5768[GsGetActiveBuff() * GRAPHICS_PACKET_BUFFER_SIZE];
+    copy_work = 0;
 
     /* The projection the duel draws its own field with. */
     GsSetRefView2(&D_800F2848.view);
@@ -2905,15 +3209,29 @@ static void draw_frame(void)
         }
         share = share * board_share / MODEL_FIXED_ONE;
         lifted = lifted * board_share / MODEL_FIXED_ONE;
+        draw_tinted(SIDE_ZONE(standing[i].summon / MONSTER_ZONES, standing[i].summon % MONSTER_ZONES));
         draw_monster(standing[i].monster, standing[i].x, standing[i].z, standing[i].yaw, share, fade, lifted,
                      standing[i].at, height);
+        tinted = 0;
+        standing[i].share = share;
+        standing[i].fade = fade;
+        standing[i].lifted = lifted;
         if (summon->elapsed < 0xFFFFu) {
             summon->elapsed++;
         }
     }
+    standing_count = count;
     if (field) {
         fight_begin();
         count += draw_fighters();
+    }
+    if (copies || extras) {
+        for (i = 0; i < standing_count; i++) {
+            ready_copies(&standing[i], &ready[i]);
+        }
+        for (i = 0; i < standing_count; i++) {
+            draw_copies(&standing[i], &ready[i], height);
+        }
     }
 
     D_800F2C40[0] = borrowed;
@@ -2991,6 +3309,9 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     mod->applied = applied;
     FieldArt_Init(from);
     FightSounds_Init(from);
+    if (from->api >= 4 && !from->provide(from, "api", (void *)&api)) {
+        say("the copies cannot be shared: provide failed\n");
+    }
     /* Hooks arrived in mod API 4; without one the summon still grows the
      * monster, over its card. */
     if (from->api >= 4 && !original_card &&
@@ -3002,6 +3323,11 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     if (from->api >= 4 && !original_battle &&
         !host->hook(host, (void *)DuelScene_UpdateBattle, (void *)update_battle, &original_battle)) {
         say("the attack cannot hold the battle: DuelScene_UpdateBattle could not be hooked\n");
+    }
+    /* Without this hook the mat darkens a little through a fight. */
+    if (from->api >= 4 && !original_draw_slot &&
+        !host->hook(host, (void *)func_800540B4, (void *)draw_slot, &original_draw_slot)) {
+        say("the mat cannot stay lit through a fight: func_800540B4 could not be hooked\n");
     }
     return 1;
 }

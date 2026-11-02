@@ -36,6 +36,7 @@ typedef struct Delivery {
     unsigned copy_offset; /* where the first byte is in the slot's copy */
     unsigned copy_bytes;  /* the slot's copy as delivered, whatever forget did since: */
     uint32_t copy_disc;   /* its length and its disc offset (found_by_content) */
+    uint64_t seen[64];    /* the copy's 16-bit words, by word_bucket: one bit each */
 } Delivery;
 #define DELIVERIES 4096
 #define DELIVERY_BYTES 2352 /* a raw sector, the most one delivery can hold */
@@ -46,6 +47,11 @@ static unsigned delivery_head;
  * writes game memory without telling anyone, so a word is traced to the disc
  * only while it still holds the bytes the disc put there. */
 static unsigned char *delivery_copies;
+
+/* found_by_content skips a delivery whose copy does not hold the words it
+ * looks for: 4096 buckets (a delivery holds up to 1176 words), so a bit set
+ * may be another word's. */
+static unsigned word_bucket(uint16_t word) { return (unsigned)((word * 0x9E3779B1u) >> 20) & 0xFFFu; }
 
 /* TextureDump_Delivered is reached by native SDK code with the guest token
  * passed by translated game code. SoftGpu_Load resolves that same token
@@ -269,6 +275,18 @@ void TextureDump_Delivered(const void *destination, unsigned bytes, int lba, uns
     delivery->copy_offset = 0;
     delivery->copy_bytes = bytes;
     delivery->copy_disc = delivery->disc_offset;
+    memset(delivery->seen, 0, sizeof(delivery->seen));
+    {
+        const unsigned char *copy = delivery_copies + (size_t)slot * DELIVERY_BYTES;
+        unsigned o;
+        for (o = 0; o + 2 <= bytes; o += 2) {
+            uint16_t word;
+            unsigned bucket;
+            memcpy(&word, copy + o, 2);
+            bucket = word_bucket(word);
+            delivery->seen[bucket >> 6] |= (uint64_t)1 << (bucket & 63);
+        }
+    }
 }
 
 /* Disc offset + 1 of the word at address if the delivery covers it and its
@@ -334,17 +352,32 @@ static uint32_t found_by_content(const uint16_t *pixels, size_t words)
 {
     size_t bytes = words * 2, i, o;
     unsigned n;
-    uint16_t first = pixels[0];
+    uint16_t first = pixels[0], anchor;
+    size_t at;
     if (bytes < 64 || bytes > DELIVERY_BYTES) return 0;
     for (i = 1; i < words && pixels[i] == first; i++) {}
     if (i == words) return 0;
+    /* Each place is tried first at a word of the upload that differs from
+     * its first, one other than 0x0000 and 0x8000 when it has one: a palette
+     * or a block often starts with 0x0000, which every delivery holds in
+     * runs, and comparing the whole upload at each of them cost up to 15 ms
+     * a call with the ring full. A delivery without that word, or without
+     * the first, is not looked through at all. */
+    for (o = i; o < words && (pixels[o] == first || pixels[o] == 0 || pixels[o] == 0x8000); o++) {}
+    if (o < words) i = o;
+    anchor = pixels[i];
+    at = i * 2;
     for (n = 0; n < DELIVERIES; n++) {
         unsigned slot = (delivery_head + DELIVERIES - 1 - n) % DELIVERIES;
         const Delivery *delivery = &deliveries[slot];
         const unsigned char *copy = delivery_copies + (size_t)slot * DELIVERY_BYTES;
+        unsigned a = word_bucket(anchor), f = word_bucket(first);
         if (delivery->copy_bytes < bytes) continue;
+        if (!(delivery->seen[a >> 6] >> (a & 63) & 1) || !(delivery->seen[f >> 6] >> (f & 63) & 1)) continue;
         for (o = 0; o + bytes <= delivery->copy_bytes; o += 2) {
             uint16_t word;
+            memcpy(&word, copy + o + at, 2);
+            if (word != anchor) continue;
             memcpy(&word, copy + o, 2);
             if (word == first && memcmp(copy + o, pixels, bytes) == 0) return delivery->copy_disc + (uint32_t)o;
         }

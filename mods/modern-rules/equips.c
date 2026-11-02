@@ -23,7 +23,9 @@
  *   their colour from their display objects each frame
  *   (Duel_DrawFieldCards), so the glow is put on for the drawing only.
  * With no free zone the equip cannot be played (modern_rules.c); should one
- * still come down, it keeps the disc's way. */
+ * still come down, it keeps the disc's way. Multiply (multiply.c) is the one
+ * equip not destroyed with its monster: it waits for the Kuriboh born again
+ * in its place, and goes on to it. */
 #include "types.h"
 #include "game/ai.h"
 #include "game/card_constants.h"
@@ -51,6 +53,7 @@
 #include "pc/cards/cards.h"
 #include "unmatched.h"
 #include "equips.h"
+#include "multiply.h"
 #include "state.h"
 #include <stdio.h>
 #include <string.h>
@@ -239,6 +242,7 @@ static void land_pending(void)
             link->monster_deck = (u8)deck_of(monster);
             link->attack = (s16)(E.reversed ? -p->attack : p->attack);
             link->defense = (s16)(E.reversed ? -p->defense : p->defense);
+            if (Multiply_Is(link->equip_card)) Multiply_Landed(r);
         }
     }
     forget_pending();
@@ -280,6 +284,15 @@ int Equips_Hold(void)
         if (!monster_here(r)) {
             if (!equip_here(r)) {
                 link->equip_card = 0;
+                continue;
+            }
+            if (Multiply_Is(link->equip_card)) {
+                int k = Multiply_Wall(r / DUEL_CARD_SIDE_RECORD_COUNT);
+                if (k >= 0) {
+                    link->monster = (s8)k;
+                    link->monster_card = D_801A7AD8[k].card_id;
+                    link->monster_deck = (u8)deck_of(&D_801A7AD8[k]);
+                }
                 continue;
             }
             busy = 1;
@@ -349,6 +362,10 @@ static int line_for(int r, char *text, size_t size)
     int s, n = 0;
     size_t used;
     if (r < 0) return 0;
+    if (E.link[r].equip_card && equip_here(r) && Multiply_Is(E.link[r].equip_card)) {
+        snprintf(text, size, "%s", T("Multiply: a Kuriboh destroyed is born again"));
+        return 1;
+    }
     if (E.link[r].equip_card && equip_here(r) && monster_here(r)) {
         name(E.link[r].monster_card, card, sizeof card);
         snprintf(text, size, T("Equipped to: %s"), card);

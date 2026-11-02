@@ -15,6 +15,13 @@
 #define FUSE_PARTNER 7
 
 ModernRulesState gModernRules_State;
+/* Multiply is tested on its own (multiply_test.c): here card 77, and the
+ * wall's Kuriboh whatever the test says. */
+#define MULTIPLY_TEST 77
+static int multiply_landed = -1, wall_kuriboh = -1;
+int Multiply_Is(int card) { return card == MULTIPLY_TEST; }
+void Multiply_Landed(int monster) { multiply_landed = monster; }
+int Multiply_Wall(int side) { (void)side; return wall_kuriboh; }
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B174;
 u8 D_8009B1D5;
@@ -326,6 +333,49 @@ int main(void)
     hold_frames();
     assert(removed == 1);
 
+    /* Multiply: landed, it tells multiply.c; its Kuriboh gone, it is not
+     * destroyed, nor goes on to the side's other Kuriboh: it waits for the
+     * one born again in its place. */
+    clear();
+    put(MONSTER_RECORD(0, 1), 58, 3);
+    put(MONSTER_RECORD(0, 3), 58, 4);
+    frame(7, 0);
+    deck_cards[0][10].id = MULTIPLY_TEST;
+    deck_cards[0][10].deck_index = 10;
+    equip_object.field_68 = CARD_TYPE_EQUIP;
+    equip_object.field_6A = 0;
+    equip_object.field_6B = 10;
+    monster_object.field_68 = 7;
+    monster_object.field_6A = MONSTER_RECORD(0, 1);
+    D_800E9EF0[0] = &monster_object;
+    D_800E9EF0[1] = &equip_object;
+    D_8009B206 = MULTIPLY_TEST;
+    frame(SCENE_STARTED | 7, STEP_EQUIP);
+    frame(SCENE_STARTED | 7, STEP_COMBINE);
+    frame(SCENE_STARTED | 7, STEP_DONE);
+    D_8009B19C = MONSTER_RECORD(0, 1);
+    gDuel_wSceneStateFlags = SCENE_STARTED | SCENE_LANDING;
+    landing();
+    assert(multiply_landed == MONSTER_RECORD(0, 1) && linked(1));
+    D_801A7AD8[MONSTER_RECORD(0, 1)].flags = 0;      /* its Kuriboh destroyed */
+    removed = 0;
+    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].monster == MONSTER_RECORD(0, 1) &&
+           E.link[SPELL_RECORD(0, 1)].equip_card == MULTIPLY_TEST);
+    put(MONSTER_RECORD(0, 4), 58, 5);                 /* born again, in another zone */
+    wall_kuriboh = MONSTER_RECORD(0, 4);
+    assert(!Equips_Hold() && removed == 0 && E.link[SPELL_RECORD(0, 1)].monster == MONSTER_RECORD(0, 4));
+    wall_kuriboh = -1;
+    gDuel_wSceneStateFlags = SCENE_FIELD;
+    D_8009B174 = FIELD_IDLE;
+    {
+        DuelSelectionRecord *cursor = (DuelSelectionRecord *)D_800E9F10 + FIELD_CURSOR_RECORD;
+        cursor->row = 3;
+        cursor->col = 1;
+        drawn_count = 0;
+        overlay();
+        assert(drawn_count == 1 && strstr(drawn[0], "Multiply"));
+    }
+
     /* The CPU's view: its equips on the field are used. */
     clear();
     D_8009B1D5 = 1;
@@ -347,7 +397,7 @@ int main(void)
         DuelSelectionRecord *cursor = (DuelSelectionRecord *)D_800E9F10 + FIELD_CURSOR_RECORD;
         cursor->row = 3;
         cursor->col = 2;
-        drawn_count = 0;
+        drawn_count = earlier_overlays = 0;
         overlay();
         assert(earlier_overlays == 1 && drawn_count == 1 && !strcmp(drawn[0], "Equipado em: Warrior"));
         cursor->row = 2;
@@ -383,6 +433,6 @@ int main(void)
     }
 
     printf("Equips on the field: placement, landing, nearest zone, from the field, fusion, Reverse Trap, "
-           "off, equip destroyed, monster destroyed, CPU view, whose equip, the glow passed\n");
+           "off, equip destroyed, monster destroyed, CPU view, whose equip, the glow, Multiply passed\n");
     return 0;
 }

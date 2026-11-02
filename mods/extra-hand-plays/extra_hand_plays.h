@@ -26,9 +26,9 @@ typedef int (*ExtraHandPhases)(void);
 
 /* 1: the first three entries; 2: set_optional_play; 3: pass_hand; 4: the
  * hand past five cards; 5: set_phases; 6: hand_cursor, and the hand entries
- * count hand cards, up to 40. New entries only go at the end, so check
- * version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 7
+ * count hand cards, up to 40; 7: menu_open; 8: take_hand. New entries only go
+ * at the end, so check version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 8
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -79,6 +79,12 @@ typedef struct {
      * menu's then, not the hand's or the field's: a mod that refuses a
      * confirm in those states leaves this one alone. */
     int (*menu_open)(void);
+    /* Version 8: hand cards (0 up, as hand_card counts them) of the side
+     * whose turn it is leave the duel, used up by a play of the calling
+     * mod's own: the hand slides away and comes back without them, as a
+     * bonus hand (not a play). In that side's hand only; for the CPU from
+     * inside its hand script with its decision emptied, as pass_hand. */
+    void (*take_hand)(const int *cards, int count);
 } ExtraHandApi;
 
 #endif

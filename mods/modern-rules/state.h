@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 3
+#define MODERN_RULES_STATE_VERSION 9
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -48,9 +48,61 @@ typedef struct {
     u8 cooldown;              /* frames before the next equip is destroyed */
 } EquipState;
 
+/* The swamp brothers' battle: the attacked battleguard holding its
+ * brother's ATK while the battle lasts. */
+typedef struct {
+    s8 record;         /* the attacked battleguard's record, -1 for none */
+    u8 was_defense;    /* it was in defense before */
+    s16 card;
+    s16 boost;         /* its brother's ATK, added for the battle */
+    s16 total;         /* the two together */
+} SwampState;
+
+/* Kuriboh and Multiply: each side's wall Kuriboh, by its zone's record, and
+ * the deck card a new one is made from; -1 for none. In a battle with it,
+ * its record and the DEF it was given; then the clone that died, and the
+ * frames until another takes its place. */
+typedef struct {
+    s8 zone[2];
+    s8 deck[2];
+    s8 guard;          /* the wall's Kuriboh in this battle, or -1 */
+    s8 dead;           /* the clone that died, or -1 */
+    u8 dead_frames;
+    u8 next;           /* the clone the next attack takes */
+    s16 lift;          /* DEF added for the battle */
+    u8 learned[2];     /* a side has attacked the other side's wall: it aims elsewhere now */
+} MultiplyState;
+
+/* Living Arrow: each monster zone's infection (by side * 5 + column): the
+ * card infected and its deck card, the side whose combo it was, and the
+ * ATK it loses at the end of each of that side's turns; 0 card for none.
+ * The player's aim while they pick a target, and the line on screen. */
+#define ARROW_ZONES 10
+typedef struct {
+    s16 card[ARROW_ZONES];
+    s16 loss[ARROW_ZONES];
+    u8 deck[ARROW_ZONES];
+    s8 owner[ARROW_ZONES];
+    u8 aiming;         /* the player picks the target */
+    s8 target;         /* the record aimed at */
+    s8 picks[3];       /* the combo's hand cards */
+    s8 said;           /* the record the line on screen is about, or -1 */
+    u8 said_frames;    /* the line is up (until the host's clock says it is over) */
+    s16 said_loss;     /* what it lost, 0 when it was just infected */
+    s16 zombie[ARROW_ZONES]; /* the Zombie shot into it, drawn in its chest with 3D Monsters */
+    s16 base[ARROW_ZONES];   /* its ATK when it was infected: how far it has rotted */
+    s8 flying;         /* the zone the Zombie flies to, or -1 */
+    u8 fly_frames;     /* frames of the flight gone */
+    s8 pulse;          /* the zone flashing green as it rots, or -1 */
+    u8 pulse_frames;
+} ArrowState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
+    SwampState swamp;
+    MultiplyState multiply;
+    ArrowState arrow;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;
