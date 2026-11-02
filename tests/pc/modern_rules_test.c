@@ -31,6 +31,9 @@ int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *
 int Arrow_Hand(void) { return 0; }
 int Arrow_Cpu(void) { return 0; }
 void Arrow_TurnStarts(int side) { arrow_turns[side & 1]++; }
+/* Mai's harpies are tested on their own (harpies_test.c). */
+int Harpies_Install(const MemoriesModHost *h) { (void)h; return 1; }
+void Harpies_Update(void) {}
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }

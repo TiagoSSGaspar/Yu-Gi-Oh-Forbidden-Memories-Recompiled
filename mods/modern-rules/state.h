@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 9
+#define MODERN_RULES_STATE_VERSION 10
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -97,12 +97,20 @@ typedef struct {
     u8 pulse_frames;
 } ArrowState;
 
+/* Harpie's Pet Dragon: the bonus each monster zone's dragon (by side * 5 +
+ * column) was given for its side's harpies, and its deck card. */
+typedef struct {
+    s16 bonus[ARROW_ZONES];
+    u8 deck[ARROW_ZONES];
+} HarpiesState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
     SwampState swamp;
     MultiplyState multiply;
     ArrowState arrow;
+    HarpiesState harpies;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

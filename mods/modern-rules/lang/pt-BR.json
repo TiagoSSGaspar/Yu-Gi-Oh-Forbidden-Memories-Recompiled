@@ -37,6 +37,10 @@
         "living_arrow": {
             "label": "Flecha Viva (anime)",
             "description": "Como no duelo do Yugi com o Kaiba no castelo: Polymerization, Living Arrow e um Zumbi (o Mammoth Graveyard também, como no anime) marcados na mão fundem o Zumbi num monstro vivo do oponente, virado para cima (não Zumbi, Máquina nem Rocha), escolhido com esquerda e direita. No fim de cada turno seu ele perde o ATK do Zumbi, até 0, enquanto estiver no campo. A CPU também usa."
+        },
+        "harpies": {
+            "label": "Harpias da Mai (anime)",
+            "description": "Como nos duelos da Mai: o Elegant Egotist jogado sobre a Harpie Lady, ou os dois fundidos da mão, faz a Harpie Lady Sisters, a harpia dividida em três. O Harpie's Pet Dragon ganha 300 de ATK por harpia do seu lado: a Harpie Lady conta uma, a Harpie Lady Sisters três."
         }
     },
     "texts": {
