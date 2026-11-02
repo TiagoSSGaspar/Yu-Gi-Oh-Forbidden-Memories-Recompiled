@@ -70,7 +70,7 @@
       "copy": "Widespread Ruin",
       "name": "Mirror Force",
       "art": "images/mirror_force.png",
-      "description": "When your opponent attacks: the attack is turned back on every monster of theirs in attack position, destroying them all. They lose the difference over each one weaker than the attacker.",
+      "description": "Springs on an attack: it turns back on every enemy monster in attack position. All are destroyed; the foe loses the attacker's ATK over each.",
       "password": "44095762",
       "drops": true,
       "opponents": true
@@ -104,7 +104,7 @@
       "copy": "Fake Trap",
       "name": "Magical Hats",
       "art": "images/magical_hats.png",
-      "description": "When your opponent attacks your monster: the attack stops, and your monster hides face down among up to three hats. Attacking a hat destroys it with no damage.",
+      "description": "When your monster is attacked: the attack stops and it hides face down among up to three hats. An empty hat dies with no damage.",
       "password": "81210420",
       "drops": true,
       "opponents": true
@@ -119,6 +119,15 @@
       "description": "A hat of Magical Hats: empty. It does nothing, and leaves when the monster hidden among the hats does."
     }
   ],
+  "passwords": {
+    "modern-rules:polymerization:1": {"password": "24094653", "starchips": 20},
+    "modern-rules:multiply:1": {"password": "40703222", "starchips": 50},
+    "modern-rules:living_arrow:1": {"password": "41180607", "starchips": 100},
+    "modern-rules:magical_hats:1": {"password": "81210420", "starchips": 150},
+    "modern-rules:change_of_heart:1": {"password": "04031928", "starchips": 300},
+    "modern-rules:monster_reborn:1": {"password": "83764718", "starchips": 300},
+    "modern-rules:mirror_force:1": {"password": "44095762", "starchips": 500}
+  },
   "equips": [
     {
       "card": "modern-rules:multiply:1",
