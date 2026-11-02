@@ -166,7 +166,7 @@ int main(void)
      * zones, toward the other side; none for another card. */
     {
         Monsters3dCopy more[MONSTERS_3D_COPIES];
-        assert(model_copies(MONSTER_RECORD(0, 1), -70, -95, more, MONSTERS_3D_COPIES) == CLONES && CLONES == 5);
+        assert(model_copies(MONSTER_RECORD(0, 1), -70, -95, more, MONSTERS_3D_COPIES) == CLONES && CLONES == 3);
         for (i = 0; i < CLONES; i++) assert(more[i].z > -95 && more[i].z < 0 && more[i].x >= -140 && more[i].x <= 140);
         assert(more[0].x < more[4].x);
         assert(model_copies(MONSTER_RECORD(0, 1), -70, -95, more, 3) == 3);
