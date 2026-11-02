@@ -200,7 +200,18 @@ typedef struct {
 
 static const MemoriesModHost *host;
 static Monster cache[CACHE];
-static u8 *record;             /* one MODEL.MRG record, read whole */
+/* MODEL.MRG records read whole, kept by where they start: a record is 276 sectors
+ * (552 KB) and reading one took about 9 ms of a load's 19 on an M1 Pro
+ * (more on a phone), while the same card is loaded again and again: once per
+ * entry that shows it (a zone, the big card of an attack, a copy) and once
+ * more each time a fight takes it back. Least recently used replaced first. */
+#define RECORDS 12
+static struct {
+    int sector;    /* where the record starts, plus one; 0 when the entry is free */
+    unsigned used; /* load count at its last use */
+    u8 *bytes;
+} records[RECORDS];
+static unsigned record_loads;
 static int mrg_start = -2;
 static unsigned frame;
 static int inside;
@@ -226,6 +237,7 @@ static void module_dropped(void);
 /* The field fight has the duel camera, which was as in fight_view
  * (draw_fighters). */
 static int fight_moved;
+static int lit_after, rest_light_kept; /* draw_slot */
 static ViewState fight_view;
 
 static void reset(void)
@@ -237,6 +249,8 @@ static void reset(void)
     dimmed[0] = dimmed[1] = NULL; /* a state was loaded over them */
     memset(summons, 0, sizeof(summons));
     fight_moved = 0; /* the state brought its own camera */
+    lit_after = 0;
+    rest_light_kept = 0;
     module_dropped();  /* and its own RAM where a module ran */
     attack_finish();
     FieldArt_Reset();
@@ -470,24 +484,58 @@ static void give_back(const u8 *staging, size_t length)
     load_rect(ROW_X, ROW_Y, ROW_W, 1, saved_row);
 }
 
+/* The MODEL.MRG record of `card`, which starts at sector `first`: kept, or
+ * read now. NULL when it cannot be read. */
+static const u8 *record_of(int card, int first)
+{
+    int i, sectors;
+    unsigned oldest = 0;
+    int pick = -1;
+    record_loads++;
+    for (i = 0; i < RECORDS; i++) {
+        if (records[i].sector == first + 1 && records[i].bytes) {
+            records[i].used = record_loads;
+            return records[i].bytes;
+        }
+    }
+    for (i = 0; i < RECORDS; i++) {
+        if (!records[i].sector) {
+            pick = i;
+            break;
+        }
+        if (pick < 0 || records[i].used < oldest) {
+            pick = i;
+            oldest = records[i].used;
+        }
+    }
+    records[pick].sector = 0;
+    if (!records[pick].bytes && !(records[pick].bytes = malloc(RECORD_SECTORS * SECTOR))) {
+        return NULL;
+    }
+    sectors = host->disc_read(host, first, RECORD_SECTORS, records[pick].bytes);
+    if (sectors != RECORD_SECTORS) {
+        say("card %d: read %d of %d sectors\n", card, sectors, RECORD_SECTORS);
+        return NULL;
+    }
+    records[pick].sector = first + 1;
+    records[pick].used = record_loads;
+    return records[pick].bytes;
+}
+
 static int load_monster(Monster *monster, int card, int position)
 {
     uint64_t started, finished;
     ModelSlot *slot = &D_800F2C40[0];
     static u8 staging[0x2000]; /* the loader's own scratch, put back after */
     u8 *payload_base;
-    int first = record_sector(card - 1), sectors;
+    const u8 *record;
+    int first = record_sector(card - 1);
 
     if (first < 0) {
         return 0;
     }
     started = host->now_us(host);
-    if (!record && !(record = malloc(RECORD_SECTORS * SECTOR))) {
-        return 0;
-    }
-    sectors = host->disc_read(host, first, RECORD_SECTORS, record);
-    if (sectors != RECORD_SECTORS) {
-        say("card %d: read %d of %d sectors\n", card, sectors, RECORD_SECTORS);
+    if (!(record = record_of(card, first))) {
         return 0;
     }
 
@@ -1921,6 +1969,55 @@ static void update_battle(void)
     }
 }
 
+/* The mat lit through a fight on the field. The battle turns the ambient
+ * light of the mat (slot 2, which Duel_DrawFieldCards draws, field_DA0) down
+ * to nothing, for the big cards over the darkened field, and brings it back
+ * up slowly after. With the fight on the field that darkened the mat under
+ * the two monsters, and left it dark for a while after. The mat is drawn
+ * with the ambient the field had at rest during a battle with the fight on
+ * the field, and after it until the battle's own has come back up (at most
+ * FIGHT_LIT_AFTER frames); the slot's value is the game's again once drawn. */
+#define FIGHT_LIT_AFTER 600
+static void *original_draw_slot;
+static s32 rest_ambient[3];
+
+static void draw_slot(s32 slot)
+{
+    ModelSlot *mat = &D_800F2C40[2];
+    s32 kept[3];
+    int i, lit = 0;
+    if (slot != 2) {
+        ((void (*)(s32))original_draw_slot)(slot);
+        return;
+    }
+    if (fight_on() &&
+        ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_BATTLE || attack.phase != ATTACK_IDLE)) {
+        lit_after = FIGHT_LIT_AFTER;
+    } else if (lit_after > 0 && memcmp(mat->field_DA0, rest_ambient, sizeof(rest_ambient)) != 0) {
+        lit_after--;
+    } else {
+        lit_after = 0;
+        if ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_AFTER_BATTLE) { /* the field */
+            memcpy(rest_ambient, mat->field_DA0, sizeof(rest_ambient));
+            rest_light_kept = 1;
+        }
+    }
+    lit = lit_after > 0 && rest_light_kept;
+    if (lit) {
+        for (i = 0; i < 3; i++) {
+            kept[i] = mat->field_DA0[i];
+            /* Never darker than at rest; the battle may light it more. */
+            if (mat->field_DA0[i] < rest_ambient[i]) {
+                mat->field_DA0[i] = rest_ambient[i];
+            }
+        }
+    }
+    ((void (*)(s32))original_draw_slot)(slot);
+    if (lit) {
+        memcpy(mat->field_DA0, kept, sizeof(kept));
+    }
+}
+
 /* The pass for the battle presentation; 0 when it is not up. */
 static int draw_battle(void)
 {
@@ -3226,6 +3323,11 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
     if (from->api >= 4 && !original_battle &&
         !host->hook(host, (void *)DuelScene_UpdateBattle, (void *)update_battle, &original_battle)) {
         say("the attack cannot hold the battle: DuelScene_UpdateBattle could not be hooked\n");
+    }
+    /* Without this hook the mat darkens a little through a fight. */
+    if (from->api >= 4 && !original_draw_slot &&
+        !host->hook(host, (void *)func_800540B4, (void *)draw_slot, &original_draw_slot)) {
+        say("the mat cannot stay lit through a fight: func_800540B4 could not be hooked\n");
     }
     return 1;
 }
