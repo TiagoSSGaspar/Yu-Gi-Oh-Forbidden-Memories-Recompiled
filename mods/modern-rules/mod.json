@@ -1,7 +1,7 @@
 {
   "id": "modern-rules",
   "name": "Duelist Kingdom rules",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "author": "DecompRecomp",
   "description": "Rules from the anime's Duelist Kingdom: one card drawn a turn after the opening five, a hand of up to forty, turn phases with a second Main Phase, the moth's evolution, equips that stay on the field, and no card lost to a fusion that does not work. Needs Extra hand plays.",
   "min_api": 10,
@@ -12,7 +12,7 @@
   "requires": [
     {
       "id": "extra-hand-plays",
-      "min_version": "0.9.0"
+      "min_version": "0.10.0"
     }
   ],
   "after": [
@@ -64,8 +64,70 @@
       "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
+    },
+    {
+      "id": "mirror_force",
+      "copy": "Widespread Ruin",
+      "name": "Mirror Force",
+      "art": "images/mirror_force.png",
+      "description": "Springs on an attack: it turns back on every enemy monster in attack position. All are destroyed; the foe loses the attacker's ATK over each.",
+      "password": "44095762",
+      "drops": true,
+      "opponents": true
+    },
+    {
+      "id": "change_of_heart",
+      "copy": "Hinotama",
+      "name": "Change of Heart",
+      "art": "images/change_of_heart.png",
+      "description": "Take control of one monster of your opponent's until the end of this turn. It may attack.",
+      "password": "04031928",
+      "drops": true,
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
+    },
+    {
+      "id": "monster_reborn",
+      "copy": "Hinotama",
+      "name": "Monster Reborn",
+      "art": "images/monster_reborn.png",
+      "description": "Bring back one monster from either player's graveyard to your side of the field.",
+      "password": "83764718",
+      "drops": true,
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
+    },
+    {
+      "id": "magical_hats",
+      "copy": "Fake Trap",
+      "name": "Magical Hats",
+      "art": "images/magical_hats.png",
+      "description": "When your monster is attacked: the attack stops and it hides face down among up to three hats. An empty hat dies with no damage.",
+      "password": "81210420",
+      "drops": true,
+      "opponents": true
+    },
+    {
+      "id": "magical_hat",
+      "copy": "Kuriboh",
+      "name": "Magical Hat",
+      "art": "images/magical_hat.png",
+      "attack": 0,
+      "defense": 0,
+      "description": "A hat of Magical Hats: empty. It does nothing, and leaves when the monster hidden among the hats does."
     }
   ],
+  "passwords": {
+    "modern-rules:polymerization:1": {"password": "24094653", "starchips": 20},
+    "modern-rules:multiply:1": {"password": "40703222", "starchips": 50},
+    "modern-rules:living_arrow:1": {"password": "41180607", "starchips": 100},
+    "modern-rules:magical_hats:1": {"password": "81210420", "starchips": 150},
+    "modern-rules:change_of_heart:1": {"password": "04031928", "starchips": 300},
+    "modern-rules:monster_reborn:1": {"password": "83764718", "starchips": 300},
+    "modern-rules:mirror_force:1": {"password": "44095762", "starchips": 500}
+  },
   "equips": [
     {
       "card": "modern-rules:multiply:1",
@@ -139,6 +201,48 @@
       "type": "bool",
       "default": 1,
       "description": "As in Yugi's duel with Kaiba at the castle: Polymerization, Living Arrow and a Zombie (Mammoth Graveyard too, as in the anime) marked in the hand fuse the Zombie into a face-up living monster of the opponent's (not a Zombie, a Machine or a Rock), picked with left and right. At the end of each of your turns it loses the Zombie's ATK, down to 0, until it leaves the field. The CPU plays it too."
+    },
+    {
+      "key": "harpies",
+      "label": "Mai's harpies (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in Mai's duels: Elegant Egotist put onto Harpie Lady, or the two fused from the hand, makes Harpie Lady Sisters, the one harpy split into three. Harpie's Pet Dragon gains 300 ATK for each harpy on its side: Harpie Lady counts one, Harpie Lady Sisters three."
+    },
+    {
+      "key": "dark_castle",
+      "label": "Castle of Dark Illusions (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in PaniK's duel with Yugi: with Castle of Dark Illusions face up on the field, its owner's other monsters are in the dark, drawn dark, and cannot be attacked; the castle itself can. Swords of Revealing Light used by the other side lights the field: that castle hides no one any more. Both sides."
+    },
+    {
+      "key": "mirror_force",
+      "label": "Mirror Force",
+      "type": "bool",
+      "default": 1,
+      "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and turns it back on every monster of theirs in attack position, as Yugi did to Pegasus: all are destroyed, and the opponent loses the attacker's ATK minus each weaker one's (2500 on 1400 and 2200: 1100 + 300). Off, it destroys only the attacker, as Widespread Ruin does."
+    },
+    {
+      "key": "change_of_heart",
+      "label": "Change of Heart",
+      "type": "bool",
+      "default": 1,
+      "description": "Change of Heart, a magic card of this mod's (password 04031928): pick a monster of the opponent's with left and right; it comes to a free zone of yours as it is and may attack. When the next turn starts it goes back to its owner, or is destroyed if they have no free zone. Refused with nothing to take or no free zone. The CPU plays it on the player's strongest monster when it is stronger than all of its own. Off, the card does nothing."
+    },
+    {
+      "key": "monster_reborn",
+      "label": "Monster Reborn",
+      "type": "bool",
+      "default": 1,
+      "description": "Monster Reborn, a magic card of this mod's (password 83764718): the mod keeps each side's graveyard, the monsters destroyed in the duel. Pick one of either side's with left and right; it comes back to a free zone of yours, face up in attack. Refused with an empty graveyard or no free zone. The CPU revives the strongest when it is stronger than all of its own. Off, the card does nothing."
+    },
+    {
+      "key": "magical_hats",
+      "label": "Magical Hats",
+      "type": "bool",
+      "default": 1,
+      "description": "Magical Hats, a trap of this mod's (password 81210420), springs as Fake Trap does when the opponent attacks: the attack stops. When a monster was attacked, up to three hats go up in its owner's free monster zones and it hides among them, face down in defense in one picked at random; the others hold empty hats (Magical Hat, 0/0) that do nothing. Attacking an empty hat destroys it with no damage; the hats go when the monster hidden among them leaves the field. Off, the card is a Fake Trap."
     }
   ],
   "decks": {

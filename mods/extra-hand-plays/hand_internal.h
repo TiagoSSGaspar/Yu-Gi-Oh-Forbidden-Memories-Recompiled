@@ -60,6 +60,7 @@ int Ehp_Extras(int side);           /* cards past the fifth */
 s8 Ehp_Get(int side, int card);     /* the deck index of a hand card, -1 empty */
 void Ehp_Set(int side, int card, s8 deck_index);
 DuelHandSlot *Ehp_Slot(int slot);   /* a screen slot, for the side whose turn it is */
+const void *Ehp_ScreenSlot(int slot);   /* the same, NULL past the slots laid out */
 int Ehp_Record(int side, int slot); /* a screen slot's D_801A7AD8 record */
 void Ehp_SetupRecord(int record, int deck_index);
 int Ehp_LayoutX(int slot, int count); /* the slot's x on the panel, laid out for `count` cards */

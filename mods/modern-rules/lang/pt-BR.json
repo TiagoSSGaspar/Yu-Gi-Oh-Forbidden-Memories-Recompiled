@@ -37,6 +37,30 @@
         "living_arrow": {
             "label": "Flecha Viva (anime)",
             "description": "Como no duelo do Yugi com o Kaiba no castelo: Polymerization, Living Arrow e um Zumbi (o Mammoth Graveyard também, como no anime) marcados na mão fundem o Zumbi num monstro vivo do oponente, virado para cima (não Zumbi, Máquina nem Rocha), escolhido com esquerda e direita. No fim de cada turno seu ele perde o ATK do Zumbi, até 0, enquanto estiver no campo. A CPU também usa."
+        },
+        "harpies": {
+            "label": "Harpias da Mai (anime)",
+            "description": "Como nos duelos da Mai: o Elegant Egotist jogado sobre a Harpie Lady, ou os dois fundidos da mão, faz a Harpie Lady Sisters, a harpia dividida em três. O Harpie's Pet Dragon ganha 300 de ATK por harpia do seu lado: a Harpie Lady conta uma, a Harpie Lady Sisters três."
+        },
+        "dark_castle": {
+            "label": "Castle of Dark Illusions (anime)",
+            "description": "Como no duelo do PaniK com o Yugi: com o Castle of Dark Illusions virado para cima no campo, os outros monstros do dono ficam no escuro, desenhados escuros, e não podem ser atacados; o castelo pode. Swords of Revealing Light usada pelo outro lado acende o campo: aquele castelo não esconde mais ninguém. Vale para os dois lados."
+        },
+        "mirror_force": {
+            "label": "Mirror Force",
+            "description": "A Mirror Force, armadilha deste mod (senha 44095762), dispara em qualquer ataque do oponente: para o ataque e o devolve contra todos os monstros dele em posição de ataque, como o Yugi fez com o Pegasus: todos são destruídos, e o oponente perde o ATK do atacante menos o de cada um mais fraco (2500 contra 1400 e 2200: 1100 + 300). Desligada, destrói só o atacante, como a Widespread Ruin."
+        },
+        "change_of_heart": {
+            "label": "Change of Heart",
+            "description": "Change of Heart, magia deste mod (senha 04031928): escolha um monstro do oponente com esquerda e direita; ele vem para uma zona livre sua como está e pode atacar. No começo do próximo turno volta para o dono, ou é destruído se o dono não tiver zona livre. Recusada sem monstro para pegar ou sem zona livre. A CPU usa no monstro mais forte do jogador quando ele é mais forte que todos os dela. Desligada, a carta não faz nada."
+        },
+        "monster_reborn": {
+            "label": "Monster Reborn",
+            "description": "Monster Reborn, magia deste mod (senha 83764718): o mod guarda o cemitério de cada lado, os monstros destruídos no duelo. Escolha um dos dois lados com esquerda e direita; ele volta numa zona livre sua, virado para cima em ataque. Recusada com cemitério vazio ou sem zona livre. A CPU revive o mais forte quando ele é mais forte que todos os dela. Desligada, a carta não faz nada."
+        },
+        "magical_hats": {
+            "label": "Magical Hats",
+            "description": "A Magical Hats, armadilha deste mod (senha 81210420), dispara como a Fake Trap quando o oponente ataca: o ataque para. Se um monstro foi atacado, até três cartolas sobem nas zonas livres de monstro do dono e ele se esconde entre elas, virado para baixo em defesa numa sorteada; as outras guardam cartolas vazias (Magical Hat, 0/0) que não fazem nada. Atacar uma cartola vazia a destrói sem dano; as cartolas somem quando o monstro escondido sai do campo. Desligada, a carta é uma Fake Trap."
         }
     },
     "texts": {
@@ -48,6 +72,10 @@
         "Multiply: a Kuriboh destroyed is born again": "Multiply: um Kuriboh destruído nasce de novo",
         "Living Arrow: %s (ATK %d)  Left/Right, X: infect, O: cancel": "Flecha Viva: %s (ATK %d)  Esquerda/Direita, X: infecta, O: cancela",
         "%s rots: -%d ATK": "%s apodrece: -%d ATK",
-        "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno"
+        "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno",
+        "In the dark: it cannot be attacked": "No escuro: não pode ser atacado",
+        "Change of Heart: %s (ATK %d)  Left/Right, X: take it": "Change of Heart: %s (ATK %d)  Esquerda/Direita, X: pega",
+        "Monster Reborn: %s %d/%d, yours  Left/Right, X: revive": "Monster Reborn: %s %d/%d, seu  Esquerda/Direita, X: revive",
+        "Monster Reborn: %s %d/%d, the opponent's  Left/Right, X: revive": "Monster Reborn: %s %d/%d, do oponente  Esquerda/Direita, X: revive"
     }
 }

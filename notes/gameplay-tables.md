@@ -447,7 +447,7 @@ each of them:
 | `life_points` `max` | how far healing (the recovery cards) takes LP; a side that starts past it keeps its LP and is not healed | the side's start | 1-32767 |
 | `life_points` `duelists` | an object of duelists (their names as in `drops`, or `"all"`) and a number, that duelist's own LP, or `{"player": n, "opponent": n}`: the LP each side starts with against that duelist, before `player`, `opponent` and `start` | | 1-32767 |
 | `two_player` | the two-player duel's LP choice: `start` (where both begin), `max` (the most to pick) and `step` (each press) | 8000, 8000, 500 | 1-32767 |
-| `starchips` | the most starchips the save holds, from a duel's prize, a full chest or Game > Cheats | 999999 | 0-99999999 |
+| `starchips` | the most starchips the save holds, from a duel's prize or a full chest | 999999 | 0-99999999 |
 | `chest` | the copies of a card the chest keeps (the same as `chest_overflow`'s `limit`) | 250 | 1-255 |
 | `free_duel_record` | the most wins, and losses, a Free Duel opponent's record counts | 999 | 1-32767 |
 | `two_player_record` | the same for the wins and losses two-player duels add to a save | 9999 | 1-65535 |
@@ -458,8 +458,7 @@ card (from a mod's `chest` past 250) keeps them when played without it: a
 copy won then is turned away, as at 250, rather than wrap the byte to none;
 in the same way a starchip balance past the cap in force (a mod's `starchips`
 that is off now, or lowered) is kept, and a prize adds nothing to it rather
-than cut it back. Game > Cheats > Starting LP, when set to
-anything but the console's 8000, still comes first.
+than cut it back.
 
 **What the numbers are kept in.** ATK, DEF and LP are 16-bit numbers in the
 duel's own records (`DuelCardRecord`, `AiActiveCard`, `DuelSideState`), so

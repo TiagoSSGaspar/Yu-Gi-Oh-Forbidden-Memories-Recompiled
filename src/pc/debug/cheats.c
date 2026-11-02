@@ -5,10 +5,8 @@
 #include "game/save_data.h"
 #include "pc/cards/cards.h"
 #include "pc/cards/tables.h"
-#include "pc/platform/settings.h"
 #include "game/duel_side_state.h"
 #include "game/main_modes.h"
-#include "pc/tower/tower.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -99,34 +97,16 @@ int Cheats_SetStarchips(unsigned value)
     return 1;
 }
 
-int Cheats_StartingLifePoints(void)
-{
-    /* A tower whose mod turns cheats off: its duels begin as the console's
-     * (or the floor's "life_points"), whatever the menu says (tower.h). */
-    if (Tower_CheatsOff()) return DUEL_STARTING_LIFE_POINTS;
-    return Settings_Get(SET_CHEAT_LIFE_POINTS);
-}
+/* Game > Cheats was removed: a duel against the CPU starts at the
+ * console's life points (or a mod's "limits"), the Password screen takes
+ * its price, and the CPU's hand stays hidden. The three stay, for the game
+ * code that asks them (duel_state_init.c, the Password screens,
+ * DUEL_CARD_VIEW_MODE). */
+int Cheats_StartingLifePoints(void) { return DUEL_STARTING_LIFE_POINTS; }
 
-int Cheats_FreeSpending(void)
-{
-    return Settings_Get(SET_CHEAT_FREE_SPENDING);
-}
+int Cheats_FreeSpending(void) { return 0; }
 
-extern signed char gDuel_bOpponentID;
-
-/* The card display reads a side's card_view_mode through this
- * (DUEL_CARD_VIEW_MODE). Duel_InitSideStates gives the CPU's record -1,
- * which draws the hand it plays from as card backs and dims it; 0, the
- * player's, draws the cards. With the cheat on the CPU's record reads 0.
- * Two-player duels (a negative opponent) keep the value their setup chose. */
-s8 Cheats_CardViewMode(const DuelSideState *side)
-{
-    if (side->card_view_mode < 0 && side == &D_800E9FF0[1] && gDuel_bOpponentID >= 0 &&
-        Settings_Get(SET_CHEAT_SHOW_HAND) && !Tower_CheatsOff()) {
-        return 0;
-    }
-    return side->card_view_mode;
-}
+s8 Cheats_CardViewMode(const DuelSideState *side) { return side->card_view_mode; }
 
 /* MEMORIES_DEBUG_DECK: the forty cards of the deck, as ids and ranges
  * ("723-762", "1,2,723"), repeated until the deck is full. */

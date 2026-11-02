@@ -816,7 +816,7 @@ move, Enter activates, Esc closes (with no menu open it is Exit game, asking fir
 | Audio | Master/music/SFX sliders, mute and focus-loss mute, Gaussian (console) or cubic (sharper) voice interpolation (`audio_interpolation`) |
 | Video | Window scale and Menu size submenus, window mode, scaling/aspect/filter/VSync choices |
 | View | Fusion helper (`fusion_helper`, [notes/fusion-helper.md](fusion-helper.md)), Card passwords, Library: show every card, Free Duel progress (see [View > Free Duel progress](#view--free-duel-progress)); Duel rank submenu: Off, Rank, Rank and score (`rank_meter` 0/1/2, see [Duel rank](#duel-rank)); Opponent's name for COM; Japanese buttons |
-| Game | Game speed, Frame rate and Cheats submenus (see [Cheats](#cheats)), Card drops, Deck slots, card browsing, Restart game |
+| Game | Game speed and Frame rate submenus, Card drops, Deck slots, card browsing, Restart game |
 | Mods | opens the mods window, which lists every mod found in `mods/` beside the executable and in the user directory (`notes/modding.md`) |
 | Debug | HUD levels, pause/step, frame and VRAM dumps |
 | Trace | Live frames, disc, SPU, input and state log-channel switches |
@@ -893,28 +893,21 @@ stays in settings.h, retired, so mods keep their setting numbers; a
 `rewind=` line left in `settings.txt` does nothing (it is kept in the file as
 an unknown line). `serialize` still writes the stack chunk last.
 
-### Cheats
+### Cheats (removed)
 
-**Game > Cheats** (`src/pc/debug/cheats.c`). Every row is off, or at the
-console's value, until the player picks it; nothing changes on screen before.
-
-The rows that change the save (Give, Unlock and Set StarChips) do nothing
-until a game is started or loaded, and say **Load a save first** instead
-(`Cheats_SaveLoaded`: the save workspace holds a deck, the same test as
-Deck slots and `MEMORIES_DEBUG_CHEST`). Before that the workspace is scratch,
-and on a new game it becomes the save when the name entry closes.
-Give also covers the cards mods added (their trunk is kept beside the save,
-[More cards](more-cards.md)). It refuses while Build Deck, or its screen
-before a duel, is open, and says **Leave Build Deck first**
-(`Cheats_ChestOnScreen`): that screen lists its own copy of the chest and
-writes it back over the save as it closes, so cards given meanwhile were
-neither listed nor kept. `MEMORIES_DEBUG_CHEST` waits for the same. The settings
-rows (LP, free spending, the CPU's hand) change nothing in the save and work
-at any time. Starting LP is 1 to 32767 (`cheat_life_points`,
-`MEMORIES_CHEAT_LIFE_POINTS`; the menu offers 1000, 4000, 8000 and 9999); at
-the console's 8000 a mod's `limits` decide the start instead, and any other
-value comes first. Set StarChips and `MEMORIES_DEBUG_STARCHIPS` stop at the
-game's 999999, or at a mod's `limits` (notes/gameplay-tables.md).
+The fork removed the window's **Game > Cheats** menu (give every card,
+unlock the Free Duel CPU duelists, set StarChips, free spending, starting
+LP, show the CPU's hand), and its three settings (`cheat_life_points`,
+`cheat_show_hand`, `cheat_free_spending`, and their `MEMORIES_CHEAT_*`
+variables) are retired: a settings file that still holds them keeps the
+lines, and nothing reads them. `src/pc/debug/cheats.c` keeps what tools and
+mods use: the `MEMORIES_DEBUG_CHEST`, `MEMORIES_DEBUG_DECK` and
+`MEMORIES_DEBUG_STARCHIPS` variables, the deck that Debug > Jump to and the
+control channel's `jump` set, and `Cheats_GiveAllCards` and
+`Cheats_UnlockAllFreeDuelists`, which code mods are built against. What the
+game code asks of the removed rows now answers as the console:
+`Cheats_StartingLifePoints` 8000 (a mod's `limits` decide the start),
+`Cheats_FreeSpending` 0, `Cheats_CardViewMode` each side's own.
 
 ### Back to the title screen
 

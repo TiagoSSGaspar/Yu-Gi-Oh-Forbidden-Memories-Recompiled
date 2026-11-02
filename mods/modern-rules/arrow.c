@@ -40,6 +40,7 @@
 #include "pc/cards/cards.h"
 #include "unmatched.h"
 #include "arrow.h"
+#include "castle.h"
 #include "cpu.h"
 #include "../3d-monsters/monsters_3d.h"
 #include "state.h"
@@ -449,6 +450,12 @@ static int model_tint(int record, unsigned char rgb[3])
 {
     static const int rotten[3] = {44, 60, 30}, flashed[3] = {230, 255, 200};
     int zone, rot, i, flash = 0;
+    if (Castle_Hides(record) && !(on() && record % DUEL_CARD_SIDE_RECORD_COUNT >= DUEL_FIELD_ROW_SIZE &&
+                                  record % DUEL_CARD_SIDE_RECORD_COUNT < 2 * DUEL_FIELD_ROW_SIZE &&
+                                  still_there(ZONE_OF(record)))) {
+        rgb[0] = 40; rgb[1] = 36; rgb[2] = 56;   /* the castle's darkness */
+        return 1;
+    }
     if (!on() || record % DUEL_CARD_SIDE_RECORD_COUNT < DUEL_FIELD_ROW_SIZE ||
         record % DUEL_CARD_SIDE_RECORD_COUNT >= 2 * DUEL_FIELD_ROW_SIZE || !still_there(zone = ZONE_OF(record)))
         return 0;

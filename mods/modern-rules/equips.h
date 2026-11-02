@@ -19,4 +19,7 @@ int Equips_Kept(int first, const int *ids, int count);
 int Equips_FreeZones(int side);
 /* Whether the magic and trap zone `col` of `side` holds an equip in use. */
 int Equips_InZone(int side, int col);
+/* The monster on record `from` moved to record `to` (Change of Heart): its
+ * equips stay where they are and go on equipping it. */
+void Equips_Moved(int from, int to);
 #endif

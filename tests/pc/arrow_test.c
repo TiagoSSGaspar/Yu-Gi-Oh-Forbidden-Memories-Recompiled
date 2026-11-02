@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../mods/modern-rules/arrow.c"
+/* Castle of Dark Illusions is tested on its own (castle_test.c). */
+int Castle_Hides(int r) { (void)r; return 0; }
 
 /* The CPU's level (cpu.c, tested in multiply_test.c). */
 static int cpu_level = CPU_BOSS;

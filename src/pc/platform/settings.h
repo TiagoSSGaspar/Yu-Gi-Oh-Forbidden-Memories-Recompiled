@@ -58,9 +58,9 @@ typedef enum {
     SET_RANK_METER,
     SET_REWIND,                 /* retired: rewind was removed */
     SET_LIBRARY_ALL_CARDS,
-    SET_CHEAT_LIFE_POINTS,
-    SET_CHEAT_SHOW_HAND,
-    SET_CHEAT_FREE_SPENDING,
+    SET_CHEAT_LIFE_POINTS,      /* retired: Game > Cheats was removed */
+    SET_CHEAT_SHOW_HAND,        /* retired: Game > Cheats was removed */
+    SET_CHEAT_FREE_SPENDING,    /* retired: Game > Cheats was removed */
     SET_CARD_PASSWORDS,
     SET_JP_BUTTONS,
     SET_CARD_BROWSE,

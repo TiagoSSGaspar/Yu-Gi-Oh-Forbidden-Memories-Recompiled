@@ -25,12 +25,33 @@ int Multiply_CpuRaise(void) { return 0; }
 void Cpu_Install(const MemoriesModHost *h) { (void)h; }
 void Cpu_Attack(void) {}
 int Cpu_Brothers(void) { return 0; }
+int Cpu_LightCastle(void) { return 0; }
 /* Living Arrow is tested on its own (arrow_test.c). */
 static int arrow_turns[2];
 int Arrow_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
 int Arrow_Hand(void) { return 0; }
 int Arrow_Cpu(void) { return 0; }
 void Arrow_TurnStarts(int side) { arrow_turns[side & 1]++; }
+/* Mai's harpies are tested on their own (harpies_test.c). */
+int Harpies_Install(const MemoriesModHost *h) { (void)h; return 1; }
+void Harpies_Update(void) {}
+/* Castle of Dark Illusions too (castle_test.c): here, the column in the dark. */
+static int castle_dark_col = -1;
+int Castle_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Castle_Refuses(int row, int col) { return row == 1 && col == castle_dark_col; }
+/* Mirror Force too (mirror_test.c). */
+int Mirror_Install(const MemoriesModHost *h) { (void)h; return 1; }
+int Mirror_Hold(void) { return 0; }
+void Mirror_TurnStarts(void) {}
+/* Change of Heart and Monster Reborn too (spells_test.c). */
+int Spells_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
+int Spells_Refuses(int card, int side) { (void)card; (void)side; return 0; }
+void Spells_TurnStarts(int side) { (void)side; }
+int Spells_Hold(void) { return 0; }
+int Spells_Cpu(void) { return 0; }
+/* Magical Hats too (hats_test.c). */
+int Hats_Install(const MemoriesModHost *h) { (void)h; return 1; }
+int Hats_Hold(void) { return 0; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }
@@ -121,9 +142,11 @@ static int hand_cursor_api(void)
 }
 static int menu_is_open;
 static int menu_open_api(void) { return menu_is_open; }
+/* The slots on screen: the five's own here. */
+static const void *screen_slot_api(int slot) { return slot >= 0 && slot < HAND_SIZE ? (const void *)&D_800EA030[slot] : 0; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api, menu_open_api, 0};
+                                      set_phases, hand_cursor_api, menu_open_api, 0, screen_slot_api};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)
@@ -445,6 +468,18 @@ int main(void)
         D_8009B174 = FIELD_TARGETING | FIELD_TARGET_LEAVING;               /* going back */
         field();
         assert(seen_pressed == PAD_BUTTON_CROSS);
+        /* An attack into the castle's darkness: refused; elsewhere not. */
+        D_8009B174 = FIELD_TARGETING;
+        target->row = 1; target->col = 4;
+        castle_dark_col = 4;
+        sounds = 0;
+        field();
+        assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+        castle_dark_col = 2;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        castle_dark_col = -1;
+        target->row = MONSTER_ROW; target->col = 2;
         /* An equip in use is not used again: the player's confirm on it,
          * walking the field, is refused. */
         D_8009B174 = FIELD_IDLE;

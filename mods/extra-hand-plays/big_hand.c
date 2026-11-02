@@ -821,11 +821,12 @@ void Ehp_HandActions(DuelSelectionRecord *side)
 
 /* View > Fusion helper's hand (the port's pc/cards/fusion_helper.h): every
  * slot, the five's and those past them, in the order they are laid out. */
-static const void *helper_slot(int index)
+const void *Ehp_ScreenSlot(int index)
 {
     int count = Ehp_BigHand() ? S.layout : HAND_SIZE;
     return index >= 0 && index < count ? (const void *)Ehp_Slot(index) : NULL;
 }
+static const void *helper_slot(int index) { return Ehp_ScreenSlot(index); }
 
 int Ehp_Install(void)
 {

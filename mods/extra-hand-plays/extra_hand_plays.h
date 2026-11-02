@@ -26,9 +26,9 @@ typedef int (*ExtraHandPhases)(void);
 
 /* 1: the first three entries; 2: set_optional_play; 3: pass_hand; 4: the
  * hand past five cards; 5: set_phases; 6: hand_cursor, and the hand entries
- * count hand cards, up to 40; 7: menu_open; 8: take_hand. New entries only go
- * at the end, so check version before calling a later one. */
-#define EXTRA_HAND_API_VERSION 8
+ * count hand cards, up to 40; 7: menu_open; 8: take_hand; 9: screen_slot. New
+ * entries only go at the end, so check version before calling a later one. */
+#define EXTRA_HAND_API_VERSION 9
 
 typedef struct {
     unsigned version;   /* EXTRA_HAND_API_VERSION */
@@ -85,6 +85,11 @@ typedef struct {
      * bonus hand (not a play). In that side's hand only; for the CPU from
      * inside its hand script with its decision emptied, as pass_hand. */
     void (*take_hand)(const int *cards, int count);
+    /* Version 9: the hand slot on screen at `slot` (0 up, as the hand's
+     * selection record's cursor byte counts them), a DuelHandSlot, for the
+     * side whose turn it is: the five's own (D_800EA030), then those past
+     * them. NULL past the last. */
+    const void *(*screen_slot)(int slot);
 } ExtraHandApi;
 
 #endif

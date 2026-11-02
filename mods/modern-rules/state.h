@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 9
+#define MODERN_RULES_STATE_VERSION 16
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -97,12 +97,81 @@ typedef struct {
     u8 pulse_frames;
 } ArrowState;
 
+/* Harpie's Pet Dragon: the bonus each monster zone's dragon (by side * 5 +
+ * column) was given for its side's harpies, and its deck card. */
+typedef struct {
+    s16 bonus[ARROW_ZONES];
+    u8 deck[ARROW_ZONES];
+} HarpiesState;
+
+/* Castle of Dark Illusions: each side's castle lit by the other side's
+ * Swords of Revealing Light, by its record (-1 none), its deck card and its
+ * owner's turns then. */
+typedef struct {
+    s8 lit_record[2];
+    u8 lit_deck[2];
+    u8 lit_turn[2];
+} CastleState;
+
+/* Mirror Force sprang: the attacker's side, whose monsters in attack
+ * position go one at a time (-1 none), and the frames to the next. How
+ * often each side has fallen into it, and the turn (turns_taken + 1) a
+ * wary CPU spent its one attack in. */
+typedef struct {
+    s8 side;
+    u8 cooldown;
+    u8 burned[2];
+    u8 wary_turn[2];
+    u16 reflect;       /* the attack turned back: the attacker's ATK */
+} MirrorState;
+
+/* Change of Heart and Monster Reborn: the monsters lent this turn (the
+ * record taken to, the one taken from, the deck card), the graveyard (each
+ * destroyed monster's card, deck card and owner), and the player's pick. */
+#define SPELLS_LENT_MAX 5
+#define SPELLS_GRAVE_MAX 80
+typedef struct {
+    s8 lent_to[SPELLS_LENT_MAX];
+    s8 lent_from[SPELLS_LENT_MAX];
+    u8 lent_deck[SPELLS_LENT_MAX];
+    u8 lent_count;
+    u8 lent_due;       /* a turn has started: they go back */
+    s16 grave_card[SPELLS_GRAVE_MAX];
+    u8 grave_deck[SPELLS_GRAVE_MAX];
+    u8 grave_owner[SPELLS_GRAVE_MAX];
+    u8 grave_count;
+    u8 picking;        /* the player picks */
+    u8 kind;           /* 1 Change of Heart, 2 Monster Reborn */
+    s8 side;
+    s8 at;             /* the opponent's column, or the graveyard's entry */
+} SpellsState;
+
+/* Magical Hats: the trap sprang (pending: the attacked record and the
+ * trap's deck card), then the monster hidden among the hats (record, deck
+ * card, -1 none) and the decoys' records. */
+#define HATS_MAX 3
+typedef struct {
+    u8 pending;
+    u8 active;
+    s8 side;
+    s8 real;
+    u8 real_deck;
+    u8 trap_deck;
+    s8 decoy[HATS_MAX];
+    u8 decoy_count;
+} HatsState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
     SwampState swamp;
     MultiplyState multiply;
     ArrowState arrow;
+    HarpiesState harpies;
+    CastleState castle;
+    MirrorState mirror;
+    SpellsState spells;
+    HatsState hats;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;
