@@ -64,6 +64,16 @@
       "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
+    },
+    {
+      "id": "mirror_force",
+      "copy": "Widespread Ruin",
+      "name": "Mirror Force",
+      "art": "images/mirror_force.png",
+      "description": "When your opponent attacks: the attack is turned back, and every monster of theirs in attack position is destroyed.",
+      "password": "44095762",
+      "drops": true,
+      "opponents": true
     }
   ],
   "equips": [
@@ -153,6 +163,13 @@
       "type": "bool",
       "default": 1,
       "description": "As in PaniK's duel with Yugi: with Castle of Dark Illusions face up on the field, its owner's other monsters are in the dark, drawn dark, and cannot be attacked; the castle itself can. Swords of Revealing Light used by the other side lights the field: that castle hides no one any more. Both sides."
+    },
+    {
+      "key": "mirror_force",
+      "label": "Mirror Force",
+      "type": "bool",
+      "default": 1,
+      "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and destroys every monster of theirs in attack position, as in the anime. Off, it destroys only the attacker, as Widespread Ruin does."
     }
   ],
   "decks": {

@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 11
+#define MODERN_RULES_STATE_VERSION 12
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -113,6 +113,13 @@ typedef struct {
     u8 lit_turn[2];
 } CastleState;
 
+/* Mirror Force sprang: the attacker's side, whose monsters in attack
+ * position go one at a time (-1 none), and the frames to the next. */
+typedef struct {
+    s8 side;
+    u8 cooldown;
+} MirrorState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
@@ -121,6 +128,7 @@ typedef struct {
     ArrowState arrow;
     HarpiesState harpies;
     CastleState castle;
+    MirrorState mirror;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

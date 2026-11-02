@@ -45,6 +45,10 @@
         "dark_castle": {
             "label": "Castle of Dark Illusions (anime)",
             "description": "Como no duelo do PaniK com o Yugi: com o Castle of Dark Illusions virado para cima no campo, os outros monstros do dono ficam no escuro, desenhados escuros, e não podem ser atacados; o castelo pode. Swords of Revealing Light usada pelo outro lado acende o campo: aquele castelo não esconde mais ninguém. Vale para os dois lados."
+        },
+        "mirror_force": {
+            "label": "Mirror Force",
+            "description": "A Mirror Force, armadilha deste mod (senha 44095762), dispara em qualquer ataque do oponente: para o ataque e destrói todos os monstros dele em posição de ataque, como no anime. Desligada, destrói só o atacante, como a Widespread Ruin."
         }
     },
     "texts": {
