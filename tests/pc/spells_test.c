@@ -29,9 +29,12 @@ static DuelDeckCardRecord *deck_card(int deck) { return &gDuel_aDeckCardRecords[
 s32 Duel_CalcCardStats(DuelCardRecord *card) { return (card->card_id * 10 + card->stat_modifier) & 0xFFFF; }
 int Cards_NameUtf8(int id, char *out, size_t size) { snprintf(out, size, "card %d", id); return 1; }
 static int made, removed, placed_from = -1, harpies_moved, equips_moved, requests, sounds;
+/* As the game's setup does (Duel_SetupCardRecord): an index under 40 for
+ * a record of the CPU's side is taken as the CPU's own deck card. */
 void func_80024D34(s32 slot, s32 deck)
 {
     DuelCardRecord *card = &D_801A7AD8[slot];
+    if (slot >= DUEL_CARD_SIDE_RECORD_COUNT && deck < DECK_SIZE) deck += DECK_SIZE;
     memset(card, 0, sizeof *card);
     card->data = deck_card(deck);
     card->card_id = (s16)deck_card(deck)->id;
@@ -40,6 +43,8 @@ void func_80024D34(s32 slot, s32 deck)
 }
 void DuelCard_RemoveFromField(DuelCardRecord *card) { card->flags = 0; removed++; }
 void Duel_ApplyCardObjectFlags(DuelCardDisplayObject *object) { (void)object; }
+/* The CPU's five hand records, in order (D_800907CC: 0x80 + n is record 15 + n). */
+u8 D_800907CC[2 * HAND_SIZE + 2] = {0, 1, 2, 3, 4, 0x80, 0x81, 0x82, 0x83, 0x84};
 static DuelEffectRequest request;
 DuelEffectRequest *DuelEffect_CreateRequest(s32 id) { (void)id; requests++; return &request; }
 s32 Duel_GetCardEffectVariant(CardObject *object) { (void)object; return 0; }
@@ -200,18 +205,45 @@ int main(void)
     memset(D_801A7AD8, 0, sizeof D_801A7AD8);
     put(5, 300, 1, 0);
     put(20, 100, 41, 0);
+    deck_card(DECK_SIZE + 1)->id = 336;   /* the CPU's own deck card at the player's index: Dark Hole */
     D_8009B1D5 = 1;
     hand[3] = HEART;
+    put(15 + 3, HEART, 45, 0);   /* its Change of Heart, CPU deck card 45, in hand slot 3 */
+    D_801A7AD8[18].flags = 0;    /* a hand record, not on the field */
     assert(Spells_Cpu() && taken_count == 1 && taken[0] == 3 && D_801A7AD8[21].card_id == 300 && !occupied_at(5));
+    /* The player's card stands as the spent Change of Heart's deck card (45),
+     * not as the CPU's own card at the player's index (41, the Dark Hole). */
+    assert(D_801A7AD8[21].data == deck_card(45) && deck_card(45)->id == 300 && S.lent_home[0] == 1);
+    /* The next turn it goes back as its own card. */
+    D_800E9FF0[0].rank.turns_taken = 9;
+    Spells_TurnStarts(0);
+    Spells_Hold();
+    assert(occupied_at(5) && D_801A7AD8[5].data == deck_card(1) && D_801A7AD8[5].card_id == 300 && !occupied_at(21));
+    D_801A7AD8[5].flags = 0;
+    put(5, 300, 1, 0);
     /* Weaker than its own: not played. */
     hand[3] = 0; hand[4] = HEART;
     put(5, 50, 2, 0);
     assert(!Spells_Cpu() && taken_count == 1);
     /* Monster Reborn on the graveyard's strongest (210), stronger than its
-     * own once the 300 it took is gone. */
+     * own. */
     D_801A7AD8[21].flags = 0;
     hand[4] = REBORN;
+    put(15 + 4, REBORN, 46, 0);
+    D_801A7AD8[19].flags = 0;
     assert(Spells_Cpu() && taken_count == 2 && taken[1] == 4 && D_801A7AD8[21].card_id == 210 && occupied_at(21));
+    assert(D_801A7AD8[21].data == deck_card(44));   /* its own card (CPU deck 44): nothing lent */
+    /* A monster of the player's revived on the CPU's side stands as the
+     * spent Reborn's deck card. */
+    D_801A7AD8[21].flags = 0;
+    S.grave_count = 1;
+    S.grave_card[0] = 260; S.grave_deck[0] = 3; S.grave_owner[0] = 0;
+    deck_card(3)->id = 260; deck_card(3)->deck_index = 3;
+    deck_card(DECK_SIZE + 3)->id = 336;
+    put(15 + 4, REBORN, 46, 0);
+    D_801A7AD8[19].flags = 0;
+    hand[4] = REBORN;
+    assert(Spells_Cpu() && D_801A7AD8[21].card_id == 260 && D_801A7AD8[21].data == deck_card(46));
     /* A new duel: the graveyard is empty. */
     memset(D_800E9FF0, 0, sizeof D_800E9FF0);
     Spells_TurnStarts(0);

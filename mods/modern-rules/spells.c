@@ -35,6 +35,7 @@
 #include "game/duel_deck_card.h"
 #include "game/duel_effect_request.h"
 #include "game/duel_grid.h"
+#include "game/duel_hand.h"
 #include "game/duel_scene_state.h"
 #define D_8009B360_AS_SIDE_ARRAY
 #include "game/duel_side_state.h"
@@ -131,10 +132,11 @@ static void bring(int to, int deck, u16 flags, s16 attack, s16 defense)
 
 /* The monster on record `from` moved to record `to`, as it is (Magical
  * Hats moves one too). */
-void Spells_Move(int from, int to)
+/* The monster on record `from` moved to record `to` as deck card `deck`
+ * (its own, or one lent it: adopt). */
+static void move_as(int from, int to, int deck)
 {
     DuelCardRecord *card = &D_801A7AD8[from];
-    int deck = deck_of(card);
     u16 flags = (u16)(card->flags & (DUEL_CARD_FLAG_FACE_DOWN | DUEL_CARD_FLAG_DEFENSE_POSITION));
     s16 attack = card->stat_modifier, defense = card->defense_modifier;
     Harpies_Moved(from, to);
@@ -144,6 +146,28 @@ void Spells_Move(int from, int to)
     MonsterEffects_Placed(from, 0);
     DuelCard_RemoveFromField(card);
     bring(to, deck, flags, attack, defense);
+}
+
+void Spells_Move(int from, int to) { move_as(from, to, deck_of(&D_801A7AD8[from])); }
+
+/* A card of the player's deck cannot stand on the CPU's side: a record of
+ * the CPU's takes a deck index under 40 as the CPU's own deck card (40 on;
+ * Duel_SetupCardRecord), so the card would be made, and remade after each
+ * battle, as the CPU's card at that place in its deck. The card the CPU
+ * spends to bring it over (Change of Heart, Monster Reborn) leaves the duel
+ * and lends it its deck card: the card's id and picture block go into it,
+ * as Magical Hats lends its own to the decoys. Returns the deck card to
+ * make it from: `spent`, or `deck` itself when no lending is needed. */
+static int adopt(int side, int deck, int spent)
+{
+    DuelDeckCardRecord *into, *from;
+    if (side == 0 || deck >= DECK_SIZE || spent < DECK_SIZE || spent >= 2 * DECK_SIZE) return deck;
+    into = &gDuel_aDeckCardRecords[spent];
+    from = &gDuel_aDeckCardRecords[deck];
+    into->id = from->id;
+    into->data_block_index = from->data_block_index;
+    into->flags_04 = from->flags_04;
+    return spent;
 }
 
 static void destroy(DuelCardRecord *card)
@@ -162,15 +186,18 @@ static void destroy(DuelCardRecord *card)
 
 /* --- Change of Heart ------------------------------------------------------- */
 
-static void take(int side, int r)
+static void take(int side, int r, int spent)
 {
-    int to = free_zone(side);
+    int to = free_zone(side), home, made;
     if (to < 0 || !occupied(r) || S.lent_count >= SPELLS_LENT_MAX) return;
+    home = deck_of(&D_801A7AD8[r]);
+    made = adopt(side, home, spent);
     S.lent_to[S.lent_count] = (s8)to;
     S.lent_from[S.lent_count] = (s8)r;
-    S.lent_deck[S.lent_count] = (u8)deck_of(&D_801A7AD8[r]);
+    S.lent_deck[S.lent_count] = (u8)made;
+    S.lent_home[S.lent_count] = (u8)home;
     S.lent_count++;
-    Spells_Move(r, to);
+    move_as(r, to, made);
     SD_SEPlayFull(TAKE_SOUND);
 }
 
@@ -204,7 +231,7 @@ int Spells_Hold(void)
         if (!lent_there(i)) continue;
         to = occupied(S.lent_from[i]) ? free_zone(owner) : S.lent_from[i];
         if (to < 0) destroy(&D_801A7AD8[(int)S.lent_to[i]]);
-        else Spells_Move(S.lent_to[i], to);
+        else move_as(S.lent_to[i], to, S.lent_home[i]);   /* as its own card again */
     }
     S.lent_count = 0;
     S.lent_due = 0;
@@ -238,16 +265,17 @@ static void monster(MemoriesModEvent *e)
     S.grave_count++;
 }
 
-static void revive(int side, int i)
+static void revive(int side, int i, int spent)
 {
-    int to = free_zone(side), n;
+    int to = free_zone(side), n, made;
     DuelEffectRequest *request;
     DuelDeckCardRecord *deck;
     if (to < 0 || i < 0 || i >= S.grave_count) return;
     /* The deck card is the one it was: its id as it died. */
     deck = &gDuel_aDeckCardRecords[S.grave_deck[i]];
     deck->id = (u16)S.grave_card[i];
-    bring(to, S.grave_deck[i], 0, 0, 0);
+    made = adopt(side, S.grave_deck[i], spent);
+    bring(to, made, 0, 0, 0);
     request = DuelEffect_CreateRequest(RITUAL_LIGHT);
     if (request) {
         request->field_00 = 0xA0;
@@ -298,8 +326,8 @@ static int strongest_their(int side)
 static void begin(int kind, int side)
 {
     if (D_8009B360[side] >= 0) {
-        if (kind == PICK_HEART && strongest_their(side) >= 0) take(side, their_record(side, strongest_their(side)));
-        if (kind == PICK_REBORN) revive(side, strongest_grave());
+        if (kind == PICK_HEART && strongest_their(side) >= 0) take(side, their_record(side, strongest_their(side)), -1);
+        if (kind == PICK_REBORN) revive(side, strongest_grave(), -1);
         return;
     }
     S.kind = (u8)kind;
@@ -325,8 +353,8 @@ static int pick(void)
         SD_SEPlayFull(MOVE_SOUND);
     } else if (pressed & PAD_BUTTON_CONFIRM_MASK) {
         S.picking = 0;
-        if (S.kind == PICK_HEART) take(S.side, their_record(S.side, S.at));
-        else revive(S.side, S.at);
+        if (S.kind == PICK_HEART) take(S.side, their_record(S.side, S.at), -1);
+        else revive(S.side, S.at, -1);
         return 0;
     }
     gInput_wPad1Pressed = 0;
@@ -373,19 +401,32 @@ static int strongest_own(int side)
     return best;
 }
 
+/* The deck card of the CPU's hand card in slot `slot` (one of the five,
+ * the disc's hand records), or -1. */
+static int hand_deck(int side, int slot)
+{
+    int order, record;
+    if (slot < 0 || slot >= HAND_SIZE) return -1;
+    order = D_800907CC[slot + side * HAND_SIZE];
+    record = order & 0x80 ? (order & 0x7F) + DUEL_CARD_SIDE_RECORD_COUNT : order;
+    return deck_of(&D_801A7AD8[record]) == 0xFF ? -1 : deck_of(&D_801A7AD8[record]);
+}
+
 int Spells_Cpu(void)
 {
     int side = D_8009B1D5 & 1, slot, col, best;
     if (free_zone(side) < 0) return 0;
-    if (heart_on() && (slot = hand_slot(is_heart)) >= 0 && (col = strongest_their(side)) >= 0 &&
+    if (heart_on() && (slot = hand_slot(is_heart)) >= 0 && hand_deck(side, slot) >= 0 &&
+        (col = strongest_their(side)) >= 0 &&
         attack_of(their_record(side, col)) > strongest_own(side)) {
-        take(side, their_record(side, col));
+        take(side, their_record(side, col), hand_deck(side, slot));
         ehp->take_hand(&slot, 1);
         return 1;
     }
-    if (reborn_on() && (slot = hand_slot(is_reborn)) >= 0 && (best = strongest_grave()) >= 0 &&
+    if (reborn_on() && (slot = hand_slot(is_reborn)) >= 0 && hand_deck(side, slot) >= 0 &&
+        (best = strongest_grave()) >= 0 &&
         base_attack(S.grave_card[best]) > strongest_own(side)) {
-        revive(side, best);
+        revive(side, best, hand_deck(side, slot));
         ehp->take_hand(&slot, 1);
         return 1;
     }
