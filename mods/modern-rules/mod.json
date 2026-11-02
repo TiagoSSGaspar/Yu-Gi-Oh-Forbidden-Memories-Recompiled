@@ -146,6 +146,13 @@
       "type": "bool",
       "default": 1,
       "description": "As in Mai's duels: Elegant Egotist put onto Harpie Lady, or the two fused from the hand, makes Harpie Lady Sisters, the one harpy split into three. Harpie's Pet Dragon gains 300 ATK for each harpy on its side: Harpie Lady counts one, Harpie Lady Sisters three."
+    },
+    {
+      "key": "dark_castle",
+      "label": "Castle of Dark Illusions (anime)",
+      "type": "bool",
+      "default": 1,
+      "description": "As in PaniK's duel with Yugi: with Castle of Dark Illusions face up on the field, its owner's other monsters are in the dark, drawn dark, and cannot be attacked; the castle itself can. Swords of Revealing Light used by the other side lights the field: that castle hides no one any more. Both sides."
     }
   ],
   "decks": {

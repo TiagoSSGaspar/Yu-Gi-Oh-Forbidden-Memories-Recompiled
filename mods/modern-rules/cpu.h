@@ -14,9 +14,10 @@ int Cpu_Level(void);
 /* Whether the CPU is behind: a face-up monster of the player's stronger
  * than all of its own. */
 int Cpu_Behind(void);
-/* The CPU's field decision: an attack that the wall of Kuribohs or the
- * swamp brothers would make useless, for a CPU that sees it, goes to the
- * player's monster the attacker beats by the most, or nowhere. */
+/* The CPU's field decision: an attack into the darkness of Castle of Dark
+ * Illusions, or one that the wall of Kuribohs or the swamp brothers would
+ * make useless for a CPU that sees it, goes to the player's monster the
+ * attacker beats by the most, or nowhere. */
 void Cpu_Attack(void);
 /* The CPU's hand decision, written: the hand card in snapshot slot `slot`
  * down, face up, in monster zone `col` (onto the monster there, for an

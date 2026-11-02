@@ -34,6 +34,10 @@ void Arrow_TurnStarts(int side) { arrow_turns[side & 1]++; }
 /* Mai's harpies are tested on their own (harpies_test.c). */
 int Harpies_Install(const MemoriesModHost *h) { (void)h; return 1; }
 void Harpies_Update(void) {}
+/* Castle of Dark Illusions too (castle_test.c): here, the column in the dark. */
+static int castle_dark_col = -1;
+int Castle_Install(const MemoriesModHost *h, MemoriesMod *m) { (void)h; (void)m; return 1; }
+int Castle_Refuses(int row, int col) { return row == 1 && col == castle_dark_col; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }
@@ -448,6 +452,18 @@ int main(void)
         D_8009B174 = FIELD_TARGETING | FIELD_TARGET_LEAVING;               /* going back */
         field();
         assert(seen_pressed == PAD_BUTTON_CROSS);
+        /* An attack into the castle's darkness: refused; elsewhere not. */
+        D_8009B174 = FIELD_TARGETING;
+        target->row = 1; target->col = 4;
+        castle_dark_col = 4;
+        sounds = 0;
+        field();
+        assert(seen_pressed == 0 && sounds == 1 && gInput_wPad1Pressed == PAD_BUTTON_CROSS);
+        castle_dark_col = 2;
+        field();
+        assert(seen_pressed == PAD_BUTTON_CROSS);
+        castle_dark_col = -1;
+        target->row = MONSTER_ROW; target->col = 2;
         /* An equip in use is not used again: the player's confirm on it,
          * walking the field, is refused. */
         D_8009B174 = FIELD_IDLE;

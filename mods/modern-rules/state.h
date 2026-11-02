@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 10
+#define MODERN_RULES_STATE_VERSION 11
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -104,6 +104,15 @@ typedef struct {
     u8 deck[ARROW_ZONES];
 } HarpiesState;
 
+/* Castle of Dark Illusions: each side's castle lit by the other side's
+ * Swords of Revealing Light, by its record (-1 none), its deck card and its
+ * owner's turns then. */
+typedef struct {
+    s8 lit_record[2];
+    u8 lit_deck[2];
+    u8 lit_turn[2];
+} CastleState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
@@ -111,6 +120,7 @@ typedef struct {
     MultiplyState multiply;
     ArrowState arrow;
     HarpiesState harpies;
+    CastleState castle;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

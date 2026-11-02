@@ -53,6 +53,7 @@
 #include "multiply.h"
 #include "arrow.h"
 #include "harpies.h"
+#include "castle.h"
 #include "cpu.h"
 #include "state.h"
 #include <string.h>
@@ -368,6 +369,17 @@ static void field(void)
         gInput_wPad1Pressed = pressed;
         return;
     }
+    /* An attack into the darkness of Castle of Dark Illusions (castle.c). */
+    if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
+        (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
+        (D_8009B174 & 0xF) == FIELD_TARGETING && !(D_8009B174 & FIELD_TARGET_LEAVING) && !gDuel_bEffectState &&
+        !gDuel_bQuitDialogState && Castle_Refuses(target->row, target->col)) {
+        SD_SEPlayFull(REFUSED_SOUND);
+        gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
+        ((void (*)(void))original_field)();
+        gInput_wPad1Pressed = pressed;
+        return;
+    }
     if (setting("fusion_guard", 1) && D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         (D_8009B174 & 0xF) == FIELD_TARGETING && !(D_8009B174 & FIELD_TARGET_LEAVING) && !gDuel_bEffectState &&
@@ -522,7 +534,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
-        Arrow_Install(host, mod, api) && Harpies_Install(host) && (Cpu_Install(host), 1) &&
+        Arrow_Install(host, mod, api) && Harpies_Install(host) && Castle_Install(host, mod) && (Cpu_Install(host), 1) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

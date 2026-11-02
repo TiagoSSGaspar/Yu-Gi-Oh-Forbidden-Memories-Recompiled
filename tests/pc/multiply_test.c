@@ -39,6 +39,9 @@ u8 D_8009B1D5;
 u8 D_800907D8[2 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT] = {
     25, 26, 27, 28, 29, 20, 21, 22, 23, 24, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
     10, 11, 12, 13, 14, 5, 6, 7, 8, 9, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
+/* Castle of Dark Illusions (castle.c): the record set here is in the dark. */
+static int castle_hidden = -1;
+int Castle_Hides(int r) { return r == castle_hidden; }
 /* The swamp brothers (swamp.c): Swamp (12) and Lava (554). */
 int Swamp_Brother(int id) { return id == 12 ? 554 : id == 554 ? 12 : 0; }
 int Swamp_Together(int r)
@@ -289,6 +292,19 @@ int main(void)
     empty(MONSTER_RECORD(0, 0));
     AIM_AT_WALL();
     assert(D_800EAE88[AI_TARGET] == 0 && D_800EAE88[AI_TARGET_FLAG] == 0);
+    /* Castle of Dark Illusions: an attack into the dark goes elsewhere, at
+     * every level, a beginner's (1) too. */
+    gDuel_bOpponentID = 1;
+    put(MONSTER_RECORD(0, 0), 36, 4);
+    castle_hidden = MONSTER_RECORD(0, 3);
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 0);
+    castle_hidden = MONSTER_RECORD(0, 0);   /* not the one aimed at: it stands */
+    AIM_AT_WALL();
+    assert(D_800EAE88[AI_TARGET] == AI_TARGET_BASE - 3);
+    castle_hidden = -1;
+    empty(MONSTER_RECORD(0, 0));
+    gDuel_bOpponentID = 17;
     /* The swamp brothers: a boss does not attack them with less than their
      * 3350 together; the Celtic Guardian instead. A beginner does. */
     empty(SPELL_RECORD(0, 2));

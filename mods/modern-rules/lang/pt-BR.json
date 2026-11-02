@@ -41,6 +41,10 @@
         "harpies": {
             "label": "Harpias da Mai (anime)",
             "description": "Como nos duelos da Mai: o Elegant Egotist jogado sobre a Harpie Lady, ou os dois fundidos da mão, faz a Harpie Lady Sisters, a harpia dividida em três. O Harpie's Pet Dragon ganha 300 de ATK por harpia do seu lado: a Harpie Lady conta uma, a Harpie Lady Sisters três."
+        },
+        "dark_castle": {
+            "label": "Castle of Dark Illusions (anime)",
+            "description": "Como no duelo do PaniK com o Yugi: com o Castle of Dark Illusions virado para cima no campo, os outros monstros do dono ficam no escuro, desenhados escuros, e não podem ser atacados; o castelo pode. Swords of Revealing Light usada pelo outro lado acende o campo: aquele castelo não esconde mais ninguém. Vale para os dois lados."
         }
     },
     "texts": {
@@ -52,6 +56,7 @@
         "Multiply: a Kuriboh destroyed is born again": "Multiply: um Kuriboh destruído nasce de novo",
         "Living Arrow: %s (ATK %d)  Left/Right, X: infect, O: cancel": "Flecha Viva: %s (ATK %d)  Esquerda/Direita, X: infecta, O: cancela",
         "%s rots: -%d ATK": "%s apodrece: -%d ATK",
-        "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno"
+        "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno",
+        "In the dark: it cannot be attacked": "No escuro: não pode ser atacado"
     }
 }

@@ -30,6 +30,7 @@
 #include "game/duel_side_state.h"
 #include "unmatched.h"
 #include "cpu.h"
+#include "castle.h"
 #include "multiply.h"
 #include "swamp.h"
 #include <string.h>
@@ -118,11 +119,14 @@ void Cpu_Attack(void)
     brothers = sees_brothers(level);
     attack = cpu_attack(GRID(side, MY_MONSTERS, from - 1));
     target = GRID(side, THEIR_MONSTERS, AI_TARGET_BASE - to);
-    if (!(wall && Multiply_Walled(target)) && !(brothers && Swamp_Together(target) >= attack)) return;
+    /* The darkness of Castle of Dark Illusions is no trick: no level aims
+     * into it (castle.c). */
+    if (!Castle_Hides(target) && !(wall && Multiply_Walled(target)) && !(brothers && Swamp_Together(target) >= attack))
+        return;
     /* Useless: the monster it beats by the most instead, or nothing. */
     for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
         int r = GRID(side, THEIR_MONSTERS, col), value;
-        if (!cpu_occupied(r) || (wall && Multiply_Walled(r))) continue;
+        if (!cpu_occupied(r) || Castle_Hides(r) || (wall && Multiply_Walled(r))) continue;
         value = brothers && Swamp_Together(r) ? Swamp_Together(r) :
                 D_801A7AD8[r].flags & DUEL_CARD_FLAG_DEFENSE_POSITION ? cpu_defense(r) : cpu_attack(r);
         if (attack - value > margin) {
