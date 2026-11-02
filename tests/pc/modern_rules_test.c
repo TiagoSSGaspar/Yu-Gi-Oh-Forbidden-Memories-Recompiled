@@ -140,9 +140,11 @@ static int hand_cursor_api(void)
 }
 static int menu_is_open;
 static int menu_open_api(void) { return menu_is_open; }
+/* The slots on screen: the five's own here. */
+static const void *screen_slot_api(int slot) { return slot >= 0 && slot < HAND_SIZE ? (const void *)&D_800EA030[slot] : 0; }
 static const ExtraHandApi fake_api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                       pass_hand, set_hand_limits, hand_slots_api, hand_card_api, hand_mark_api,
-                                      set_phases, hand_cursor_api, menu_open_api, 0};
+                                      set_phases, hand_cursor_api, menu_open_api, 0, screen_slot_api};
 static int draw_one_setting = 1, phases_setting = 1;
 
 static int fake_setting(const MemoriesModHost *h, const char *key, int fallback)

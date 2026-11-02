@@ -310,7 +310,10 @@ static void hand(void)
          * zone picked (the disc). With the row full, no magic or trap card
          * is played, as in the card game. */
         else if (step_kind == HAND_RAISED && !(D_8009B174 & HAND_RAISED_BUSY)) {
-            HandCardObject *raised = (HandCardObject *)D_800EA030[(s8)side->field_0E].object;
+            /* The raised card's slot on screen: past the fifth, Extra hand
+             * plays keeps it (API 9). */
+            const DuelHandSlot *slot = (const DuelHandSlot *)api->screen_slot((s8)side->field_0E);
+            HandCardObject *raised = slot ? (HandCardObject *)slot->object : 0;
             int card = hand_card(hand_cursor(side));
             refuse = Equips_On() && needs_spell_zone(card) && !spell_zone_free();
             /* Change of Heart or Monster Reborn used face up with nothing

@@ -12,7 +12,8 @@
  *   (func_80024D34, as the ritual makes a card): it holds the hats' picture,
  *   so a decoy turned over shows hats, never the monster hidden.
  * - A decoy does nothing: it does not attack or change its position
- *   (DuelCard_CanActThisTurn), is in no graveyard (spells.c) and goes when
+ *   (DuelCard_CanActThisTurn), fuses with nothing and takes no equip
+ *   (MEMORIES_EVENT_FUSION, MEMORIES_EVENT_EQUIP), is in no graveyard (spells.c) and goes when
  *   the monster hidden among the hats leaves the field.
  * - With no free zone the hats do not go up: the trap only stopped the
  *   attack. A direct attack, the same. */
@@ -149,6 +150,15 @@ int Hats_Hold(void)
     return 0;
 }
 
+/* A decoy fuses with nothing and takes no equip: it is no monster (as a
+ * copy of Kuriboh it would have Kuriboh's). */
+static void no_decoy(MemoriesModEvent *e)
+{
+    if (e->phase != MEMORIES_BEFORE || !(Hats_IsDecoy(e->a) || Hats_IsDecoy(e->b))) return;
+    e->result = 0;
+    e->handled = 1;
+}
+
 static int can_act(DuelCardRecord *card)
 {
     if (Hats_IsDecoy(card->card_id)) return 0;
@@ -161,6 +171,10 @@ int Hats_Install(const MemoriesModHost *from)
     hats_id = hat_id = 0;
     memset(&T, 0, sizeof T);
     T.real = -1;
-    return host->hook(host, (void *)Duel_SelectAttackTrap, (void *)select_trap, &original_select) &&
-        host->hook(host, (void *)DuelCard_CanActThisTurn, (void *)can_act, &original_can_act);
+    if (!host->hook(host, (void *)Duel_SelectAttackTrap, (void *)select_trap, &original_select) ||
+        !host->hook(host, (void *)DuelCard_CanActThisTurn, (void *)can_act, &original_can_act))
+        return 0;
+    if (host->api < 3) return 1;
+    return host->subscribe(host, MEMORIES_EVENT_FUSION, 0, no_decoy) > 0 &&
+        host->subscribe(host, MEMORIES_EVENT_EQUIP, 0, no_decoy) > 0;
 }

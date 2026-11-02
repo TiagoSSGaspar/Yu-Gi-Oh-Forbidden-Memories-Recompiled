@@ -59,6 +59,15 @@ static int fake_card_id(const MemoriesModHost *h, const char *identity)
     (void)h;
     return !strcmp(identity, "modern-rules:magical_hats:1") ? HATS : !strcmp(identity, "modern-rules:magical_hat:1") ? HAT : -1;
 }
+static MemoriesModCallback on_fusion, on_equip;
+static int fake_subscribe(const MemoriesModHost *h, unsigned type, int priority, MemoriesModCallback cb)
+{
+    (void)h; (void)priority;
+    if (type == MEMORIES_EVENT_FUSION) on_fusion = cb;
+    else if (type == MEMORIES_EVENT_EQUIP) on_equip = cb;
+    else assert(0);
+    return 1;
+}
 static MemoriesModHost fake_host;
 
 static void put(int r, int id, int deck)
@@ -94,8 +103,25 @@ int main(void)
     fake_host.applied = fake_applied;
     fake_host.hook = fake_hook;
     fake_host.card_id = fake_card_id;
+    fake_host.subscribe = fake_subscribe;
     assert(Hats_Install(&fake_host) && select_hooked == (void *)select_trap && act_hooked == (void *)can_act);
     assert(Hats_IsDecoy(HAT) && !Hats_IsDecoy(HATS) && !Hats_IsDecoy(2));
+    /* A decoy fuses with nothing and takes no equip, either way round;
+     * other cards are left to the game. */
+    {
+        MemoriesModEvent e = {MEMORIES_EVENT_FUSION, MEMORIES_BEFORE, HAT, 2, 0, 0, 0};
+        on_fusion(&e);
+        assert(e.handled && e.result == 0);
+        e.a = 2; e.b = HAT; e.handled = 0; e.result = 7;
+        on_fusion(&e);
+        assert(e.handled && e.result == 0);
+        e.a = 2; e.b = 3; e.handled = 0;
+        on_fusion(&e);
+        assert(!e.handled);
+        e.type = MEMORIES_EVENT_EQUIP; e.a = 301; e.b = HAT;
+        on_equip(&e);
+        assert(e.handled && e.result == 0);
+    }
 
     for (round = 0; round < 8; round++) {
         /* The CPU (side 1) attacks the player's Mystical Elf (record 7);
@@ -166,6 +192,6 @@ int main(void)
     hats_setting = 0;
     select_trap(0);
     assert(!T.pending);
-    puts("Magical Hats: the hats up from the trap's deck card, the monster hidden face down among them, decoys idle and going with it, fewer zones, none, a direct attack, other traps, off");
+    puts("Magical Hats: decoys fuse with nothing, the hats up from the trap's deck card, the monster hidden face down among them, decoys idle and going with it, fewer zones, none, a direct attack, other traps, off");
     return 0;
 }

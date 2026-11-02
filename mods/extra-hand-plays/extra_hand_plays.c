@@ -625,7 +625,7 @@ static void take_hand(const int *cards, int count)
 }
 static const ExtraHandApi api = {EXTRA_HAND_API_VERSION, set_turn_draws, bonus_hand, queued, set_optional_play,
                                  pass_hand, Ehp_SetLimits, hand_slots, hand_card, Ehp_Mark, Ehp_SetPhases,
-                                 Ehp_Cursor, menu_open, take_hand};
+                                 Ehp_Cursor, menu_open, take_hand, Ehp_ScreenSlot};
 
 /* A hint row, centred under the strip above the FIELD box (the picture's
  * lines 0-23), which the port's View > Fusion helper takes: between the

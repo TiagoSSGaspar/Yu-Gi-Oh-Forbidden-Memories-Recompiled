@@ -679,6 +679,9 @@ int main(void)
 
     /* Another mod's turn draws: one card, into the first empty slot. */
     assert(provided && provided->version == EXTRA_HAND_API_VERSION);
+    /* API 9: the slots on screen, the five's own first. */
+    assert(provided->screen_slot(0) == (const void *)&D_800EA030[0] && provided->screen_slot(4) == (const void *)&D_800EA030[4]);
+    assert(!provided->screen_slot(-1) && !provided->screen_slot(40));
     provided->set_turn_draws(draw_one);
     monsters_setting = 1;
     new_turn(0, 0);
