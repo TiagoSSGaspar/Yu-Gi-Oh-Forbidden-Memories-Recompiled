@@ -19,7 +19,6 @@
 #include "settings.h"
 #include "pc/audio/spu.h"
 #include "pc/audio/replace.h"
-#include "pc/debug/cheats.h"
 #include "pc/tower/tower.h"
 #include "pc/debug/log.h"
 #include "pc/guest/state.h"
@@ -94,11 +93,11 @@ typedef enum { ITEM_ACTION, ITEM_CHECK, ITEM_RADIO, ITEM_SLIDER, ITEM_SEPARATOR,
 enum { ITEM_DISABLED = 1, ITEM_GROUP_BREAK = 2 };
 
 enum {
-    ACT_SAVE_STATE = 1, ACT_LOAD_STATE, ACT_SCREENSHOT, ACT_EXIT, ACT_GIVE_CARDS,
+    ACT_SAVE_STATE = 1, ACT_LOAD_STATE, ACT_SCREENSHOT, ACT_EXIT,
     ACT_MODS, ACT_CONTROLS, ACT_RELOAD_SETTINGS, ACT_PAUSE, ACT_FRAME_STEP, ACT_DUMP_FRAME, ACT_DUMP_VRAM,
     SLIDER_MASTER, SLIDER_MUSIC, SLIDER_SFX, CHECK_MUTE,
-    CHECK_HUD, CHECK_HUD_FULL, RADIO_STATE_SLOT, ACT_UNLOCK_FREE_DUELISTS, ACT_RESET_COLOR,
-    ACT_CHECK_UPDATES, ACT_RELEASES, ACT_VERSION, ACT_SET_STARCHIPS, RADIO_LANGUAGE, ACT_SYSTEM_INFO, ACT_JUMP,
+    CHECK_HUD, CHECK_HUD_FULL, RADIO_STATE_SLOT, ACT_RESET_COLOR,
+    ACT_CHECK_UPDATES, ACT_RELEASES, ACT_VERSION, RADIO_LANGUAGE, ACT_SYSTEM_INFO, ACT_JUMP,
     CHECK_TRACE = 300  /* value is a LogChannel */
 };
 
@@ -119,7 +118,7 @@ enum { MENU_FILE, MENU_VIDEO, MENU_AUDIO, MENU_GAME, MENU_VIEW, MENU_DEBUG, MENU
 #else
 #define HELP_ITEMS 6
 #endif
-enum { SUB_SCALE, SUB_MENU_SIZE, SUB_SPEED, SUB_FPS, SUB_CHEATS, SUB_TRACE, SUB_SCALING, SUB_ASPECT, SUB_RESOLUTION, SUB_COLOR, SUB_EFFECTS, SUB_JUMP, SUB_ANTIALIAS, SUB_FILTER, SUB_RANK, SUB_LANGUAGE, SUB_PGXP, SUB_TOUCH, SUB_ROTATION, SUB_COUNT };
+enum { SUB_SCALE, SUB_MENU_SIZE, SUB_SPEED, SUB_FPS, SUB_TRACE, SUB_SCALING, SUB_ASPECT, SUB_RESOLUTION, SUB_COLOR, SUB_EFFECTS, SUB_JUMP, SUB_ANTIALIAS, SUB_FILTER, SUB_RANK, SUB_LANGUAGE, SUB_PGXP, SUB_TOUCH, SUB_ROTATION, SUB_COUNT };
 #ifdef __ANDROID__
 #define VIDEO_ITEMS 15 /* with Screen rotation */
 #else
@@ -171,9 +170,8 @@ static Menu menus[MENU_COUNT] = {
               {"Deck slots...", "F6", ITEM_ACTION, MENU_ITEM_DECKS, -1, 0, ITEM_GROUP_BREAK | ITEM_DISABLED},
               {"Use deck slots", 0, ITEM_CHECK, 0, SET_DECK_SLOTS},
               {"Browse cards with Up/Down", 0, ITEM_CHECK, 0, SET_CARD_BROWSE, 0, ITEM_GROUP_BREAK},
-              {"Cheats", 0, ITEM_SUBMENU, 0, -1, SUB_CHEATS, ITEM_GROUP_BREAK},
               {"Language", 0, ITEM_SUBMENU, 0, -1, SUB_LANGUAGE},
-              {"Restart game...", 0, ITEM_ACTION, MENU_ITEM_RESTART, -1, 0, ITEM_GROUP_BREAK | ITEM_DISABLED}}, 11},
+              {"Restart game...", 0, ITEM_ACTION, MENU_ITEM_RESTART, -1, 0, ITEM_GROUP_BREAK | ITEM_DISABLED}}, 10},
     {"View", {{"Fusion helper", 0, ITEM_CHECK, 0, SET_FUSION_HELPER},
               {"Card passwords", 0, ITEM_CHECK, 0, SET_CARD_PASSWORDS},
               {"Library: show every card", 0, ITEM_CHECK, 0, SET_LIBRARY_ALL_CARDS},
@@ -230,18 +228,6 @@ static Menu submenus[SUB_COUNT] = {
                     {"144", 0, ITEM_RADIO, 0, SET_FPS, 144},
                     {"240", 0, ITEM_RADIO, 0, SET_FPS, 240},
                     {"Every game frame", 0, ITEM_RADIO, 0, SET_FPS, -1}}, 7},
-    /* Give N: the row's value is the copies of every card (cheats.h). */
-    {"Cheats", {{"Give 1 of every card", 0, ITEM_ACTION, ACT_GIVE_CARDS, -1, 1},
-                {"Give 2 of every card", 0, ITEM_ACTION, ACT_GIVE_CARDS, -1, 2},
-                {"Give 3 of every card", 0, ITEM_ACTION, ACT_GIVE_CARDS, -1, 3},
-                {"Unlock all Free Duel CPU duelists", 0, ITEM_ACTION, ACT_UNLOCK_FREE_DUELISTS, -1, 0, ITEM_GROUP_BREAK},
-                {"Set StarChips to 999999", 0, ITEM_ACTION, ACT_SET_STARCHIPS, -1, 999999, ITEM_GROUP_BREAK},
-                {"Free spending (Password)", 0, ITEM_CHECK, 0, SET_CHEAT_FREE_SPENDING},
-                {"Starting LP 1000", 0, ITEM_RADIO, 0, SET_CHEAT_LIFE_POINTS, 1000, ITEM_GROUP_BREAK},
-                {"Starting LP 4000", 0, ITEM_RADIO, 0, SET_CHEAT_LIFE_POINTS, 4000},
-                {"Starting LP 8000 (console)", 0, ITEM_RADIO, 0, SET_CHEAT_LIFE_POINTS, 8000},
-                {"Starting LP 9999", 0, ITEM_RADIO, 0, SET_CHEAT_LIFE_POINTS, 9999},
-                {"Show CPU's hand", 0, ITEM_CHECK, 0, SET_CHEAT_SHOW_HAND, 0, ITEM_GROUP_BREAK}}, 11},
     {"Trace", {{"Frames", 0, ITEM_CHECK, CHECK_TRACE, -1, LOG_FRAMES},
                {"Disc", 0, ITEM_CHECK, CHECK_TRACE, -1, LOG_DISC},
                {"SPU", 0, ITEM_CHECK, CHECK_TRACE, -1, LOG_SPU},
@@ -1845,29 +1831,6 @@ static void show_system_info(void)
     Menu_ShowNotice("System info", shown, ok, 1, 0, NULL);
 }
 
-static void need_save(int done)
-{
-    static const char *const ok[] = {"OK"};
-    if (!done) {
-        Menu_ShowNotice("Load a save first", "This cheat changes the game in progress. "
-                        "Start a new game or load a save, then choose it again.", ok, 1, 0, NULL);
-    }
-}
-
-/* Build Deck lists its own copy of the chest and puts it back on leaving,
- * so cards given while it is open would be taken away again. */
-static void give_cards(int count)
-{
-    static const char *const ok[] = {"OK"};
-    if (Cheats_SaveLoaded() && Cheats_ChestOnScreen()) {
-        Menu_ShowNotice("Leave Build Deck first", "Build Deck works on its own copy of the chest and "
-                        "puts it back when you leave, so cards given now would be lost. "
-                        "Leave Build Deck, then choose this again.", ok, 1, 0, NULL);
-        return;
-    }
-    need_save(Cheats_TopUpAllCards(count));
-}
-
 static void activate(const Item *item, int *quit)
 {
     if (item->flags & ITEM_DISABLED) return;
@@ -1878,15 +1841,6 @@ static void activate(const Item *item, int *quit)
     case ACT_LOAD_STATE: Memories_StateRequest(2, Platform_StateSlot()); break;
     case ACT_SCREENSHOT: Platform_Screenshot(0); break;
     case ACT_EXIT: QuitPrompt_Request(quit); break;
-    /* A tower whose mod turns cheats off refuses them while the player is
-     * in it (tower.h, Tower_Guard), with a notice. */
-    case ACT_GIVE_CARDS: if (!Tower_Guard(TOWER_GUARD_CHEAT, 1, NULL, 0)) give_cards(item->value); break;
-    case ACT_UNLOCK_FREE_DUELISTS:
-        if (!Tower_Guard(TOWER_GUARD_CHEAT, 1, NULL, 0)) need_save(Cheats_UnlockAllFreeDuelists());
-        break;
-    case ACT_SET_STARCHIPS:
-        if (!Tower_Guard(TOWER_GUARD_CHEAT, 1, NULL, 0)) need_save(Cheats_SetStarchips((unsigned)item->value));
-        break;
     case ACT_RESET_COLOR:
         Settings_Set(SET_BRIGHTNESS, 100);
         Settings_Set(SET_CONTRAST, 100);

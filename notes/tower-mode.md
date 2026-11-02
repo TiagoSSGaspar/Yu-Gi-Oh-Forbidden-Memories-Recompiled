@@ -152,7 +152,7 @@ second menu, the cursor on the tower's button.
 | `on_leave` | what leaving the tower does to the climb ([below](#the-rules-of-the-run)): `"resume"` (the default), `"checkpoint"` or `"restart"` |
 | `drops` | the cards a won tower duel gives: 1 to 99, or `"player"` (Game > Card drops); 1 without it |
 | `save_states` | `false`: no save state is saved or loaded while the player is in the tower |
-| `cheats` | `false`: the Cheats menu and the Debug jumps do nothing while the player is in the tower |
+| `cheats` | `false`: the Debug jumps do nothing while the player is in the tower (the Cheats menu it also kept out was removed) |
 | `floors` | the floors, bottom first, at most 99. At least one must be fought, else the mod has no tower |
 
 **Several towers.** One tower a run: the **last mod in load order** that has a
@@ -193,7 +193,7 @@ the ending" for the tower, as for the Japanese game.
 | `duelist` | the opponent: an id, a name, or an added duelist's identity (`"mod:id"`). A floor without one it can find is left out |
 | `field` | `none` (the default, as Free Duel), `Forest`, `Wasteland`, `Mountain`, `Meadow` (`Sogen`), `Sea` (`Umi`), `Dark` (`Yami`), or 1-6 |
 | `deck` | the opponent's deck: `{card: copies}` as a fixed deck is written, or a list of forty cards; exactly forty, else its own is dealt. It comes before a fixed deck of `decks` |
-| `life_points` | the starting LP of both sides, or `{"player": ..., "opponent": ...}`, 1 to 65535. Between Game > Cheats > Starting LP (which wins) and a mod's `limits` |
+| `life_points` | the starting LP of both sides, or `{"player": ..., "opponent": ...}`, 1 to 65535. Before a mod's `limits` |
 | `no_fusions`, `no_equips` | `true`: nothing fuses, nothing equips, below |
 | `reward` | `{"cards": [...], "starchips": n, "unlock_duelist": ...}`, given the **first** time the floor is won (`card` takes one card) |
 | `checkpoint` | `true`: won, a loss later comes back to the next floor, and the tower offers a save |
@@ -452,13 +452,10 @@ as usual -- but a state saved there holds the climb as it was then, so with
 (`Tower_Frame` puts it back after the load): no loss is undone and no
 checkpoint regained that way.
 
-**`cheats`: false.** While the player is in the tower: Game > Cheats >
-Starting LP and Show CPU's hand do not apply (the duel begins at the floor's
-LP or 8000, the CPU's hand stays face down), Give cards, Unlock all Free Duel
-CPU duelists and Set StarChips are refused with a notice, and so are, during
-a floor's duel, Debug > Jump to, back to the title and Game > Restart game
+**`cheats`: false.** While the player is in the tower (Game > Cheats, whose
+rows it also kept out, was removed): during a floor's duel Debug > Jump to, back to the title and Game > Restart game
 (which would leave it without its loss; from the tower's own screen a jump is
-a way out as LEAVE is, and `on_leave` banks it the same). Free spending is the password shop's alone. The game's other rewinds
+a way out as LEAVE is, and `on_leave` banks it the same). The game's other rewinds
 are gone (the old Rewind setting is retired).
 
 ## Duelists of the tower's alone
@@ -545,7 +542,7 @@ campaign's characters.
 | `src/pc/tower/tower_art.c` | a story's PNGs made into the game's pictures (a scene record, a character's sheet and parts bank) |
 | `src/pc/game/zz_tower_storage.c` | `gTower`, and what only game code reaches: the box's layout reset, the title's wall, the stage up and down, a mod's scene put in VRAM, a mod's character in the cache |
 | `src/game/script_image_objects.c`, `display_effect_resource_setup.c` | the two hooks (`#ifdef MEMORIES_PC`): a mod's scene id, a mod's character |
-| `src/pc/guest/state.c`, `src/pc/platform/title_jump.c`, `menu.c`, `src/pc/debug/cheats.c`, `src/pc/cards/drops.c` | the rules of the run: save states, the Debug jumps, the Cheats menu and the cards a win asking the tower (`Tower_Guard`, `Tower_CheatsOff`, `Tower_CardDrops`) |
+| `src/pc/guest/state.c`, `src/pc/platform/title_jump.c`, `src/pc/cards/drops.c` | the rules of the run: save states, the Debug jumps and the cards a win asking the tower (`Tower_Guard`, `Tower_CardDrops`) |
 | `src/game/main_mode_runners.c` | mode 13, the game's unused developer-mode slot, runs the tower's screen; `Main_Loop` and the mode table stay the game's, so older save states still load |
 | `src/game/main_apply_menu_selection.c` | the button's choice (12, none of the game's) |
 | `src/pc/platform/title_config.c`, `title_menu.c` | the button, the action, dimmed while locked |

@@ -862,15 +862,14 @@ def tower_drops(exe: Path, out: Path, name: str, shot: str, lock, what: str):
 
 def phase_guards(exe: Path, out: Path):
     """"save_states": false and "cheats": false: no state saved or loaded on
-    the tower's screen or in its duel, Starting LP 9999 and Show CPU's hand
-    not applied there, no Debug jump out of its duel; all of it as usual
-    outside the tower."""
+    the tower's screen or in its duel, no Debug jump out of its duel; all of
+    it as usual outside the tower. (Game > Cheats, whose Starting LP and
+    Show CPU's hand the tower also kept out, was removed.)"""
     def change(tower):
         tower["save_states"] = False
         tower["cheats"] = False
         tower["floors"] = [plain_floor("Simon Muran"), plain_floor("Seto")]
-    t = Tower(exe, out, "guards", manifest_variant(change),
-              settings={"cheat_life_points": 9999, "cheat_show_hand": 1})
+    t = Tower(exe, out, "guards", manifest_variant(change))
     g = t.game
     to_second_menu(g)
     outside = g.save(t.out / "outside.state")
@@ -913,7 +912,7 @@ def phase_guards(exe: Path, out: Path):
     check(f"save_states false: refused in the tower ({refused}), the log says why",
           all(ok for _, ok in refused) and "tower: refused (No save states here)" in t.log() and
           not (t.out / "duel.state").exists() and not (t.out / "status.state").exists())
-    check(f"cheats false: the duel begins at 8000 though Starting LP is 9999 ({lp}); no jump out of it "
+    check(f"cheats false: the duel begins at 8000 ({lp}); no jump out of it "
           f"({'jumped' if jumped else 'refused'})", lp == 8000 and not jumped and g.mode() == DUEL)
     # The duel won, the tower left: states and jumps as usual again.
     status = t.said("tower: status")

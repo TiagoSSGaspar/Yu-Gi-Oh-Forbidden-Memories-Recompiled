@@ -1,9 +1,11 @@
 #ifndef MEMORIES_PC_DEBUG_CHEATS_H
 #define MEMORIES_PC_DEBUG_CHEATS_H
-/* Development helpers behind the window's Game > Cheats menu. They write the game's
- * own save workspace, so a save made afterwards keeps the result. The ones
- * that write it return 0, and do nothing, until a game is started or loaded
- * (Cheats_SaveLoaded); the menu then says "Load a save first". */
+/* Development helpers (the MEMORIES_DEBUG_* variables, Debug > Jump to, the
+ * control channel) and functions code mods are built against; the window's
+ * Game > Cheats menu that used them was removed. They write the game's own
+ * save workspace, so a save made afterwards keeps the result. The ones that
+ * write it return 0, and do nothing, until a game is started or loaded
+ * (Cheats_SaveLoaded). */
 
 /* Nonzero once a game is started or loaded (the workspace holds a deck). */
 int Cheats_SaveLoaded(void);
@@ -28,19 +30,14 @@ int Cheats_UnlockAllFreeDuelists(void);
 /* Set the StarChips balance, capped at the game's own 999999 (or a mod's
  * "limits", pc/cards/tables.h). */
 int Cheats_SetStarchips(unsigned value);
-/* The life points both sides start a duel against the CPU with
- * (SET_CHEAT_LIFE_POINTS, 1-32767, 8000 the console's), read by
- * Duel_InitSideStates. Another value than 8000 comes before a mod's
- * "limits"; at 8000 the mod's start is used. Two-player duels keep the
- * values their own setup screen chose. */
+/* What the removed Starting LP, Free spending and Show CPU's hand rows
+ * changed, asked by the game code: now always the console's 8000 (at which
+ * a mod's "limits" decide the start, Duel_InitSideStates), no free
+ * spending (overlays/password/shop.c, the pack shop), and each side's own
+ * card_view_mode (Cheats_CardViewMode, declared beside it in
+ * game/duel_side_state.h). */
 int Cheats_StartingLifePoints(void);
-/* Nonzero while Free spending (SET_CHEAT_FREE_SPENDING) is on: the Password
- * screen's payment (overlays/password/shop.c) counts the price down without
- * taking it from the balance. The screen still refuses a card the balance
- * does not cover; Set StarChips covers that. */
 int Cheats_FreeSpending(void);
-/* Show CPU's hand (SET_CHEAT_SHOW_HAND) is Cheats_CardViewMode, declared
- * beside the field it reads in game/duel_side_state.h. */
 /* Once a frame: MEMORIES_DEBUG_CHEST=N gives N of every card, and
  * MEMORIES_DEBUG_DECK="723-762" (ids and ranges, repeated to forty) sets the
  * deck, the first time a save is live in the workspace. */
