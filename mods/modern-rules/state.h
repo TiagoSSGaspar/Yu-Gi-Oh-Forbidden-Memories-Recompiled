@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 13
+#define MODERN_RULES_STATE_VERSION 14
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -141,6 +141,21 @@ typedef struct {
     s8 at;             /* the opponent's column, or the graveyard's entry */
 } SpellsState;
 
+/* Magical Hats: the trap sprang (pending: the attacked record and the
+ * trap's deck card), then the monster hidden among the hats (record, deck
+ * card, -1 none) and the decoys' records. */
+#define HATS_MAX 3
+typedef struct {
+    u8 pending;
+    u8 active;
+    s8 side;
+    s8 real;
+    u8 real_deck;
+    u8 trap_deck;
+    s8 decoy[HATS_MAX];
+    u8 decoy_count;
+} HatsState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
@@ -151,6 +166,7 @@ typedef struct {
     CastleState castle;
     MirrorState mirror;
     SpellsState spells;
+    HatsState hats;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

@@ -57,6 +57,7 @@
 #include "castle.h"
 #include "mirror.h"
 #include "spells.h"
+#include "hats.h"
 #include "cpu.h"
 #include "state.h"
 #include <string.h>
@@ -286,7 +287,7 @@ static void hand(void)
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster, ids[HAND_SIZE], count;
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
-    if (step_kind <= HAND_IDLE && (Moth_Hold() || Spells_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold())) return;
+    if (step_kind <= HAND_IDLE && (Moth_Hold() || Spells_Hold() || Hats_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold())) return;
     /* Harpie's Pet Dragon counts its side's harpies (harpies.c). */
     if (step_kind <= HAND_IDLE) Harpies_Update();
     /* Living Arrow's combo and its aim (arrow.c): no button reaches the hand. */
@@ -362,7 +363,7 @@ static void field(void)
     /* An equip destroyed with its monster (equips.c), before the player
      * walks the field or the CPU picks its next move. */
     if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
-        (Spells_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold()))
+        (Spells_Hold() || Hats_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold()))
         return;
     if ((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80)))
         Harpies_Update();
@@ -550,7 +551,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
-        Arrow_Install(host, mod, api) && Harpies_Install(host) && Castle_Install(host, mod) && Mirror_Install(host) && Spells_Install(host, mod, api) && (Cpu_Install(host), 1) &&
+        Arrow_Install(host, mod, api) && Harpies_Install(host) && Castle_Install(host, mod) && Mirror_Install(host) && Spells_Install(host, mod, api) && Hats_Install(host) && (Cpu_Install(host), 1) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

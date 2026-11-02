@@ -98,6 +98,25 @@
       "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
+    },
+    {
+      "id": "magical_hats",
+      "copy": "Fake Trap",
+      "name": "Magical Hats",
+      "art": "images/magical_hats.png",
+      "description": "When your opponent attacks your monster: the attack stops, and your monster hides face down among up to three hats. Attacking a hat destroys it with no damage.",
+      "password": "81210420",
+      "drops": true,
+      "opponents": true
+    },
+    {
+      "id": "magical_hat",
+      "copy": "Kuriboh",
+      "name": "Magical Hat",
+      "art": "images/magical_hat.png",
+      "attack": 0,
+      "defense": 0,
+      "description": "A hat of Magical Hats: empty. It does nothing, and leaves when the monster hidden among the hats does."
     }
   ],
   "equips": [
@@ -208,6 +227,13 @@
       "type": "bool",
       "default": 1,
       "description": "Monster Reborn, a magic card of this mod's (password 83764718): the mod keeps each side's graveyard, the monsters destroyed in the duel. Pick one of either side's with left and right; it comes back to a free zone of yours, face up in attack. Refused with an empty graveyard or no free zone. The CPU revives the strongest when it is stronger than all of its own. Off, the card does nothing."
+    },
+    {
+      "key": "magical_hats",
+      "label": "Magical Hats",
+      "type": "bool",
+      "default": 1,
+      "description": "Magical Hats, a trap of this mod's (password 81210420), springs as Fake Trap does when the opponent attacks: the attack stops. When a monster was attacked, up to three hats go up in its owner's free monster zones and it hides among them, face down in defense in one picked at random; the others hold empty hats (Magical Hat, 0/0) that do nothing. Attacking an empty hat destroys it with no damage; the hats go when the monster hidden among them leaves the field. Off, the card is a Fake Trap."
     }
   ],
   "decks": {

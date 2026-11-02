@@ -47,6 +47,9 @@ int Spells_Refuses(int card, int side) { (void)card; (void)side; return 0; }
 void Spells_TurnStarts(int side) { (void)side; }
 int Spells_Hold(void) { return 0; }
 int Spells_Cpu(void) { return 0; }
+/* Magical Hats too (hats_test.c). */
+int Hats_Install(const MemoriesModHost *h) { (void)h; return 1; }
+int Hats_Hold(void) { return 0; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }

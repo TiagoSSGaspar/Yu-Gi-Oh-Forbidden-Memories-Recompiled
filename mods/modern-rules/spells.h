@@ -17,6 +17,9 @@ void Spells_TurnStarts(int side);
 int Spells_Hold(void);
 /* The CPU's hand decision: Change of Heart or Monster Reborn played. */
 int Spells_Cpu(void);
+/* The monster on record `from` moved to record `to`, as it is: equips,
+ * the harpies' bonus, flags and modifiers go with it. */
+void Spells_Move(int from, int to);
 /* Monster record `r` is the one the player's pick is on (drawn lit). */
 int Spells_Aimed(int r);
 #endif

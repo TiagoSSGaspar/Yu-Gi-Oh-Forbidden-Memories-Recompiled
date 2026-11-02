@@ -46,6 +46,7 @@
 #include "spells.h"
 #include "equips.h"
 #include "harpies.h"
+#include "hats.h"
 #include "state.h"
 #include <stdio.h>
 #include <string.h>
@@ -128,8 +129,9 @@ static void bring(int to, int deck, u16 flags, s16 attack, s16 defense)
     if (card->object) Duel_ApplyCardObjectFlags((DuelCardDisplayObject *)card->object);
 }
 
-/* The monster on record `from` moved to record `to`, as it is. */
-static void move(int from, int to)
+/* The monster on record `from` moved to record `to`, as it is (Magical
+ * Hats moves one too). */
+void Spells_Move(int from, int to)
 {
     DuelCardRecord *card = &D_801A7AD8[from];
     int deck = deck_of(card);
@@ -168,7 +170,7 @@ static void take(int side, int r)
     S.lent_from[S.lent_count] = (s8)r;
     S.lent_deck[S.lent_count] = (u8)deck_of(&D_801A7AD8[r]);
     S.lent_count++;
-    move(r, to);
+    Spells_Move(r, to);
     SD_SEPlayFull(TAKE_SOUND);
 }
 
@@ -202,7 +204,7 @@ int Spells_Hold(void)
         if (!lent_there(i)) continue;
         to = occupied(S.lent_from[i]) ? free_zone(owner) : S.lent_from[i];
         if (to < 0) destroy(&D_801A7AD8[(int)S.lent_to[i]]);
-        else move(S.lent_to[i], to);
+        else Spells_Move(S.lent_to[i], to);
     }
     S.lent_count = 0;
     S.lent_due = 0;
@@ -226,7 +228,7 @@ static void monster(MemoriesModEvent *e)
 {
     int r = e->b, deck;
     if (e->phase != MEMORIES_AFTER || e->c != MEMORIES_MONSTER_DESTROYED || r < 0 || r >= DUEL_CARD_RECORD_COUNT ||
-        e->a <= 0 || S.grave_count >= SPELLS_GRAVE_MAX)
+        e->a <= 0 || S.grave_count >= SPELLS_GRAVE_MAX || Hats_IsDecoy(e->a))
         return;
     deck = deck_of(&D_801A7AD8[r]);
     if (deck == 0xFF) return;

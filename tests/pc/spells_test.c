@@ -47,6 +47,8 @@ void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
 void MonsterEffects_Placed(int record, int equip) { (void)equip; placed_from = record; }
 void Harpies_Moved(int from, int to) { (void)from; (void)to; harpies_moved++; }
 void Equips_Moved(int from, int to) { (void)from; (void)to; equips_moved++; }
+/* Magical Hats' decoys (hats_test.c): card 999 here. */
+int Hats_IsDecoy(int id) { return id == 999; }
 
 static int settings_on = 1;
 static MemoriesModCallback on_effect, on_monster;

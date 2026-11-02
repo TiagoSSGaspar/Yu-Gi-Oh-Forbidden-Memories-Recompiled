@@ -57,6 +57,10 @@
         "monster_reborn": {
             "label": "Monster Reborn",
             "description": "Monster Reborn, magia deste mod (senha 83764718): o mod guarda o cemitério de cada lado, os monstros destruídos no duelo. Escolha um dos dois lados com esquerda e direita; ele volta numa zona livre sua, virado para cima em ataque. Recusada com cemitério vazio ou sem zona livre. A CPU revive o mais forte quando ele é mais forte que todos os dela. Desligada, a carta não faz nada."
+        },
+        "magical_hats": {
+            "label": "Magical Hats",
+            "description": "A Magical Hats, armadilha deste mod (senha 81210420), dispara como a Fake Trap quando o oponente ataca: o ataque para. Se um monstro foi atacado, até três cartolas sobem nas zonas livres de monstro do dono e ele se esconde entre elas, virado para baixo em defesa numa sorteada; as outras guardam cartolas vazias (Magical Hat, 0/0) que não fazem nada. Atacar uma cartola vazia a destrói sem dano; as cartolas somem quando o monstro escondido sai do campo. Desligada, a carta é uma Fake Trap."
         }
     },
     "texts": {
