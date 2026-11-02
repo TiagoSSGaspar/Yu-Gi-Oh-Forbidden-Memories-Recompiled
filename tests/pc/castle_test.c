@@ -8,6 +8,9 @@
 #include <string.h>
 #include "../../mods/modern-rules/castle.c"
 
+/* Change of Heart's pick is tested on its own (spells_test.c). */
+int Spells_Aimed(int r) { (void)r; return 0; }
+
 ModernRulesState gModernRules_State;
 u16 gDuel_wSceneStateFlags;
 u8 D_8009B174, D_8009B1D5;

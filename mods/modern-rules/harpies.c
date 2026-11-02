@@ -77,6 +77,16 @@ void Harpies_Update(void)
     }
 }
 
+void Harpies_Moved(int from, int to)
+{
+    int zf = (from / DUEL_CARD_SIDE_RECORD_COUNT) * DUEL_FIELD_ROW_SIZE + from % DUEL_CARD_SIDE_RECORD_COUNT - DUEL_FIELD_ROW_SIZE;
+    int zt = (to / DUEL_CARD_SIDE_RECORD_COUNT) * DUEL_FIELD_ROW_SIZE + to % DUEL_CARD_SIDE_RECORD_COUNT - DUEL_FIELD_ROW_SIZE;
+    if (zf < 0 || zf >= ARROW_ZONES || zt < 0 || zt >= ARROW_ZONES) return;
+    H.bonus[zt] = H.bonus[zf];
+    H.deck[zt] = H.deck[zf];
+    H.bonus[zf] = 0;
+}
+
 int Harpies_Install(const MemoriesModHost *from)
 {
     host = from;

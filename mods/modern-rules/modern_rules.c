@@ -37,6 +37,7 @@
 #include "game/duel_card_pick_cursor.h"
 #include "game/duel_grid.h"
 #include "game/duel_hand.h"
+#include "game/duel_scene_hand_actions.h"
 #include "game/duel_scene_state.h"
 #include "game/duel_selection_layout.h"
 #define D_8009B360_AS_SIDE_ARRAY
@@ -55,6 +56,7 @@
 #include "harpies.h"
 #include "castle.h"
 #include "mirror.h"
+#include "spells.h"
 #include "cpu.h"
 #include "state.h"
 #include <string.h>
@@ -139,6 +141,7 @@ static int turn_draws(int side, int turn, int room)
 {
     (void)turn;
     Arrow_TurnStarts(side);
+    Spells_TurnStarts(side);
     if (!draw_one()) return -1;
     if (D_800E9FF0[side].deck_draw_cursor != 0) return 1;
     return api->version >= 4 ? OPENING_HAND + 1 : room;
@@ -283,7 +286,7 @@ static void hand(void)
     int step_kind = D_8009B174 & 0xF, refuse = 0, monster, ids[HAND_SIZE], count;
     /* A cocoon evolving (moth.c), an equip destroyed with its monster
      * (equips.c): the hand waits for it, from its start. */
-    if (step_kind <= HAND_IDLE && (Moth_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold())) return;
+    if (step_kind <= HAND_IDLE && (Moth_Hold() || Spells_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold())) return;
     /* Harpie's Pet Dragon counts its side's harpies (harpies.c). */
     if (step_kind <= HAND_IDLE) Harpies_Update();
     /* Living Arrow's combo and its aim (arrow.c): no button reaches the hand. */
@@ -305,8 +308,14 @@ static void hand(void)
         /* The card raised: a magic card face up is used from there, with no
          * zone picked (the disc). With the row full, no magic or trap card
          * is played, as in the card game. */
-        else if (step_kind == HAND_RAISED && !(D_8009B174 & HAND_RAISED_BUSY))
-            refuse = Equips_On() && needs_spell_zone(hand_card(hand_cursor(side))) && !spell_zone_free();
+        else if (step_kind == HAND_RAISED && !(D_8009B174 & HAND_RAISED_BUSY)) {
+            HandCardObject *raised = (HandCardObject *)D_800EA030[(s8)side->field_0E].object;
+            int card = hand_card(hand_cursor(side));
+            refuse = Equips_On() && needs_spell_zone(card) && !spell_zone_free();
+            /* Change of Heart or Monster Reborn used face up with nothing
+             * to do (spells.c). */
+            if (!refuse && raised && raised->face == 0) refuse = Spells_Refuses(card, D_8009B1D5 & 1);
+        }
         else if (step_kind == HAND_PLACING && !(D_8009B174 & HAND_PLACING_MOVING)) {
             monster = monster_under_cursor();
             if (guard && monster) refuse = !chain_keeps_every_card(side, monster);
@@ -353,7 +362,7 @@ static void field(void)
     /* An equip destroyed with its monster (equips.c), before the player
      * walks the field or the CPU picks its next move. */
     if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
-        (Mirror_Hold() || Multiply_Hold() || Equips_Hold()))
+        (Spells_Hold() || Mirror_Hold() || Multiply_Hold() || Equips_Hold()))
         return;
     if ((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80)))
         Harpies_Update();
@@ -363,7 +372,8 @@ static void field(void)
         !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         !gDuel_bEffectState && !gDuel_bQuitDialogState && spell->row == SPELL_ROW &&
-        (Equips_InZone(D_8009B1D5 & 1, spell->col) || trap_at(spell->col))) {
+        (Equips_InZone(D_8009B1D5 & 1, spell->col) || trap_at(spell->col) ||
+         Spells_Refuses(spell_at(spell->col), D_8009B1D5 & 1))) {
         SD_SEPlayFull(REFUSED_SOUND);
         gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
         ((void (*)(void))original_field)();
@@ -513,6 +523,11 @@ static s32 run(void)
         memset(D_800EAE88, 0, AI_SELECTION_SIZE);
         return result;
     }
+    /* Change of Heart and Monster Reborn (spells.c). */
+    if (Spells_Cpu()) {
+        memset(D_800EAE88, 0, AI_SELECTION_SIZE);
+        return result;
+    }
     if (setting("fusion_guard", 1) || Equips_On()) hold_cpu_to_rule();
     return result;
 }
@@ -535,7 +550,7 @@ int MemoriesModInit(const MemoriesModHost *from, MemoriesMod *mod)
         host->hook(host, (void *)DuelScene_UpdateFieldActions, (void *)field, &original_field) &&
         host->hook(host, (void *)AiScript_Run, (void *)run, &original_run) &&
         Moth_Install(host, mod) && Equips_Install(host, mod) && Swamp_Install(host, mod) && Multiply_Install(host, mod) &&
-        Arrow_Install(host, mod, api) && Harpies_Install(host) && Castle_Install(host, mod) && Mirror_Install(host) && (Cpu_Install(host), 1) &&
+        Arrow_Install(host, mod, api) && Harpies_Install(host) && Castle_Install(host, mod) && Mirror_Install(host) && Spells_Install(host, mod, api) && (Cpu_Install(host), 1) &&
         (host->api < 10 ||
          host->register_state(host, &gModernRules_State, sizeof gModernRules_State, MODERN_RULES_STATE_VERSION));
 }

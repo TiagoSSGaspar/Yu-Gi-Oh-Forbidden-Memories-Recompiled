@@ -274,6 +274,13 @@ static void destroy(DuelCardRecord *card)
     SD_SEPlayFull(DESTROY_SOUND);
 }
 
+void Equips_Moved(int from, int to)
+{
+    int r;
+    for (r = 0; r < DUEL_CARD_RECORD_COUNT; r++)
+        if (E.link[r].equip_card && E.link[r].monster == from) E.link[r].monster = (s8)to;
+}
+
 int Equips_Hold(void)
 {
     int r, busy = 0;

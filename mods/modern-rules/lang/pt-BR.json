@@ -49,6 +49,14 @@
         "mirror_force": {
             "label": "Mirror Force",
             "description": "A Mirror Force, armadilha deste mod (senha 44095762), dispara em qualquer ataque do oponente: para o ataque e destrói todos os monstros dele em posição de ataque, como no anime. Desligada, destrói só o atacante, como a Widespread Ruin."
+        },
+        "change_of_heart": {
+            "label": "Change of Heart",
+            "description": "Change of Heart, magia deste mod (senha 04031928): escolha um monstro do oponente com esquerda e direita; ele vem para uma zona livre sua como está e pode atacar. No começo do próximo turno volta para o dono, ou é destruído se o dono não tiver zona livre. Recusada sem monstro para pegar ou sem zona livre. A CPU usa no monstro mais forte do jogador quando ele é mais forte que todos os dela. Desligada, a carta não faz nada."
+        },
+        "monster_reborn": {
+            "label": "Monster Reborn",
+            "description": "Monster Reborn, magia deste mod (senha 83764718): o mod guarda o cemitério de cada lado, os monstros destruídos no duelo. Escolha um dos dois lados com esquerda e direita; ele volta numa zona livre sua, virado para cima em ataque. Recusada com cemitério vazio ou sem zona livre. A CPU revive o mais forte quando ele é mais forte que todos os dela. Desligada, a carta não faz nada."
         }
     },
     "texts": {
@@ -61,6 +69,9 @@
         "Living Arrow: %s (ATK %d)  Left/Right, X: infect, O: cancel": "Flecha Viva: %s (ATK %d)  Esquerda/Direita, X: infecta, O: cancela",
         "%s rots: -%d ATK": "%s apodrece: -%d ATK",
         "%s is infected: it loses %d ATK each turn": "%s foi infectado: perde %d de ATK a cada turno",
-        "In the dark: it cannot be attacked": "No escuro: não pode ser atacado"
+        "In the dark: it cannot be attacked": "No escuro: não pode ser atacado",
+        "Change of Heart: %s (ATK %d)  Left/Right, X: take it": "Change of Heart: %s (ATK %d)  Esquerda/Direita, X: pega",
+        "Monster Reborn: %s %d/%d, yours  Left/Right, X: revive": "Monster Reborn: %s %d/%d, seu  Esquerda/Direita, X: revive",
+        "Monster Reborn: %s %d/%d, the opponent's  Left/Right, X: revive": "Monster Reborn: %s %d/%d, do oponente  Esquerda/Direita, X: revive"
     }
 }

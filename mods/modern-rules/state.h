@@ -5,7 +5,7 @@
 
 /* The mod's one state buffer: the host keeps a single one per mod
  * (register_state), so the moth's evolution and the equips share it. */
-#define MODERN_RULES_STATE_VERSION 12
+#define MODERN_RULES_STATE_VERSION 13
 
 typedef struct {
     u8 turns[DUEL_CARD_RECORD_COUNT];  /* 0: no cocoon; else 1 + its owner's turns since it was made */
@@ -120,6 +120,27 @@ typedef struct {
     u8 cooldown;
 } MirrorState;
 
+/* Change of Heart and Monster Reborn: the monsters lent this turn (the
+ * record taken to, the one taken from, the deck card), the graveyard (each
+ * destroyed monster's card, deck card and owner), and the player's pick. */
+#define SPELLS_LENT_MAX 5
+#define SPELLS_GRAVE_MAX 80
+typedef struct {
+    s8 lent_to[SPELLS_LENT_MAX];
+    s8 lent_from[SPELLS_LENT_MAX];
+    u8 lent_deck[SPELLS_LENT_MAX];
+    u8 lent_count;
+    u8 lent_due;       /* a turn has started: they go back */
+    s16 grave_card[SPELLS_GRAVE_MAX];
+    u8 grave_deck[SPELLS_GRAVE_MAX];
+    u8 grave_owner[SPELLS_GRAVE_MAX];
+    u8 grave_count;
+    u8 picking;        /* the player picks */
+    u8 kind;           /* 1 Change of Heart, 2 Monster Reborn */
+    s8 side;
+    s8 at;             /* the opponent's column, or the graveyard's entry */
+} SpellsState;
+
 typedef struct {
     MothState moth;
     EquipState equips;
@@ -129,6 +150,7 @@ typedef struct {
     HarpiesState harpies;
     CastleState castle;
     MirrorState mirror;
+    SpellsState spells;
 } ModernRulesState;
 
 extern ModernRulesState gModernRules_State;

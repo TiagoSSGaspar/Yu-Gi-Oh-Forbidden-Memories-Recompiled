@@ -25,6 +25,7 @@
 #include "game/duel_side_state.h"
 #include "unmatched.h"
 #include "castle.h"
+#include "spells.h"
 #include "state.h"
 #include <stdio.h>
 #include <string.h>
@@ -133,10 +134,11 @@ static unsigned overlay_signature(void)
     return aiming_dark() ? s * 31u + 7u : s;
 }
 
-/* The cards in the dark drawn dark: their display objects' colour put on
- * for the drawing only, as the field takes it from them each frame. Only a
+/* The cards in the dark drawn dark, and the one Change of Heart's pick is on
+ * lit (spells.c): their display objects' colour put on for the drawing only, as the field takes it from them each frame. Only a
  * card in its plain colour or dimmed, not one fading. */
 #define DARK_COLOR 0x342C2Cu   /* CVECTOR order, red in the low byte */
+#define AIMED_COLOR 0xE0D060u  /* Change of Heart's pick (spells.c): a cold light */
 static void draw_field(void)
 {
     u32 saved[DUEL_CARD_RECORD_COUNT];
@@ -145,11 +147,13 @@ static void draw_field(void)
     for (r = 0; r < DUEL_CARD_RECORD_COUNT; r++) {
         DuelCardDisplayObject *object = (DuelCardDisplayObject *)D_801A7AD8[r].object;
         dark[r] = 0;
-        if (!object || !Castle_Hides(r) ||
+        int aimed = Spells_Aimed(r);
+        if (!object || (!aimed && !Castle_Hides(r)) ||
             (object->color != DUEL_DISPLAY_COLOR_NORMAL && object->color != DUEL_DISPLAY_COLOR_DIMMED))
             continue;
         saved[r] = object->color;
-        object->color = object->color == DUEL_DISPLAY_COLOR_DIMMED ? DARK_COLOR / 2 & 0x7F7F7Fu : DARK_COLOR;
+        object->color = aimed ? AIMED_COLOR
+                      : object->color == DUEL_DISPLAY_COLOR_DIMMED ? DARK_COLOR / 2 & 0x7F7F7Fu : DARK_COLOR;
         dark[r] = 1;
         any = 1;
     }

@@ -41,6 +41,12 @@ int Castle_Refuses(int row, int col) { return row == 1 && col == castle_dark_col
 /* Mirror Force too (mirror_test.c). */
 int Mirror_Install(const MemoriesModHost *h) { (void)h; return 1; }
 int Mirror_Hold(void) { return 0; }
+/* Change of Heart and Monster Reborn too (spells_test.c). */
+int Spells_Install(const MemoriesModHost *h, MemoriesMod *m, const ExtraHandApi *a) { (void)h; (void)m; (void)a; return 1; }
+int Spells_Refuses(int card, int side) { (void)card; (void)side; return 0; }
+void Spells_TurnStarts(int side) { (void)side; }
+int Spells_Hold(void) { return 0; }
+int Spells_Cpu(void) { return 0; }
 /* Card 6 stands for Multiply when multiply_up says the side's wall is up. */
 static int multiply_up;
 int Multiply_Up(int side) { (void)side; return multiply_up; }

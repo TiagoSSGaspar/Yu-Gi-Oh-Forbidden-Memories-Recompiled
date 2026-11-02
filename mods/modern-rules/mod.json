@@ -74,6 +74,30 @@
       "password": "44095762",
       "drops": true,
       "opponents": true
+    },
+    {
+      "id": "change_of_heart",
+      "copy": "Hinotama",
+      "name": "Change of Heart",
+      "art": "images/change_of_heart.png",
+      "description": "Take control of one monster of your opponent's until the end of this turn. It may attack.",
+      "password": "04031928",
+      "drops": true,
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
+    },
+    {
+      "id": "monster_reborn",
+      "copy": "Hinotama",
+      "name": "Monster Reborn",
+      "art": "images/monster_reborn.png",
+      "description": "Bring back one monster from either player's graveyard to your side of the field.",
+      "password": "83764718",
+      "drops": true,
+      "opponents": true,
+      "card_effects_mode": "replace",
+      "card_effects": []
     }
   ],
   "equips": [
@@ -170,6 +194,20 @@
       "type": "bool",
       "default": 1,
       "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and destroys every monster of theirs in attack position, as in the anime. Off, it destroys only the attacker, as Widespread Ruin does."
+    },
+    {
+      "key": "change_of_heart",
+      "label": "Change of Heart",
+      "type": "bool",
+      "default": 1,
+      "description": "Change of Heart, a magic card of this mod's (password 04031928): pick a monster of the opponent's with left and right; it comes to a free zone of yours as it is and may attack. When the next turn starts it goes back to its owner, or is destroyed if they have no free zone. Refused with nothing to take or no free zone. The CPU plays it on the player's strongest monster when it is stronger than all of its own. Off, the card does nothing."
+    },
+    {
+      "key": "monster_reborn",
+      "label": "Monster Reborn",
+      "type": "bool",
+      "default": 1,
+      "description": "Monster Reborn, a magic card of this mod's (password 83764718): the mod keeps each side's graveyard, the monsters destroyed in the duel. Pick one of either side's with left and right; it comes back to a free zone of yours, face up in attack. Refused with an empty graveyard or no free zone. The CPU revives the strongest when it is stronger than all of its own. Off, the card does nothing."
     }
   ],
   "decks": {
