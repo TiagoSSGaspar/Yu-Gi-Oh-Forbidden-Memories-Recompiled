@@ -70,7 +70,7 @@
       "copy": "Widespread Ruin",
       "name": "Mirror Force",
       "art": "images/mirror_force.png",
-      "description": "When your opponent attacks: the attack is turned back, and every monster of theirs in attack position is destroyed.",
+      "description": "When your opponent attacks: the attack is turned back on every monster of theirs in attack position, destroying them all. They lose the difference over each one weaker than the attacker.",
       "password": "44095762",
       "drops": true,
       "opponents": true
@@ -212,7 +212,7 @@
       "label": "Mirror Force",
       "type": "bool",
       "default": 1,
-      "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and destroys every monster of theirs in attack position, as in the anime. Off, it destroys only the attacker, as Widespread Ruin does."
+      "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and turns it back on every monster of theirs in attack position, as Yugi did to Pegasus: all are destroyed, and the opponent loses the attacker's ATK minus each weaker one's (2500 on 1400 and 2200: 1100 + 300). Off, it destroys only the attacker, as Widespread Ruin does."
     },
     {
       "key": "change_of_heart",

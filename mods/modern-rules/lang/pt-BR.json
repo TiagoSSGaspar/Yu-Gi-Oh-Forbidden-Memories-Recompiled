@@ -48,7 +48,7 @@
         },
         "mirror_force": {
             "label": "Mirror Force",
-            "description": "A Mirror Force, armadilha deste mod (senha 44095762), dispara em qualquer ataque do oponente: para o ataque e destrói todos os monstros dele em posição de ataque, como no anime. Desligada, destrói só o atacante, como a Widespread Ruin."
+            "description": "A Mirror Force, armadilha deste mod (senha 44095762), dispara em qualquer ataque do oponente: para o ataque e o devolve contra todos os monstros dele em posição de ataque, como o Yugi fez com o Pegasus: todos são destruídos, e o oponente perde o ATK do atacante menos o de cada um mais fraco (2500 contra 1400 e 2200: 1100 + 300). Desligada, destrói só o atacante, como a Widespread Ruin."
         },
         "change_of_heart": {
             "label": "Change of Heart",

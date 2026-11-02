@@ -24,6 +24,11 @@ DuelEffectRequest *DuelEffect_CreateRequest(s32 kind) { (void)kind; requests++; 
 s32 Duel_GetCardEffectVariant(CardObject *object) { (void)object; return 0; }
 void DuelCard_RemoveFromField(DuelCardRecord *card) { card->flags = 0; removed++; }
 void SD_SEPlayFull(u32 id) { (void)id; sounds++; }
+/* A card's ATK is its id times ten. */
+s32 Duel_CalcCardStats(DuelCardRecord *card) { return (card->card_id * 10) & 0xFFFF; }
+static int damage_total, damage_side = -1;
+int Mods_DamageLife(int side, int life, int damage, int kind)
+{ (void)kind; damage_total += damage; damage_side = side; return life - damage; }
 
 static int mirror_setting = 1;
 static void *hooked;
@@ -59,24 +64,31 @@ int main(void)
     fake_host.card_id = fake_card_id;
     assert(Mirror_Install(&fake_host) && hooked == (void *)select_trap && !Mirror_Hold());
 
-    /* The CPU (side 1) attacks; the player's Mirror Force (record 10) springs
-     * as Widespread Ruin. The attacker (record 20) is the disc's; the other
-     * two in attack go, the one in defense stays. */
+    /* The CPU (side 1) attacks with its 2500 (record 20); the player's
+     * Mirror Force (record 10) springs as Widespread Ruin. The disc's trap
+     * takes the attacker; the 2500 turned back strikes the 1400 (1100 of
+     * damage), the 2200 (300) and the 3000 (none): all three in attack go,
+     * the one in defense stays, the player's own too. */
     D_8009B1D5 = 1;
+    D_800E9FF0[1].life_points.unsigned_value = 4000;
     put(10, MIRROR, 0);
-    put(MONSTER_RECORD(1, 0), 26, 0);
-    put(MONSTER_RECORD(1, 1), 26, 0);
-    put(MONSTER_RECORD(1, 3), 26, 0);
-    put(MONSTER_RECORD(1, 4), 26, 1);
+    put(MONSTER_RECORD(1, 0), 250, 0);
+    put(MONSTER_RECORD(1, 1), 140, 0);
+    put(MONSTER_RECORD(1, 2), 220, 0);
+    put(MONSTER_RECORD(1, 3), 300, 0);
+    put(MONSTER_RECORD(1, 4), 100, 1);
     put(MONSTER_RECORD(0, 2), 26, 0);
+    objects[MONSTER_RECORD(1, 0)].field_6A = MONSTER_RECORD(1, 0);
     sprung_effect = WIDESPREAD_RUIN; sprung_record = 10; trap_result = 1;
-    assert(select_trap((u8 *)&objects[MONSTER_RECORD(1, 0)]) == 1);
+    assert(select_trap((u8 *)&objects[MONSTER_RECORD(1, 0)]) == 1 && M.reflect == 2500);
     D_801A7AD8[MONSTER_RECORD(1, 0)].flags = 0;   /* the disc's trap took the attacker */
     assert(hold_all() > 0);
-    assert(removed == 2 && sounds == 2 && requests == 2);
-    assert(!occupied(MONSTER_RECORD(1, 1)) && !occupied(MONSTER_RECORD(1, 3)));
+    assert(removed == 3 && sounds == 3 && requests == 3);
+    assert(damage_total == 1100 + 300 && damage_side == 1 && D_800E9FF0[1].life_points.unsigned_value == 4000 - 1400);
+    assert(!occupied(MONSTER_RECORD(1, 1)) && !occupied(MONSTER_RECORD(1, 2)) && !occupied(MONSTER_RECORD(1, 3)));
     assert(occupied(MONSTER_RECORD(1, 4)) && occupied(MONSTER_RECORD(0, 2)));
     assert(M.burned[1] == 1 && M.burned[0] == 0);   /* the CPU fell into it once */
+    damage_total = 0;
 
     /* A Widespread Ruin of the disc's: nothing more. */
     removed = 0;
@@ -102,12 +114,13 @@ int main(void)
     D_8009B1D5 = 0;
     put(25, MIRROR, 0);
     sprung_record = 25;
+    objects[MONSTER_RECORD(0, 2)].field_6A = MONSTER_RECORD(0, 2);
     select_trap((u8 *)&objects[MONSTER_RECORD(0, 2)]);
     assert(hold_all() > 0 && removed == 1 && !occupied(MONSTER_RECORD(0, 2)) && occupied(MONSTER_RECORD(1, 1)));
     /* A new duel: forgotten. */
     assert(M.burned[0] == 1);
     Mirror_TurnStarts();
     assert(!M.burned[0] && !M.burned[1]);
-    puts("Mirror Force: the attacker's monsters in attack position destroyed one at a time, defense spared, other traps and off untouched, both sides");
+    puts("Mirror Force: the attack turned back as battles (damage over each weaker one), the attacker's monsters in attack position destroyed one at a time, defense spared, other traps and off untouched, both sides");
     return 0;
 }

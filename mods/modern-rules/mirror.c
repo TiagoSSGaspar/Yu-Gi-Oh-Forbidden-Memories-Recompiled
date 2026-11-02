@@ -5,7 +5,13 @@
  * the attack; the mirror sends the attack back on all of them, so once the
  * battle is over every other monster of the attacker's in attack position
  * is destroyed too, one explosion at a time, while the hand or the field
- * waits (Mirror_Hold). Off, the card is a Widespread Ruin. */
+ * waits (Mirror_Hold). As when Yugi turned Toon Summoned Skull's 2500 back
+ * on Pegasus's whole line: the attacker's ATK strikes each of them as a
+ * battle would, and its owner loses the difference over each one weaker
+ * (Toon Mermaid's 1400: 1100; Ryu-Ran's 2200: 300); the attacker ties and
+ * dies with no damage, one stronger dies with none either. The damage is
+ * the port's (Mods_DamageLife), so other mods see it. Off, the card is a
+ * Widespread Ruin. */
 #include "types.h"
 #include "game/display_object.h"
 #include "game/duel_card.h"
@@ -16,6 +22,7 @@
 #include "game/duel_side_state.h"
 #include "game/duel_trap_resolution.h"
 #include "game/sound.h"
+#include "pc/mods/mods.h"
 #include "unmatched.h"
 #include "mirror.h"
 #include "state.h"
@@ -44,11 +51,14 @@ static int is_mirror(int id)
 static s32 select_trap(u8 *attacker)
 {
     s32 sprang = ((s32 (*)(u8 *))original_select)(attacker);
+    int r = attacker ? ((DisplayObject *)attacker)->field_6A : -1;
     if (sprang && on() && D_8009B22A == WIDESPREAD_RUIN && D_8009B1B8 < DUEL_CARD_RECORD_COUNT &&
         is_mirror(D_801A7AD8[D_8009B1B8].card_id)) {
         M.side = (s8)(D_8009B1D5 & 1);
         M.cooldown = DESTROY_GAP;   /* after the trap's own explosion */
         if (M.burned[M.side] < 255) M.burned[M.side]++;   /* the CPU learns (cpu.c) */
+        /* The attack turned back: the attacker's ATK, as it attacked. */
+        M.reflect = (u16)(r >= 0 && r < DUEL_CARD_RECORD_COUNT ? Duel_CalcCardStats(&D_801A7AD8[r]) & 0xFFFF : 0);
     }
     return sprang;
 }
@@ -78,6 +88,12 @@ int Mirror_Hold(void)
     for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++) {
         DuelCardRecord *card = &D_801A7AD8[MONSTER_RECORD(M.side, col)];
         if ((card->flags & DUEL_CARD_FLAG_OCCUPIED) && !(card->flags & DUEL_CARD_FLAG_DEFENSE_POSITION)) {
+            int over = (int)M.reflect - (Duel_CalcCardStats(card) & 0xFFFF);
+            if (over > 0) {
+                DuelSideState *owner = &D_800E9FF0[(int)M.side];
+                int life = Mods_DamageLife(M.side, owner->life_points.unsigned_value, over, 0);
+                owner->life_points.unsigned_value = (u16)(life < 0 ? 0 : life);
+            }
             destroy(card);
             M.cooldown = DESTROY_GAP;
             return 1;
