@@ -23,7 +23,8 @@
  * - Petit Moth's evolution, as in the anime: moth.c.
  * - Equips that stay on the field: equips.c. An equip that would have no
  *   free magic and trap zone to stay in is refused, for the player and the
- *   CPU alike, and one on the field is not used again.
+ *   CPU alike, and one on the field is not used again. A magic or trap card
+ *   needs a free zone too: none is put over a card already there.
  * - The swamp brothers fight together: swamp.c.
  * - Kuriboh and Multiply, a wall of Kuribohs stopping every attack:
  *   multiply.c. */
@@ -69,6 +70,8 @@ extern u8 D_801A9800[];   /* the CPU's field script */
 #define STATE_LOOKING 0x4000
 #define HAND_IDLE 1
 #define HAND_STEP_DONE 0x80
+#define HAND_RAISED 3            /* the player's hand state, the card raised */
+#define HAND_RAISED_BUSY 0x70    /* still rising, turning or going back */
 #define HAND_PLACING 4           /* the player's hand state, picking a field zone */
 #define HAND_PLACING_MOVING 0x40 /* its cursor still moving onto the field */
 #define MONSTER_ROW 2            /* the field cursor's row of the side's monsters */
@@ -82,6 +85,7 @@ extern u8 D_801A9800[];   /* the CPU's field script */
 #define AI_SELECTION_SIZE 12
 #define AI_PICKS 5               /* D_800EAE88[0..4]: the cards, in the order they go down */
 #define AI_ZONE 6                /* D_800EAE88[6]: the zone, 1-5 the monster row's columns */
+#define AI_FACE_DOWN 8           /* D_800EAE88[8]: the card set face down; a magic card face up is used from the hand */
 #define AI_FIELD_CARD 9          /* D_800EAE88[9]: the field card the CPU uses, 6-10 its magic and trap zones */
 #define AI_SPELL_SLOT 6
 #define AI_PLAY_FIELD_CARD 2     /* AiScript_Run: a field card played, */
@@ -238,6 +242,26 @@ static int spell_at(int col)
     return card->flags & DUEL_CARD_FLAG_OCCUPIED ? card->card_id : 0;
 }
 
+/* Whether column `col` of the side's own magic and trap row holds a card. */
+static int spell_taken(int col)
+{
+    return (D_801A7AD8[D_800907D8[SPELL_ROW * DUEL_FIELD_ROW_SIZE + col + D_8009B1D5 * DUEL_FIELD_SIDE_GRID_SLOT_COUNT]]
+                .flags & DUEL_CARD_FLAG_OCCUPIED) != 0;
+}
+
+/* Whether the side's magic and trap row has a free zone. */
+static int spell_zone_free(void)
+{
+    int col;
+    for (col = 0; col < DUEL_FIELD_ROW_SIZE; col++)
+        if (!spell_taken(col)) return 1;
+    return 0;
+}
+
+/* A card that needs a zone of the magic and trap row: magic (used from the
+ * hand or set), trap, ritual; not an equip, which goes onto a monster. */
+static int needs_spell_zone(int id) { return id > 0 && kind(id) >= CARD_TYPE_MAGIC && kind(id) != CARD_TYPE_EQUIP; }
+
 /* The monster of the player's own that the field cursor is on, or 0. */
 static int monster_under_cursor(void)
 {
@@ -273,12 +297,21 @@ static void hand(void)
         int guard = setting("fusion_guard", 1);
         if (step_kind == HAND_IDLE)
             refuse = guard && side->field_15 >= 2 && !chain_keeps_every_card(side, 0);
+        /* The card raised: a magic card face up is used from there, with no
+         * zone picked (the disc). With the row full, no magic or trap card
+         * is played, as in the card game. */
+        else if (step_kind == HAND_RAISED && !(D_8009B174 & HAND_RAISED_BUSY))
+            refuse = Equips_On() && needs_spell_zone(hand_card(hand_cursor(side))) && !spell_zone_free();
         else if (step_kind == HAND_PLACING && !(D_8009B174 & HAND_PLACING_MOVING)) {
             monster = monster_under_cursor();
             if (guard && monster) refuse = !chain_keeps_every_card(side, monster);
             /* The equips that stay need free magic and trap zones. */
             if (!refuse && D_8009B1B4->row == MONSTER_ROW && (count = chain_cards(side, ids)) > 0)
                 refuse = !equips_fit(monster, ids, count);
+            /* And a magic or trap card needs one of its own: none is put
+             * over a card already there, which would free that zone. */
+            if (!refuse && D_8009B1B4->row == SPELL_ROW && Equips_On() && spell_taken(D_8009B1B4->col))
+                refuse = 1;
         }
     }
     if (refuse) {
@@ -289,6 +322,14 @@ static void hand(void)
         return;
     }
     ((void (*)(void))original_hand)();
+}
+
+/* Whether column `col` of the side's own magic and trap row holds a trap,
+ * with the rules on. */
+static int trap_at(int col)
+{
+    int id = spell_at(col);
+    return host->applied(host) && id > 0 && kind(id) == CARD_TYPE_TRAP;
 }
 
 /* State 5, for the player: an equip used from the field goes onto a monster
@@ -309,12 +350,13 @@ static void field(void)
     if (((D_8009B174 & 0xF) == FIELD_IDLE || ((D_8009B174 & 0xF) == FIELD_CPU && !(D_8009B174 & 0x80))) &&
         (Multiply_Hold() || Equips_Hold()))
         return;
-    /* An equip on the field is not used again. */
+    /* An equip on the field is not used again; a trap set there springs on
+     * its own when its moment comes, and is not used as a magic card. */
     if (D_8009B360[D_8009B1D5] < 0 && (pressed & PAD_BUTTON_CONFIRM_MASK) && (D_8009B174 & 0xF) == FIELD_IDLE &&
         !menu_open() &&
         (gDuel_wSceneStateFlags & (STATE_MASK | STATE_STARTED)) == (STATE_FIELD | STATE_STARTED) &&
         !gDuel_bEffectState && !gDuel_bQuitDialogState && spell->row == SPELL_ROW &&
-        Equips_InZone(D_8009B1D5 & 1, spell->col)) {
+        (Equips_InZone(D_8009B1D5 & 1, spell->col) || trap_at(spell->col))) {
         SD_SEPlayFull(REFUSED_SOUND);
         gInput_wPad1Pressed = pressed & ~PAD_BUTTON_CONFIRM_MASK;
         ((void (*)(void))original_field)();
@@ -363,14 +405,45 @@ static int zone_for(const int *ids, int count, int col)
     return 0;
 }
 
+/* The CPU passes its hand, when playing is optional; when it is not, its
+ * own choice stands. */
+static void cpu_plays_nothing(void)
+{
+    if (!optional_play() || api->version < 3) return;
+    memset(D_800EAE88, 0, AI_SELECTION_SIZE);
+    api->pass_hand();
+}
+
+/* A magic or trap card of the CPU's needs a free zone of its magic and
+ * trap row, as the player's does: with the row full it plays no card (a
+ * magic card face up is used from the hand, with no zone, on the disc);
+ * one set goes to a free zone, where the disc picks one at random when
+ * none is free and the card put over another frees that zone. */
+static void cpu_spell_zone(void)
+{
+    int col = D_800EAE88[AI_ZONE] - AI_SPELL_SLOT, i;
+    if (!Equips_On()) return;
+    if (!spell_zone_free()) {
+        cpu_plays_nothing();
+        return;
+    }
+    if (!D_800EAE88[AI_FACE_DOWN] || col < 0 || col >= DUEL_FIELD_ROW_SIZE || !spell_taken(col)) return;
+    for (i = 0; i < DUEL_FIELD_ROW_SIZE; i++) {
+        if (!spell_taken(i)) {
+            D_800EAE88[AI_ZONE] = (unsigned char)(AI_SPELL_SLOT + i);
+            return;
+        }
+    }
+}
+
 /* The CPU's hand decision, held to the rule the player's confirm is held
  * to. Cards put onto one of its monsters must fuse with it or equip it, and
  * a chain must not throw a card away: the cards go to a zone where the
  * whole chain keeps every card, else the longest first part of it does (the
  * rest stay in hand). With no such zone the CPU plays no card, when playing
  * is optional; when it is not, its own choice stands. The picks are the
- * CPU's snapshot slots; a magic card used, or one set in the spell and trap
- * row, is not checked, as for the player. */
+ * CPU's snapshot slots; a magic or trap card alone goes to a free zone
+ * (cpu_spell_zone), as for the player. */
 static void hold_cpu_to_rule(void)
 {
     int ids[AI_PICKS], count, col, zone, n;
@@ -379,7 +452,11 @@ static void hold_cpu_to_rule(void)
         if (slot < AI_HAND_SLOT_FIRST || slot >= AI_ENEMY_SLOT_FIRST) return;
         if ((ids[count] = gDuel_aActiveCards[slot].card_id) <= 0) return;
     }
-    if (!count || (count == 1 && kind(ids[0]) >= CARD_TYPE_MAGIC && kind(ids[0]) != CARD_TYPE_EQUIP)) return;
+    if (!count) return;
+    if (count == 1 && needs_spell_zone(ids[0])) {
+        cpu_spell_zone();
+        return;
+    }
     col = D_800EAE88[AI_ZONE] >= 6 ? D_800EAE88[AI_ZONE] - 6 : D_800EAE88[AI_ZONE] - 1;
     if (col < 0 || col >= DUEL_FIELD_ROW_SIZE) return;
     for (n = count; n >= 1; n--) {
@@ -389,9 +466,7 @@ static void hold_cpu_to_rule(void)
             return;
         }
     }
-    if (!optional_play() || api->version < 3) return;
-    memset(D_800EAE88, 0, AI_SELECTION_SIZE);
-    api->pass_hand();
+    cpu_plays_nothing();
 }
 
 /* The CPU's hand decision, held to the fusion rule. */
