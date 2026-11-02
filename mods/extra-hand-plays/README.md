@@ -153,6 +153,9 @@ offers:
   the duel, used up by a play of the calling mod's own (the Duelist Kingdom
   rules' Living Arrow); the hand slides away and comes back without them,
   as a bonus hand.
+- `screen_slot` (version 9): the hand slot on screen at the hand cursor's
+  index, the five's own and those past them, so a mod can read the raised
+  card's object wherever it is (the Duelist Kingdom rules read its face).
 
 When a turn draws fewer cards than the hand has room for, or a hand is
 rebuilt with draws, this mod deals the cards itself. It follows the draw
