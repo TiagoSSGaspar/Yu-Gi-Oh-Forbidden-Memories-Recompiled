@@ -1,0 +1,5 @@
+{
+    "name": "Cartas em português",
+    "description": "Os nomes e textos das cartas em português do Brasil, com as traduções oficiais da Konami, quando o sistema está em português. Desligado, as cartas ficam em inglês.",
+    "text": ["text/cards.txt"]
+}

@@ -1905,8 +1905,33 @@ static void read_strings(Mod *mod)
     }
     for (entry = Json_At(root, 0); entry; entry = Json_Next(entry)) {
         const char *key = Json_Name(entry);
-        if (strcmp(key, "name") && strcmp(key, "description") && strcmp(key, "settings") && strcmp(key, "texts"))
+        if (strcmp(key, "name") && strcmp(key, "description") && strcmp(key, "settings") && strcmp(key, "texts") &&
+            strcmp(key, "text") && strcmp(key, "font") && strcmp(key, "cards"))
             warn(mod, 1, "%s: unknown key \"%s\"", name, key);
+    }
+    /* The game's own text in this language: "text" and "font" files read
+     * after the manifest's (Mods_File), and the words of the mod's own cards
+     * (Mods_CardWords). Both are read once, at startup. */
+    if (Json_Member(root, "text") || Json_Member(root, "font") || Json_Member(root, "cards")) mod->restart = 1;
+    entry = Json_Member(root, "cards");
+    if (entry && Json_TypeOf(entry) != JSON_OBJECT) {
+        warn(mod, 1, "%s: \"cards\" is not an object of the mod's cards", name);
+    } else {
+        for (entry = Json_At(entry, 0); entry; entry = Json_Next(entry)) {
+            const JsonValue *word;
+            if (Json_TypeOf(entry) != JSON_OBJECT) {
+                warn(mod, 1, "%s: the card \"%.40s\" is not an object", name, Json_Name(entry));
+                continue;
+            }
+            for (word = Json_At(entry, 0); word; word = Json_Next(word)) {
+                if (strcmp(Json_Name(word), "name") && strcmp(Json_Name(word), "description"))
+                    warn(mod, 1, "%s: the card \"%.40s\" has an unknown key \"%s\"", name, Json_Name(entry),
+                         Json_Name(word));
+                else if (!Json_String(word, NULL))
+                    warn(mod, 1, "%s: the card \"%.40s\"'s %s is not a string", name, Json_Name(entry),
+                         Json_Name(word));
+            }
+        }
     }
     /* The words the mod draws (host->text): strings, taking the English's
      * arguments. One that does not is never given; the English is. */
@@ -2318,11 +2343,25 @@ int Mods_EntryUsed(const char *id, const JsonValue *entry, const char *where)
     return index < 0 || entry_used(index, entry, where, "the entry");
 }
 
+/* How many entries a "text" or "font" value has: a list's, else one name. */
+static int file_entries(const JsonValue *value)
+{
+    return Json_TypeOf(value) == JSON_ARRAY ? Json_Count(value) : value ? 1 : 0;
+}
+
 int Mods_File(int index, const char *key, int entry_index, char *path, size_t size, const char **name)
 {
     const JsonValue *value = Json_Member(Mods_Manifest(index), key);
-    const JsonValue *entry = Json_TypeOf(value) == JSON_ARRAY ? Json_At(value, entry_index) : entry_index ? NULL : value;
-    int object = Json_TypeOf(entry) == JSON_OBJECT;
+    const JsonValue *entry;
+    int object;
+    /* Past the manifest's, the lang file's for the player's language. */
+    if (entry_index >= file_entries(value)) {
+        entry_index -= file_entries(value);
+        value = index >= 0 && index < mod_count && mods[index].strings
+            ? Json_Member(Json_Root(mods[index].strings), key) : NULL;
+    }
+    entry = Json_TypeOf(value) == JSON_ARRAY ? Json_At(value, entry_index) : entry_index ? NULL : value;
+    object = Json_TypeOf(entry) == JSON_OBJECT;
     const char *file = Json_String(object ? Json_Member(entry, "file") : entry, NULL);
     if (!entry) return 0;
     path[0] = '\0';
@@ -2746,6 +2785,26 @@ const char *Mods_Name(int mod)
 }
 const char *Mods_Status(int mod) { return at(mod) ? mods[mod].status : ""; }
 const char *Mods_Text(int mod, const char *english) { return at(mod) ? own_text(&mods[mod], english) : english; }
+
+const char *Mods_CardWords(const char *id, const JsonValue *entry, const char *what)
+{
+    int index = id ? by_id(id) : -1;
+    const JsonValue *card_id = Json_Member(entry, "id"), *replace = Json_Member(entry, "replace"), *cards;
+    char key[64];
+    if (index < 0 || !mods[index].strings) return NULL;
+    cards = Json_Member(Json_Root(mods[index].strings), "cards");
+    if (Json_TypeOf(cards) != JSON_OBJECT) return NULL;
+    /* An added card by its "id", a replaced one by what it replaces. */
+    if (Json_String(card_id, NULL))
+        snprintf(key, sizeof(key), "%s", Json_String(card_id, ""));
+    else if (Json_TypeOf(replace) == JSON_NUMBER)
+        snprintf(key, sizeof(key), "%ld", Json_Number(replace, 0));
+    else if (Json_String(replace, NULL))
+        snprintf(key, sizeof(key), "%s", Json_String(replace, ""));
+    else
+        return NULL;
+    return Json_String(Json_Member(Json_Member(cards, key), what), NULL);
+}
 int Mods_Enabled(int mod) { return at(mod) ? mods[mod].enabled : 0; }
 int Mods_RequiresRestart(int mod) { return at(mod) ? mods[mod].restart : 0; }
 

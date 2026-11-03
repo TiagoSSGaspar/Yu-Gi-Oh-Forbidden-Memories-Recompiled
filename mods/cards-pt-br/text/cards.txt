@@ -1,0 +1,6959 @@
+# Cards in Portuguese (mods/cards-pt-br): written by tools/pc/cards_pt_br.py
+# from cards.json. Do not edit; edit the table and run it again.
+@bank names
+
+[8001]  # 1
+Dragão Branco de Olhos Azuis{end}
+
+[8002]  # 2
+Elfa Mística{end}
+
+[8003]  # 3
+Gigante Hitotsu-Me{end}
+
+[8004]  # 4
+Dragão Filhote{end}
+
+[8005]  # 5
+Ryu-Kishin{end}
+
+[8006]  # 6
+Diabrete Selvagem{end}
+
+[8007]  # 7
+Dragão Alado, Guardião da Fortaleza Nº1{end}
+
+[8008]  # 8
+Homem Cogumelo{end}
+
+[8009]  # 9
+Espectro Sombrio{end}
+
+[800A]  # 10
+Dragão de Fogo da Terra Negra{end}
+
+[800B]  # 11
+Dragão de Cauda Assassina{end}
+
+[800C]  # 12
+Guarda de Batalha do Pântano{end}
+
+[800D]  # 13
+Tyhone{end}
+
+[800E]  # 14
+Jovem Touro Guerreiro{end}
+
+[800F]  # 15
+Espadachim das Chamas{end}
+
+[8010]  # 16
+Mago do Tempo{end}
+
+[8011]  # 17
+Perna Direita de "O Proibido"{end}
+
+[8012]  # 18
+Perna Esquerda de "O Proibido"{end}
+
+[8013]  # 19
+Braço Direito de "O Proibido"{end}
+
+[8014]  # 20
+Braço Esquerdo de "O Proibido"{end}
+
+[8015]  # 21
+Exodia, "O Proibido"{end}
+
+[8016]  # 22
+Caveira Invocada{end}
+
+[8017]  # 23
+Besta de Vermes Maléfica{end}
+
+[8018]  # 24
+Servo Caveira{end}
+
+[8019]  # 25
+Demônio de Chifre{end}
+
+[801A]  # 26
+Touro Guerreiro{end}
+
+[801B]  # 27
+Castor Guerreiro{end}
+
+[801C]  # 28
+Ogro de Rocha da Gruta #1{end}
+
+[801D]  # 29
+Mountain Warrior{end}
+
+[801E]  # 30
+Guerreiro Zumbi{end}
+
+[801F]  # 31
+Dragão Koumori{end}
+
+[8020]  # 32
+Rei Rex de Duas Cabeças{end}
+
+[8021]  # 33
+O Juiz{end}
+
+[8022]  # 34
+Saggi, o Palhaço Sombrio{end}
+
+[8023]  # 35
+Mago Negro{end}
+
+[8024]  # 36
+Cabelos de Cobras{end}
+
+[8025]  # 37
+Gaia, o Matador de Dragões{end}
+
+[8026]  # 38
+Gaia, o Cavaleiro Impetuoso{end}
+
+[8027]  # 39
+Maldição do Dragão{end}
+
+[8028]  # 40
+Flautista de Dragões{end}
+
+[8029]  # 41
+Guardião Celta{end}
+
+[802A]  # 42
+Ilusionista Sem Rosto{end}
+
+[802B]  # 43
+Guerreiro Karbonala{end}
+
+[802C]  # 44
+Boneca Marota{end}
+
+[802D]  # 45
+Herói Oscillo º2{end}
+
+[802E]  # 46
+Griffore{end}
+
+[802F]  # 47
+Torike{end}
+
+[8030]  # 48
+Sangan{end}
+
+[8031]  # 49
+Inseto Grande{end}
+
+[8032]  # 50
+Inseto Básico{end}
+
+[8033]  # 51
+Lagarto Encouraçado{end}
+
+[8034]  # 52
+Escaravelho-Hércules{end}
+
+[8035]  # 53
+Ferroada Letal{end}
+
+[8036]  # 54
+Gokibore{end}
+
+[8037]  # 55
+Pulga Gigante{end}
+
+[8038]  # 56
+Larvae Moth{end}
+
+[8039]  # 57
+Grande Moth{end}
+
+[803A]  # 58
+Kuriboh{end}
+
+[803B]  # 59
+Cemitério de Mamutes{end}
+
+[803C]  # 60
+O Grande Branco{end}
+
+[803D]  # 61
+Lobo{end}
+
+[803E]  # 62
+Lady Harpia{end}
+
+[803F]  # 63
+Irmãs de Lady Harpia{end}
+
+[8040]  # 64
+Tigre do Machado{end}
+
+[8041]  # 65
+O Presa de Prata{end}
+
+[8042]  # 66
+Kojikocy{end}
+
+[8043]  # 67
+Grande Moth Final Perfeito{end}
+
+[8044]  # 68
+Garoozis{end}
+
+[8045]  # 69
+Dragão Milenar{end}
+
+[8046]  # 70
+Kraken Demônio{end}
+
+[8047]  # 71
+Alforreca{end}
+
+[8048]  # 72
+Casulo de Evolução{end}
+
+[8049]  # 73
+Kairyu-Shin{end}
+
+[804A]  # 74
+Soldado de Pedra Gigante{end}
+
+[804B]  # 75
+Planta Devoradora de Homens{end}
+
+[804C]  # 76
+Crocodilus{end}
+
+[804D]  # 77
+Estraçalhador{end}
+
+[804E]  # 78
+Predador com Machado{end}
+
+[804F]  # 79
+Megazowler{end}
+
+[8050]  # 80
+Uraby{end}
+
+[8051]  # 81
+Dragão Rastejante #2{end}
+
+[8052]  # 82
+Dragão Negro de Olhos Vermelhos{end}
+
+[8053]  # 83
+Castelo das Ilusões Sombrias{end}
+
+[8054]  # 84
+Ceifador de Cards{end}
+
+[8055]  # 85
+Rei de Yamimakai{end}
+
+[8056]  # 86
+Barox{end}
+
+[8057]  # 87
+Quimera Negra{end}
+
+[8058]  # 88
+Metal Guardian{end}
+
+[8059]  # 89
+Tartaruga Catapulta{end}
+
+[805A]  # 90
+Gyakutenno Megami{end}
+
+[805B]  # 91
+Centauro Místico{end}
+
+[805C]  # 92
+Centauro Furioso{end}
+
+[805D]  # 93
+Zanki{end}
+
+[805E]  # 94
+Dragão Rastejante{end}
+
+[805F]  # 95
+Palhaço Grosseiro{end}
+
+[8060]  # 96
+Zumbi com Armadura{end}
+
+[8061]  # 97
+Dragão Zumbi{end}
+
+[8062]  # 98
+Palhaço Zumbi{end}
+
+[8063]  # 99
+Pumpking, O Rei dos Fantasmas{end}
+
+[8064]  # 100
+Guerreiro Batalhador{end}
+
+[8065]  # 101
+Asas da Chama Perversa{end}
+
+[8066]  # 102
+Máscara da Escuridão{end}
+
+[8067]  # 103
+Espelho de Mudança de Emprego{end}
+
+[8068]  # 104
+Cortina dos Escuros{end}
+
+[8069]  # 105
+Tomozauro{end}
+
+[806A]  # 106
+Espírito dos Ventos{end}
+
+[806B]  # 107
+Kageningen{end}
+
+[806C]  # 108
+Cemitério e a Mão do Convite{end}
+
+[806D]  # 109
+Deusa com o Terceiro Olho{end}
+
+[806E]  # 110
+Herói do Leste{end}
+
+[806F]  # 111
+Doma, O Anjo do Silêncio{end}
+
+[8070]  # 112
+A Bruxa que se Alimenta da Vida{end}
+
+[8071]  # 113
+Cinzento das Trevas{end}
+
+[8072]  # 114
+Chapéu Mágico Branco{end}
+
+[8073]  # 115
+Mago Kamion{end}
+
+[8074]  # 116
+Escorpião Pesadelo{end}
+
+[8075]  # 117
+Espírito dos Livros{end}
+
+[8076]  # 118
+Auxiliador nas Sombras{end}
+
+[8077]  # 119
+Julgamento Infernal{end}
+
+[8078]  # 120
+Palhaço dos Sonhos{end}
+
+[8079]  # 121
+Leão adormecido{end}
+
+[807A]  # 122
+Pergaminho de Dragão Yamatano{end}
+
+[807B]  # 123
+Dark Plant{end}
+
+[807C]  # 124
+Ferramenta Antiga{end}
+
+[807D]  # 125
+Pássaro da Fé{end}
+
+[807E]  # 126
+Orion o Rei da Batalha{end}
+
+[807F]  # 127
+Ansatsu{end}
+
+[8080]  # 128
+LaMoon{end}
+
+[8081]  # 129
+Nemuriko{end}
+
+[8082]  # 130
+Controlador do Clima{end}
+
+[8083]  # 131
+Octoberser{end}
+
+[8084]  # 132
+O 13º Túmulo{end}
+
+[8085]  # 133
+Charubin, O Cavaleiro do Fogo{end}
+
+[8086]  # 134
+Correntes Misticas de Captura{end}
+
+[8087]  # 135
+Mão do demônio{end}
+
+[8088]  # 136
+Fantasma Sarcástico{end}
+
+[8089]  # 137
+Mystery Hand{end}
+
+[808A]  # 138
+Dragon Statue{end}
+
+[808B]  # 139
+Zumbi Prateado de Olhos-Azuis{end}
+
+[808C]  # 140
+Mestre dos Sapos{end}
+
+[808D]  # 141
+Caracol Espinhudo{end}
+
+[808E]  # 142
+Manipulador de Chamas{end}
+
+[808F]  # 143
+Necrolancer the Timelord{end}
+
+[8090]  # 144
+Djinn, o Observador do Vento{end}
+
+[8091]  # 145
+O fantasma ladrão enfeitiçador{end}
+
+[8092]  # 146
+Templo de Crânios{end}
+
+[8093]  # 147
+Monstro Ovo{end}
+
+[8094]  # 148
+A Sombra que Controla as Trevas{end}
+
+[8095]  # 149
+Senhor da Lampada{end}
+
+[8096]  # 150
+Akihiron{end}
+
+[8097]  # 151
+Rhaimundos da Espada Vermelha{end}
+
+[8098]  # 152
+A Sombra vermelha Derretida{end}
+
+[8099]  # 153
+Dokuroizo o estripador impiedoso{end}
+
+[809A]  # 154
+Ceifador de Fogo{end}
+
+[809B]  # 155
+Larvas{end}
+
+[809C]  # 156
+Armadura Resistente{end}
+
+[809D]  # 157
+Relva-Fogo{end}
+
+[809E]  # 158
+Devorador de Homens{end}
+
+[809F]  # 159
+Bico de Escavação{end}
+
+[80A0]  # 160
+Guerreiro M nº 1{end}
+
+[80A1]  # 161
+Guerreiro M nº 2{end}
+
+[80A2]  # 162
+Sabedoria Corrompida{end}
+
+[80A3]  # 163
+Lisark{end}
+
+[80A4]  # 164
+Senhor de Zemia{end}
+
+[80A5]  # 165
+A Mão do Julgamento{end}
+
+[80A6]  # 166
+Misterioso Mestre das Marionetes{end}
+
+[80A7]  # 167
+Ancient Jar{end}
+
+[80A8]  # 168
+Dragão do Fogo Negro{end}
+
+[80A9]  # 169
+Rei Negro do Abismo{end}
+
+[80AA]  # 170
+Espírito da Harpa{end}
+
+[80AB]  # 171
+Grande Olho{end}
+
+[80AC]  # 172
+Armaill{end}
+
+[80AD]  # 173
+Prisioneiro das Trevas{end}
+
+[80AE]  # 174
+Hurricail{end}
+
+[80AF]  # 175
+Cérebro Ancião{end}
+
+[80B0]  # 176
+Fire Eye{end}
+
+[80B1]  # 177
+Monsturtle{end}
+
+[80B2]  # 178
+Estende Garras{end}
+
+[80B3]  # 179
+Phantom Dewan{end}
+
+[80B4]  # 180
+Arlownay{end}
+
+[80B5]  # 181
+Sombra negra{end}
+
+[80B6]  # 182
+Palhaço Mascarado{end}
+
+[80B7]  # 183
+Bugiganga da Sorte{end}
+
+[80B8]  # 184
+Genin{end}
+
+[80B9]  # 185
+Olho Armadura{end}
+
+[80BA]  # 186
+Reflexo Demoníaco nº 2{end}
+
+[80BB]  # 187
+Portal Massa{end}
+
+[80BC]  # 188
+Synchar{end}
+
+[80BD]  # 189
+Fusionista{end}
+
+[80BE]  # 190
+Akakieisu{end}
+
+[80BF]  # 191
+LaLa Li-oon{end}
+
+[80C0]  # 192
+Key Mace{end}
+
+[80C1]  # 193
+Tigre Tartaruga{end}
+
+[80C2]  # 194
+Terra, O Terrível{end}
+
+[80C3]  # 195
+Doron{end}
+
+[80C4]  # 196
+Arma Knight{end}
+
+[80C5]  # 197
+Topeira Mecânica Zumbi{end}
+
+[80C6]  # 198
+Amante Feliz{end}
+
+[80C7]  # 199
+Cavaleiro Pinguim{end}
+
+[80C8]  # 200
+Pequeno Dragão{end}
+
+[80C9]  # 201
+Panda Frenético{end}
+
+[80CA]  # 202
+Marmota Demônio da Pervesidade{end}
+
+[80CB]  # 203
+Espectro Fantasma{end}
+
+[80CC]  # 204
+Mabarrel{end}
+
+[80CD]  # 205
+Dorover{end}
+
+[80CE]  # 206
+Twin Long Rods #1{end}
+
+[80CF]  # 207
+Passaro Gracejador{end}
+
+[80D0]  # 208
+Pequeno Anjo{end}
+
+[80D1]  # 209
+Cortador Alado{end}
+
+[80D2]  # 210
+Alma Hinotama{end}
+
+[80D3]  # 211
+Criança do trovão{end}
+
+[80D4]  # 212
+Meotoko{end}
+
+[80D5]  # 213
+Aqua Madoor{end}
+
+[80D6]  # 214
+Kagemusha da Chama Azul{end}
+
+[80D7]  # 215
+Fantasma da Chama{end}
+
+[80D8]  # 216
+Doriado{end}
+
+[80D9]  # 217
+Dragão Caveira Negro{end}
+
+[80DA]  # 218
+Senhor das Trevas de Duas Bocas{end}
+
+[80DB]  # 219
+Solidão{end}
+
+[80DC]  # 220
+Feiticeiro Mascarado{end}
+
+[80DD]  # 221
+Kumootoko{end}
+
+[80DE]  # 222
+Midnight Fiend{end}
+
+[80DF]  # 223
+Cobra do Mar Rugidora{end}
+
+[80E0]  # 224
+Mestre das Armadilhas{end}
+
+[80E1]  # 225
+Espada Demoníaca{end}
+
+[80E2]  # 226
+Perseguidor de Crâneos{end}
+
+[80E3]  # 227
+Hitodenchak{end}
+
+[80E4]  # 228
+Restos de Árvore{end}
+
+[80E5]  # 229
+Ampulheta da Vida{end}
+
+[80E6]  # 230
+Peixe Raro{end}
+
+[80E7]  # 231
+Palhaço de Madeira{end}
+
+[80E8]  # 232
+Madjinn Gunn{end}
+
+[80E9]  # 233
+Titã Negro do Terror{end}
+
+[80EA]  # 234
+Bela Caçadora-de-Cabeças{end}
+
+[80EB]  # 235
+Wodan the Resident of the Forest{end}
+
+[80EC]  # 236
+Guardião do Labirinto{end}
+
+[80ED]  # 237
+Haniwa{end}
+
+[80EE]  # 238
+Yashinoki{end}
+
+[80EF]  # 239
+Vishwar Randi{end}
+
+[80F0]  # 240
+O Drdek{end}
+
+[80F1]  # 241
+Assassino das Trevas{end}
+
+[80F2]  # 242
+Vela do Destino{end}
+
+[80F3]  # 243
+Water Element{end}
+
+[80F4]  # 244
+Dissolve-rocha{end}
+
+[80F5]  # 245
+Morcego Medah{end}
+
+[80F6]  # 246
+Aquele que Caça Almas{end}
+
+[80F7]  # 247
+Rizo-água{end}
+
+[80F8]  # 248
+Mestre & Especialista{end}
+
+[80F9]  # 249
+Omotics da Água{end}
+
+[80FA]  # 250
+Hyo{end}
+
+[80FB]  # 251
+Sereia Fascinante{end}
+
+[80FC]  # 252
+Nekogal #1{end}
+
+[80FD]  # 253
+Fadabruxa{end}
+
+[80FE]  # 254
+Besta embrionária{end}
+
+[80FF]  # 255
+Rato Prevenido{end}
+
+[8100]  # 256
+Guerreiro D.D.{end}
+
+[8101]  # 257
+Armadilheiro de Pedra{end}
+
+[8102]  # 258
+Beastking of the Swamps{end}
+
+[8103]  # 259
+Ancient Sorcerer{end}
+
+[8104]  # 260
+Lunar Queen Elzaim{end}
+
+[8105]  # 261
+Espelho Arquedemônio{end}
+
+[8106]  # 262
+O Pequeno Espadachim de Aile{end}
+
+[8107]  # 263
+Rock Ogre Grotto #2{end}
+
+[8108]  # 264
+Ovo Elfo com Asas{end}
+
+[8109]  # 265
+O Furioso Rei dos Mares{end}
+
+[810A]  # 266
+Princesa de Tsurugi{end}
+
+[810B]  # 267
+Guerreiro Demoníaco Desconhecido{end}
+
+[810C]  # 268
+Escrivão dos segredos{end}
+
+[810D]  # 269
+Versago, o Destruidor{end}
+
+[810E]  # 270
+Wetha{end}
+
+[810F]  # 271
+Luz Megirus{end}
+
+[8110]  # 272
+Mavelus{end}
+
+[8111]  # 273
+Árvore Anciã do Esclarecimento{end}
+
+[8112]  # 274
+Rei Fantasma Verde{end}
+
+[8113]  # 275
+Bugroth de Ataque Terrestre{end}
+
+[8114]  # 276
+Radiação & Temperatura{end}
+
+[8115]  # 277
+Gorgon Egg{end}
+
+[8116]  # 278
+Pequeno Moth{end}
+
+[8117]  # 279
+Rei Nevoeiro{end}
+
+[8118]  # 280
+Protetora do Trono{end}
+
+[8119]  # 281
+Palhaço Místico{end}
+
+[811A]  # 282
+Ovelha Mística nº 2{end}
+
+[811B]  # 283
+Holografia{end}
+
+[811C]  # 284
+Tao, o Cantador{end}
+
+[811D]  # 285
+Serpente Saqueadora{end}
+
+[811E]  # 286
+Porteiro{end}
+
+[811F]  # 287
+Ogre da Sombra Negra{end}
+
+[8120]  # 288
+Artista Negro{end}
+
+[8121]  # 289
+Limo Mutante{end}
+
+[8122]  # 290
+Moon Envoy{end}
+
+[8123]  # 291
+Fireyarou{end}
+
+[8124]  # 292
+Kappa Psíquico{end}
+
+[8125]  # 293
+Masaki, o Espadachim Lendário{end}
+
+[8126]  # 294
+Dragoness, O Cavaleiro Perverso{end}
+
+[8127]  # 295
+Bio planta{end}
+
+[8128]  # 296
+Dragão Escudo de Um Só Olho{end}
+
+[8129]  # 297
+Soldado Cibernético do Mundo das Trevas{end}
+
+[812A]  # 298
+Dragão Maléfico com a Cabeça de Ersatz{end}
+
+[812B]  # 299
+Dama Sônica{end}
+
+[812C]  # 300
+Kurama{end}
+
+[812D]  # 301
+Espada Lendária{end}
+
+[812E]  # 302
+Espada Sombria da Destruição{end}
+
+[812F]  # 303
+Energia das Trevas{end}
+
+[8130]  # 304
+Machado do Desespero{end}
+
+[8131]  # 305
+Armadura Canhão Laser{end}
+
+[8132]  # 306
+Armadura Inseto com Canhão Laser{end}
+
+[8133]  # 307
+Luz do Duende{end}
+
+[8134]  # 308
+Presas de Besta{end}
+
+[8135]  # 309
+Concha de Aço{end}
+
+[8136]  # 310
+Germes Vis{end}
+
+[8137]  # 311
+Pendente Negro{end}
+
+[8138]  # 312
+Arco e Flecha de Prata{end}
+
+[8139]  # 313
+Chifre de Luz{end}
+
+[813A]  # 314
+Chifre do Unicórnio{end}
+
+[813B]  # 315
+Tesouro do Dragão{end}
+
+[813C]  # 316
+Chicote Elétrico{end}
+
+[813D]  # 317
+Ciberescudo{end}
+
+[813E]  # 318
+Egotista Elegante{end}
+
+[813F]  # 319
+Lua Mística{end}
+
+[8140]  # 320
+Impedir a Defesa{end}
+
+[8141]  # 321
+Nuzzler Maléfica{end}
+
+[8142]  # 322
+Cristal Violeta{end}
+
+[8143]  # 323
+Livro das Artes Secretas{end}
+
+[8144]  # 324
+Fortalecimento{end}
+
+[8145]  # 325
+Fábrica de Conversão de Máquina{end}
+
+[8146]  # 326
+Aumentar a Temperatura Corporal{end}
+
+[8147]  # 327
+Vento Seguidor{end}
+
+[8148]  # 328
+Poder de Kaishin{end}
+
+[8149]  # 329
+Jarro de Captura de Dragões{end}
+
+[814A]  # 330
+Floresta{end}
+
+[814B]  # 331
+Terra Árida{end}
+
+[814C]  # 332
+Montanha{end}
+
+[814D]  # 333
+Sogen{end}
+
+[814E]  # 334
+Umi{end}
+
+[814F]  # 335
+Yami{end}
+
+[8150]  # 336
+Buraco Negro{end}
+
+[8151]  # 337
+Raigeki{end}
+
+[8152]  # 338
+Mooyan Curry{end}
+
+[8153]  # 339
+Remédio Vermelho{end}
+
+[8154]  # 340
+Remédio Secreto dos Goblins{end}
+
+[8155]  # 341
+ALma do Puro{end}
+
+[8156]  # 342
+Dian Keto, Mestre da Cura{end}
+
+[8157]  # 343
+Faíscas{end}
+
+[8158]  # 344
+Hinotama{end}
+
+[8159]  # 345
+Chama Final{end}
+
+[815A]  # 346
+Ookazi{end}
+
+[815B]  # 347
+Fogo Medonho{end}
+
+[815C]  # 348
+Espadas da Luz Reveladora{end}
+
+[815D]  # 349
+Círculo da Profecia{end}
+
+[815E]  # 350
+Luz que Penetra as Trevas{end}
+
+[815F]  # 351
+Yaranzo{end}
+
+[8160]  # 352
+Kanan the Swordmistress{end}
+
+[8161]  # 353
+Takriminos{end}
+
+[8162]  # 354
+Stuffed Animal{end}
+
+[8163]  # 355
+Olho Megasonico{end}
+
+[8164]  # 356
+Super Leão-de-Guerra{end}
+
+[8165]  # 357
+Yamadron{end}
+
+[8166]  # 358
+Seiyaryu{end}
+
+[8167]  # 359
+Three-legged Zombies{end}
+
+[8168]  # 360
+Zera o Mante{end}
+
+[8169]  # 361
+Pinguim Voador{end}
+
+[816A]  # 362
+Escudo do Milênio{end}
+
+[816B]  # 363
+Fada Madrinha{end}
+
+[816C]  # 364
+Soldado do Lustro Negro{end}
+
+[816D]  # 365
+Espelho do Demônio{end}
+
+[816E]  # 366
+Paredes do Labirinto{end}
+
+[816F]  # 367
+Jirai Gumo{end}
+
+[8170]  # 368
+Carniçal das Sombras{end}
+
+[8171]  # 369
+Parede das Sombras{end}
+
+[8172]  # 370
+Tanque do Labirinto{end}
+
+[8173]  # 371
+Sanga do Trovão{end}
+
+[8174]  # 372
+Kazejin{end}
+
+[8175]  # 373
+Suijin{end}
+
+[8176]  # 374
+Guardião do Portão{end}
+
+[8177]  # 375
+Lombriga da Masmorra{end}
+
+[8178]  # 376
+Domador de Monstros{end}
+
+[8179]  # 377
+Ryu-Kishin Potencializado{end}
+
+[817A]  # 378
+Espadachim Sorrateiro{end}
+
+[817B]  # 379
+La Jinn, o Gênio Místico da Lâmpada{end}
+
+[817C]  # 380
+Dragão Definitivo de Olhos Azuis{end}
+
+[817D]  # 381
+Jacaré Toon{end}
+
+[817E]  # 382
+Kaiser Violento{end}
+
+[817F]  # 383
+Dragão Papagaio{end}
+
+[8180]  # 384
+Coelhinho Negro{end}
+
+[8181]  # 385
+Bickuribox{end}
+
+[8182]  # 386
+Dragão de Estimação da Harpia{end}
+
+[8183]  # 387
+Lâmpada Mística{end}
+
+[8184]  # 388
+Máquina do Pêndulo{end}
+
+[8185]  # 389
+Giltia, o Cavaleiro D.{end}
+
+[8186]  # 390
+Aranha Lançadora{end}
+
+[8187]  # 391
+Zoa{end}
+
+[8188]  # 392
+Metalzoa{end}
+
+[8189]  # 393
+Zone Eater{end}
+
+[818A]  # 394
+Escorpião de Aço{end}
+
+[818B]  # 395
+Elfa Dançarina{end}
+
+[818C]  # 396
+Ocubeam{end}
+
+[818D]  # 397
+Leghul{end}
+
+[818E]  # 398
+Ooguchi{end}
+
+[818F]  # 399
+Espadachim de uma Terra Distante{end}
+
+[8190]  # 400
+Emperor of the Land and Sea{end}
+
+[8191]  # 401
+Ushi Oni{end}
+
+[8192]  # 402
+Monster Eye{end}
+
+[8193]  # 403
+Leogun{end}
+
+[8194]  # 404
+Tatsunootoshigo{end}
+
+[8195]  # 405
+Matador com Espada{end}
+
+[8196]  # 406
+Yaiba Robo{end}
+
+[8197]  # 407
+Rei Máquina{end}
+
+[8198]  # 408
+Mecha-Soldado Gigante{end}
+
+[8199]  # 409
+Dragão de Metal{end}
+
+[819A]  # 410
+Mechanical Spider{end}
+
+[819B]  # 411
+Bat{end}
+
+[819C]  # 412
+Lobo Giga-Tech{end}
+
+[819D]  # 413
+Soldado Cibernético{end}
+
+[819E]  # 414
+Pás esmagadoras{end}
+
+[819F]  # 415
+Caçador Mecânico{end}
+
+[81A0]  # 416
+Blocker{end}
+
+[81A1]  # 417
+Malabarista Explosivo{end}
+
+[81A2]  # 418
+Golgoil{end}
+
+[81A3]  # 419
+Giganto{end}
+
+[81A4]  # 420
+Ciber-Stein{end}
+
+[81A5]  # 421
+Comandante Cibernético{end}
+
+[81A6]  # 422
+Jinzo Nº 7{end}
+
+[81A7]  # 423
+Tatu dado{end}
+
+[81A8]  # 424
+Dragão do Céu{end}
+
+[81A9]  # 425
+Dragão do Trovão{end}
+
+[81AA]  # 426
+Dragão de Pedra{end}
+
+[81AB]  # 427
+Kaiser Dragon{end}
+
+[81AC]  # 428
+Maga da Fé{end}
+
+[81AD]  # 429
+Deusa do Capricho{end}
+
+[81AE]  # 430
+Mago da Água{end}
+
+[81AF]  # 431
+Água de Gelo{end}
+
+[81B0]  # 432
+Fada do Dragão de Água{end}
+
+[81B1]  # 433
+Elfo Ancião{end}
+
+[81B2]  # 434
+Beautiful Beast Trainer{end}
+
+[81B3]  # 435
+Garota da água{end}
+
+[81B4]  # 436
+Golfinho Branco{end}
+
+[81B5]  # 437
+Tubarão das Profundezas do Mar{end}
+
+[81B6]  # 438
+Peixe de Metal{end}
+
+[81B7]  # 439
+Habitante das Profundezas{end}
+
+[81B8]  # 440
+Peixe de 7 Cores{end}
+
+[81B9]  # 441
+Mech Bass{end}
+
+[81BA]  # 442
+Aqua Dragon{end}
+
+[81BB]  # 443
+Dragão Rei dos Mares{end}
+
+[81BC]  # 444
+Turu-Purun{end}
+
+[81BD]  # 445
+Sentinela dos Mares{end}
+
+[81BE]  # 446
+Cobra da Água{end}
+
+[81BF]  # 447
+Cobra d'Água Vermelha Gigante{end}
+
+[81C0]  # 448
+Seadra Espinhosa{end}
+
+[81C1]  # 449
+Tartaruga Branca de 30,000 Anos{end}
+
+[81C2]  # 450
+Kappa Avenger{end}
+
+[81C3]  # 451
+Kanikabuto{end}
+
+[81C4]  # 452
+Zarigun{end}
+
+[81C5]  # 453
+Golem Milênio{end}
+
+[81C6]  # 454
+Golem Destruidor{end}
+
+[81C7]  # 455
+Rocha Revólver{end}
+
+[81C8]  # 456
+Guerreiro Minomushi{end}
+
+[81C9]  # 457
+Stone Ghost{end}
+
+[81CA]  # 458
+Ataque Kaminari{end}
+
+[81CB]  # 459
+Besta Eletro-Transmissora{end}
+
+[81CC]  # 460
+Escargot Relâmpago{end}
+
+[81CD]  # 461
+Pinguim Elétrico{end}
+
+[81CE]  # 462
+O Imortal do Trovão{end}
+
+[81CF]  # 463
+Serpente Eléctrica{end}
+
+[81D0]  # 464
+Wing Eagle{end}
+
+[81D1]  # 465
+Águia Punida{end}
+
+[81D2]  # 466
+Pássaro da Crista Vermelha{end}
+
+[81D3]  # 467
+Pássaro-solar Carmesin{end}
+
+[81D4]  # 468
+Pássaro Rainha{end}
+
+[81D5]  # 469
+Ninja Armado{end}
+
+[81D6]  # 470
+Fantasma Mágico{end}
+
+[81D7]  # 471
+Caçador de Almas{end}
+
+[81D8]  # 472
+Comedor de ar{end}
+
+[81D9]  # 473
+Pardal Vermillion{end}
+
+[81DA]  # 474
+Kamen do Mar{end}
+
+[81DB]  # 475
+Serpente Sinistra{end}
+
+[81DC]  # 476
+Ganigumo{end}
+
+[81DD]  # 477
+Alinsection{end}
+
+[81DE]  # 478
+Soldados Insectos do Céu{end}
+
+[81DF]  # 479
+Cavaleiro Barata{end}
+
+[81E0]  # 480
+Kuwagata α{end}
+
+[81E1]  # 481
+Arrombador{end}
+
+[81E2]  # 482
+Prágtico{end}
+
+[81E3]  # 483
+Garvas{end}
+
+[81E4]  # 484
+Ameba{end}
+
+[81E5]  # 485
+Korogashi{end}
+
+[81E6]  # 486
+Boo Koo{end}
+
+[81E7]  # 487
+Lobo Flor{end}
+
+[81E8]  # 488
+Flor Arco-íris{end}
+
+[81E9]  # 489
+Lírio de Cano{end}
+
+[81EA]  # 490
+Needle Ball{end}
+
+[81EB]  # 491
+Pavão{end}
+
+[81EC]  # 492
+Hoshiningen{end}
+
+[81ED]  # 493
+Maha Vailo{end}
+
+[81EE]  # 494
+Sereia Marinha do Arco Iris{end}
+
+[81EF]  # 495
+Rei Músico{end}
+
+[81F0]  # 496
+Wilmee{end}
+
+[81F1]  # 497
+Yado Karu{end}
+
+[81F2]  # 498
+Morinphen{end}
+
+[81F3]  # 499
+Kattapillar{end}
+
+[81F4]  # 500
+Caçador de Dragões{end}
+
+[81F5]  # 501
+Inseto Devorador de Homens{end}
+
+[81F6]  # 502
+Humano Dragão{end}
+
+[81F7]  # 503
+Tartaruga Guaxinim{end}
+
+[81F8]  # 504
+Fungi of the Musk{end}
+
+[81F9]  # 505
+Prisman{end}
+
+[81FA]  # 506
+Dogra do Vendaval{end}
+
+[81FB]  # 507
+Peixe Louco{end}
+
+[81FC]  # 508
+Ciber Saurus{end}
+
+[81FD]  # 509
+Braquio-raidus{end}
+
+[81FE]  # 510
+Flor risonha{end}
+
+[81FF]  # 511
+Soldado de Feijão{end}
+
+[8200]  # 512
+Soldado Canhão{end}
+
+[8201]  # 513
+Guardião da Sala do Trono{end}
+
+[8202]  # 514
+Talhador Corajoso{end}
+
+[8203]  # 515
+The Statue of Easter Island{end}
+
+[8204]  # 516
+Muka Muka{end}
+
+[8205]  # 517
+Monstro de Arenito{end}
+
+[8206]  # 518
+Boulder Tortoise{end}
+
+[8207]  # 519
+Kraken de Fogo{end}
+
+[8208]  # 520
+Turtle Bird{end}
+
+[8209]  # 521
+Pássaro Crânio{end}
+
+[820A]  # 522
+Pássaro monstruoso{end}
+
+[820B]  # 523
+O Carniceiro do Bar{end}
+
+[820C]  # 524
+Menino Estrela{end}
+
+[820D]  # 525
+Espírito da Montanha{end}
+
+[820E]  # 526
+Caçador de Cabeças{end}
+
+[820F]  # 527
+Milus Radiante{end}
+
+[8210]  # 528
+Togex{end}
+
+[8211]  # 529
+Cerebrus de Chamas{end}
+
+[8212]  # 530
+Eldeen{end}
+
+[8213]  # 531
+Areia Mística{end}
+
+[8214]  # 532
+Elfos Gêmeos{end}
+
+[8215]  # 533
+Kwagar Hércules{end}
+
+[8216]  # 534
+Minar{end}
+
+[8217]  # 535
+Homemkamakiri{end}
+
+[8218]  # 536
+Mechaleon{end}
+
+[8219]  # 537
+Mega Esfera de Trovão{end}
+
+[821A]  # 538
+Niwatori{end}
+
+[821B]  # 539
+Tubarão Corroido{end}
+
+[821C]  # 540
+Skelengel{end}
+
+[821D]  # 541
+Hane-Hane{end}
+
+[821E]  # 542
+Misairuzame{end}
+
+[821F]  # 543
+Tongyo{end}
+
+[8220]  # 544
+Dharma Cannon{end}
+
+[8221]  # 545
+Skelgon{end}
+
+[8222]  # 546
+Guerreiro Wow{end}
+
+[8223]  # 547
+Griggle{end}
+
+[8224]  # 548
+Rato de Osso{end}
+
+[8225]  # 549
+Rã Limo{end}
+
+[8226]  # 550
+Behegon{end}
+
+[8227]  # 551
+Elfa Negra{end}
+
+[8228]  # 552
+Winged Dragon #2{end}
+
+[8229]  # 553
+Homem Cogumelo Nº2{end}
+
+[822A]  # 554
+Guarda de Batalha da Lava{end}
+
+[822B]  # 555
+Tyhone #2{end}
+
+[822C]  # 556
+O Andarilho Condenado{end}
+
+[822D]  # 557
+Ogre de Aço da Gruta nº 1{end}
+
+[822E]  # 558
+Pote, o Truque{end}
+
+[822F]  # 559
+Oscillo Hero{end}
+
+[8230]  # 560
+Invasor de Outra Dimenção{end}
+
+[8231]  # 561
+Dragão Inferior{end}
+
+[8232]  # 562
+Verme Agulha{end}
+
+[8233]  # 563
+Mísero Fantasma do Sotão{end}
+
+[8234]  # 564
+Grande Mamute de Goldfine{end}
+
+[8235]  # 565
+Tubarão Negro Devorador de Homens{end}
+
+[8236]  # 566
+Yormungarde{end}
+
+[8237]  # 567
+Espinhos do Mundo das Trevas{end}
+
+[8238]  # 568
+Antrossauro{end}
+
+[8239]  # 569
+Lagarto Salivador{end}
+
+[823A]  # 570
+Trakodonte{end}
+
+[823B]  # 571
+B. Dragon Jungle King{end}
+
+[823C]  # 572
+Juíza Imperatriz{end}
+
+[823D]  # 573
+Pequeno D{end}
+
+[823E]  # 574
+Bruxa da Floresta Negra{end}
+
+[823F]  # 575
+O Ancião da Floresta Profunda{end}
+
+[8240]  # 576
+Escorpião gigante da tundra{end}
+
+[8241]  # 577
+Goblin corvo{end}
+
+[8242]  # 578
+Leão feitiçeiro{end}
+
+[8243]  # 579
+Flor do Abismo{end}
+
+[8244]  # 580
+Robô Patrulha{end}
+
+[8245]  # 581
+Takuhee{end}
+
+[8246]  # 582
+Feiticeira das Sombras{end}
+
+[8247]  # 583
+Relatório do Tempo{end}
+
+[8248]  # 584
+Corrente do aprisionamento{end}
+
+[8249]  # 585
+Caracol Mecânico{end}
+
+[824A]  # 586
+Greenkappa{end}
+
+[824B]  # 587
+Mon Larvas{end}
+
+[824C]  # 588
+Living Vase{end}
+
+[824D]  # 589
+Planta com Tentáculos{end}
+
+[824E]  # 590
+Beaked Snake{end}
+
+[824F]  # 591
+Jarro Metamórfico{end}
+
+[8250]  # 592
+Musa-A{end}
+
+[8251]  # 593
+Tartaruga Gigante Que Se Alimenta de Chamas{end}
+
+[8252]  # 594
+Espectro da Rosa de Dunn{end}
+
+[8253]  # 595
+Fiend Refrection #1{end}
+
+[8254]  # 596
+Carniçal com um Apetite{end}
+
+[8255]  # 597
+Besta Pálida{end}
+
+[8256]  # 598
+Quimera Pequena{end}
+
+[8257]  # 599
+Chuva Violenta{end}
+
+[8258]  # 600
+Key Mace #2{end}
+
+[8259]  # 601
+Ternura{end}
+
+[825A]  # 602
+Soldado Pinguim{end}
+
+[825B]  # 603
+Fairy Dragon{end}
+
+[825C]  # 604
+Marmota Obesa da Maldade{end}
+
+[825D]  # 605
+Fera Líquida{end}
+
+[825E]  # 606
+Varas Gêmeas e Longas nº 2{end}
+
+[825F]  # 607
+Grande Bill{end}
+
+[8260]  # 608
+Amizade Brilhante{end}
+
+[8261]  # 609
+Bladefly{end}
+
+[8262]  # 610
+Lagarto Elétrico{end}
+
+[8263]  # 611
+Escuteiro das Sombras de Hiro{end}
+
+[8264]  # 612
+Lady da Fé{end}
+
+[8265]  # 613
+Dragão do Trovão de Duas Cabeças{end}
+
+[8266]  # 614
+Aranha Caçadora{end}
+
+[8267]  # 615
+Estrela-do-Mar Encouraçada{end}
+
+[8268]  # 616
+Hourglass of Courage{end}
+
+[8269]  # 617
+Besta Marinha{end}
+
+[826A]  # 618
+Guerreira de Tradição{end}
+
+[826B]  # 619
+Rock Spirit{end}
+
+[826C]  # 620
+Serpentyashi{end}
+
+[826D]  # 621
+Campeã Succubus{end}
+
+[826E]  # 622
+Ill Witch{end}
+
+[826F]  # 623
+A Coisa que se Esconde na Lama{end}
+
+[8270]  # 624
+Gyojin da Maré Alta{end}
+
+[8271]  # 625
+Fada da Fonte{end}
+
+[8272]  # 626
+Amazona dos Mares{end}
+
+[8273]  # 627
+Nekogal N°2{end}
+
+[8274]  # 628
+Aprendiz de Bruxa{end}
+
+[8275]  # 629
+Rato Armadurado{end}
+
+[8276]  # 630
+Lagarto Guerreiro Ancião{end}
+
+[8277]  # 631
+Dama da Luz da Lua{end}
+
+[8278]  # 632
+Ogro de Pedra da Gruta{end}
+
+[8279]  # 633
+Ovo Alado da nova vida{end}
+
+[827A]  # 634
+Night Lizard{end}
+
+[827B]  # 635
+Sósia da Rainha{end}
+
+[827C]  # 636
+Coroa de Asas Azuis{end}
+
+[827D]  # 637
+Trent{end}
+
+[827E]  # 638
+Rainha das Folhas de Outono{end}
+
+[827F]  # 639
+Amphibious Bugroth{end}
+
+[8280]  # 640
+Rastejante do Ácido{end}
+
+[8281]  # 641
+Invasora do Trono{end}
+
+[8282]  # 642
+Mystical Sheep #1{end}
+
+[8283]  # 643
+Mago do Disco{end}
+
+[8284]  # 644
+Víbora das chamas{end}
+
+[8285]  # 645
+Guarda Real{end}
+
+[8286]  # 646
+Gosma Horripilante{end}
+
+[8287]  # 647
+Hyosube{end}
+
+[8288]  # 648
+Machine Attacker{end}
+
+[8289]  # 649
+Hibikime{end}
+
+[828A]  # 650
+Corvo Cauda de Chicote{end}
+
+[828B]  # 651
+Kunai com Corrente{end}
+
+[828C]  # 652
+Labirinto Mágico{end}
+
+[828D]  # 653
+Eliminação de Guerreiros{end}
+
+[828E]  # 654
+Salamandra{end}
+
+[828F]  # 655
+Cursebreaker{end}
+
+[8290]  # 656
+Descanso Eterno{end}
+
+[8291]  # 657
+Megamorph{end}
+
+[8292]  # 658
+Metalmorfo{end}
+
+[8293]  # 659
+Winged Trumpeter{end}
+
+[8294]  # 660
+Chuva Ácida{end}
+
+[8295]  # 661
+Vírus Esmaga-Card{end}
+
+[8296]  # 662
+Aerossol Erradicador{end}
+
+[8297]  # 663
+Fôlego da Luz{end}
+
+[8298]  # 664
+Aridez Eterna{end}
+
+[8299]  # 665
+Curse of Millennium Shield{end}
+
+[829A]  # 666
+Yamadron Ritual{end}
+
+[829B]  # 667
+Gate Guardian Ritual{end}
+
+[829C]  # 668
+Palácio Brilhante{end}
+
+[829D]  # 669
+Feitiço Sombra{end}
+
+[829E]  # 670
+Ritual do Lustro Negro{end}
+
+[829F]  # 671
+Ritual de Zera{end}
+
+[82A0]  # 672
+Espanador de Penas da Harpia{end}
+
+[82A1]  # 673
+Ritual do Leão-de-Guerra{end}
+
+[82A2]  # 674
+Ritual do Espelho Bestial{end}
+
+[82A3]  # 675
+Ultimate Dragon{end}
+
+[82A4]  # 676
+Inicio da Dança{end}
+
+[82A5]  # 677
+Receita de Hamburguer{end}
+
+[82A6]  # 678
+Revival of Sennen Genjin{end}
+
+[82A7]  # 679
+Oração de Novox{end}
+
+[82A8]  # 680
+Curse of Tri-Horned Dragon{end}
+
+[82A9]  # 681
+Casa de Fita Adesiva{end}
+
+[82AA]  # 682
+Eatgaboon{end}
+
+[82AB]  # 683
+Bear Trap{end}
+
+[82AC]  # 684
+Invisible Wire{end}
+
+[82AD]  # 685
+Buraco Armadilha Ácido{end}
+
+[82AE]  # 686
+Ruína Generalizada{end}
+
+[82AF]  # 687
+Leque Goblin{end}
+
+[82B0]  # 688
+Alergia ao Simochi{end}
+
+[82B1]  # 689
+Armadilha de Inversão{end}
+
+[82B2]  # 690
+Armadilha Falsa{end}
+
+[82B3]  # 691
+Revived of Serpent Night Dragon{end}
+
+[82B4]  # 692
+Juramento da Tartaruga{end}
+
+[82B5]  # 693
+Contruct of Mask{end}
+
+[82B6]  # 694
+Ressurreição de Chakra{end}
+
+[82B7]  # 695
+Marionete Ritual{end}
+
+[82B8]  # 696
+Pacto com o Besouro Javelin{end}
+
+[82B9]  # 697
+Juramento da Espada Garma{end}
+
+[82BA]  # 698
+Cosmo Queen's Prayer{end}
+
+[82BB]  # 699
+Renascimento de Dokurorider{end}
+
+[82BC]  # 700
+Juramento da Baleia Fortaleza{end}
+
+[82BD]  # 701
+Execução de Espada{end}
+
+[82BE]  # 702
+Hamburguer Faminto{end}
+
+[82BF]  # 703
+Sengenjin{end}
+
+[82C0]  # 704
+Guardião da Caveira{end}
+
+[82C1]  # 705
+Dragão de Três Chifres{end}
+
+[82C2]  # 706
+Dragão-Serpente da Noite{end}
+
+[82C3]  # 707
+Cavaleiro Caveira{end}
+
+[82C4]  # 708
+Rainha Cosmos{end}
+
+[82C5]  # 709
+Chakra{end}
+
+[82C6]  # 710
+Tartaruga Caranguejo{end}
+
+[82C7]  # 711
+Mikazukinoyaiba{end}
+
+[82C8]  # 712
+Dragão Meteoro{end}
+
+[82C9]  # 713
+Dragão Negro Meteoro{end}
+
+[82CA]  # 714
+Pegasus Asas de Fogo{end}
+
+[82CB]  # 715
+Psycho-Puppet{end}
+
+[82CC]  # 716
+Espada Garma{end}
+
+[82CD]  # 717
+Besouro da lança{end}
+
+[82CE]  # 718
+Baleia Fortaleza{end}
+
+[82CF]  # 719
+Dokurorider{end}
+
+[82D0]  # 720
+Mask of Shine & Dark{end}
+
+[82D1]  # 721
+Dark Magic Ritual{end}
+
+[82D2]  # 722
+Mago do Caos das Trevas{end}
+
+[8300 8322 8323 8324 8325 8326 8327]
+Dragão{end}
+
+[8301]
+Mago{end}
+
+[8302]
+Zumbi{end}
+
+[8303]
+Guerreiro{end}
+
+[8304]
+Besta-Guerreira{end}
+
+[8305]
+Besta{end}
+
+[8306]
+Besta Alada{end}
+
+[8307]
+Demônio{end}
+
+[8308]
+Fada{end}
+
+[8309]
+Inseto{end}
+
+[830A]
+Dinossauro{end}
+
+[830B]
+Réptil{end}
+
+[830C]
+Peixe{end}
+
+[830D]
+Serpente Marinha{end}
+
+[830E]
+Máquina{end}
+
+[830F]
+Trovão{end}
+
+[8310]
+Aqua{end}
+
+[8311]
+Piro{end}
+
+[8312]
+Rocha{end}
+
+[8313]
+Planta{end}
+
+[8314]
+Magia{end}
+
+[8315]
+Armadilha{end}
+
+[8316]
+Ritual{end}
+
+[8317]
+Equipamento{end}
+
+[8318]
+Marte {sp}{end}
+
+[8319]
+Júpiter{end}
+
+[831A]
+Saturno{end}
+
+[831B]
+Urano {sp}{end}
+
+[831C]
+Plutão{sp}{end}
+
+[831D]
+Netuno{sp}{end}
+
+[831E]
+Mercúrio{end}
+
+[831F]
+Sol   {sp}{end}
+
+[8320]
+Lua   {sp}{end}
+
+[8321]
+Vênus {sp}{end}
+
+@bank descriptions
+
+[D101]  # Dragão Branco de Olhos Azuis
+Um card extremamente
+raro, com poder de
+ataque e defesa
+insuperáveis.{end}
+
+[D102]  # Elfa Mística
+Uma elfa delicada
+com pouco poder de
+ataque, mas com uma
+incrível defesa
+proveniente de
+poderes místicos.{end}
+
+[D103]  # Gigante Hitotsu-Me
+Um gigante de um só
+olho com braços
+largos e poderosos.
+Tenha cuidado...{end}
+
+[D104]  # Dragão Filhote
+Muito mais que um
+filhote, este dragão
+é dotado de poderes
+ainda não revelados.{end}
+
+[D105]  # Ryu-Kishin
+Uma criatura mestre
+nas ilusões. Parece
+uma estátua
+inofensiva até ao
+momento em que
+ataca.{end}
+
+[D106]  # Diabrete Selvagem
+Um pequeno demônio
+brincalhão que se
+esconde na
+escuridão, esperando
+para atacar um
+inimigo descuidado.{end}
+
+[D107]  # Dragão Alado, Guardião da Fortaleza Nº1
+Um dragão que
+costuma guardar
+fortalezas nas
+montanhas. Seu
+ataque típico é um
+mergulho repentino
+vindo do céu.{end}
+
+[D108]  # Homem Cogumelo
+Encontrado em zonas
+úmidas, esta
+criatura ataca seus
+inimigos com uma
+chuva de esporos
+venenosos letal.{end}
+
+[D109]  # Espectro Sombrio
+Este espírito
+animal, poderoso em
+grupos, pode ser
+encontrado nos
+ermos.{end}
+
+[D10A]  # Dragão de Fogo da Terra Negra
+Um dragão que vive
+nas profundezas da
+escuridão. A sua
+grande
+vulnerabilidade é a
+sua fraca visão.{end}
+
+[D10B]  # Dragão de Cauda Assassina
+Este gigante
+Jurássico tem a
+espinha coberta de
+lâminas similares a
+espadas e uma cauda
+capaz de esmagar
+crâneos.{end}
+
+[D10C]  # Guarda de Batalha do Pântano
+Esta criatura
+empunha uma clava
+com espinhos que
+destrói quase tudo
+pelo caminho. Dizem
+que tem um irmão tão
+destrutivo quanto
+ela.{end}
+
+[D10D]  # Tyhone
+Capaz de disparar
+balas de canhão pela
+boca para atacar os
+inimigos à
+distância.{end}
+
+[D10E]  # Jovem Touro Guerreiro
+Um touro monstruoso
+muitas vezes
+encontrado na
+floresta, ele ataca
+os monstros inimigos
+com o seu par de
+chifres mortíferos.{end}
+
+[D10F]  # Espadachim das Chamas
+Um guerreiro dotado
+do poder do fogo.
+Ataca os inimigos
+com uma espada que
+lança chamas.{end}
+
+[D110]  # Mago do Tempo
+Um feiticeiro capaz
+de dobrar o tempo à
+sua vontade. Não
+parece poderoso à
+primeira vista, mas
+as aparências
+enganam.{end}
+
+[D111]  # Perna Direita de "O Proibido"
+Uma perna direita,
+proibida e selada
+por magia. Qualquer
+um que romper este
+selo obterá poder
+infinito.{end}
+
+[D112]  # Perna Esquerda de "O Proibido"
+Uma perna esquerda,
+proibida e selada
+por magia. Qualquer
+um que romper este
+selo obterá poder
+infinito.{end}
+
+[D113]  # Braço Direito de "O Proibido"
+Um braço direito,
+proibido e selado
+por magia. Qualquer
+um que romper este
+selo obterá poder
+infinito.{end}
+
+[D114]  # Braço Esquerdo de "O Proibido"
+Um braço esquerdo,
+proibido e selado
+por magia. Qualquer
+um que romper este
+selo obterá poder
+infinito.{end}
+
+[D115]  # Exodia, "O Proibido"
+Unido aos braços e
+às pernas, este
+monstro se liberta
+de suas correntes
+mágicas. Só pode
+haver 1 card como
+este no Deck.{end}
+
+[D116]  # Caveira Invocada
+Uma entidade com
+poderes das trevas
+para confundir o
+inimigo. Entre os
+monstros do Tipo
+Demônio, é um card
+bem raro.{end}
+
+[D117]  # Besta de Vermes Maléfica
+Um verme monstruoso
+criado pelos poderes
+das trevas. Surge de
+repente de debaixo
+da terra para atacar
+os inimigos.{end}
+
+[D118]  # Servo Caveira
+Um esqueleto
+fantasma que não é
+muito forte, mas
+quando estiver em
+grande número, pode
+ser um problema.{end}
+
+[D119]  # Demônio de Chifre
+Um pequeno demônio
+que habita as
+trevas, seu chifre
+único faz dele em
+formidável oponente.{end}
+
+[D11A]  # Touro Guerreiro
+Um monstro com
+tremendo poder que
+destrói seus
+inimigos com um
+único golpe do seu
+machado.{end}
+
+[D11B]  # Castor Guerreiro
+O que falta a esta
+criatura em tamanho,
+ela compensa em
+defesa quando
+combate na pradaria.{end}
+
+[D11C]  # Ogro de Rocha da Gruta #1
+Protegido por um
+sólido corpo de
+rocha, este monstro
+desfere socos
+capazes de quebrar
+ossos.{end}
+
+[D11D]  # Mountain Warrior
+Um guerreiro robusto
+que se move com
+agilidade por
+terrenos
+acidentados.{end}
+
+[D11E]  # Guerreiro Zumbi
+Um guerreiro
+esqueleto de
+aparência
+enganosamente
+frágil, conhecido
+por seus ataques
+rápidos e precisos.{end}
+
+[D11F]  # Dragão Koumori
+Um dragão malígno
+que cospe fogo. As
+suas chamas
+maléficas corrompem
+as almas de suas
+vítimas.{end}
+
+[D120]  # Rei Rex de Duas Cabeças
+Um monstro poderoso
+cujas duas cabeças
+atacam como uma só.{end}
+
+[D121]  # O Juiz
+Este guerreiro luta
+até o fim com a sua
+clava e nunca se
+rende.{end}
+
+[D122]  # Saggi, o Palhaço Sombrio
+Este palhaço aparece
+do nada e usa
+movimentos estranhos
+para se esquivar de
+ataques inimigos.{end}
+
+[D123]  # Mago Negro
+O mago definitivo em
+termos de ataque e
+defesa.{end}
+
+[D124]  # Cabelos de Cobras
+Um monstro com
+serpentes venenosas
+na cabeça. Um
+vislumbre desse
+monstro pode
+transformar o
+oponente em pedra.{end}
+
+[D125]  # Gaia, o Matador de Dragões
+A destreza de um
+guerreiro se une à
+velocidade de um
+dragão para criar
+uma poderosa força
+ofensiva.{end}
+
+[D126]  # Gaia, o Cavaleiro Impetuoso
+Um cavaleiro com um
+cavalo que galopa
+mais rápido que o
+vento. Sua carga em
+batalha é de uma
+força avassaladora.{end}
+
+[D127]  # Maldição do Dragão
+Um dragão perverso
+que se apoia nas
+forças das trevas
+para executar um
+poderoso ataque.{end}
+
+[D128]  # Flautista de Dragões
+Um jarro entalhado
+com estranhos
+padrões. Tem uma
+defesa
+particularmente
+alta.{end}
+
+[D129]  # Guardião Celta
+Um elfo que aprendeu
+a empunhar uma
+espada e confunde os
+inimigos com ataques
+relâmpagos.{end}
+
+[D12A]  # Ilusionista Sem Rosto
+Manipula os ataques
+inimigos com o poder
+da ilusão.{end}
+
+[D12B]  # Guerreiro Karbonala
+Um lutador de
+aparência bem comum,
+mas com um poder de
+ataque fora do
+normal.{end}
+
+[D12C]  # Boneca Marota
+Uma boneca letal
+dotada de poderes
+místicos. É
+especialmente
+poderosa ao atacar
+as forças das
+trevas.{end}
+
+[D12D]  # Herói Oscillo º2
+Uma criatura que
+eletrocuta os
+oponentes com
+relâmpagos.{end}
+
+[D12E]  # Griffore
+A grossa couraça
+desse monstro desvia
+a maioria dos
+ataques.{end}
+
+[D12F]  # Torike
+Apesar de um
+defensor pobre, os
+chifre afiado deste
+monstro lhe dá uma
+vantagem ao atacar.{end}
+
+[D130]  # Sangan
+Um monstro compacto
+de três olhos,
+perigoso quando
+enfrentado no
+escuro.{end}
+
+[D131]  # Inseto Grande
+Uma formiga gigante
+que vive na floresta
+e é muito poderosa
+tanto atacando
+quanto defendendo.{end}
+
+[D132]  # Inseto Básico
+Geralmente
+encontrado em
+enxames, o habitat
+desse inseto é a
+floresta.{end}
+
+[D133]  # Lagarto Encouraçado
+Um lagarto com uma
+couraça muito
+resistente e uma
+mordida feroz.{end}
+
+[D134]  # Escaravelho-Hércules
+Um grande besouro
+com uma carapaça
+dura e um chifre
+perigoso.{end}
+
+[D135]  # Ferroada Letal
+Uma abelha enorme
+com uma força
+excepcional,
+particularmente
+perigosa em enxames.{end}
+
+[D136]  # Gokibore
+Uma barata, grande
+esférica que ataca
+os seus inimigos
+rolando sobre eles.{end}
+
+[D137]  # Pulga Gigante
+Uma pulga enorme que
+se alimenta de
+sangue do seus
+inimigos.{end}
+
+[D138]  # Larvae Moth
+Como larva, não é
+grande coisa, mas se
+torna uma força
+temível quando
+cresce e vira uma
+mariposa colossal.{end}
+
+[D139]  # Grande Moth
+Uma poderosa
+criatura da
+floresta. Esta
+enorme mariposa
+ataca os inimigos
+espalhando pó
+venenoso com as
+asas.{end}
+
+[D13A]  # Kuriboh
+Sozinha, esta
+pequena criatura
+pode não parecer
+grande coisa. Mas,
+no escuro, ataca em
+bando como uma força
+formidável.{end}
+
+[D13B]  # Cemitério de Mamutes
+Um mamute que
+protege os túmulos
+de seu bando e que
+enfrenta ladrões de
+túmulos
+impiedosamente.{end}
+
+[D13C]  # O Grande Branco
+Um tubarão branco
+gigante com dentes
+afiados como
+lâminas.{end}
+
+[D13D]  # Lobo
+Esse lobo alfa alpha
+usa o cheiro para
+encontrar o inimigo.
+Eiii, sai de perto
+das minhas meias!{end}
+
+[D13E]  # Lady Harpia
+Este animal alado
+com forma humana,
+embora agrade aos
+olhos, é
+absolutamente letal
+em batalha.{end}
+
+[D13F]  # Irmãs de Lady Harpia
+Três irmãs ferozes
+que atacam
+implacavelmente em
+equipe.{end}
+
+[D140]  # Tigre do Machado
+Uma besta guerreira
+veloz e poderosa que
+brande um machado.{end}
+
+[D141]  # O Presa de Prata
+Um lobo da neve que,
+embora agrade aos
+olhos, é
+absolutamente feroz
+em batalha.{end}
+
+[D142]  # Kojikocy
+Um caçador de homens
+com braços
+poderosos, capazes
+de esmagar grandes
+rochas.{end}
+
+[D143]  # Grande Moth Final Perfeito
+A encarnação final
+do inseto supremo, o
+Grande Moth!{end}
+
+[D144]  # Garoozis
+Uma besta guerreiro
+com cabeça de dragão
+que brande um
+machado.{end}
+
+[D145]  # Dragão Milenar
+Um dragão que
+cresceu e se
+desenvolveu ao longo
+de mil anos.{end}
+
+[D146]  # Kraken Demônio
+Uma lula gigante,
+que arrasta os seus
+inimigos para uma
+sepultura marinha.{end}
+
+[D147]  # Alforreca
+Uma medusa semi-
+transparente, quase
+invisível, que
+vagueia pelo mar.{end}
+
+[D148]  # Casulo de Evolução
+Esta criatura é
+capaz de transformar
+larvas em adultos
+instantaneamente.{end}
+
+[D149]  # Kairyu-Shin
+Este dragão marinho,
+conhecido como Rei
+do Oceano, ataca
+seus inimigos com
+enormes maremotos.{end}
+
+[D14A]  # Soldado de Pedra Gigante
+Um guerreiro gigante
+feito de pedra. Um
+soco desta criatura
+faz com que a terra
+estremeça.{end}
+
+[D14B]  # Planta Devoradora de Homens
+Uma planta carnívora
+encantadora, mas
+perigosa quando
+abordada.{end}
+
+[D14C]  # Crocodilus
+Um Crocodilo malvado
+com uma grande
+inteligência.{end}
+
+[D14D]  # Estraçalhador
+Uma serpente
+tortuosa com um
+corpo grosso que
+envolve um monstro
+inimigo e aperta até
+a vida dele se
+extinguir.{end}
+
+[D14E]  # Predador com Machado
+Um monstro de
+tremenda força e
+agilidade que brande
+seu machado.{end}
+
+[D14F]  # Megazowler
+Nada fica no caminho
+deste dinossauro
+coberto de pontas!{end}
+
+[D150]  # Uraby
+Rápido como o vento,
+este dinossauro
+dilacera os inimigos
+com suas garras
+afiadas.{end}
+
+[D151]  # Dragão Rastejante #2
+Um dragão poderoso
+com dentes capazes
+de transformar quase
+tudo em pó.{end}
+
+[D152]  # Dragão Negro de Olhos Vermelhos
+Um dragão feroz com
+um ataque letal.{end}
+
+[D153]  # Castelo das Ilusões Sombrias
+Uma criatura capaz
+de gerar uma
+escuridão que
+envolve tudo ao seu
+redor.{end}
+
+[D154]  # Ceifador de Cards
+Este monstro tem uma
+defesa forte e uma
+foice enorme que
+corta quase tudo.{end}
+
+[D155]  # Rei de Yamimakai
+Empunha o poder das
+trevas para destruir
+os seus inimigos.{end}
+
+[D156]  # Barox
+Esta criatura voa
+pela escuridão,
+atacando os inimigos
+com seus braços
+longos e peludos.{end}
+
+[D157]  # Quimera Negra
+Um monstro cospidor
+de fogo que habita o
+mundo inferior.{end}
+
+[D158]  # Metal Guardian
+Um demônio que
+guarda os tesouros
+do submundo. Sua
+defesa é
+particularmente alta
+em ambientes
+escuros.{end}
+
+[D159]  # Tartaruga Catapulta
+Bem protegido por
+seu casco, este
+monstro arremessa
+projéteis com sua
+catapulta.{end}
+
+[D15A]  # Gyakutenno Megami
+Este Anjo usa o seu
+poder místico para
+proteger os fracos e
+fornecer apoio
+espiritual.{end}
+
+[D15B]  # Centauro Místico
+Sendo metade homem,
+metade cavalo, este
+monstro é conhecido
+por sua enorme
+velocidade.{end}
+
+[D15C]  # Centauro Furioso
+Uma combinação
+poderosa e imparável
+de touro e cavalo.{end}
+
+[D15D]  # Zanki
+Sua lâmina manuseada
+com perfeição
+entrega danos
+rápidos e fatais.{end}
+
+[D15E]  # Dragão Rastejante
+Este dragão
+enfraquecido já não
+pode voar, mas ainda
+é uma força letal a
+ser reconhecida.{end}
+
+[D15F]  # Palhaço Grosseiro
+Artista do Circo
+Sombrio, este
+palhaço drena a
+força dos inimigos
+com danças
+estranhas.{end}
+
+[D160]  # Zumbi com Armadura
+Este guerreiro
+brande cegamente uma
+lâmina letal, com
+uma força
+devastadora.{end}
+
+[D161]  # Dragão Zumbi
+Um dragão renascido
+por feitiçaria. O
+seu hálito é
+altamente corrosivo.{end}
+
+[D162]  # Palhaço Zumbi
+Um palhaço
+ressuscitado pelos
+poderes das trevas.
+Sua dança fatal já
+mandou muitos
+monstros para o
+túmulo.{end}
+
+[D163]  # Pumpking, O Rei dos Fantasmas
+Este rei abóbora
+ataca os inimigos
+com seus longos
+tentáculos.{end}
+
+[D164]  # Guerreiro Batalhador
+Um guerreiro que
+luta com as mãos
+nuas!!!{end}
+
+[D165]  # Asas da Chama Perversa
+Asas de fogo
+carmesim tornam essa
+criatura muito
+letal.{end}
+
+[D166]  # Máscara da Escuridão
+Uma máscara sombria
+criada pelas mãos de
+um mago das trevas.{end}
+
+[D167]  # Espelho de Mudança de Emprego
+Um espelho perverso
+que bloqueia os
+efeitos danosos de
+um ataque.{end}
+
+[D168]  # Cortina dos Escuros
+Uma cortina que é
+produzido por um
+mago, dizem que
+aumenta o poder
+negro.{end}
+
+[D169]  # Tomozauro
+Este monstro,
+pequeno e perverso,
+ataca até mesmo os
+de sua própria
+espécie.{end}
+
+[D16A]  # Espírito dos Ventos
+Um espírito
+elementar dos vento
+livre que esvoaça
+como lhe é deseja.
+Ele traz as
+tempestades quando
+se torna aborrecido.{end}
+
+[D16B]  # Kageningen
+Ele uuusa uma forma
+física e uma forma
+de sombra pratacar.
+Um bixo difííícil de
+matar!{end}
+
+[D16C]  # Cemitério e a Mão do Convite
+Um cemitério que
+serve com uma fonte
+de poder para
+zumbis.{end}
+
+[D16D]  # Deusa com o Terceiro Olho
+Uma deusa com um
+olho que tudo vê e
+tudo revela.{end}
+
+[D16E]  # Herói do Leste
+Sinta a força do
+brandir da espada
+desse samurai do
+Leste Distante.{end}
+
+[D16F]  # Doma, O Anjo do Silêncio
+Este anjo governa a
+morte e administra-a
+quando necessário.{end}
+
+[D170]  # A Bruxa que se Alimenta da Vida
+Um monstro que se
+alimenta da energia
+de outras criaturas.{end}
+
+[D171]  # Cinzento das Trevas
+Totalmente cinzenta,
+esta besta raramente
+foi vista por olhos
+mortais.{end}
+
+[D172]  # Chapéu Mágico Branco
+Um ladrão cavalheiro
+que escapa da lei,
+embora chame muita
+atenção com sua
+cartola e sua capa
+branca.{end}
+
+[D173]  # Mago Kamion
+Um mago que controla
+o caos e empunha uma
+poderosa foice.{end}
+
+[D174]  # Escorpião Pesadelo
+Uma criatura que
+cria pesadelos para
+assombrar seus
+oponentes, ela ataca
+com suas quatro
+caudas venenosas.{end}
+
+[D175]  # Espírito dos Livros
+Este sábio espírito
+habita em livros,
+usando seu
+conhecimento
+acumulado para
+derrotar os
+inimigos.{end}
+
+[D176]  # Auxiliador nas Sombras
+Um elfo bonitinho
+que se esconde nas
+sombras e da apoio
+espitirual.{end}
+
+[D177]  # Julgamento Infernal
+Este demônio julga
+inimigos que estão
+trancados em
+caixões.{end}
+
+[D178]  # Palhaço dos Sonhos
+A dança misteriosa
+desta criatura faz
+seus inimigos caírem
+em sono eterno.{end}
+
+[D179]  # Leão adormecido
+Um animal feroz que
+dorme o dia todo.As
+vezes é melhor
+deixa-lo dormindo.{end}
+
+[D17A]  # Pergaminho de Dragão Yamatano
+Um dragão conjurado
+do próprio
+pergaminho em que
+foi retratado.{end}
+
+[D17B]  # Dark Plant
+Uma flor cruel que
+brotou de um solo
+poluído e foi
+fertilizada por
+forças das trevas.{end}
+
+[D17C]  # Ferramenta Antiga
+Uma máquina
+destruidora
+descoberta nas
+Ruínas dos Antigos.{end}
+
+[D17D]  # Pássaro da Fé
+Esse pássaro de rabo
+cumprido cega seus
+inimigos com uma luz
+mística.{end}
+
+[D17E]  # Orion o Rei da Batalha
+Ninguém viveu pra
+contar histórias
+desta poderosa fada
+de batalha.{end}
+
+[D17F]  # Ansatsu
+Um guerreiro
+silencioso e mortal
+especializado em
+assassínios.{end}
+
+[D180]  # LaMoon
+Uma feiticeira que
+extrai sua energia a
+partir da paisagem
+lunar.{end}
+
+[D181]  # Nemuriko
+Uma criatura
+infantil que
+controla um demônio
+do sono para lançar
+os inimigos no
+descanso eterno.{end}
+
+[D182]  # Controlador do Clima
+Esta criatura
+controla o clima e é
+muitas vezes a causa
+das tempestades das
+montanha.{end}
+
+[D183]  # Octoberser
+Com a cabeça de um
+peixe e as pernas de
+um polvo, essa
+estranha criatura
+ataca os inimigos
+atirando lanças.{end}
+
+[D184]  # O 13º Túmulo
+Um zumbi que
+apareceu
+repentinamente do
+lote nº 13 - um
+túmulo vazio.{end}
+
+[D185]  # Charubin, O Cavaleiro do Fogo
+Um guerreiro
+protegido por uma
+casca capaz de
+desviar até o calor
+de chamas ardentes.{end}
+
+[D186]  # Correntes Misticas de Captura
+Uma corrente mística
+que prende os
+inimigos, tornando-
+os imóveis.{end}
+
+[D187]  # Mão do demônio
+Braços que saem do
+pantano do caos para
+puxar para ele os
+distraídos.{end}
+
+[D188]  # Fantasma Sarcástico
+Vestido com um
+smoking preto como a
+noite, esta criatura
+preside à morte.{end}
+
+[D189]  # Mystery Hand
+Distorcendo o tecido
+da realidade, braços
+saem de outra
+dimensão para atacar
+os oponentes.{end}
+
+[D18A]  # Dragon Statue
+Um guerreiro de
+granito com alma de
+dragão, que empunha
+uma espada poderosa
+contra todos os
+inimigos.{end}
+
+[D18B]  # Zumbi Prateado de Olhos-Azuis
+Dizem que os raios
+que saem dos olhos
+desta criatura
+transformam seus
+inimigos em zumbis.{end}
+
+[D18C]  # Mestre dos Sapos
+Um sapo hermitão que
+tem existido por
+milhares de anos,
+ele ataca com
+girinos.{end}
+
+[D18D]  # Caracol Espinhudo
+Um caracol bípede
+muito rápido com um
+par de armas letais.{end}
+
+[D18E]  # Manipulador de Chamas
+Este mago ataca os
+inimigos com magias
+de fogo como "Mar de
+Chamas" e "Parede de
+Fogo".{end}
+
+[D18F]  # Necrolancer the Timelord
+O primeiro de uma
+linhagem de golens.
+Surge em quase
+qualquer lugar de
+dentro de um anel
+dimensional.{end}
+
+[D190]  # Djinn, o Observador do Vento
+Esta criatura gera
+ventos fortes e
+tornados para
+arremessar seus
+inimigos longe.{end}
+
+[D191]  # O fantasma ladrão enfeitiçador
+Um elegante ladrão
+com uma capa negra
+que enfeitiça seus
+inimigos.{end}
+
+[D192]  # Templo de Crânios
+Um templo misterioso
+de crânios e ossos
+que atrai inimigos
+confiantes.{end}
+
+[D193]  # Monstro Ovo
+Um guerreiro
+escondido dentro de
+um ovo que ataca
+inimigos
+arremessando cascas
+de ovo.{end}
+
+[D194]  # A Sombra que Controla as Trevas
+Uma sombra que
+habita na escuridão,
+paralisando seus
+oponentes e
+tornando-os
+inofensivos.{end}
+
+[D195]  # Senhor da Lampada
+Este espírito emerge
+de uma lâmpada
+mística e obedece
+aos desejos de quem
+o invocou.{end}
+
+[D196]  # Akihiron
+Uma criatura
+misteriosa que vive
+nas profundezas do
+mar.{end}
+
+[D197]  # Rhaimundos da Espada Vermelha
+Armado com a Espada
+das Chamas Carmesim,
+este guerreiro pode
+prender um monstro
+com amarras
+ardentes.{end}
+
+[D198]  # A Sombra vermelha Derretida
+"Este monstro
+derrete-se para
+materializar embaixo
+de seus inimigos,
+pegando-os de
+surpresa."{end}
+
+[D199]  # Dokuroizo o estripador impiedoso
+Um mensageiro do
+destino que sela uma
+alma com um único
+ataque.{end}
+
+[D19A]  # Ceifador de Fogo
+Um ceifador com uma
+flecha flamejante
+que queima os
+inimigos até
+transformá-los em
+cinzas.{end}
+
+[D19B]  # Larvas
+Uma criatura rápida
+parecida com um
+pássaro, que
+estrangula os
+monstros oponentes
+com seus braços
+finos e compridos.{end}
+
+[D19C]  # Armadura Resistente
+Uma armadura viva
+que ataca os
+inimigos com uma
+investida capaz de
+quebrar ossos.{end}
+
+[D19D]  # Relva-Fogo
+É uma planta
+cuspidora de fogo
+que cresce próxima
+de vulcões.{end}
+
+[D19E]  # Devorador de Homens
+Uma planta
+devoradora de homens
+com tentáculos
+envenenados para
+atacar os inimigos.{end}
+
+[D19F]  # Bico de Escavação
+Esta besta se enrola
+como uma cobra, e
+ataca rapidamente
+com o seu ruidoso
+bico.{end}
+
+[D1A0]  # Guerreiro M nº 1
+Especializado em
+ataques combinados,
+este guerreiro usa
+magnetismo para
+impedir a fuga do
+inimigo.{end}
+
+[D1A1]  # Guerreiro M nº 2
+Especializado em
+ataques combinados,
+este guerreiro está
+equipado com uma
+armadura magnética
+resistente.{end}
+
+[D1A2]  # Sabedoria Corrompida
+Um cérebro parasita
+que se alimenta do
+conhecimento e da
+inteligência de seus
+oponentes.{end}
+
+[D1A3]  # Lisark
+Uma criatura com
+olhos de safira que
+fascina e confunde
+os inimigos.{end}
+
+[D1A4]  # Senhor de Zemia
+Uma entidade malvada
+que manipula
+inimigos em direção
+a um caminho de
+destruição.{end}
+
+[D1A5]  # A Mão do Julgamento
+Uma mão toda-
+poderosa que
+distribui ataques
+impiedosos.{end}
+
+[D1A6]  # Misterioso Mestre das Marionetes
+Um mestre das
+marionetes que
+manipula os inimigos
+durante a batalha.{end}
+
+[D1A7]  # Ancient Jar
+Um frágil jarro do
+passado que guarda
+uma criatura
+misteriosa.{end}
+
+[D1A8]  # Dragão do Fogo Negro
+Chamas escaldantes
+que aniquilam os
+inimigos num piscar
+de olhos.{end}
+
+[D1A9]  # Rei Negro do Abismo
+Diz-se que este Rei
+dos Mundos Baixos já
+teve o poder para
+governar as trevas.{end}
+
+[D1AA]  # Espírito da Harpa
+Um espírito que
+acalma a alma com a
+música da sua harpa
+celestial.{end}
+
+[D1AB]  # Grande Olho
+Esta criatura é
+coberta de olhos
+hipnóticos que
+fascinam os
+inimigos.{end}
+
+[D1AC]  # Armaill
+Um guerreiro
+estranho que
+manipula três
+lâminas letais e
+usando ambas as mãos
+e a cauda.{end}
+
+[D1AD]  # Prisioneiro das Trevas
+Este monstro dobra a
+luz para esconder
+sua imagem dos olhos
+do oponente.{end}
+
+[D1AE]  # Hurricail
+Um tornado que corre
+solto pelas terras
+devastadas, cortando
+os inimigos com
+lâminas de vento.{end}
+
+[D1AF]  # Cérebro Ancião
+Um anjo caído que é
+poderoso nas trevas.{end}
+
+[D1B0]  # Fire Eye
+Um olho alado
+envolto em chamas
+que ataca os
+inimigos com fogo.{end}
+
+[D1B1]  # Monsturtle
+Uma tartaruga cruel
+com um casco cheio
+de espinhos.{end}
+
+[D1B2]  # Estende Garras
+Braços que esticam e
+garras afiadas como
+lâminas fazem deste
+monstro um oponente
+formidável.{end}
+
+[D1B3]  # Phantom Dewan
+Um feiticeiro que
+pode paralisar um
+inimigo com uma
+única maldição.{end}
+
+[D1B4]  # Arlownay
+Um monstro dama que
+mora em uma flor,
+ela asperge o ar com
+pólen venenoso.{end}
+
+[D1B5]  # Sombra negra
+Um monstro de
+cristal que libera
+uma brilhante luz
+para cegar os
+inimigos.{end}
+
+[D1B6]  # Palhaço Mascarado
+A dança fatal desse
+guerreiro é
+realizada com uma
+foice letal.{end}
+
+[D1B7]  # Bugiganga da Sorte
+Esta criatura pode
+parecer magro e
+fraco, mas é
+protegido por uma
+força mística.{end}
+
+[D1B8]  # Genin
+Uma criatura que
+derrota seus
+inimigos usando o
+truque de mão.{end}
+
+[D1B9]  # Olho Armadura
+Este guerreiro se
+transforma em varias
+criaturas para
+confundir inimigos
+em batalha.{end}
+
+[D1BA]  # Reflexo Demoníaco nº 2
+Uma pássaro-besta
+que invoca reforços
+usando um espelho de
+mão.{end}
+
+[D1BB]  # Portal Massa
+Este monstro
+estranho tem um
+portal em seu ventre
+que traz reforços
+dos confins do
+inferno.{end}
+
+[D1BC]  # Synchar
+Uma criatura
+horrenda com duas
+cabeças e uma boca
+que dispara raios
+laser.{end}
+
+[D1BD]  # Fusionista
+Um gato monstruoso
+com asas e uma longa
+cauda que golpeia.{end}
+
+[D1BE]  # Akakieisu
+Um mago cujos
+encantamentos
+entorpecem os
+sentidos dos
+monstros
+adversários.{end}
+
+[D1BF]  # LaLa Li-oon
+Uma criatura nuvem
+elétrica, sua chuva
+ácida a torna muito
+perigosa.{end}
+
+[D1C0]  # Key Mace
+Um pequeno anjo cuja
+fofura derrete o
+coração dos
+inimigos.{end}
+
+[D1C1]  # Tigre Tartaruga
+Um tigre protegido
+por uma carapaça,
+que usa suas presas
+afiadas como lâminas
+para atacar.{end}
+
+[D1C2]  # Terra, O Terrível
+Conhecida como
+residente dos
+pântanos, esta
+criatura é um
+assecla das forças
+negras.{end}
+
+[D1C3]  # Doron
+Uma criatura
+imprevisível que se
+divide em duas e
+ataca o inimigo por
+lados opostos.{end}
+
+[D1C4]  # Arma Knight
+Um guerreiro amonite
+que protege os mares
+desde o início dos
+tempos.{end}
+
+[D1C5]  # Topeira Mecânica Zumbi
+Esta criatura ataca
+com o lançamento de
+mísseis, como os
+braços.{end}
+
+[D1C6]  # Amante Feliz
+Os inimigos tornam-
+se radiantes quando
+atingidos pelo raio
+do coração emitido
+da testa deste
+pequeno querubim.{end}
+
+[D1C7]  # Cavaleiro Pinguim
+Uma criatura
+parecida com um
+pinguim que desliza
+de barriga para
+golpear com sua
+espada estendida.{end}
+
+[D1C8]  # Pequeno Dragão
+Um dragão muito
+pequeno conhecido
+pelos seus ataques
+ferozes.{end}
+
+[D1C9]  # Panda Frenético
+Uma besta selvagem
+que carrega uma vara
+de bambu para
+espancar seus
+inimigos.{end}
+
+[D1CA]  # Marmota Demônio da Pervesidade
+Uma marmota aérea
+que tem nefastos
+chifre e asas. Ela
+ataca atirando
+bolotas.{end}
+
+[D1CB]  # Espectro Fantasma
+Um espírito
+vingativo feito de
+muitas almas
+inquietas.{end}
+
+[D1CC]  # Mabarrel
+Esta criatura que
+parece um canhão
+dispara globos
+oculares tão rápido
+que eles não podem
+ser vistos.{end}
+
+[D1CD]  # Dorover
+Este monstro feio
+emite um gás
+altamente venenoso.{end}
+
+[D1CE]  # Twin Long Rods #1
+Esta criatura
+balança seus braços
+como chicotes para
+atacar os inimigos a
+média distância.{end}
+
+[D1CF]  # Passaro Gracejador
+Um monstro que fere
+seus inimigos com
+seu bico enorme e
+estridentes
+lamentos.{end}
+
+[D1D0]  # Pequeno Anjo
+Um veloz e pequeno
+anjo, muito difícil
+de acertar.{end}
+
+[D1D1]  # Cortador Alado
+Poucos podem
+resistir aos ataques
+dos braços em forma
+de foice dessa
+criatura perigosa.{end}
+
+[D1D2]  # Alma Hinotama
+Uma criatura de
+chamas intensamente
+quentes que derruba
+qualquer coisa que
+se ponha no seu
+caminho.{end}
+
+[D1D3]  # Criança do trovão
+Este monstro
+armazena
+eletricidade dentro
+de seu corpo e pode
+liberá-la com poder
+catastrófico.{end}
+
+[D1D4]  # Meotoko
+Ess grannn monstro
+con un grannn olho
+dissspara un raio
+feeeo em vocé!{end}
+
+[D1D5]  # Aqua Madoor
+Um mago das águas
+que cria uma
+barreira líquida
+para esmagar todos
+aqueles que se
+opuserem a ele.{end}
+
+[D1D6]  # Kagemusha da Chama Azul
+Servindo de
+substituto para o
+Senhor da Chama
+Azul, ele é um
+mestre espadachim
+que empunha uma bela
+espada.{end}
+
+[D1D7]  # Fantasma da Chama
+Um espírito de fogo
+que queima tudo em
+seu caminho.{end}
+
+[D1D8]  # Doriado
+"Um espírito da
+floresta que recebe
+energia das árvores
+ao redor e da vida
+selvagem"{end}
+
+[D1D9]  # Dragão Caveira Negro
+Uma criatura
+raríssima, criada
+pela fusão de uma
+besta incomum com um
+dragão cruel.{end}
+
+[D1DA]  # Senhor das Trevas de Duas Bocas
+Este dinossauro com
+duas mandíbulas
+mortíferas armazena
+eletricidade em seu
+chifre e liberta
+raios de alta
+voltagem pela boca
+nas suas costas.{end}
+
+[D1DB]  # Solidão
+Esta besta guerreira
+balança uma enorme
+foice que se
+alimenta das almas
+dos mortos por ela.{end}
+
+[D1DC]  # Feiticeiro Mascarado
+Um mago misterioso
+cujo rosto fica para
+sempre escondido
+atrás de uma
+estranha máscara.{end}
+
+[D1DD]  # Kumootoko
+Uma aranha gigante e
+inteligente que
+aprisiona seus
+inimigos com teias.{end}
+
+[D1DE]  # Midnight Fiend
+Uma criatura alada
+que, segundo dizem,
+aparece à meia-
+noite.{end}
+
+[D1DF]  # Cobra do Mar Rugidora
+Uma enorme serpente
+marinha que cria
+maremotos para
+aniquilar os
+inimigos.{end}
+
+[D1E0]  # Mestre das Armadilhas
+Um guerreiro
+especialista em
+armadilhas, como um
+poço sem fundo, para
+prender os oponentes
+para sempre.{end}
+
+[D1E1]  # Espada Demoníaca
+Quem quer que
+resista a maldição
+desta lâmina vai
+ganhar um poder
+jamais visto.{end}
+
+[D1E2]  # Perseguidor de Crâneos
+Elll vaaa agarrrarrr
+vocé con as
+garrrasss e deposss
+con o ferrrão!{end}
+
+[D1E3]  # Hitodenchak
+Um furioso peixe
+estrela que cospe um
+ácido letal que pode
+derreter quase
+qualquer coisa.{end}
+
+[D1E4]  # Restos de Árvore
+Um corpo vivo de uma
+árvore ré-animado
+pelo poder da
+escuridão.{end}
+
+[D1E5]  # Ampulheta da Vida
+Esta criatura
+concede poder em vez
+de encurtar a vida.{end}
+
+[D1E6]  # Peixe Raro
+Um peixe incomum e
+feroz com cabeça de
+besta.{end}
+
+[D1E7]  # Palhaço de Madeira
+Uma criatura com um
+sorriso perturbador
+que carrega uma
+foice letal.{end}
+
+[D1E8]  # Madjinn Gunn
+Uma arma viva que
+cospe projéteis.{end}
+
+[D1E9]  # Titã Negro do Terror
+Diz-se que este
+demônio vive no
+mundo dos sonhos,
+uma vez que ataca
+seus inimigos
+durante o sono.{end}
+
+[D1EA]  # Bela Caçadora-de-Cabeças
+Uma criatura
+perversa que tem
+decapitado numerosos
+monstros inimigos.{end}
+
+[D1EB]  # Wodan the Resident of the Forest
+Um guerreiro que
+vive há muito tempo
+na floresta e conta
+com a proteção da
+Mãe Natureza.{end}
+
+[D1EC]  # Guardião do Labirinto
+Um monstro que
+protege a entrada
+dos Mundos Baixos.{end}
+
+[D1ED]  # Haniwa
+Uma figura feita de
+Terra que protege a
+tumba de um antigo
+governante.{end}
+
+[D1EE]  # Yashinoki
+Uma palmeira com
+vontade própria que
+ataca os inimigos
+atirando cocos.{end}
+
+[D1EF]  # Vishwar Randi
+Uma guerreira que
+serve às forças das
+trevas.{end}
+
+[D1F0]  # O Drdek
+Um globo ocular
+bípede que raramente
+erra um inimigo com
+suas garras letais.{end}
+
+[D1F1]  # Assassino das Trevas
+Armado com a Espada
+Psicótica, este
+assassino sinistro
+domina as terras
+áridas.{end}
+
+[D1F2]  # Vela do Destino
+Decide o destino de
+um oponente quando a
+vela queima as suas
+impressões digitais.{end}
+
+[D1F3]  # Water Element
+Um espírito da água
+que envolve o
+oponente numa névoa
+densa para encobrir
+seu ataque.{end}
+
+[D1F4]  # Dissolve-rocha
+Nascido nos poços de
+lava, este monstro
+gera um calor
+intenso para
+derreter seus
+inimigos.{end}
+
+[D1F5]  # Morcego Medah
+Um globo ocular
+demoníaco criado por
+um servo do mal, que
+usa bombas negras
+para explodir os
+inimigos.{end}
+
+[D1F6]  # Aquele que Caça Almas
+Essa criatura
+perigosa brandi a
+espada que suga
+alma.{end}
+
+[D1F7]  # Rizo-água
+Um anfíbio capaz de
+invocar um tsunami
+dos mares negros
+para exterminar os
+monstros inimigos.{end}
+
+[D1F8]  # Mestre & Especialista
+Uma dupla letal
+formada por um
+mestre de bestas e
+pelo seu fiel servo.{end}
+
+[D1F9]  # Omotics da Água
+Transforma a água
+que transborda de
+uma jarra em dragões
+atacantes.{end}
+
+[D1FA]  # Hyo
+Ninguém pode
+sobreviver ao toque
+frio deste guerreiro
+gélido.{end}
+
+[D1FB]  # Sereia Fascinante
+Uma linda sereia que
+atrai viajantes para
+um túmulo aquático.{end}
+
+[D1FC]  # Nekogal #1
+Uma criatura felina
+de aparência fofa,
+mas que desfere
+arranhões com suas
+garras afiadas.{end}
+
+[D1FD]  # Fadabruxa
+Embora destinada a
+ser uma fada, esta
+criatura escolheu o
+caminho da bruxa.{end}
+
+[D1FE]  # Besta embrionária
+Um monstro
+imperfeito com um
+vórtice na barriga
+que suga adversários
+de qualquer tamanho.{end}
+
+[D1FF]  # Rato Prevenido
+Esta criatura é
+protegida por uma
+rigída camada de
+pêlos e é excelente
+ao defender-se.{end}
+
+[D200]  # Guerreiro D.D.
+Um monstro capaz de
+abrir fendas
+dimensionais para
+aprisionar seus
+inimigos.{end}
+
+[D201]  # Armadilheiro de Pedra
+Esss roedor de pedra
+tennn casssca
+duuura. Connn isss
+tennn unnna defesa
+boooaaa!{end}
+
+[D202]  # Beastking of the Swamps
+Esta criatura
+transforma o chão
+sob seus pés em
+areia movediça para
+capturar seus
+inimigos.{end}
+
+[D203]  # Ancient Sorcerer
+Um mestre do combate
+que usa vários
+bastões para deixar
+os inimigos
+inconscientes.{end}
+
+[D204]  # Lunar Queen Elzaim
+Uma bela deusa da
+lua capaz de erguer
+uma cortina lunar
+para bloquear
+ataques inimigos.{end}
+
+[D205]  # Espelho Arquedemônio
+Um espelho malvado
+que hipinotiza
+inimigos desviando
+ataques dos seus
+alvos originais.{end}
+
+[D206]  # O Pequeno Espadachim de Aile
+Um guerreiro elfo
+montado em um enorme
+lagarto.{end}
+
+[D207]  # Rock Ogre Grotto #2
+Um golem de pedra
+que transforma os
+oponentes em rocha e
+os reduz a pó.{end}
+
+[D208]  # Ovo Elfo com Asas
+Esta fada em uma
+casca de ovo usa
+asas enormes para
+soprar de volta
+quase todos os
+ataque projétil.{end}
+
+[D209]  # O Furioso Rei dos Mares
+O Grande Rei dos
+Sete Mares é capaz
+de invocar um
+tsunami para afogar
+os inimigos.{end}
+
+[D20A]  # Princesa de Tsurugi
+Uma rainha das
+espadas praticamente
+imbatível no domínio
+de todas as lâminas
+que se possa
+imaginar.{end}
+
+[D20B]  # Guerreiro Demoníaco Desconhecido
+A velocidade deste
+guerreiro cria um
+vácuo tão intenso
+que pode cortar a
+couraça de um
+monstro.{end}
+
+[D20C]  # Escrivão dos segredos
+Este feiticeiro
+trabalha na
+escuridão e é
+servido por uma mão
+sinistra que puxa
+seus inimigos para o
+esquecimento.{end}
+
+[D20D]  # Versago, o Destruidor
+Um senhor da
+destruição nascido
+do coração das
+trevas. Ele conjura
+tempestades para
+destruir os
+oponentes.{end}
+
+[D20E]  # Wetha
+Um espírito que
+controla a chuva e é
+capaz de invocar
+furacões para
+afastar seu inimigo.{end}
+
+[D20F]  # Luz Megirus
+Os raios fatais dos
+olhos deste monstro
+resultam em cruel
+destruição.{end}
+
+[D210]  # Mavelus
+Parente da fênix,
+esta criatura vive
+nas montanhas. Seu
+sopro de fogo é
+extremamente
+escaldante.{end}
+
+[D211]  # Árvore Anciã do Esclarecimento
+Esta árvore anciã
+utiliza-se do seu
+vasto conhecimento
+para evitar os danos
+de ataques de seus
+inimigos.{end}
+
+[D212]  # Rei Fantasma Verde
+Este jovem rei das
+florestas vive num
+mundo verde cheio de
+árvores e vida
+selvagem.{end}
+
+[D213]  # Bugroth de Ataque Terrestre
+Um robô de batalha
+terrestre que já foi
+usado em combates
+marítimos.{end}
+
+[D214]  # Radiação & Temperatura
+O Sol e o Vento do
+Norte se unem para
+criar uma combinação
+devastadora de
+tufões e de calor.{end}
+
+[D215]  # Gorgon Egg
+Um ovo de górgona
+com olhos que,
+dizem, criam
+qualquer criatura
+que cruze seu olhar.{end}
+
+[D216]  # Pequeno Moth
+É melhor evitar
+ficar perto desta
+criatura que, embora
+pequena, é
+extremamente
+mortífera.{end}
+
+[D217]  # Rei Nevoeiro
+Um demônio que vive
+numa cegante cortina
+de fumo.{end}
+
+[D218]  # Protetora do Trono
+Enquanto o rei está
+ausente, esta rainha
+protege seu trono
+com uma defesa
+vigorosa.{end}
+
+[D219]  # Palhaço Místico
+Nada pode parar o
+ataque enlouquecido
+desta poderosa
+criatura.{end}
+
+[D21A]  # Ovelha Mística nº 2
+Uma ovelha
+monstruosa que usa a
+sua longa cauda para
+hipnotizar seus
+inimigos.{end}
+
+[D21B]  # Holografia
+Esta máquina gera
+ilusões que deixam
+um inimigo aberto
+para o ataque.{end}
+
+[D21C]  # Tao, o Cantador
+Mestre do Yin e
+Yang, este
+feiticeiro manipula
+um delicado
+equilíbrio de
+magicas e contra
+mágicas.{end}
+
+[D21D]  # Serpente Saqueadora
+Uma serpente com um
+único olho que sopra
+um hálito gelado
+para congelar seus
+oponentes.{end}
+
+[D21E]  # Porteiro
+Um mecanoide
+indestrutível criado
+com o único
+propósito de guardar
+os portões.{end}
+
+[D21F]  # Ogre da Sombra Negra
+Um ogre possuído
+pelos poderes das
+trevas. Poucos
+conseguem resistir à
+sua rápida
+investida.{end}
+
+[D220]  # Artista Negro
+Um artista demente
+que cria obras de
+arte para esmagar os
+inimigos.{end}
+
+[D221]  # Limo Mutante
+Um limo que pode se
+transformar e
+assumir a forma e o
+tamanho de qualquer
+monstro que ele
+escolha.{end}
+
+[D222]  # Moon Envoy
+Servo da deusa da
+lua, este guerreiro
+empunha uma lança
+com uma espetacular
+lâmina em forma de
+lua crescente.{end}
+
+[D223]  # Fireyarou
+Uma criatura
+maléfica envolvida
+em chamas que ataca
+os inimigos com fogo
+intenso.{end}
+
+[D224]  # Kappa Psíquico
+Um anfíbio com
+poderes
+extrassensoriais que
+bloqueiam ataques.{end}
+
+[D225]  # Masaki, o Espadachim Lendário
+O lendário mestre
+espadachim Masaki já
+lutou mais de 100
+batalhas.{end}
+
+[D226]  # Dragoness, O Cavaleiro Perverso
+Um guerreiro que usa
+um equipamento feito
+de escamas de
+dragão.{end}
+
+[D227]  # Bio planta
+Um monstro criado de
+um grave acidente em
+um laboratório
+subterrâneo.{end}
+
+[D228]  # Dragão Escudo de Um Só Olho
+Este dragão usa um
+escudo não só para
+sua proteção, mas
+também para esmagar
+seus inimigos.{end}
+
+[D229]  # Soldado Cibernético do Mundo das Trevas
+Um soldado mecânico
+que não vai parar de
+atacar até que todas
+as leituras de vida
+forem extintas a
+partir de seus
+sensores.{end}
+
+[D22A]  # Dragão Maléfico com a Cabeça de Ersatz
+Um dragão com duas
+cabeças e um par de
+mandíbulas que podem
+rasgar um inimigo em
+pedaços.{end}
+
+[D22B]  # Dama Sônica
+Uma moça que usa o
+som para a sua
+vantagem, ela
+empunha uma foice,
+que é a forma de uma
+nota musical.{end}
+
+[D22C]  # Kurama
+Um pássaro feroz que
+ataca dos céus com a
+sua cauda-chicote.{end}
+
+[D22D]  # Espada Lendária
+Uma espada que
+desperta o melhor
+dos guerreiros.
+Servos das trevas
+não podem usá-la.{end}
+
+[D22E]  # Espada Sombria da Destruição
+Forças das trevas
+aumentam o poder dos
+monstros Guerreiro!{end}
+
+[D22F]  # Energia das Trevas
+Forças das trevas
+aumentam o poder dos
+monstros Demônio e
+de outros monstros
+das trevas!{end}
+
+[D230]  # Machado do Desespero
+Monstros Demônio e
+Besta-Guerreira
+podem usar sempre
+sua força máxima!{end}
+
+[D231]  # Armadura Canhão Laser
+Arma os monstros
+Inseto com um
+poderoso laser!{end}
+
+[D232]  # Armadura Inseto com Canhão Laser
+Permite que monstros
+Inseto disparem uma
+intensa rajada de
+fogo!{end}
+
+[D233]  # Luz do Duende
+Aumenta o poder dos
+elfos com uma luz
+mística!{end}
+
+[D234]  # Presas de Besta
+Aumenta o poder dos
+monstros Besta e de
+outros monstros com
+presas!{end}
+
+[D235]  # Concha de Aço
+Aumenta o poder dos
+monstros com concha!
+Dizem que não tem
+efeito nos que não
+têm concha.{end}
+
+[D236]  # Germes Vis
+Micróbios vis
+aumentam o poder dos
+monstros Planta da
+floresta!{end}
+
+[D237]  # Pendente Negro
+Este pendente dá
+poder extra aos
+magos das trevas!{end}
+
+[D238]  # Arco e Flecha de Prata
+Um arco e flecha de
+prata que aumenta o
+poder dos monstros
+Fada.{end}
+
+[D239]  # Chifre de Luz
+Aumenta o poder das
+criaturas com
+chifres! Não tem
+efeito em monstros
+das trevas.{end}
+
+[D23A]  # Chifre do Unicórnio
+Aumenta o poder dos
+monstros das trevas
+com chifres!{end}
+
+[D23B]  # Tesouro do Dragão
+Um tesouro lendário
+que aumenta o poder
+dos monstros Dragão.{end}
+
+[D23C]  # Chicote Elétrico
+Um chicote que
+paralisa os
+inimigos. Aumenta o
+poder quando
+equipado em
+criaturas femininas.{end}
+
+[D23D]  # Ciberescudo
+Aumenta o poder dos
+monstros femininos
+mudando sua atitude.{end}
+
+[D23E]  # Egotista Elegante
+Cria duas sósias de
+"Lady Harpia" para
+um ataque triplo!{end}
+
+[D23F]  # Lua Mística
+O luar aumenta o
+poder dos monstros
+Besta!{end}
+
+[D240]  # Impedir a Defesa
+Mude 1 monstro do
+seu oponente em
+Posição de Defesa
+para a Posição de
+Ataque.{end}
+
+[D241]  # Nuzzler Maléfica
+Forças diabólicas
+aumentam o poder dos
+monstros femininos e
+das trevas!{end}
+
+[D242]  # Cristal Violeta
+As forças místicas
+do cristal aumentam
+o poder dos monstros
+Zumbi.{end}
+
+[D243]  # Livro das Artes Secretas
+Um livro mágico que
+aumenta o poder dos
+magos. Feiticeiros
+de coração perverso
+não podem usá-lo.{end}
+
+[D244]  # Fortalecimento
+Aumenta o poder dos
+monstros Trovão,
+Rocha e Piro.{end}
+
+[D245]  # Fábrica de Conversão de Máquina
+Uma fábrica que
+aprimora todos os
+monstros Máquina.{end}
+
+[D246]  # Aumentar a Temperatura Corporal
+Absorve a energia do
+sol para aumentar o
+poder dos monstros
+Dinossauro!{end}
+
+[D247]  # Vento Seguidor
+Os ventos ajudam a
+aumentar o poder dos
+monstros Besta Alada
+e de outros monstros
+voadores!{end}
+
+[D248]  # Poder de Kaishin
+A força de Poseidon
+aumenta o poder dos
+monstros Aqua, Peixe
+e Serpente Marinha!{end}
+
+[D249]  # Jarro de Captura de Dragões
+Destrua todos os
+monstros Dragão do
+seu oponente no
+campo!{end}
+
+[D24A]  # Floresta
+Muda o campo a favor
+dos monstros Besta-
+Guerreira, Inseto,
+Planta e Besta!{end}
+
+[D24B]  # Terra Árida
+Muda o campo a favor
+dos monstros Zumbi,
+Dinossauro e Rocha!{end}
+
+[D24C]  # Montanha
+Muda o campo a favor
+dos monstros Dragão,
+Besta Alada e
+Trovão!{end}
+
+[D24D]  # Sogen
+Transforma o campo
+numa pradaria a
+favor dos monstros
+Guerreiro e Besta-
+Guerreira!{end}
+
+[D24E]  # Umi
+Muda o campo a favor
+dos monstros Aqua e
+Trovão, mas contra
+os monstros Máquina
+e Piro!{end}
+
+[D24F]  # Yami
+Muda o campo a favor
+dos monstros Mago e
+Demônio, mas contra
+os monstros Fada!{end}
+
+[D250]  # Buraco Negro
+Suga todos os cards
+em jogo no campo!{end}
+
+[D251]  # Raigeki
+Destrói todos os
+monstros do oponente
+com um raio!{end}
+
+[D252]  # Mooyan Curry
+Um delicioso curry
+de carne aumenta
+seus PV em 200!{end}
+
+[D253]  # Remédio Vermelho
+Uma poção mágica que
+aumenta seus PV em
+500!{end}
+
+[D254]  # Remédio Secreto dos Goblins
+Uma erva dos goblins
+que aumenta seus PV
+em 1000!{end}
+
+[D255]  # ALma do Puro
+Uma poção das fadas
+que aumenta seus PV
+em 2000!{end}
+
+[D256]  # Dian Keto, Mestre da Cura
+Um poder místico que
+aumenta seus PV em
+5000!{end}
+
+[D257]  # Faíscas
+Inflija 200 pontos
+de dano aos Life
+Points do seu
+adversário.{end}
+
+[D258]  # Hinotama
+Uma bola de fogo
+causa 100 de dano
+aos PV do seu
+oponente!{end}
+
+[D259]  # Chama Final
+Inflija 600 pontos
+de dano aos Life
+Points do seu
+adversário.{end}
+
+[D25A]  # Ookazi
+Chamas causam 500 de
+dano aos PV do seu
+oponente!{end}
+
+[D25B]  # Fogo Medonho
+Um inferno de fogo
+causa 1000 de dano
+aos PV do seu
+oponente!{end}
+
+[D25C]  # Espadas da Luz Reveladora
+Os monstros inimigos
+são revelados e seu
+oponente não pode
+atacar por três
+turnos.{end}
+
+[D25D]  # Círculo da Profecia
+Uma maldição reduz o
+poder de todos os
+monstros inimigos!{end}
+
+[D25E]  # Luz que Penetra as Trevas
+Uma luz ofuscante
+revela todos os
+monstros no campo.{end}
+
+[D25F]  # Yaranzo
+Um monstro que ataca
+qualquer um que
+tente abrir sua
+tampa.{end}
+
+[D260]  # Kanan the Swordmistress
+Uma espadachim que
+flutua como uma
+borboleta e ferroa
+como uma abelha.{end}
+
+[D261]  # Takriminos
+Uma criatura com
+barbatanas, parente
+distante dos dragões
+marinhos.{end}
+
+[D262]  # Stuffed Animal
+Um bicho de pelúcia
+de aparência fofa,
+mas que morde.{end}
+
+[D263]  # Olho Megasonico
+Feita de metal
+misterioso, esse
+monstro é uma
+máquina do Juízo
+Final a partir da
+borda do universo.{end}
+
+[D264]  # Super Leão-de-Guerra
+Um leão muito feroz,
+com garras longas e
+afiadas.{end}
+
+[D265]  # Yamadron
+Este monstro tem
+três cabeças
+cuspidoras de fogo e
+podem formar um mar
+de chamas ardentes.{end}
+
+[D266]  # Seiyaryu
+Um dragão místico
+que queima os
+indignos com suas
+chamas místicas.{end}
+
+[D267]  # Three-legged Zombies
+Bony e Tubby, uma
+dupla de esqueletos
+amigáveis.{end}
+
+[D268]  # Zera o Mante
+Um monstro enorme e
+brutal que ataca com
+garras afiadas como
+navalhas.{end}
+
+[D269]  # Pinguim Voador
+Um pinguim raro que
+voa com as asas que
+tem na cabeça.{end}
+
+[D26A]  # Escudo do Milênio
+Dizem que esse
+escudo famoso
+pertencia a um
+antigo Faraó
+egípcio. As lendas
+dizem que seu poder
+é capaz de bloquear
+qualquer ataque.{end}
+
+[D26B]  # Fada Madrinha
+Esse monstro alado é
+conhecido por levar
+felicidade a todos.{end}
+
+[D26C]  # Soldado do Lustro Negro
+Um guerreiro
+poderoso com as
+mesmas capacidades
+do lendário Dragão
+Branco de Olhos
+Azuis.{end}
+
+[D26D]  # Espelho do Demônio
+Um espelho arcano
+que arrasta os
+inimigos para o
+mundo do espelho.{end}
+
+[D26E]  # Paredes do Labirinto
+Estas paredes formam
+um labirinto sem
+saída para os
+inimigos.{end}
+
+[D26F]  # Jirai Gumo
+Uma aranha
+monstruosa que vive
+debaixo da terra.{end}
+
+[D270]  # Carniçal das Sombras
+Um zumbi perigoso
+que rasteja na
+escuridão.{end}
+
+[D271]  # Parede das Sombras
+Um monstro
+extremamente rápido
+que desliza pelas
+paredes para atacar
+os inimigos.{end}
+
+[D272]  # Tanque do Labirinto
+Um tanque que
+percorre um
+labirinto caçando
+seus inimigos.{end}
+
+[D273]  # Sanga do Trovão
+Um golem que usa
+ataques de raio,
+como os Irmãos do
+Labirinto.{end}
+
+[D274]  # Kazejin
+Um golem que
+controla os ventos,
+como os Irmãos do
+Labirinto.{end}
+
+[D275]  # Suijin
+Um golem que usa
+ataques de água,
+como os Irmãos do
+Labirinto.{end}
+
+[D276]  # Guardião do Portão
+Sanga, Kazejin e
+Suijin se unem para
+formar um único e
+poderoso monstro.{end}
+
+[D277]  # Lombriga da Masmorra
+Escondido sob o chão
+de um labirinto, ele
+engole qualquer um
+que passe por cima
+dele.{end}
+
+[D278]  # Domador de Monstros
+Um mestre de
+monstros que exerce
+controle sobre
+várias criaturas.{end}
+
+[D279]  # Ryu-Kishin Potencializado
+Um gárgula melhorado
+pelos poderes das
+trevas. Garras bem
+afiadas o tornam um
+forte adversário.{end}
+
+[D27A]  # Espadachim Sorrateiro
+Um monstro formado
+pelas almas
+vingativas daqueles
+que pereceram em
+batalha.{end}
+
+[D27B]  # La Jinn, o Gênio Místico da Lâmpada
+Um gênio da lâmpada
+que está sempre à
+disposição do seu
+mestre.{end}
+
+[D27C]  # Dragão Definitivo de Olhos Azuis
+O dragão definitivo,
+formado pela fusão
+de três Dragões
+Brancos de Olhos
+Azuis.{end}
+
+[D27D]  # Jacaré Toon
+Um monstro jacaré
+vindo diretamente
+dos desenhos
+animados.{end}
+
+[D27E]  # Kaiser Violento
+Com um machado em
+cada mão, este
+monstro causa
+grandes estragos.{end}
+
+[D27F]  # Dragão Papagaio
+Um dragão dos
+desenhos animados
+que é mais perigoso
+do que aparenta.{end}
+
+[D280]  # Coelhinho Negro
+Ele salta para cima,
+para baixo, e por
+toda parte! Ninguém
+consegue tocar esse
+coelhinho engraçado.{end}
+
+[D281]  # Bickuribox
+Uma caixa de
+surpresas
+especialista em
+ataques surpresa.{end}
+
+[D282]  # Dragão de Estimação da Harpia
+O mascote favorito
+das harpias, mas um
+dragão muito
+perigoso.{end}
+
+[D283]  # Lâmpada Mística
+Uma lâmpada usada
+pelos magos para
+misturar poções.{end}
+
+[D284]  # Máquina do Pêndulo
+Uma terrível máquina
+de tortura com uma
+grande lâmina em
+pêndulo.{end}
+
+[D285]  # Giltia, o Cavaleiro D.
+Armado com uma lança
+que queima a alma,
+este monstro prefere
+ataques mágicos.{end}
+
+[D286]  # Aranha Lançadora
+Uma aranha mecânica
+com lança-foguetes
+capazes de realizar
+disparos aleatórios.{end}
+
+[D287]  # Zoa
+Um monstro cujo
+máximo potencial
+pode ser alcançado
+em conjunto com
+"Metalmorfo".{end}
+
+[D288]  # Metalzoa
+Um Zoa metálico
+capaz de ataques
+intensos.{end}
+
+[D289]  # Zone Eater
+Uma criatura marinha
+que engole os
+inimigos e os digere
+lentamente.{end}
+
+[D28A]  # Escorpião de Aço
+Um monstro de cauda
+de ferro equipado
+com pinças muito
+afiadas.{end}
+
+[D28B]  # Elfa Dançarina
+Uma elfa que dança
+através do céu com
+asas de lâminas
+afiadas.{end}
+
+[D28C]  # Ocubeam
+Com uma aparência
+assustadora, esta
+criatura usa o seu
+grande olho e
+orelhas para
+acompanhar qualquer
+movimento.{end}
+
+[D28D]  # Leghul
+Não é um monstro
+muito poderoso,
+apesar de suas
+grandes presas e
+espinhos.{end}
+
+[D28E]  # Ooguchi
+Uma rã-touro
+monstruosa com
+espinhos venenosos.{end}
+
+[D28F]  # Espadachim de uma Terra Distante
+Um guerreiro do
+Oriente armado com
+uma espada
+amaldiçoada.{end}
+
+[D290]  # Emperor of the Land and Sea
+Um monstro réptil
+que cospe fogo.{end}
+
+[D291]  # Ushi Oni
+Um boi demônio
+restaurado pelas
+artes negras, este
+monstro aparece de
+um jarro.{end}
+
+[D292]  # Monster Eye
+Um servo que vigia
+de perto tudo e
+todos. Quando é
+descoberto, solta
+uma cortina de
+fumaça.{end}
+
+[D293]  # Leogun
+Um monstro enorme
+com uma juba
+parecida com a do
+Rei das Bestas.{end}
+
+[D294]  # Tatsunootoshigo
+Um monstro bizarro
+com o torso de um
+cavalo e uma cauda
+de peixe. Ele galopa
+através do mar como
+se fosse o vento.{end}
+
+[D295]  # Matador com Espada
+Um motor letal de
+destruição que
+empunha duas lâminas
+afiadas.{end}
+
+[D296]  # Yaiba Robo
+Uma máquina cúbica
+equipada com lâminas
+afiadas para fazer
+pedacinhos do
+oponente.{end}
+
+[D297]  # Rei Máquina
+Blindado com uma
+superliga, este robô
+ataca com rajadas de
+fogo lançadas dos
+dois braços.{end}
+
+[D298]  # Mecha-Soldado Gigante
+Este monstro brande
+um machado capaz de
+estremecer a terra
+que não pode ser
+bloqueado por uma
+espada comum.{end}
+
+[D299]  # Dragão de Metal
+Um dragão dourado
+que cospe fogo e
+queima qualquer
+oponente em seu
+caminho.{end}
+
+[D29A]  # Mechanical Spider
+Um monstro mecânico
+em forma de aranha,
+com foices na ponta
+das pernas.{end}
+
+[D29B]  # Bat
+Um morcego mecânico
+que ataca soltando
+esferas explosivas.{end}
+
+[D29C]  # Lobo Giga-Tech
+Um lobo de ferro com
+presas afiadas como
+lâminas, capazes de
+penetrar qualquer
+armadura.{end}
+
+[D29D]  # Soldado Cibernético
+Guardião do Rei
+máquina, ela esmaga
+a oposição rolando.{end}
+
+[D29E]  # Pás esmagadoras
+Armado com um par de
+pás este monstro vai
+destuir qualquer
+coisa que fique no
+caminho dele.{end}
+
+[D29F]  # Caçador Mecânico
+Um caçador que
+persegue
+incansavelmente seu
+alvo por ordem do
+Rei Máquina.{end}
+
+[D2A0]  # Blocker
+Cada parte desta
+criatura é uma arma
+independente, capaz
+de ataques
+devastadores.{end}
+
+[D2A1]  # Malabarista Explosivo
+Uma bomba-relógio
+ambulante que adora
+mandar os inimigos
+pelos ares.{end}
+
+[D2A2]  # Golgoil
+Um gigante de ferro
+que aparece em uma
+fenda dimensional.{end}
+
+[D2A3]  # Giganto
+Uma bola de aço
+massiva que arrasta
+tudo em seu caminho.{end}
+
+[D2A4]  # Ciber-Stein
+Criada num
+laboratório de
+porão, esta máquina
+infernal lança
+foguetes pela boca.{end}
+
+[D2A5]  # Comandante Cibernético
+Uma força de ataque
+equipados com
+lançadores de
+foguetes e bazucas.{end}
+
+[D2A6]  # Jinzo Nº 7
+Criado num
+laboratório
+subterrâneo, este
+ser artificial às
+vezes perde o
+controle.{end}
+
+[D2A7]  # Tatu dado
+Um monstro tatu que
+rola assumindo a
+forma de um dado.{end}
+
+[D2A8]  # Dragão do Céu
+Um dragão voador com
+quatro asas
+abrigando algumas
+lâminas muito
+perigosas.{end}
+
+[D2A9]  # Dragão do Trovão
+Um dragão que chama
+trovões e relâmpagos
+para atacar seus
+oponentes.{end}
+
+[D2AA]  # Dragão de Pedra
+Um dragão formado
+por pedras enormes
+que também são
+usados para atacar o
+inimigo.{end}
+
+[D2AB]  # Kaiser Dragon
+Um dragão imperador
+muito orgulhoso e
+poderoso.{end}
+
+[D2AC]  # Maga da Fé
+Apesar de sua pouca
+força, esta maga é
+capaz de lançar
+magias que eliminam
+a escuridão.{end}
+
+[D2AD]  # Deusa do Capricho
+Uma deusa tímida que
+parece passar a
+maior parte do tempo
+dormindo.{end}
+
+[D2AE]  # Mago da Água
+Este monstro inunda
+o oponente com uma
+fonte quase
+inesgotável de água.{end}
+
+[D2AF]  # Água de Gelo
+Uma sereia muito
+agressiva que ataca
+seus inimgos com
+espinhos que crescem
+de seu corpo.{end}
+
+[D2B0]  # Fada do Dragão de Água
+Uma fada da água que
+dizem ser capaz de
+invocar uma serpente
+do mar gigante.{end}
+
+[D2B1]  # Elfo Ancião
+Rumores indicam que
+este elfo vive há
+milhares de anos.
+Ele lidera um
+exército de
+espíritos contra
+seus inimigos.{end}
+
+[D2B2]  # Beautiful Beast Trainer
+Uma rara usuária de
+magia armada com um
+chicote cruel.{end}
+
+[D2B3]  # Garota da água
+Uma adorável dama
+que pode lançar
+projéteis de água
+que se transformam
+em letais espetos de
+gelo antes de
+atingir o oponente.{end}
+
+[D2B4]  # Golfinho Branco
+Um golfinho branco
+com um chifre que
+convoca enormes
+ondas.{end}
+
+[D2B5]  # Tubarão das Profundezas do Mar
+Um tubarão violento
+que ataca tudo o que
+encontra no mar.{end}
+
+[D2B6]  # Peixe de Metal
+Um peixe de metal
+com uma barbatana
+caudal afiada como
+navalha.{end}
+
+[D2B7]  # Habitante das Profundezas
+Esta é uma criatura
+marinha cuja ira
+outros monstros
+temem enfrentar.{end}
+
+[D2B8]  # Peixe de 7 Cores
+Um raro peixe arco-
+íris que nunca foi
+apanhado por homens
+mortais.{end}
+
+[D2B9]  # Mech Bass
+Esta criatura
+carrega um canhão de
+plasma nas costas.{end}
+
+[D2BA]  # Aqua Dragon
+Um dragão que vive
+no mar. É capaz de
+cuspir jatos de água
+de alta pressão.{end}
+
+[D2BB]  # Dragão Rei dos Mares
+Protegido por uma
+dura casca, este
+mestre do oceano
+ataca seus inimigos
+com bolhas tóxicas.{end}
+
+[D2BC]  # Turu-Purun
+Um estranho monstro
+de um olho só que
+pode derrubar seus
+inimigos com um
+único golpe de sua
+lança.{end}
+
+[D2BD]  # Sentinela dos Mares
+Um guerreiro tritão
+dedicada à defesa do
+oceano contra
+qualquer pessoa que
+se contamina-lo.{end}
+
+[D2BE]  # Cobra da Água
+Este monstro
+hipnotiza um
+oponente com a bola
+em sua cauda e leva-
+os para uma morte
+aquosa.{end}
+
+[D2BF]  # Cobra d'Água Vermelha Gigante
+Uma cobra que vive
+no mar e ataca os
+inimigos com suas
+presas afiadas.{end}
+
+[D2C0]  # Seadra Espinhosa
+Usando os espinhos
+que brotam por todo
+seu corpo, esta
+criatura apunhala
+seus oponentes e
+inunda-os de
+eletricidade.{end}
+
+[D2C1]  # Tartaruga Branca de 30,000 Anos
+Uma tartaruga enorme
+que existe há mais
+de 30.000 anos.{end}
+
+[D2C2]  # Kappa Avenger
+Um anfíbio que jurou
+vingar a morte de
+seus irmãos.{end}
+
+[D2C3]  # Kanikabuto
+Um monstro com
+garras enormes para
+recortar inimigos a
+pequenos pedaços.{end}
+
+[D2C4]  # Zarigun
+Lagostas com garras
+letais extremamente
+perigosas.{end}
+
+[D2C5]  # Golem Milênio
+Por quase um
+milênio, este golem
+serviu como guardião
+de um antigo
+tesouro.{end}
+
+[D2C6]  # Golem Destruidor
+Um golem com uma
+poderosa mão direita
+e que a usa para
+esmagar as suas
+vítimas.{end}
+
+[D2C7]  # Rocha Revólver
+Empurrando um par de
+metralhadoras, este
+monstro é imparável.{end}
+
+[D2C8]  # Guerreiro Minomushi
+Um guerreiro da
+rocha que empunha
+uma lâmina pesada
+esculpidos em pedra.{end}
+
+[D2C9]  # Stone Ghost
+Uma criatura que
+explode de raiva,
+causando uma chuva
+esmagadora de
+pedras.{end}
+
+[D2CA]  # Ataque Kaminari
+Um monstro que julga
+os malfeitores e os
+pune como merecem.{end}
+
+[D2CB]  # Besta Eletro-Transmissora
+Esta criatura ataca
+com ondas
+eletromagnéticas.{end}
+
+[D2CC]  # Escargot Relâmpago
+Depois de render um
+oponente imóvel por
+cuspir uma gosma
+pegajosa, este
+monstro se aproxima
+para o ataque.{end}
+
+[D2CD]  # Pinguim Elétrico
+Os braços desse
+monstro formam
+chicotes elétricos
+que paralisam seus
+inimigos com choques
+elétricos.{end}
+
+[D2CE]  # O Imortal do Trovão
+Uma criatura que
+ataca os inimigos
+com raios.{end}
+
+[D2CF]  # Serpente Eléctrica
+Uma serpente com uma
+cauda que armazena
+eletricidade.{end}
+
+[D2D0]  # Wing Eagle
+Uma caçadora dos
+céus que nunca errou
+um alvo.{end}
+
+[D2D1]  # Águia Punida
+Uma juíza dos céus
+que aplica sua
+sentença com garras
+punitivas branco-
+prateadas.{end}
+
+[D2D2]  # Pássaro da Crista Vermelha
+Este monstro
+mergulha dos céus e
+ataca com uma chuva
+de facas guardadas
+em suas asas.{end}
+
+[D2D3]  # Pássaro-solar Carmesin
+Um monstro que arde
+em chamas carmesins
+e, ao bater as asas,
+solta uma chuva de
+faíscas.{end}
+
+[D2D4]  # Pássaro Rainha
+Este monstro ataca
+inimigos usando seu
+enorme bico.{end}
+
+[D2D5]  # Ninja Armado
+Um ninja azul que
+ataca com uma grande
+foice e pés cheios
+de cravos.{end}
+
+[D2D6]  # Fantasma Mágico
+Esta criatura lança
+uma mágica de terror
+e confusão logo
+antes de atacar seus
+inimigos.{end}
+
+[D2D7]  # Caçador de Almas
+Este palhaço
+alimenta um lagarto
+monstruoso com a
+força vital de seus
+inimigos.{end}
+
+[D2D8]  # Comedor de ar
+Um monstro que se
+alimenta de
+oxigênio, sufocando
+qualquer um que
+ficar perto dele.{end}
+
+[D2D9]  # Pardal Vermillion
+Uma criatura
+guerreira de fogo
+que libera um calor
+intenso do corpo.{end}
+
+[D2DA]  # Kamen do Mar
+Um monstro
+misericordioso que
+destroça seus
+oponentes com garras
+afiadas como
+navalhas.{end}
+
+[D2DB]  # Serpente Sinistra
+Uma cobra venenosa
+voadora que não é
+muito boa em se
+mover no chão.{end}
+
+[D2DC]  # Ganigumo
+Uma aranha que
+prende seus inimigos
+com uma teia
+grudenta e ataca
+eles com suas garras
+afiadas.{end}
+
+[D2DD]  # Alinsection
+Um escaravelho-veado
+com a cabeça e os
+braços em forma de
+serra.{end}
+
+[D2DE]  # Soldados Insectos do Céu
+Soldados insetos que
+atacam em enxames.{end}
+
+[D2DF]  # Cavaleiro Barata
+Um guerreiro barata
+que se esconde em
+espaços pequenos e
+sai para atacar os
+inimigos.{end}
+
+[D2E0]  # Kuwagata α
+Um besouro muito
+feroz que ataca a
+cabeça.{end}
+
+[D2E1]  # Arrombador
+Um rato astuto .Ele
+vai vir até você com
+sua enorme garra
+esquerda.{end}
+
+[D2E2]  # Prágtico
+Um monstro muito
+perigoso, com
+espinhos na cabeça e
+na cauda.{end}
+
+[D2E3]  # Garvas
+Uma criatura
+malévola que lembra
+um leão alado.{end}
+
+[D2E4]  # Ameba
+Um monstro que
+envolve o inimigo e
+o digere lentamente.{end}
+
+[D2E5]  # Korogashi
+Esta criatura rola
+objetos enormes para
+esmagar os inimigos.{end}
+
+[D2E6]  # Boo Koo
+Um mago-livro com
+páginas e mais
+páginas de magias
+poderosas.{end}
+
+[D2E7]  # Lobo Flor
+Uma fera coberta de
+flores da cabeça aos
+pés.{end}
+
+[D2E8]  # Flor Arco-íris
+Uma criatura-flor
+com pétalas cor de
+arco-íris que atraem
+o inimigo até suas
+mandíbulas.{end}
+
+[D2E9]  # Lírio de Cano
+Esta flor maldita
+ataca seus inimigos
+com projéteis de
+polen.{end}
+
+[D2EA]  # Needle Ball
+Uma bola coberta de
+agulhas afiadas.
+Costuma cair em
+grupo sobre os
+inimigos.{end}
+
+[D2EB]  # Pavão
+Um grande pavão que
+lança suas penas em
+um ataque letal.{end}
+
+[D2EC]  # Hoshiningen
+Seguida por uma bela
+cauda, esta estrela
+cadente causa dano
+quando atinge um
+inimigo.{end}
+
+[D2ED]  # Maha Vailo
+Um mago vestido de
+azul que costuma ser
+visto meditando.{end}
+
+[D2EE]  # Sereia Marinha do Arco Iris
+A sereia reticente
+que aparece apenas
+em ocasiões muito
+raras. Ela só surge
+quando um grande
+arco-íris no céu.{end}
+
+[D2EF]  # Rei Músico
+Um guitarrista
+fantástico que ataca
+os inimigos com
+emissões
+ultrassônicas.{end}
+
+[D2F0]  # Wilmee
+Um coelho raivoso
+que rasga o seu
+caminho através da
+oposição, com suas
+garras afiadas.{end}
+
+[D2F1]  # Yado Karu
+Um caranguejo-
+eremita com cabeça
+de dragão.{end}
+
+[D2F2]  # Morinphen
+Um estranho demônio
+com longos braços e
+garras afiadas como
+lâminas.{end}
+
+[D2F3]  # Kattapillar
+Ataca inimigos
+cospindo teias finas
+e grudentas.{end}
+
+[D2F4]  # Caçador de Dragões
+Um monstro temível
+enviado do submundo
+para destruir
+dragões.{end}
+
+[D2F5]  # Inseto Devorador de Homens
+Uma criatura que
+retalha tudo com
+suas pinças e se
+alimenta das suas
+vítimas.{end}
+
+[D2F6]  # Humano Dragão
+Dotado do poder dos
+dragões, este
+guerreiro empunha
+uma espada criada de
+uma garra de um
+dragão.{end}
+
+[D2F7]  # Tartaruga Guaxinim
+Um pequeno guaxinim
+rotundo que arca uma
+grande concha de
+tartaruga. É
+inimigos truques
+usando técnicas de
+transformação e
+ilusão.{end}
+
+[D2F8]  # Fungi of the Musk
+Um monstro que
+libera ácido pelos
+poros para derreter
+tudo o que toca a
+sua pele.{end}
+
+[D2F9]  # Prisman
+Este monstro
+cristalino foca a
+luz para criar um
+laser letal.{end}
+
+[D2FA]  # Dogra do Vendaval
+Uma mariposa enorme
+que cria um
+redemoinho cheio de
+pó venenoso.{end}
+
+[D2FB]  # Peixe Louco
+Um peixe voador que
+ataca com sua cabeça
+pontiaguda.{end}
+
+[D2FC]  # Ciber Saurus
+Um dinossauro
+mecânico equipado
+com um canhão de
+raios.{end}
+
+[D2FD]  # Braquio-raidus
+Um dinossauro
+colossal que esmaga
+tudo o que cruza o
+seu caminho.{end}
+
+[D2FE]  # Flor risonha
+Uma flor cujo riso
+pode confundir as
+mentes dos inimigos.{end}
+
+[D2FF]  # Soldado de Feijão
+Uma planta-guerreira
+que ataca com
+sementes e espada.{end}
+
+[D300]  # Soldado Canhão
+Uma máquina
+altamente destrutiva
+armada com um
+poderoso canhão.{end}
+
+[D301]  # Guardião da Sala do Trono
+Um guarda robô
+construído para
+proteger salas de
+trono. Está armado
+com mísseis
+automáticos.{end}
+
+[D302]  # Talhador Corajoso
+Armado com diversas
+tesouras, este
+monstro pode talhar
+um inimigo em
+qualquer forma e
+tamanho.{end}
+
+[D303]  # The Statue of Easter Island
+Um enorme ídolo de
+pedra da Ilha de
+Páscoa que dispara
+anéis de laser pela
+boca.{end}
+
+[D304]  # Muka Muka
+Um monstro que
+irrita o oponente a
+ponto de deixá-lo
+fora de si de tanta
+fúria.{end}
+
+[D305]  # Monstro de Arenito
+Ele aparece do sub-
+solo e ataca com
+longos tentáculos em
+forma de serpentes.{end}
+
+[D306]  # Boulder Tortoise
+Uma tartaruga de
+pedra com uma defesa
+muito alta.{end}
+
+[D307]  # Kraken de Fogo
+Uma lula que
+prospera em chamas e
+calor.{end}
+
+[D308]  # Turtle Bird
+Uma rara tartaruga
+voadora que habita o
+mar.{end}
+
+[D309]  # Pássaro Crânio
+O sopro desta ave
+rouba a força vital
+das criaturas.{end}
+
+[D30A]  # Pássaro monstruoso
+Poucos puseram os
+olhos neste pássaro
+mergulhador e
+viveram para contar
+a história.{end}
+
+[D30B]  # O Carniceiro do Bar
+Os inimigos
+derrotados viram
+ingredientes para
+este monstro
+gourmet.{end}
+
+[D30C]  # Menino Estrela
+Uma forma de vida
+extraterrestre que
+adora viver na água.{end}
+
+[D30D]  # Espírito da Montanha
+Um mago idoso que
+levanta montanhas
+com sua flauta.{end}
+
+[D30E]  # Caçador de Cabeças
+Um demônio que leva
+uma foice e dispara
+raios devastadores
+dos seus olhos.{end}
+
+[D30F]  # Milus Radiante
+Muitas vezes
+confundida com um
+bichinho fofo, esta
+criatura é uma fera
+muito perigosa.{end}
+
+[D310]  # Togex
+Um monstro ágil que
+rola para atropelar
+seus oponentes.{end}
+
+[D311]  # Cerebrus de Chamas
+Conhecido por muitos
+como "Carrasco em
+Chamas", este
+monstro é capaz de
+transformar seus
+inimigos em cinzas.{end}
+
+[D312]  # Eldeen
+A bengala deste
+monstro é a fonte de
+muitas magias
+poderosas.{end}
+
+[D313]  # Areia Mística
+Transforma os
+inimigos em pedra e
+os reduz a pó.{end}
+
+[D314]  # Elfos Gêmeos
+Elfos gêmeos que
+alternam os seus
+ataques.{end}
+
+[D315]  # Kwagar Hércules
+Um monstro inseto
+com as mandíbulas de
+um cervo-volante e o
+chifre de um
+besouro.{end}
+
+[D316]  # Minar
+Um monstro com
+quatro braços muito
+habilidosos, capazes
+de atacar cada um
+por conta própria.{end}
+
+[D317]  # Homemkamakiri
+Um gafanhoto em
+forma de homem com
+duas foices afiadas.{end}
+
+[D318]  # Mechaleon
+Um monstro parecido
+com um camaleão que
+se esconde em
+qualquer lugar
+mudando de cor.{end}
+
+[D319]  # Mega Esfera de Trovão
+Ela rola pelo chão
+soltando raios de
+eletricidade para
+atacar seus
+inimigos.{end}
+
+[D31A]  # Niwatori
+Engole os inimigos
+por inteiro e usa
+suas essências como
+energia.{end}
+
+[D31B]  # Tubarão Corroido
+Um tubarão zumbi que
+pode transmitir a
+sua maldição letal
+com um feitiço.{end}
+
+[D31C]  # Skelengel
+Uma fada fantasma
+que dispara inúmeras
+flechas em quem
+tiver vontade de
+atacar.{end}
+
+[D31D]  # Hane-Hane
+Esta criatura
+bloqueia o avanço
+inimigo com ventos
+fortíssimos e ataca
+com um enorme
+machado de batalha.{end}
+
+[D31E]  # Misairuzame
+Um peixe lança-
+mísseis protegido
+por espinhos letais.{end}
+
+[D31F]  # Tongyo
+Este monstro captura
+outros peixes com
+sua longa língua e
+suga toda a energia
+que tiverem.{end}
+
+[D320]  # Dharma Cannon
+Um monstro mecânico
+de altíssima
+precisão, coberto de
+canhões de grosso
+calibre.{end}
+
+[D321]  # Skelgon
+Um dragão zumbi
+esquelético capaz de
+voar pelos céus.{end}
+
+[D322]  # Guerreiro Wow
+Um peixe com braços,
+pernas, e dentes
+muito afiados.{end}
+
+[D323]  # Griggle
+Este monstro gira em
+volta do inimigo
+lançando folhas que
+cegam e sementes
+dolorosas.{end}
+
+[D324]  # Rato de Osso
+Um rato que retornou
+como um zumbi para
+buscar vingança nos
+gatos.{end}
+
+[D325]  # Rã Limo
+Um limo com a cabeça
+de um sapo que ataca
+com um coaxar
+terrível.{end}
+
+[D326]  # Behegon
+Esta monstruosidade
+com uma mandíbula
+enorme e dentes
+massivos, é uma
+serpente perigosa e
+estranha das
+profundezas.{end}
+
+[D327]  # Elfa Negra
+Uma elfa perversa
+que simplesmente
+adora entrar em
+batalha.{end}
+
+[D328]  # Winged Dragon #2
+Cria tornados
+poderosos com suas
+enormes asas.{end}
+
+[D329]  # Homem Cogumelo Nº2
+Um Homem Cogumelo
+adulto, com um poder
+de ataque maior.{end}
+
+[D32A]  # Guarda de Batalha da Lava
+Este irmão do Guarda
+de Batalha do
+Pântano pode não ser
+forte, mas é muito
+bom na defesa.{end}
+
+[D32B]  # Tyhone #2
+Um dragão carmesim
+que cospe bolas de
+fogo nos inimigos.{end}
+
+[D32C]  # O Andarilho Condenado
+Um monstro que vaga
+nos limites do mundo
+inferior.{end}
+
+[D32D]  # Ogre de Aço da Gruta nº 1
+Um ídolo de aço
+adorado na Terra das
+Máquinas.{end}
+
+[D32E]  # Pote, o Truque
+A servo não tão
+poderoso, ele é um
+garoto de recados de
+um feiticeiro
+mestre.{end}
+
+[D32F]  # Oscillo Hero
+Um estranho
+guerreiro de outra
+dimensão.{end}
+
+[D330]  # Invasor de Outra Dimenção
+Um monstro
+extraterrestre que
+veio de uma galáxia
+distante.{end}
+
+[D331]  # Dragão Inferior
+Um dragão inferior
+incapaz de cuspir
+fogo.{end}
+
+[D332]  # Verme Agulha
+Uma larva com
+espinhos de aço para
+atacar os
+desatentos.{end}
+
+[D333]  # Mísero Fantasma do Sotão
+Um monstro
+inofensivo que pode
+ser encontrado em
+qualquer sotão.{end}
+
+[D334]  # Grande Mamute de Goldfine
+Um elefante zumbi
+esquelético muito
+incomum, com ossos
+dourados reluzentes.{end}
+
+[D335]  # Tubarão Negro Devorador de Homens
+Um tubarão negro
+capaz de detectar
+quase qualquer
+cheiro na água.{end}
+
+[D336]  # Yormungarde
+Uma serpente muito
+longa que aparece
+com frequência em
+lendas e mitos.{end}
+
+[D337]  # Espinhos do Mundo das Trevas
+Uma planta espinhosa
+encontrada nas
+terras sombrias, que
+se enrola em
+viajantes
+desatentos.{end}
+
+[D338]  # Antrossauro
+Esss homem
+dinosssaurrr
+esssperto esss,
+mesmmm sen tannnta
+forrrzzz. (Quasss
+como você, se
+tivesss forrrzzz!
+Nyaah!){end}
+
+[D339]  # Lagarto Salivador
+Um réptil humanóide
+que suga o sangue de
+qualquer ser vivo
+que passa por perto
+dele.{end}
+
+[D33A]  # Trakodonte
+Um dragão listrado
+que muitas vezes é
+visto correndo por
+todo o deserto à uma
+velocidade tremenda.{end}
+
+[D33B]  # B. Dragon Jungle King
+Um dragão totalmente
+negro que vive nas
+selvas e se alimenta
+de árvores.{end}
+
+[D33C]  # Juíza Imperatriz
+Imperatriz do Reino
+Dourado. Ninguém
+pode recusar a sua
+vontade.{end}
+
+[D33D]  # Pequeno D
+Wow, esse
+tiranossauro tem um
+gênio terrível.{end}
+
+[D33E]  # Bruxa da Floresta Negra
+Esta bruxa que vive
+na floresta pode ver
+tudo com o olho em
+sua testa.{end}
+
+[D33F]  # O Ancião da Floresta Profunda
+Esta criatura adota
+a forma de um bode
+branco vivendo na
+floresta, mas é na
+verdade um Ancião da
+Floresta.{end}
+
+[D340]  # Escorpião gigante da tundra
+Um extraordinário
+escorpião azul
+encontrado na tundra
+e não nos desertos.{end}
+
+[D341]  # Goblin corvo
+Um esperto goblin de
+nariz pontudo, ele é
+uma força a ser
+reconhecida.{end}
+
+[D342]  # Leão feitiçeiro
+Um mago misterioso
+que se disfarça com
+uma capa preta. Sua
+identidade é uma
+besta leão falante.{end}
+
+[D343]  # Flor do Abismo
+Uma flor raramente
+vista que desabrocha
+quietamente nos
+confins das trevas.{end}
+
+[D344]  # Robô Patrulha
+Um robô de última
+geração que elimina
+intrusos assim que
+os detecta.{end}
+
+[D345]  # Takuhee
+Este pássaro é
+amplamente conhecido
+como um arauto da
+condenação.{end}
+
+[D346]  # Feiticeira das Sombras
+Uma criatura popular
+da mitologia que
+profere ataques
+fatais com uma lança
+afiada.{end}
+
+[D347]  # Relatório do Tempo
+Esta criatura é
+conhecida por prever
+o tempo com
+pouquíssima
+precisão.{end}
+
+[D348]  # Corrente do aprisionamento
+Os elos místicos
+desta corrente
+separam inimigos do
+poder deles.{end}
+
+[D349]  # Caracol Mecânico
+Um caracol cyborg
+que ainda viaja a um
+ritmo lento.{end}
+
+[D34A]  # Greenkappa
+Uma criatura que
+assume a forma do
+inimigo e copia cada
+um de seus ataques.{end}
+
+[D34B]  # Mon Larvas
+Um passo adiante na
+cadeia
+evolucionária, ele é
+muito mais poderoso
+que "Larvas".{end}
+
+[D34C]  # Living Vase
+Um vaso vivo que
+cega os inimigos com
+pólen e ataca com
+seus dentes afiados.{end}
+
+[D34D]  # Planta com Tentáculos
+Uma planta carnívora
+que tem uma
+protuberância de
+tentáculos. Ele
+ataca alguém
+próximo, estendendo
+seus tentáculos.{end}
+
+[D34E]  # Beaked Snake
+Enrola-se nos
+oponentes e os bica
+com o seu enorme
+bico.{end}
+
+[D34F]  # Jarro Metamórfico
+Um grande jarro que
+ataca os inimigos
+próximos libertando
+o monstro que guarda
+dentro de si.{end}
+
+[D350]  # Musa-A
+Uma fada das artes
+que é imbatível na
+harpa.{end}
+
+[D351]  # Tartaruga Gigante Que Se Alimenta de Chamas
+Uma tartaruga de
+casco carmesim que
+se alimenta de
+chamas.{end}
+
+[D352]  # Espectro da Rosa de Dunn
+Uma rosa vermelha
+possuída por um
+espírito vil que
+suga a força vital
+dos outros para
+nutrir a flor.{end}
+
+[D353]  # Fiend Refrection #1
+Arrasta os inimigos
+para o mundo do
+espelho.{end}
+
+[D354]  # Carniçal com um Apetite
+Um monstro com um
+apetite pesado que
+nunca foi
+satisfeito.{end}
+
+[D355]  # Besta Pálida
+Com a sua pele
+tingida por um
+branco azulado, é
+difícil suportar a
+aparência aterradora
+desta estranha
+criatura.{end}
+
+[D356]  # Quimera Pequena
+Um monstro nascido
+de uma experiência
+que tentava enxertar
+asas em feras.{end}
+
+[D357]  # Chuva Violenta
+Esse monstro pode
+chamar correntezas
+de chuvas poderosas.{end}
+
+[D358]  # Key Mace #2
+Sela o bem que há em
+uma alma para criar
+um ser perverso.{end}
+
+[D359]  # Ternura
+Uma fada adorável,
+que celebra o dom do
+amor.{end}
+
+[D35A]  # Soldado Pinguim
+Um soldado pinguim
+de baixa patente que
+ataca em grupo.{end}
+
+[D35B]  # Fairy Dragon
+Uma fada dragão bela
+e poderosa.{end}
+
+[D35C]  # Marmota Obesa da Maldade
+Um rato de campo
+mal-educado que vai
+afundar seus dentes
+em tudo.{end}
+
+[D35D]  # Fera Líquida
+Uma forma de vida
+que prospera na
+água.{end}
+
+[D35E]  # Varas Gêmeas e Longas nº 2
+Uma criatura
+submarina que ataca
+com duas caudas que
+parecem chicotes.{end}
+
+[D35F]  # Grande Bill
+Esta besta tem uma
+boca que irá engolir
+qualquer coisa.{end}
+
+[D360]  # Amizade Brilhante
+O pacificador entre
+os monstros.{end}
+
+[D361]  # Bladefly
+Uma mosca monstruosa
+que mergulha sobre o
+alvo com braços
+afiados como espadas
+estendidos à frente.{end}
+
+[D362]  # Lagarto Elétrico
+Um lagarto que
+descarrega a
+eletricidade
+armazenada em seu
+corpo.{end}
+
+[D363]  # Escuteiro das Sombras de Hiro
+Um servo dos
+demônios usado
+principalmente para
+fazer o
+reconhecimento de
+uma área.{end}
+
+[D364]  # Lady da Fé
+Aquieta as almas dos
+outros entoando uma
+mágica misteriosa.{end}
+
+[D365]  # Dragão do Trovão de Duas Cabeças
+Um Dragão do Trovão
+de duas cabeças
+capaz de poderosos
+ataques elétricos.{end}
+
+[D366]  # Aranha Caçadora
+Este monstro come
+tudo o que apanhar
+sua teia.{end}
+
+[D367]  # Estrela-do-Mar Encouraçada
+Uma estrela-do-mar
+azulada com uma
+couraça capaz de
+repelir ataques.{end}
+
+[D368]  # Hourglass of Courage
+Uma fada que
+controla os
+sentimentos dos
+outros, enchendo-os
+de coragem.{end}
+
+[D369]  # Besta Marinha
+Uma criatura marinha
+de dentes afiados
+que nunca solta a
+vítima depois de
+mordê-la.{end}
+
+[D36A]  # Guerreira de Tradição
+Uma guerreira
+impregnada da
+essência de mil
+campos de batalha.{end}
+
+[D36B]  # Rock Spirit
+Um ídolo de argila
+que representa um
+espírito da rocha.
+Tem ataque e defesa
+consideráveis.{end}
+
+[D36C]  # Serpentyashi
+Esse monstro é
+formado por diversas
+serpentes que se
+separam para atacar
+individualmente os
+inimigos próximos.{end}
+
+[D36D]  # Campeã Succubus
+Uma indigna maga
+guerreira perita em
+mágicas letais.{end}
+
+[D36E]  # Ill Witch
+Controla as
+correntes de ar e
+pode criar uma
+súbita rajada de
+vento para afastar o
+oponente.{end}
+
+[D36F]  # A Coisa que se Esconde na Lama
+Este monstro se
+funde e caminha pelo
+subterrâneo para
+atacar inimigos por
+baixo.{end}
+
+[D370]  # Gyojin da Maré Alta
+Um guerreiro meio
+peixe, muito ágil e
+conhecido pelos seus
+ataques implacáveis.{end}
+
+[D371]  # Fada da Fonte
+Esta fada protege
+uma fonte de
+qualquer um que
+procure sujar suas
+águas.{end}
+
+[D372]  # Amazona dos Mares
+Uma sereia que serve
+como arauto do
+Senhor dos Oceanos.
+Ela protege os
+domínios sagrados de
+Atlantis.{end}
+
+[D373]  # Nekogal N°2
+Uma rápida e letal
+criatura com garras
+muito perigosas.{end}
+
+[D374]  # Aprendiz de Bruxa
+Uma bruxa
+inexperiente que
+acabou de começar a
+aprender as artes
+místicas.{end}
+
+[D375]  # Rato Armadurado
+A pele superior
+neste monstro rato é
+resistente o
+suficiente para
+repelir espadas.{end}
+
+[D376]  # Lagarto Guerreiro Ancião
+Antes da aurora da
+humanidade, este
+lagarto guerreiro
+governava
+livremente.{end}
+
+[D377]  # Dama da Luz da Lua
+Uma feiticeira
+abençoada pela luz
+lunar com poderes
+muito além da
+compreensão mortal.{end}
+
+[D378]  # Ogro de Pedra da Gruta
+Uma criatura formada
+por pedras gigantes{end}
+
+[D379]  # Ovo Alado da nova vida
+Diz a lenda que essa
+criatura pode prever
+o nascimento de
+crianças.{end}
+
+[D37A]  # Night Lizard
+Um guerreiro lagarto
+de escamas verdes
+dedicado a proteger
+o mar.{end}
+
+[D37B]  # Sósia da Rainha
+Uma sósia de rainha
+que não serve para
+muita coisa.{end}
+
+[D37C]  # Coroa de Asas Azuis
+Com cabelo em forma
+de coroa e corpo
+envolto por chamas
+branco-azuladas,
+este pásssaro é uma
+visão formidável.{end}
+
+[D37D]  # Trent
+Um guardião das
+florestas. Acredita-
+se que esta árvore
+sólida é imortal.{end}
+
+[D37E]  # Rainha das Folhas de Outono
+Rainha da Floresta
+de Esmeraldas e
+esposa do Rei
+Espírito, ela vive
+rodeada por folhas
+de um vermelho
+vívido.{end}
+
+[D37F]  # Amphibious Bugroth
+Uma unidade Bugroth
+modificada para o
+combate submarino.{end}
+
+[D380]  # Rastejante do Ácido
+Uma lagarta gigante
+que secreta uma
+névoa de ácido que
+derrete qualquer
+coisa.{end}
+
+[D381]  # Invasora do Trono
+Uma rainha ardilosa
+que cobiça o trono
+do rei durante a
+ausência dele.{end}
+
+[D382]  # Mystical Sheep #1
+Uma ovelha de pelo
+negro capaz de usar
+feitiçaria.{end}
+
+[D383]  # Mago do Disco
+Este monstro
+esconde-se num disco
+e só aparece para
+executar um ataque.{end}
+
+[D384]  # Víbora das chamas
+Uma cobra capaz de
+cospir fogo cuja
+velocidade a torna
+um alvo difícil.{end}
+
+[D385]  # Guarda Real
+Um soldado
+mecanizado criado
+para proteger a
+realeza.{end}
+
+[D386]  # Gosma Horripilante
+Uma gosma soberana
+que é
+definitivamente mais
+ameaçadora do que
+parece.{end}
+
+[D387]  # Hyosube
+Este anfíbio tem um
+ataque forte, mas
+deixa muito a
+desejar quanto às
+suas defesas.{end}
+
+[D388]  # Machine Attacker
+Uma máquina criada
+para arrasar seus
+inimigos num ataque
+relâmpago.{end}
+
+[D389]  # Hibikime
+Confunde os monstros
+inimigos com um
+barulho que agride
+os ouvidos.{end}
+
+[D38A]  # Corvo Cauda de Chicote
+Ataca dos céus com
+uma cauda similar a
+um chicote.{end}
+
+[D38B]  # Kunai com Corrente
+Um bumerangue com os
+efeitos de dois
+cards: Espada
+Lendária e Espada
+Sombria da
+Destruição.{end}
+
+[D38C]  # Labirinto Mágico
+Um card que aumenta
+o poder de Paredes
+do Labirinto.{end}
+
+[D38D]  # Eliminação de Guerreiros
+Destrua todos os
+monstros Guerreiro
+do seu oponente no
+campo.{end}
+
+[D38E]  # Salamandra
+Aumenta a força dos
+que dominam o poder
+de Salamandra.{end}
+
+[D38F]  # Cursebreaker
+Anula a magia sobre
+todos os monstros
+com nível reduzido e
+os deixa no nível 0.{end}
+
+[D390]  # Descanso Eterno
+Destrua todos os
+monstros Zumbi.{end}
+
+[D391]  # Megamorph
+Um card que aumenta
+o poder de um
+monstro escolhido em
+2 níveis.{end}
+
+[D392]  # Metalmorfo
+Um card que
+transforma o monstro
+escolhido em um
+monstro Máquina.{end}
+
+[D393]  # Winged Trumpeter
+Uma trombeta que
+aumenta o poder dos
+monstros Fada.{end}
+
+[D394]  # Chuva Ácida
+Uma chuva ácida que
+destrói os monstros
+Máquina do seu
+oponente.{end}
+
+[D395]  # Vírus Esmaga-Card
+Destrua os monstros
+do seu oponente no
+campo com 1500 ou
+mais de ATK.{end}
+
+[D396]  # Aerossol Erradicador
+Um inseticida que
+extermina os
+monstros Inseto do
+seu oponente no
+campo.{end}
+
+[D397]  # Fôlego da Luz
+Um vento mágico que
+reduz a escombros os
+monstros Rocha do
+seu oponente no
+campo.{end}
+
+[D398]  # Aridez Eterna
+Uma onda de calor
+que seca e elimina
+os monstros Peixe do
+seu oponente no
+campo.{end}
+
+[D399]  # Curse of Millennium Shield
+Oferece como Tributo
+o monstro com a
+maior DEF e Invoca
+Escudo do Milênio.{end}
+
+[D39A]  # Yamadron Ritual
+Oferece como Tributo
+monstros Besta-
+Guerreira, Dragão e
+Piro para Invocar
+Yamadron.{end}
+
+[D39B]  # Gate Guardian Ritual
+Oferece como Tributo
+Kazejin, Suijin e
+Sanga do Trovão para
+Invocar Guardião do
+Portão.{end}
+
+[D39C]  # Palácio Brilhante
+Uma luz ofuscante
+que aumenta o poder
+de qualquer monstro.{end}
+
+[D39D]  # Feitiço Sombra
+Reduz em dois níveis
+os monstros do seu
+oponente no campo.{end}
+
+[D39E]  # Ritual do Lustro Negro
+Cerimônia realizada
+para Invocar Soldado
+do Lustro Negro.
+Requer Tributo.{end}
+
+[D39F]  # Ritual de Zera
+Cerimônia realizada
+para Invocar Zera o
+Mante. Requer
+Tributo.{end}
+
+[D3A0]  # Espanador de Penas da Harpia
+Destrua todos os
+cards de Magia do
+seu oponente no
+campo.{end}
+
+[D3A1]  # Ritual do Leão-de-Guerra
+Cerimônia realizada
+para Invocar Super
+Leão-de-Guerra.
+Requer Tributo.{end}
+
+[D3A2]  # Ritual do Espelho Bestial
+Cerimônia realizada
+para Invocar Espelho
+do Demônio. Requer
+Tributo.{end}
+
+[D3A3]  # Ultimate Dragon
+Ofereça como Tributo
+três Dragões Brancos
+de Olhos Azuis para
+Invocar Dragão
+Definitivo de Olhos
+Azuis.{end}
+
+[D3A4]  # Inicio da Dança
+Ofereça como Tributo
+um Dançarino e um
+Guerreiro para
+Invocar Execução de
+Espada.{end}
+
+[D3A5]  # Receita de Hamburguer
+Um card com os
+ingredientes para
+fazer um delicioso
+hambúrguer.{end}
+
+[D3A6]  # Revival of Sennen Genjin
+Ofereça como Tributo
+uma Besta-Guerreira
+e um Golem para
+Invocar Sengenjin.{end}
+
+[D3A7]  # Oração de Novox
+Ofereça como Tributo
+um Guerreiro e um
+portador de foice
+para Invocar
+Guardião da Caveira.{end}
+
+[D3A8]  # Curse of Tri-Horned Dragon
+Ofereça como Tributo
+um monstro com
+chifres para Invocar
+Dragão de Três
+Chifres.{end}
+
+[D3A9]  # Casa de Fita Adesiva
+Monstros com 500 ou
+menos de ATK são
+eliminados do campo.{end}
+
+[D3AA]  # Eatgaboon
+Monstros com 1000 ou
+menos de ATK são
+eliminados do campo.{end}
+
+[D3AB]  # Bear Trap
+Se o monstro do seu
+oponente tiver 1500
+ou menos de ATK, ele
+é eliminado do
+campo.{end}
+
+[D3AC]  # Invisible Wire
+Se o monstro do seu
+oponente tiver 2000
+ou menos de ATK, ele
+é eliminado do
+campo.{end}
+
+[D3AD]  # Buraco Armadilha Ácido
+Se o monstro do seu
+oponente tiver 3000
+ou menos de ATK, ele
+é eliminado do
+campo.{end}
+
+[D3AE]  # Ruína Generalizada
+Quando um monstro do
+seu oponente atacar,
+ele é feito em
+pedaços e eliminado
+do campo.{end}
+
+[D3AF]  # Leque Goblin
+Devolve ao seu
+oponente o dano de
+cards de ataque
+direto, como Faíscas
+e Inferno.{end}
+
+[D3B0]  # Alergia ao Simochi
+Um card que inverte
+o efeito dos cards
+de recuperação e
+transforma os pontos
+em dano.{end}
+
+[D3B1]  # Armadilha de Inversão
+Um card que inverte
+o efeito dos cards
+de fortalecimento,
+fazendo-os reduzir o
+poder.{end}
+
+[D3B2]  # Armadilha Falsa
+Um card de Armadilha
+para enganar seu
+oponente. Nada
+acontece quando ele
+ataca.{end}
+
+[D3B3]  # Revived of Serpent Night Dragon
+Ofereça como Tributo
+um monstro
+específico para
+Invocar Dragão-
+Serpente da Noite.{end}
+
+[D3B4]  # Juramento da Tartaruga
+Ofereça como Tributo
+um caranguejo e uma
+tartaruga para
+Invocar Tartaruga
+Caranguejo.{end}
+
+[D3B5]  # Contruct of Mask
+Ofereça como Tributo
+um mascarado para
+Invocar uma nova
+máscara.{end}
+
+[D3B6]  # Ressurreição de Chakra
+Ofereça como Tributo
+3 monstros Demônio
+para realizar o
+ritual da
+Ressurreição de
+Chakra.{end}
+
+[D3B7]  # Marionete Ritual
+Ofereça como Tributo
+um Mestre das
+Marionetes e um
+monstro Máquina para
+Invocar a Marionete.{end}
+
+[D3B8]  # Pacto com o Besouro Javelin
+Ofereça como Tributo
+um besouro-veado e
+um besouro para
+Invocar Besouro da
+lança.{end}
+
+[D3B9]  # Juramento da Espada Garma
+Ofereça como Tributo
+o Braço de Ashura e
+um espadachim para
+Invocar Espada
+Garma.{end}
+
+[D3BA]  # Cosmo Queen's Prayer
+Ofereça como Tributo
+uma rainha comum
+para Invocar Rainha
+Cosmos.{end}
+
+[D3BB]  # Renascimento de Dokurorider
+Ofereça como Tributo
+um templo e uma
+barata para Invocar
+Dokurorider.{end}
+
+[D3BC]  # Juramento da Baleia Fortaleza
+Ofereça como Tributo
+um chifre e um
+peixe-máquina para
+Invocar Baleia
+Fortaleza.{end}
+
+[D3BD]  # Execução de Espada
+Um guerreiro
+dançarino com passos
+de dança
+extravagantes.{end}
+
+[D3BE]  # Hamburguer Faminto
+Atrai inimigos
+famintos com seu
+aroma delicioso e os
+devora quando chegam
+perto.{end}
+
+[D3BF]  # Sengenjin
+Um selvágem
+incontrolável que
+carrega itens do
+milênio.{end}
+
+[D3C0]  # Guardião da Caveira
+Um guardião da lei
+que não perdoa
+trapaças. Ataca os
+inimigos com braços
+que parecem espadas.{end}
+
+[D3C1]  # Dragão de Três Chifres
+Um dragão indigno
+com três chifres
+afiados brotando da
+sua cabeça.{end}
+
+[D3C2]  # Dragão-Serpente da Noite
+Um dragão criado a
+partir da alma de um
+cavaleiro perverso.{end}
+
+[D3C3]  # Cavaleiro Caveira
+Um monge que
+realizou vários
+rituais no submundo
+e sabe usar armas e
+magia.{end}
+
+[D3C4]  # Rainha Cosmos
+Rainha das galáxias
+e patrona das
+estrelas.{end}
+
+[D3C5]  # Chakra
+Uma forma retorcida
+que ataca com braços
+parecidos com
+tentáculos.{end}
+
+[D3C6]  # Tartaruga Caranguejo
+Uma criatura com
+casco de tartaruga e
+pinças de caranguejo
+que lhe dão alto ATK
+e DEF.{end}
+
+[D3C7]  # Mikazukinoyaiba
+Um guerreiro-dragão
+da lua armado com
+uma espada
+crescente.{end}
+
+[D3C8]  # Dragão Meteoro
+Este dragão surgiu
+nos céus e colidiu
+na terra.{end}
+
+[D3C9]  # Dragão Negro Meteoro
+Com a pele em chamas
+de um meteorito,
+esta criatura
+vaporiza tudo o que
+toca.{end}
+
+[D3CA]  # Pegasus Asas de Fogo
+Um garanhão celeste
+atravessando os céus
+nas asas vermelhas.{end}
+
+[D3CB]  # Psycho-Puppet
+Uma boneca
+misteriosa cuja
+dança estranha rouba
+o poder dos monstros
+do oponente.{end}
+
+[D3CC]  # Espada Garma
+Um guerreiro
+habilidoso que
+empunha seis espadas
+contra os monstros
+do oponente.{end}
+
+[D3CD]  # Besouro da lança
+Uma criatura com
+pinças letais que
+cortam quase tudo.{end}
+
+[D3CE]  # Baleia Fortaleza
+Um monstro marinho
+com um canhão nas
+costas para varrer
+seus inimigos do
+mar.{end}
+
+[D3CF]  # Dokurorider
+Um piloto solitário
+que corre pelas
+terras áridas,
+levantando densas
+nuvens de poeira.{end}
+
+[D3D0]  # Mask of Shine & Dark
+Uma criatura que
+distorce a luz e a
+escuridão para criar
+imagens que
+confundem os
+oponentes.{end}
+
+[D3D1]  # Dark Magic Ritual
+Cerimônia para
+Invocar o Mago do
+Caos das Trevas.
+Requer Tributo.{end}
+
+[D3D2]  # Mago do Caos das Trevas
+O mago definitivo,
+que domina o poder
+do caos nascido da
+fusão das Trevas e
+da Luz.{end}
+
+@bank dialog
+
+[0003]
+{f8 00 00} {f8 00 80}{f8 01 18}ESTRELA GUARDIÃ
+{f8 01 04} {f8 00 01} {f8 00 81}{f8 01 10} {f8 00 02} {f8 00 82}{f8 01 18}{f8 00 40}{end}
+
+[0021]
+{choice 5B 8F}ESCOLHA SUA ESTRELA
+      {f8 00 01} {f8 00 81}
+      {f8 00 02} {f8 00 82}
+{choose 80 0 0}
+
+[0005]
+{f8 04 01}{f8 03 08 56 1D 80 C3}{f8 01 0E}{f8 04 02}{f8 00 10}{f8 07 24 00}{f8 00 20}{end}

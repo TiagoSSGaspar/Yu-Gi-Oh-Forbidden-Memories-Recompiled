@@ -36,6 +36,11 @@ void Mods_ModelParsed(int slot) { (void)slot; }
 unsigned char *Mods_ModelArena(int arena, unsigned *size) { (void)arena; (void)size; return 0; }
 int BattleModels_Check(int slot) { (void)slot; return 0; }
 
+const char *Mods_CardWords(const char *id, const struct JsonValue *entry, const char *what)
+{
+    (void)id; (void)entry; (void)what;
+    return NULL;
+}
 void Mods_Note(const char *id, const char *format, ...)
 {
     (void)id;

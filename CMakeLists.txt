@@ -1321,6 +1321,11 @@ if(Python3_Interpreter_FOUND)
         add_test(NAME pc_ui_text_catalogs
             COMMAND "${Python3_EXECUTABLE}" tools/pc/check_ui_text.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # Cards in Portuguese: every text fits its box and the listing is the
+        # table's (tools/pc/cards_pt_br.py).
+        add_test(NAME pc_cards_pt_br
+            COMMAND "${Python3_EXECUTABLE}" tools/pc/cards_pt_br.py --check
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endif()
 endif()
 

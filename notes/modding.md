@@ -129,7 +129,7 @@ picks one for a run, and `MEMORIES_MODS_LANGUAGE=en` keeps every mod in its
 manifest's words (so does an empty one, except on Windows, where setting a
 variable to nothing removes it). The file for the whole tag is read (`pt-BR.json`), else
 the one for its language alone (`pt.json`). A file that does not parse, a
-key other than these three and `texts` (below), a setting the manifest does not have and
+key other than these three, `texts`, `text`, `font` and `cards` (below), a setting the manifest does not have and
 `choices` of another length than the manifest's are warnings beside the
 mod, as a manifest's are; the words they concern stay the manifest's, as
 does any word left empty. The
@@ -163,6 +163,29 @@ older game checks `host->api >= 22` first and keeps its English there.
 The mods the release ships have `lang/pt-BR.json`; Extra hand plays'
 translates its hints, its phase menu and its notices this way.
 
+The game's own text can follow the language too (host API 23). A lang file
+may have `text` and `font`, as a manifest's ([translations](translation.md)):
+its files are read after the manifest's, the same way, so a mod can put the
+cards' names in Portuguese only when the player's language is Portuguese.
+And `cards` gives the mod's own cards their words, keyed by an added card's
+`id`, or by what a `replace` entry names (`"Great Moth"`, `"14"`):
+
+```json
+{
+    "text": ["text/cards.txt"],
+    "cards": {
+        "multiply": {"name": "Multiplicação", "description": "Equipe somente em Kuriboh..."},
+        "Great Moth": {"description": "<Pó venenoso> No início de cada turno..."}
+    }
+}
+```
+
+A card's `name` and `description` there take the place of the entry's own,
+and stand over a translation's as the entry's would. Both are read once, as
+the game starts: changing the system's language takes a restart. Cards in
+Portuguese (`mods/cards-pt-br`) and the Duelist Kingdom rules' cards use
+this.
+
 ### Which game a mod needs
 
 A game that does not know a key, or a value of one, plays the mod without
@@ -187,6 +210,7 @@ checked as well, when it starts.
 | 18 | the release after v0.3.0 | the card frames' keys ([Frame styles](#frame-styles-and-the-rules-that-pick-them)): a card's `frame_style`; `card_layout`'s `default_styles`, `atk_label`, `dfd_label` and `type_label`; in a `frame_styles` entry `hand`, `hand_image`, `field_image`, `field_back_image`, `back_image`, `library_icon`, `full_bleed`, `atk_label`, `dfd_label`, `type_label`, `digits`, or a part of its own (`title`, `stars`, `attribute`, `spell`, `art`, `atk`, `def`); a `hide`, `hidden`, `show` or `color` on a card part; `digits`' own `atk` and `def` |
 | 20 | the release after v0.3.0 | `fields`: renamed retail fields, new fields and their pictures; a monster effect's `"do": "change_field"` |
 | 21 | the release after v0.3.0 | `models`: battle models the mod adds ([Battle models](#battle-models-monsters-the-disc-does-not-have)), a model entry's `texture_pages`, and a card's `model` naming one |
+| 23 | the release after v0.3.0 | a lang file's `text`, `font` and `cards` ([A mod in the player's language](#a-mod-in-the-players-language)): the game's own text and the mod's cards in the player's language |
 
 The FM Editor writes `min_api` on save as the lowest one of these that has
 everything the mod uses, never lowering one written higher, and its Mod

@@ -1,0 +1,5968 @@
+{
+ "about": "Cards in Portuguese: each card's name (Konami's official one, or ours where the card game has none), Konami's official text, our text of what the card does in this game, and which of the two the game shows. tools/pc/cards_pt_br.py writes text/cards.txt from it.",
+ "cards": [
+  {
+   "id": 1,
+   "name": "Dragão Branco de Olhos Azuis",
+   "name_source": "official",
+   "official": "Este dragão lendário é uma poderosa máquina de destruição. Praticamente invencível, muito poucos enfrentaram esta magnífica criatura e viveram para contar a história.",
+   "text": "Um card extremamente raro, com poder de ataque e defesa insuperáveis.",
+   "show": "text"
+  },
+  {
+   "id": 2,
+   "name": "Elfa Mística",
+   "name_source": "official",
+   "official": "Uma elfa delicada com pouco poder de ataque, mas com uma incrível defesa proveniente de poderes místicos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 3,
+   "name": "Gigante Hitotsu-Me",
+   "name_source": "official",
+   "official": "Um gigante de um só olho com braços largos e poderosos. Tenha cuidado...",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 4,
+   "name": "Dragão Filhote",
+   "name_source": "official",
+   "official": "Muito mais que um filhote, este dragão é dotado de poderes ainda não revelados.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 5,
+   "name": "Ryu-Kishin",
+   "name_source": "official",
+   "official": "Uma criatura mestre nas ilusões. Parece uma estátua inofensiva até ao momento em que ataca.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 6,
+   "name": "Diabrete Selvagem",
+   "name_source": "official",
+   "official": "Um pequeno demônio brincalhão que se esconde na escuridão, esperando para atacar um inimigo descuidado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 7,
+   "name": "Dragão Alado, Guardião da Fortaleza Nº1",
+   "name_source": "official",
+   "official": "Um dragão normalmente encontrado protegendo fortalezas das montanhas. O seu ataque característico é um mergulho arrebatador vindo do céu.",
+   "text": "Um dragão que costuma guardar fortalezas nas montanhas. Seu ataque típico é um mergulho repentino vindo do céu.",
+   "show": "text"
+  },
+  {
+   "id": 8,
+   "name": "Homem Cogumelo",
+   "name_source": "official",
+   "official": "Encontrado em zonas úmidas, esta criatura ataca seus inimigos com uma chuva de esporos venenosos letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 9,
+   "name": "Espectro Sombrio",
+   "name_source": "official",
+   "official": "Este espírito animal, poderoso em grupos, pode ser encontrado nos ermos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 10,
+   "name": "Dragão de Fogo da Terra Negra",
+   "name_source": "official",
+   "official": "Um dragão que vive nas profundezas da escuridão. A sua grande vulnerabilidade é a sua fraca visão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 11,
+   "name": "Dragão de Cauda Assassina",
+   "name_source": "official",
+   "official": "Este gigante Jurássico tem a espinha coberta de lâminas similares a espadas e uma cauda capaz de esmagar crâneos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 12,
+   "name": "Guarda de Batalha do Pântano",
+   "name_source": "official",
+   "official": "Ganha 500 de ATK para cada \"Guarda de Batalha da Lava\" que você controla.",
+   "text": "Esta criatura empunha uma clava com espinhos que destrói quase tudo pelo caminho. Dizem que tem um irmão tão destrutivo quanto ela.",
+   "show": "text"
+  },
+  {
+   "id": 13,
+   "name": "Tyhone",
+   "name_source": "official",
+   "official": "Capaz de atirar balas de canhão de sua boca para realizar ataques à distância, esta criatura é especialmente eficaz em batalhas nas montanhas.",
+   "text": "Capaz de disparar balas de canhão pela boca para atacar os inimigos à distância.",
+   "show": "text"
+  },
+  {
+   "id": 14,
+   "name": "Jovem Touro Guerreiro",
+   "name_source": "official",
+   "official": "Um touro monstruoso muitas vezes encontrado na floresta, ele ataca os monstros inimigos com o seu par de chifres mortíferos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 15,
+   "name": "Espadachim das Chamas",
+   "name_source": "official",
+   "official": "\"Manipulador de Chamas\" + \"Masaki, o Espadachim Lendário\"",
+   "text": "Um guerreiro dotado do poder do fogo. Ataca os inimigos com uma espada que lança chamas.",
+   "show": "text"
+  },
+  {
+   "id": 16,
+   "name": "Mago do Tempo",
+   "name_source": "official",
+   "official": "Uma vez por turno: você pode lançar uma moeda e escolher cara ou coroa. Se você ganhar, destrua todos os monstros que seu oponente controla. Se você perder, destrua tantos monstros que você controla quanto possível e, se isso acontecer, sofra dano igual à metade do ATK total que esses monstros destruídos tinham enquanto estavam com a face para cima no campo.",
+   "text": "Um feiticeiro capaz de dobrar o tempo à sua vontade. Não parece poderoso à primeira vista, mas as aparências enganam.",
+   "show": "text"
+  },
+  {
+   "id": 17,
+   "name": "Perna Direita de \"O Proibido\"",
+   "name_source": "official",
+   "official": "Uma perna direita, proibida e selada por magia. Qualquer um que romper este selo obterá poder infinito.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 18,
+   "name": "Perna Esquerda de \"O Proibido\"",
+   "name_source": "official",
+   "official": "Uma perna esquerda, proibida e selada por magia. Qualquer um que romper este selo obterá poder infinito.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 19,
+   "name": "Braço Direito de \"O Proibido\"",
+   "name_source": "official",
+   "official": "Um braço direito, proibido e selado por magia. Qualquer um que romper este selo obterá poder infinito.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 20,
+   "name": "Braço Esquerdo de \"O Proibido\"",
+   "name_source": "official",
+   "official": "Um braço esquerdo, proibido e selado por magia. Qualquer um que romper este selo obterá poder infinito.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 21,
+   "name": "Exodia, \"O Proibido\"",
+   "name_source": "official",
+   "official": "Se você tiver \"Perna Direita de \"O Proibido\"\", \"Perna Esquerda de \"O Proibido\"\", \"Braço Direito de \"O Proibido\"\" e \"Braço Esquerdo de \"O Proibido\"\", além de este card na sua mão, você vence o Duelo.",
+   "text": "Unido aos braços e às pernas, este monstro se liberta de suas correntes mágicas. Só pode haver 1 card como este no Deck.",
+   "show": "text"
+  },
+  {
+   "id": 22,
+   "name": "Caveira Invocada",
+   "name_source": "official",
+   "official": "Um demônio com poderes das trevas para confundir o inimigo. Entre os monstros do tipo demônio, é dos mais fortes. (Este card é tratado como um card \"Arquidemônio\".)",
+   "text": "Uma entidade com poderes das trevas para confundir o inimigo. Entre os monstros do Tipo Demônio, é um card bem raro.",
+   "show": "text"
+  },
+  {
+   "id": 23,
+   "name": "Besta de Vermes Maléfica",
+   "name_source": "official",
+   "official": "Este card é devolvido para a sua mão no final do seu turno.",
+   "text": "Um verme monstruoso criado pelos poderes das trevas. Surge de repente de debaixo da terra para atacar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 24,
+   "name": "Servo Caveira",
+   "name_source": "official",
+   "official": "Um esqueleto fantasma que não é muito forte, mas quando estiver em grande número, pode ser um problema.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 25,
+   "name": "Demônio de Chifre",
+   "name_source": "official",
+   "official": "Um pequeno demônio que habita as trevas, seu chifre único faz dele em formidável oponente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 26,
+   "name": "Touro Guerreiro",
+   "name_source": "official",
+   "official": "Um monstro com tremendo poder que destrói seus inimigos com um único golpe do seu machado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 27,
+   "name": "Castor Guerreiro",
+   "name_source": "official",
+   "official": "O que falta a esta criatura em tamanho, ela compensa em defesa quando combate na pradaria.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 28,
+   "name": "Ogro de Rocha da Gruta #1",
+   "name_source": "official",
+   "official": "Protegido por um sólido corpo de rocha, este monstro desfere socos capazes de quebrar ossos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 29,
+   "name": "Mountain Warrior",
+   "name_source": "english",
+   "official": null,
+   "text": "Um guerreiro robusto que se move com agilidade por terrenos acidentados.",
+   "show": "text"
+  },
+  {
+   "id": 30,
+   "name": "Guerreiro Zumbi",
+   "name_source": "official",
+   "official": "\"Servo Caveira\" + \"Guerreiro Batalhador\"",
+   "text": "Um guerreiro esqueleto de aparência enganosamente frágil, conhecido por seus ataques rápidos e precisos.",
+   "show": "text"
+  },
+  {
+   "id": 31,
+   "name": "Dragão Koumori",
+   "name_source": "official",
+   "official": "Um dragão malígno que cospe fogo. As suas chamas maléficas corrompem as almas de suas vítimas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 32,
+   "name": "Rei Rex de Duas Cabeças",
+   "name_source": "official",
+   "official": "Um monstro poderoso cujas duas cabeças atacam como uma só.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 33,
+   "name": "O Juiz",
+   "name_source": "official",
+   "official": "Este guerreiro luta até o fim com a sua clava e nunca se rende.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 34,
+   "name": "Saggi, o Palhaço Sombrio",
+   "name_source": "official",
+   "official": "Este palhaço aparece do nada e usa movimentos estranhos para se esquivar de ataques inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 35,
+   "name": "Mago Negro",
+   "name_source": "official",
+   "official": "O mago definitivo em termos de ataque e defesa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 36,
+   "name": "Cabelos de Cobras",
+   "name_source": "official",
+   "official": "Um monstro com serpentes venenosas na cabeça. Um vislumbre desse monstro pode transformar o oponente em pedra.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 37,
+   "name": "Gaia, o Matador de Dragões",
+   "name_source": "official",
+   "official": "\"Gaia, o Cavaleiro Impetuoso\" + \"Maldição do Dragão\"",
+   "text": "A destreza de um guerreiro se une à velocidade de um dragão para criar uma poderosa força ofensiva.",
+   "show": "text"
+  },
+  {
+   "id": 38,
+   "name": "Gaia, o Cavaleiro Impetuoso",
+   "name_source": "official",
+   "official": "Um cavaleiro com um cavalo que galopa mais rápido que o vento. Sua carga em batalha é de uma força avassaladora.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 39,
+   "name": "Maldição do Dragão",
+   "name_source": "official",
+   "official": "Um dragão perverso que se apoia nas forças das trevas para executar um poderoso ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 40,
+   "name": "Flautista de Dragões",
+   "name_source": "official",
+   "official": "VIRE: Destrói \"Jarro de Captura de Dragões\", e todos os monstros do Tipo Dragão com a face para cima mudam para a Posição de Ataque.",
+   "text": "Um jarro entalhado com estranhos padrões. Tem uma defesa particularmente alta.",
+   "show": "text"
+  },
+  {
+   "id": 41,
+   "name": "Guardião Celta",
+   "name_source": "official",
+   "official": "Um elfo que aprendeu a empunhar uma espada e confunde os inimigos com ataques relâmpagos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 42,
+   "name": "Ilusionista Sem Rosto",
+   "name_source": "official",
+   "official": "Manipula os ataques inimigos com o poder da ilusão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 43,
+   "name": "Guerreiro Karbonala",
+   "name_source": "official",
+   "official": "\"Guerreiro M nº 1\" + \"Guerreiro M nº 2\"",
+   "text": "Um lutador de aparência bem comum, mas com um poder de ataque fora do normal.",
+   "show": "text"
+  },
+  {
+   "id": 44,
+   "name": "Boneca Marota",
+   "name_source": "official",
+   "official": "Uma boneca letal dotada de poderes místicos. É especialmente poderosa ao atacar as forças das trevas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 45,
+   "name": "Herói Oscillo º2",
+   "name_source": "official",
+   "official": "Uma criatura que eletrocuta os oponentes com relâmpagos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 46,
+   "name": "Griffore",
+   "name_source": "official",
+   "official": "A grossa couraça desse monstro desvia a maioria dos ataques.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 47,
+   "name": "Torike",
+   "name_source": "official",
+   "official": "Apesar de um defensor pobre, os chifre afiado deste monstro lhe dá uma vantagem ao atacar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 48,
+   "name": "Sangan",
+   "name_source": "official",
+   "official": "Se este card for enviado do campo para o Cemitério: adicione 1 monstro com 1500 ou menos de ATK do seu Deck à sua mão, mas você não pode ativar cards, ou os efeitos de cards, com esse nome pelo resto deste turno. Você só pode usar este efeito de \"Sangan\" uma vez por turno.",
+   "text": "Um monstro compacto de três olhos, perigoso quando enfrentado no escuro.",
+   "show": "text"
+  },
+  {
+   "id": 49,
+   "name": "Inseto Grande",
+   "name_source": "official",
+   "official": "Uma formiga gigante que vive na floresta e é muito poderosa tanto atacando quanto defendendo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 50,
+   "name": "Inseto Básico",
+   "name_source": "official",
+   "official": "Geralmente encontrado em enxames, o habitat desse inseto é a floresta.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 51,
+   "name": "Lagarto Encouraçado",
+   "name_source": "official",
+   "official": "Um lagarto com uma couraça muito resistente e uma mordida feroz.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 52,
+   "name": "Escaravelho-Hércules",
+   "name_source": "official",
+   "official": "Um grande besouro com uma carapaça dura e um chifre perigoso.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 53,
+   "name": "Ferroada Letal",
+   "name_source": "official",
+   "official": "Uma abelha enorme com uma força excepcional, particularmente perigosa em enxames.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 54,
+   "name": "Gokibore",
+   "name_source": "official",
+   "official": "Uma barata, grande esférica que ataca os seus inimigos rolando sobre eles.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 55,
+   "name": "Pulga Gigante",
+   "name_source": "official",
+   "official": "Uma pulga enorme que se alimenta de sangue do seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 56,
+   "name": "Larvae Moth",
+   "name_source": "official",
+   "official": "Este monstro não pode ser Invocado a não ser por Invocação-Especial oferecendo \"Pequeno Moth\" como Tributo no seu 2º turno depois do turno em que \"Pequeno Moth\" foi equipado com \"Casulo de Evolução\".",
+   "text": "Como larva, não é grande coisa, mas se torna uma força temível quando cresce e vira uma mariposa colossal.",
+   "show": "text"
+  },
+  {
+   "id": 57,
+   "name": "Grande Moth",
+   "name_source": "official",
+   "official": "Este card não pode ser invocado por Invocação-Normal ou Baixado. Este card só pode ser Invocado por Invocação-Especial oferecendo \"Pequeno Moth\" como Tributo no seu 4º turno depois do turno em que \"Pequeno Moth\" foi equipado com \"Casulo de Evolução\".",
+   "text": "Uma poderosa criatura da floresta. Esta enorme mariposa ataca os inimigos espalhando pó venenoso com as asas.",
+   "show": "text"
+  },
+  {
+   "id": 58,
+   "name": "Kuriboh",
+   "name_source": "official",
+   "official": "Durante o cálculo de dano, se um monstro do seu oponente atacar (Efeito Rápido): você pode descartar este card; você não sofre dano de batalha dessa batalha.",
+   "text": "Sozinha, esta pequena criatura pode não parecer grande coisa. Mas, no escuro, ataca em bando como uma força formidável.",
+   "show": "text"
+  },
+  {
+   "id": 59,
+   "name": "Cemitério de Mamutes",
+   "name_source": "official",
+   "official": "Um mamute que protege os túmulos de seu bando e que enfrenta ladrões de túmulos impiedosamente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 60,
+   "name": "O Grande Branco",
+   "name_source": "official",
+   "official": "Um tubarão branco gigante com dentes afiados como lâminas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 61,
+   "name": "Lobo",
+   "name_source": "official",
+   "official": "Esse lobo alfa alpha usa o cheiro para encontrar o inimigo. Eiii, sai de perto das minhas meias!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 62,
+   "name": "Lady Harpia",
+   "name_source": "official",
+   "official": "Este animal alado com forma humana, embora agrade aos olhos, é absolutamente letal em batalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 63,
+   "name": "Irmãs de Lady Harpia",
+   "name_source": "official",
+   "official": "Não pode ser Invocado por Invocação-Normal/Baixado. Primeiro deve ser Invocado por Invocação-Especial com \"Egotista Elegante\".",
+   "text": "Três irmãs ferozes que atacam implacavelmente em equipe.",
+   "show": "text"
+  },
+  {
+   "id": 64,
+   "name": "Tigre do Machado",
+   "name_source": "official",
+   "official": "Uma besta guerreira veloz e poderosa que brande um machado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 65,
+   "name": "O Presa de Prata",
+   "name_source": "official",
+   "official": "Um lobo da neve que, embora agrade aos olhos, é absolutamente feroz em batalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 66,
+   "name": "Kojikocy",
+   "name_source": "official",
+   "official": "Um caçador de homens com braços poderosos, capazes de esmagar grandes rochas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 67,
+   "name": "Grande Moth Final Perfeito",
+   "name_source": "official",
+   "official": "Não pode ser Invocado por Invocação-Normal/Baixado. Primeiro deve ser Invocado por Invocação-Especial (da sua mão) ao oferecer como Tributo 1 \"Pequeno Moth\" no seu 6º turno ou posterior depois que ele foi equipado com \"Casulo de Evolução\".",
+   "text": "A encarnação final do inseto supremo, o Grande Moth!",
+   "show": "text"
+  },
+  {
+   "id": 68,
+   "name": "Garoozis",
+   "name_source": "official",
+   "official": "Uma besta guerreiro com cabeça de dragão que brande um machado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 69,
+   "name": "Dragão Milenar",
+   "name_source": "official",
+   "official": "\"Mago do Tempo\" + \"Dragão Filhote\"",
+   "text": "Um dragão que cresceu e se desenvolveu ao longo de mil anos.",
+   "show": "text"
+  },
+  {
+   "id": 70,
+   "name": "Kraken Demônio",
+   "name_source": "official",
+   "official": "Uma lula gigante, que arrasta os seus inimigos para uma sepultura marinha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 71,
+   "name": "Alforreca",
+   "name_source": "official",
+   "official": "Uma medusa semi-transparente, quase invisível, que vagueia pelo mar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 72,
+   "name": "Casulo de Evolução",
+   "name_source": "official",
+   "official": "Você pode escolher 1 \"Pequeno Moth\" que você controla; equipe este card da sua mão no alvo. Enquanto estiver equipado por este efeito, o ATK/DEF originais desse \"Pequeno Moth\" se tornam o ATK/DEF de \"Casulo de Evolução\".",
+   "text": "Esta criatura é capaz de transformar larvas em adultos instantaneamente.",
+   "show": "text"
+  },
+  {
+   "id": 73,
+   "name": "Kairyu-Shin",
+   "name_source": "official",
+   "official": "Este dragão marinho, conhecido como Rei do Oceano, ataca seus inimigos com enormes maremotos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 74,
+   "name": "Soldado de Pedra Gigante",
+   "name_source": "official",
+   "official": "Um guerreiro gigante feito de pedra. Um soco desta criatura faz com que a terra estremeça.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 75,
+   "name": "Planta Devoradora de Homens",
+   "name_source": "official",
+   "official": "Uma planta carnívora encantadora, mas perigosa quando abordada.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 76,
+   "name": "Crocodilus",
+   "name_source": "official",
+   "official": "Um Crocodilo malvado com uma grande inteligência.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 77,
+   "name": "Estraçalhador",
+   "name_source": "official",
+   "official": "Uma serpente tortuosa com um corpo grosso que envolve um monstro inimigo e aperta até a vida dele se extinguir.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 78,
+   "name": "Predador com Machado",
+   "name_source": "official",
+   "official": "Um monstro de tremenda força e agilidade que brande seu machado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 79,
+   "name": "Megazowler",
+   "name_source": "official",
+   "official": "Nada fica no caminho deste dinossauro coberto de pontas!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 80,
+   "name": "Uraby",
+   "name_source": "official",
+   "official": "Rápido como o vento, este dinossauro dilacera os inimigos com suas garras afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 81,
+   "name": "Dragão Rastejante #2",
+   "name_source": "official",
+   "official": "Um dragão poderoso com dentes capazes de transformar quase tudo em pó.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 82,
+   "name": "Dragão Negro de Olhos Vermelhos",
+   "name_source": "official",
+   "official": "Um dragão feroz com um ataque letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 83,
+   "name": "Castelo das Ilusões Sombrias",
+   "name_source": "official",
+   "official": "VIRE: Aumenta o ATK e DEF de todos os monstros do Tipo Zumbi em 200 pontos. Enquanto este card permanecer no Campo com a face para cima, o ATK e DEF dos monstros do Tipo Zumbi continuam a aumentar em 200 pontos durante cada uma das suas Standby Phases. Este efeito continua até ao 4º turno após o card ter sido Activado.",
+   "text": "Uma criatura capaz de gerar uma escuridão que envolve tudo ao seu redor.",
+   "show": "text"
+  },
+  {
+   "id": 84,
+   "name": "Ceifador de Cards",
+   "name_source": "official",
+   "official": "VIRE: Destrói 1 Card de Armadilha no Campo. Se o alvo deste card está com a face para baixo, vire a face para cima. Se for um Card de Armadilha é destruído. Se não, coloque-o novamente com a face para baixo. O card virado não é Activado.",
+   "text": "Este monstro tem uma defesa forte e uma foice enorme que corta quase tudo.",
+   "show": "text"
+  },
+  {
+   "id": 85,
+   "name": "Rei de Yamimakai",
+   "name_source": "official",
+   "official": "Empunha o poder das trevas para destruir os seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 86,
+   "name": "Barox",
+   "name_source": "official",
+   "official": "\"Panda frenético\" + \"Ryu-Kishin\"",
+   "text": "Esta criatura voa pela escuridão, atacando os inimigos com seus braços longos e peludos.",
+   "show": "text"
+  },
+  {
+   "id": 87,
+   "name": "Quimera Negra",
+   "name_source": "official",
+   "official": "Um monstro cospidor de fogo que habita o mundo inferior.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 88,
+   "name": "Metal Guardian",
+   "name_source": "english",
+   "official": null,
+   "text": "Um demônio que guarda os tesouros do submundo. Sua defesa é particularmente alta em ambientes escuros.",
+   "show": "text"
+  },
+  {
+   "id": 89,
+   "name": "Tartaruga Catapulta",
+   "name_source": "official",
+   "official": "Uma vez por turno: você pode oferecer 1 monstro como Tributo; cause dano ao seu oponente igual à metade do ATK que o monstro oferecido como Tributo tinha no campo.",
+   "text": "Bem protegido por seu casco, este monstro arremessa projéteis com sua catapulta.",
+   "show": "text"
+  },
+  {
+   "id": 90,
+   "name": "Gyakutenno Megami",
+   "name_source": "official",
+   "official": "Este Anjo usa o seu poder místico para proteger os fracos e fornecer apoio espiritual.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 91,
+   "name": "Centauro Místico",
+   "name_source": "official",
+   "official": "Sendo metade homem, metade cavalo, este monstro é conhecido por sua enorme velocidade.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 92,
+   "name": "Centauro Furioso",
+   "name_source": "official",
+   "official": "\"Touro Guerreiro\" + \"Centauro Místico\"",
+   "text": "Uma combinação poderosa e imparável de touro e cavalo.",
+   "show": "text"
+  },
+  {
+   "id": 93,
+   "name": "Zanki",
+   "name_source": "official",
+   "official": "Sua lâmina manuseada com perfeição entrega danos rápidos e fatais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 94,
+   "name": "Dragão Rastejante",
+   "name_source": "official",
+   "official": "Este dragão enfraquecido já não pode voar, mas ainda é uma força letal a ser reconhecida.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 95,
+   "name": "Palhaço Grosseiro",
+   "name_source": "official",
+   "official": "Quando este card é mudado da Posição de Defesa para a Posição de Ataque, devolva 1 monstro no Campo do seu adversário para a mão do seu dono.",
+   "text": "Artista do Circo Sombrio, este palhaço drena a força dos inimigos com danças estranhas.",
+   "show": "text"
+  },
+  {
+   "id": 96,
+   "name": "Zumbi com Armadura",
+   "name_source": "official",
+   "official": "Este guerreiro brande cegamente uma lâmina letal, com uma força devastadora.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 97,
+   "name": "Dragão Zumbi",
+   "name_source": "official",
+   "official": "Um dragão renascido por feitiçaria. O seu hálito é altamente corrosivo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 98,
+   "name": "Palhaço Zumbi",
+   "name_source": "official",
+   "official": "Um palhaço ressuscitado pelos poderes das trevas. Sua dança fatal já mandou muitos monstros para o túmulo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 99,
+   "name": "Pumpking, O Rei dos Fantasmas",
+   "name_source": "official",
+   "official": "Enquanto \"Castelo das Ilusões Sombrias\" permanecer no Campo com a face para cima, aumente o ATK e DEF deste card em 100 pontos. O ATK e DEF deste card continua a aumentar em 100 pontos durante cada uma das suas Standby Phases. Este efeito continua até ao 4º turno após o card ter sido Activado.",
+   "text": "Este rei abóbora ataca os inimigos com seus longos tentáculos.",
+   "show": "text"
+  },
+  {
+   "id": 100,
+   "name": "Guerreiro Batalhador",
+   "name_source": "official",
+   "official": "Um guerreiro que luta com as mãos nuas!!!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 101,
+   "name": "Asas da Chama Perversa",
+   "name_source": "official",
+   "official": "Asas de fogo carmesim tornam essa criatura muito letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 102,
+   "name": "Máscara da Escuridão",
+   "name_source": "official",
+   "official": "VIRE: Escolha 1 Armadilha no seu Cemitério; adicione o alvo à sua mão.",
+   "text": "Uma máscara sombria criada pelas mãos de um mago das trevas.",
+   "show": "text"
+  },
+  {
+   "id": 103,
+   "name": "Espelho de Mudança de Emprego",
+   "name_source": "official",
+   "official": "Um espelho perverso que bloqueia os efeitos danosos de um ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 104,
+   "name": "Cortina dos Escuros",
+   "name_source": "official",
+   "official": "Uma cortina que é produzido por um mago, dizem que aumenta o poder negro.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 105,
+   "name": "Tomozauro",
+   "name_source": "official",
+   "official": "Este monstro, pequeno e perverso, ataca até mesmo os de sua própria espécie.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 106,
+   "name": "Espírito dos Ventos",
+   "name_source": "official",
+   "official": "Um espírito elementar dos vento livre que esvoaça como lhe é deseja. Ele traz as tempestades quando se torna aborrecido.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 107,
+   "name": "Kageningen",
+   "name_source": "official",
+   "official": "Ele uuusa uma forma física e uma forma de sombra pratacar. Um bixo difííícil de matar!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 108,
+   "name": "Cemitério e a Mão do Convite",
+   "name_source": "official",
+   "official": "Um cemitério que serve com uma fonte de poder para zumbis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 109,
+   "name": "Deusa com o Terceiro Olho",
+   "name_source": "official",
+   "official": "Este card pode ser usado como um substituto para qualquer 1 Matéria de Fusão mencionada por nome no Card de Monstro de Fusão, mas a(s) outra(s) matéria(s) deve(m) estar correta(s).",
+   "text": "Uma deusa com um olho que tudo vê e tudo revela.",
+   "show": "text"
+  },
+  {
+   "id": 110,
+   "name": "Herói do Leste",
+   "name_source": "official",
+   "official": "Sinta a força do brandir da espada desse samurai do Leste Distante.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 111,
+   "name": "Doma, O Anjo do Silêncio",
+   "name_source": "official",
+   "official": "Este anjo governa a morte e administra-a quando necessário.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 112,
+   "name": "A Bruxa que se Alimenta da Vida",
+   "name_source": "official",
+   "official": "Um monstro que se alimenta da energia de outras criaturas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 113,
+   "name": "Cinzento das Trevas",
+   "name_source": "official",
+   "official": "Totalmente cinzenta, esta besta raramente foi vista por olhos mortais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 114,
+   "name": "Chapéu Mágico Branco",
+   "name_source": "official",
+   "official": "Quando este card inflige dano de batalha ao seu adversário, o seu adversário descarta 1 card da sua mão aleatoriamente.",
+   "text": "Um ladrão cavalheiro que escapa da lei, embora chame muita atenção com sua cartola e sua capa branca.",
+   "show": "text"
+  },
+  {
+   "id": 115,
+   "name": "Mago Kamion",
+   "name_source": "official",
+   "official": "\"Duende místico\" + \"Cortina dos perversos\"",
+   "text": "Um mago que controla o caos e empunha uma poderosa foice.",
+   "show": "text"
+  },
+  {
+   "id": 116,
+   "name": "Escorpião Pesadelo",
+   "name_source": "official",
+   "official": "Uma criatura que cria pesadelos para assombrar seus oponentes, ela ataca com suas quatro caudas venenosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 117,
+   "name": "Espírito dos Livros",
+   "name_source": "official",
+   "official": "Este sábio espírito habita em livros, usando seu conhecimento acumulado para derrotar os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 118,
+   "name": "Auxiliador nas Sombras",
+   "name_source": "official",
+   "official": "Um elfo bonitinho que se esconde nas sombras e da apoio espitirual.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 119,
+   "name": "Julgamento Infernal",
+   "name_source": "official",
+   "official": "Este demônio julga inimigos que estão trancados em caixões.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 120,
+   "name": "Palhaço dos Sonhos",
+   "name_source": "official",
+   "official": "Quando este card é mudado da Posição de Ataque para a Posição de Defesa, escolha e destrua 1 monstro no Campo do seu adversário.",
+   "text": "A dança misteriosa desta criatura faz seus inimigos caírem em sono eterno.",
+   "show": "text"
+  },
+  {
+   "id": 121,
+   "name": "Leão adormecido",
+   "name_source": "official",
+   "official": "Um animal feroz que dorme o dia todo.As vezes é melhor deixa-lo dormindo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 122,
+   "name": "Pergaminho de Dragão Yamatano",
+   "name_source": "official",
+   "official": "Um dragão conjurado do próprio pergaminho em que foi retratado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 123,
+   "name": "Dark Plant",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma flor cruel que brotou de um solo poluído e foi fertilizada por forças das trevas.",
+   "show": "text"
+  },
+  {
+   "id": 124,
+   "name": "Ferramenta Antiga",
+   "name_source": "official",
+   "official": "Uma máquina destruidora descoberta nas Ruínas dos Antigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 125,
+   "name": "Pássaro da Fé",
+   "name_source": "official",
+   "official": "Esse pássaro de rabo cumprido cega seus inimigos com uma luz mística.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 126,
+   "name": "Orion o Rei da Batalha",
+   "name_source": "official",
+   "official": "Ninguém viveu pra contar histórias desta poderosa fada de batalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 127,
+   "name": "Ansatsu",
+   "name_source": "official",
+   "official": "Um guerreiro silencioso e mortal especializado em assassínios.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 128,
+   "name": "LaMoon",
+   "name_source": "official",
+   "official": "Uma feiticeira que extrai sua energia a partir da paisagem lunar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 129,
+   "name": "Nemuriko",
+   "name_source": "official",
+   "official": "Uma criatura infantil que controla um demônio do sono para lançar os inimigos no descanso eterno.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 130,
+   "name": "Controlador do Clima",
+   "name_source": "official",
+   "official": "Esta criatura controla o clima e é muitas vezes a causa das tempestades das montanha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 131,
+   "name": "Octoberser",
+   "name_source": "official",
+   "official": "Com a cabeça de um peixe e as pernas de um polvo, essa estranha criatura ataca os inimigos atirando lanças.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 132,
+   "name": "O 13º Túmulo",
+   "name_source": "official",
+   "official": "Um zumbi que apareceu repentinamente do lote nº 13 - um túmulo vazio.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 133,
+   "name": "Charubin, O Cavaleiro do Fogo",
+   "name_source": "official",
+   "official": "\"Monstro Ovo\" + \"Alma Hinotama\"",
+   "text": "Um guerreiro protegido por uma casca capaz de desviar até o calor de chamas ardentes.",
+   "show": "text"
+  },
+  {
+   "id": 134,
+   "name": "Correntes Misticas de Captura",
+   "name_source": "official",
+   "official": "Uma corrente mística que prende os inimigos, tornando-os imóveis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 135,
+   "name": "Mão do demônio",
+   "name_source": "official",
+   "official": "Braços que saem do pantano do caos para puxar para ele os distraídos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 136,
+   "name": "Fantasma Sarcástico",
+   "name_source": "official",
+   "official": "Vestido com um smoking preto como a noite, esta criatura preside à morte.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 137,
+   "name": "Mystery Hand",
+   "name_source": "english",
+   "official": null,
+   "text": "Distorcendo o tecido da realidade, braços saem de outra dimensão para atacar os oponentes.",
+   "show": "text"
+  },
+  {
+   "id": 138,
+   "name": "Dragon Statue",
+   "name_source": "english",
+   "official": null,
+   "text": "Um guerreiro de granito com alma de dragão, que empunha uma espada poderosa contra todos os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 139,
+   "name": "Zumbi Prateado de Olhos-Azuis",
+   "name_source": "official",
+   "official": "Dizem que os raios que saem dos olhos desta criatura transformam seus inimigos em zumbis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 140,
+   "name": "Mestre dos Sapos",
+   "name_source": "official",
+   "official": "Um sapo hermitão que tem existido por milhares de anos, ele ataca com girinos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 141,
+   "name": "Caracol Espinhudo",
+   "name_source": "official",
+   "official": "Um caracol bípede muito rápido com um par de armas letais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 142,
+   "name": "Manipulador de Chamas",
+   "name_source": "official",
+   "official": "Este mago ataca os inimigos com magias de fogo como \"Mar de Chamas\" e \"Parede de Fogo\".",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 143,
+   "name": "Necrolancer the Timelord",
+   "name_source": "english",
+   "official": null,
+   "text": "O primeiro de uma linhagem de golens. Surge em quase qualquer lugar de dentro de um anel dimensional.",
+   "show": "text"
+  },
+  {
+   "id": 144,
+   "name": "Djinn, o Observador do Vento",
+   "name_source": "official",
+   "official": "Esta criatura gera ventos fortes e tornados para arremessar seus inimigos longe.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 145,
+   "name": "O fantasma ladrão enfeitiçador",
+   "name_source": "official",
+   "official": "Um elegante ladrão com uma capa negra que enfeitiça seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 146,
+   "name": "Templo de Crânios",
+   "name_source": "official",
+   "official": "Um templo misterioso de crânios e ossos que atrai inimigos confiantes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 147,
+   "name": "Monstro Ovo",
+   "name_source": "official",
+   "official": "Um guerreiro escondido dentro de um ovo que ataca inimigos arremessando cascas de ovo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 148,
+   "name": "A Sombra que Controla as Trevas",
+   "name_source": "official",
+   "official": "Uma sombra que habita na escuridão, paralisando seus oponentes e tornando-os inofensivos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 149,
+   "name": "Senhor da Lampada",
+   "name_source": "official",
+   "official": "Este espírito emerge de uma lâmpada mística e obedece aos desejos de quem o invocou.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 150,
+   "name": "Akihiron",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura misteriosa que vive nas profundezas do mar.",
+   "show": "text"
+  },
+  {
+   "id": 151,
+   "name": "Rhaimundos da Espada Vermelha",
+   "name_source": "official",
+   "official": "Armado com a Espada das Chamas Carmesim, este guerreiro pode prender um monstro com amarras ardentes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 152,
+   "name": "A Sombra vermelha Derretida",
+   "name_source": "official",
+   "official": "\"Este monstro derrete-se para materializar embaixo de seus inimigos, pegando-os de surpresa.\"",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 153,
+   "name": "Dokuroizo o estripador impiedoso",
+   "name_source": "official",
+   "official": "Um mensageiro do destino que sela uma alma com um único ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 154,
+   "name": "Ceifador de Fogo",
+   "name_source": "official",
+   "official": "Um ceifador com uma flecha flamejante que queima os inimigos até transformá-los em cinzas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 155,
+   "name": "Larvas",
+   "name_source": "official",
+   "official": "Uma criatura rápida parecida com um pássaro, que estrangula os monstros oponentes com seus braços finos e compridos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 156,
+   "name": "Armadura Resistente",
+   "name_source": "official",
+   "official": "Uma armadura viva que ataca os inimigos com uma investida capaz de quebrar ossos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 157,
+   "name": "Relva-Fogo",
+   "name_source": "official",
+   "official": "É uma planta cuspidora de fogo que cresce próxima de vulcões.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 158,
+   "name": "Devorador de Homens",
+   "name_source": "official",
+   "official": "Uma planta devoradora de homens com tentáculos envenenados para atacar os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 159,
+   "name": "Bico de Escavação",
+   "name_source": "official",
+   "official": "Esta besta se enrola como uma cobra, e ataca rapidamente com o seu ruidoso bico.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 160,
+   "name": "Guerreiro M nº 1",
+   "name_source": "official",
+   "official": "Especializado em ataques combinados, este guerreiro usa magnetismo para impedir a fuga do inimigo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 161,
+   "name": "Guerreiro M nº 2",
+   "name_source": "official",
+   "official": "Especializado em ataques combinados, este guerreiro está equipado com uma armadura magnética resistente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 162,
+   "name": "Sabedoria Corrompida",
+   "name_source": "official",
+   "official": "Se este card em Posição de Ataque for colocado em Posição de Defesa com a face para cima: embaralhe seu Deck.",
+   "text": "Um cérebro parasita que se alimenta do conhecimento e da inteligência de seus oponentes.",
+   "show": "text"
+  },
+  {
+   "id": 163,
+   "name": "Lisark",
+   "name_source": "official",
+   "official": "Uma criatura com olhos de safira que fascina e confunde os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 164,
+   "name": "Senhor de Zemia",
+   "name_source": "official",
+   "official": "Uma entidade malvada que manipula inimigos em direção a um caminho de destruição.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 165,
+   "name": "A Mão do Julgamento",
+   "name_source": "official",
+   "official": "Uma mão toda-poderosa que distribui ataques impiedosos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 166,
+   "name": "Misterioso Mestre das Marionetes",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, os Life Points do controlador deste card aumentam em 500 pontos por cada monstro Invocado (excluindo Invocação-Especial, mas incluindo os monstros do seu adversário).",
+   "text": "Um mestre das marionetes que manipula os inimigos durante a batalha.",
+   "show": "text"
+  },
+  {
+   "id": 167,
+   "name": "Ancient Jar",
+   "name_source": "english",
+   "official": null,
+   "text": "Um frágil jarro do passado que guarda uma criatura misteriosa.",
+   "show": "text"
+  },
+  {
+   "id": 168,
+   "name": "Dragão do Fogo Negro",
+   "name_source": "official",
+   "official": "\"Relva-Fogo\" + \"Pequeno Dragão\"",
+   "text": "Chamas escaldantes que aniquilam os inimigos num piscar de olhos.",
+   "show": "text"
+  },
+  {
+   "id": 169,
+   "name": "Rei Negro do Abismo",
+   "name_source": "official",
+   "official": "Diz-se que este Rei dos Mundos Baixos já teve o poder para governar as trevas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 170,
+   "name": "Espírito da Harpa",
+   "name_source": "official",
+   "official": "Um espírito que acalma a alma com a música da sua harpa celestial.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 171,
+   "name": "Grande Olho",
+   "name_source": "official",
+   "official": "VIRE: Veja os 5 cards do topo do seu Deck e, depois, coloque-os no topo do Deck em qualquer ordem.",
+   "text": "Esta criatura é coberta de olhos hipnóticos que fascinam os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 172,
+   "name": "Armaill",
+   "name_source": "official",
+   "official": "Um guerreiro estranho que manipula três lâminas letais e usando ambas as mãos e a cauda.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 173,
+   "name": "Prisioneiro das Trevas",
+   "name_source": "official",
+   "official": "Este monstro dobra a luz para esconder sua imagem dos olhos do oponente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 174,
+   "name": "Hurricail",
+   "name_source": "english",
+   "official": null,
+   "text": "Um tornado que corre solto pelas terras devastadas, cortando os inimigos com lâminas de vento.",
+   "show": "text"
+  },
+  {
+   "id": 175,
+   "name": "Cérebro Ancião",
+   "name_source": "official",
+   "official": "Um anjo caído que é poderoso nas trevas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 176,
+   "name": "Fire Eye",
+   "name_source": "english",
+   "official": null,
+   "text": "Um olho alado envolto em chamas que ataca os inimigos com fogo.",
+   "show": "text"
+  },
+  {
+   "id": 177,
+   "name": "Monsturtle",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma tartaruga cruel com um casco cheio de espinhos.",
+   "show": "text"
+  },
+  {
+   "id": 178,
+   "name": "Estende Garras",
+   "name_source": "official",
+   "official": "Braços que esticam e garras afiadas como lâminas fazem deste monstro um oponente formidável.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 179,
+   "name": "Phantom Dewan",
+   "name_source": "official",
+   "official": "Um feiticeiro que pode paralisar um inimigo com uma única maldição.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 180,
+   "name": "Arlownay",
+   "name_source": "official",
+   "official": "Um monstro dama que mora em uma flor, ela asperge o ar com pólen venenoso.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 181,
+   "name": "Sombra negra",
+   "name_source": "official",
+   "official": "Um monstro de cristal que libera uma brilhante luz para cegar os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 182,
+   "name": "Palhaço Mascarado",
+   "name_source": "official",
+   "official": "A dança fatal desse guerreiro é realizada com uma foice letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 183,
+   "name": "Bugiganga da Sorte",
+   "name_source": "official",
+   "official": "Esta criatura pode parecer magro e fraco, mas é protegido por uma força mística.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 184,
+   "name": "Genin",
+   "name_source": "official",
+   "official": "Uma criatura que derrota seus inimigos usando o truque de mão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 185,
+   "name": "Olho Armadura",
+   "name_source": "official",
+   "official": "Este guerreiro se transforma em varias criaturas para confundir inimigos em batalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 186,
+   "name": "Reflexo Demoníaco nº 2",
+   "name_source": "official",
+   "official": "Uma pássaro-besta que invoca reforços usando um espelho de mão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 187,
+   "name": "Portal Massa",
+   "name_source": "official",
+   "official": "Este monstro estranho tem um portal em seu ventre que traz reforços dos confins do inferno.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 188,
+   "name": "Synchar",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura horrenda com duas cabeças e uma boca que dispara raios laser.",
+   "show": "text"
+  },
+  {
+   "id": 189,
+   "name": "Fusionista",
+   "name_source": "official",
+   "official": "\"Pequeno Anjo\" + \"Ovelha Mística nº 2\"",
+   "text": "Um gato monstruoso com asas e uma longa cauda que golpeia.",
+   "show": "text"
+  },
+  {
+   "id": 190,
+   "name": "Akakieisu",
+   "name_source": "english",
+   "official": null,
+   "text": "Um mago cujos encantamentos entorpecem os sentidos dos monstros adversários.",
+   "show": "text"
+  },
+  {
+   "id": 191,
+   "name": "LaLa Li-oon",
+   "name_source": "official",
+   "official": "Uma criatura nuvem elétrica, sua chuva ácida a torna muito perigosa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 192,
+   "name": "Key Mace",
+   "name_source": "english",
+   "official": null,
+   "text": "Um pequeno anjo cuja fofura derrete o coração dos inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 193,
+   "name": "Tigre Tartaruga",
+   "name_source": "official",
+   "official": "Um tigre protegido por uma carapaça, que usa suas presas afiadas como lâminas para atacar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 194,
+   "name": "Terra, O Terrível",
+   "name_source": "official",
+   "official": "Conhecida como residente dos pântanos, esta criatura é um assecla das forças negras.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 195,
+   "name": "Doron",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura imprevisível que se divide em duas e ataca o inimigo por lados opostos.",
+   "show": "text"
+  },
+  {
+   "id": 196,
+   "name": "Arma Knight",
+   "name_source": "english",
+   "official": null,
+   "text": "Um guerreiro amonite que protege os mares desde o início dos tempos.",
+   "show": "text"
+  },
+  {
+   "id": 197,
+   "name": "Topeira Mecânica Zumbi",
+   "name_source": "official",
+   "official": "Esta criatura ataca com o lançamento de mísseis, como os braços.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 198,
+   "name": "Amante Feliz",
+   "name_source": "official",
+   "official": "Os inimigos tornam-se radiantes quando atingidos pelo raio do coração emitido da testa deste pequeno querubim.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 199,
+   "name": "Cavaleiro Pinguim",
+   "name_source": "official",
+   "official": "Quando esta carta é enviada diretamente do seu Deck ao Cemitério por um efeito de carta controlada pelo seu oponente, retorne todas as cartas do seu Cemitério para o seu Deck.",
+   "text": "Uma criatura parecida com um pinguim que desliza de barriga para golpear com sua espada estendida.",
+   "show": "text"
+  },
+  {
+   "id": 200,
+   "name": "Pequeno Dragão",
+   "name_source": "official",
+   "official": "Um dragão muito pequeno conhecido pelos seus ataques ferozes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 201,
+   "name": "Panda Frenético",
+   "name_source": "official",
+   "official": "Uma besta selvagem que carrega uma vara de bambu para espancar seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 202,
+   "name": "Marmota Demônio da Pervesidade",
+   "name_source": "official",
+   "official": "Uma marmota aérea que tem nefastos chifre e asas. Ela ataca atirando bolotas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 203,
+   "name": "Espectro Fantasma",
+   "name_source": "official",
+   "official": "Um espírito vingativo feito de muitas almas inquietas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 204,
+   "name": "Mabarrel",
+   "name_source": "official",
+   "official": "Esta criatura que parece um canhão dispara globos oculares tão rápido que eles não podem ser vistos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 205,
+   "name": "Dorover",
+   "name_source": "official",
+   "official": "Este monstro feio emite um gás altamente venenoso.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 206,
+   "name": "Twin Long Rods #1",
+   "name_source": "english",
+   "official": null,
+   "text": "Esta criatura balança seus braços como chicotes para atacar os inimigos a média distância.",
+   "show": "text"
+  },
+  {
+   "id": 207,
+   "name": "Passaro Gracejador",
+   "name_source": "official",
+   "official": "Um monstro que fere seus inimigos com seu bico enorme e estridentes lamentos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 208,
+   "name": "Pequeno Anjo",
+   "name_source": "official",
+   "official": "Um veloz e pequeno anjo, muito difícil de acertar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 209,
+   "name": "Cortador Alado",
+   "name_source": "official",
+   "official": "Poucos podem resistir aos ataques dos braços em forma de foice dessa criatura perigosa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 210,
+   "name": "Alma Hinotama",
+   "name_source": "official",
+   "official": "Uma criatura de chamas intensamente quentes que derruba qualquer coisa que se ponha no seu caminho.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 211,
+   "name": "Criança do trovão",
+   "name_source": "official",
+   "official": "Este monstro armazena eletricidade dentro de seu corpo e pode liberá-la com poder catastrófico.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 212,
+   "name": "Meotoko",
+   "name_source": "official",
+   "official": "Ess grannn monstro con un grannn olho dissspara un raio feeeo em vocé!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 213,
+   "name": "Aqua Madoor",
+   "name_source": "official",
+   "official": "Um mago das águas que cria uma barreira líquida para esmagar todos aqueles que se opuserem a ele.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 214,
+   "name": "Kagemusha da Chama Azul",
+   "name_source": "official",
+   "official": "Servindo de substituto para o Senhor da Chama Azul, ele é um mestre espadachim que empunha uma bela espada.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 215,
+   "name": "Fantasma da Chama",
+   "name_source": "official",
+   "official": "\"Servo Caveira\" + \"Dissolve-rocha\"",
+   "text": "Um espírito de fogo que queima tudo em seu caminho.",
+   "show": "text"
+  },
+  {
+   "id": 216,
+   "name": "Doriado",
+   "name_source": "official",
+   "official": "\"Um espírito da floresta que recebe energia das árvores ao redor e da vida selvagem\"",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 217,
+   "name": "Dragão Caveira Negro",
+   "name_source": "official",
+   "official": "\"Caveira Invocada\" + \"Dragão Negro de Olhos Vermelhos\" (Este card deve ser sempre considerado como um card \"Arquidemônio\".)",
+   "text": "Uma criatura raríssima, criada pela fusão de uma besta incomum com um dragão cruel.",
+   "show": "text"
+  },
+  {
+   "id": 218,
+   "name": "Senhor das Trevas de Duas Bocas",
+   "name_source": "official",
+   "official": "Este dinossauro com duas mandíbulas mortíferas armazena eletricidade em seu chifre e liberta raios de alta voltagem pela boca nas suas costas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 219,
+   "name": "Solidão",
+   "name_source": "official",
+   "official": "Esta besta guerreira balança uma enorme foice que se alimenta das almas dos mortos por ela.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 220,
+   "name": "Feiticeiro Mascarado",
+   "name_source": "official",
+   "official": "Quando este card inflige dano de batalha ao seu adversário, compre 1 card do seu Deck.",
+   "text": "Um mago misterioso cujo rosto fica para sempre escondido atrás de uma estranha máscara.",
+   "show": "text"
+  },
+  {
+   "id": 221,
+   "name": "Kumootoko",
+   "name_source": "official",
+   "official": "Uma aranha gigante e inteligente que aprisiona seus inimigos com teias.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 222,
+   "name": "Midnight Fiend",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura alada que, segundo dizem, aparece à meia-noite.",
+   "show": "text"
+  },
+  {
+   "id": 223,
+   "name": "Cobra do Mar Rugidora",
+   "name_source": "official",
+   "official": "\"Lâmpada Mística\" + \"Hyosube\"",
+   "text": "Uma enorme serpente marinha que cria maremotos para aniquilar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 224,
+   "name": "Mestre das Armadilhas",
+   "name_source": "official",
+   "official": "VIRE: Destrói 1 Card de Armadilha no Campo. Se o alvo deste card está com a face para baixo, vire a face para cima. Se for um Card de Armadilha é destruído. Se não, coloque-o novamente com a face para baixo. O card virado não é Activado.",
+   "text": "Um guerreiro especialista em armadilhas, como um poço sem fundo, para prender os oponentes para sempre.",
+   "show": "text"
+  },
+  {
+   "id": 225,
+   "name": "Espada Demoníaca",
+   "name_source": "official",
+   "official": "Quem quer que resista a maldição desta lâmina vai ganhar um poder jamais visto.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 226,
+   "name": "Perseguidor de Crâneos",
+   "name_source": "official",
+   "official": "Elll vaaa agarrrarrr vocé con as garrrasss e deposss con o ferrrão!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 227,
+   "name": "Hitodenchak",
+   "name_source": "official",
+   "official": "Um furioso peixe estrela que cospe um ácido letal que pode derreter quase qualquer coisa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 228,
+   "name": "Restos de Árvore",
+   "name_source": "official",
+   "official": "Um corpo vivo de uma árvore ré-animado pelo poder da escuridão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 229,
+   "name": "Ampulheta da Vida",
+   "name_source": "official",
+   "official": "Esta criatura concede poder em vez de encurtar a vida.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 230,
+   "name": "Peixe Raro",
+   "name_source": "official",
+   "official": "\"Fusionista\" + \"Sereia Fascinante\"",
+   "text": "Um peixe incomum e feroz com cabeça de besta.",
+   "show": "text"
+  },
+  {
+   "id": 231,
+   "name": "Palhaço de Madeira",
+   "name_source": "official",
+   "official": "Uma criatura com um sorriso perturbador que carrega uma foice letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 232,
+   "name": "Madjinn Gunn",
+   "name_source": "official",
+   "official": "Uma arma viva que cospe projéteis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 233,
+   "name": "Titã Negro do Terror",
+   "name_source": "official",
+   "official": "Diz-se que este demônio vive no mundo dos sonhos, uma vez que ataca seus inimigos durante o sono.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 234,
+   "name": "Bela Caçadora-de-Cabeças",
+   "name_source": "official",
+   "official": "Uma criatura perversa que tem decapitado numerosos monstros inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 235,
+   "name": "Wodan the Resident of the Forest",
+   "name_source": "english",
+   "official": null,
+   "text": "Um guerreiro que vive há muito tempo na floresta e conta com a proteção da Mãe Natureza.",
+   "show": "text"
+  },
+  {
+   "id": 236,
+   "name": "Guardião do Labirinto",
+   "name_source": "official",
+   "official": "Um monstro que protege a entrada dos Mundos Baixos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 237,
+   "name": "Haniwa",
+   "name_source": "official",
+   "official": "Uma figura feita de Terra que protege a tumba de um antigo governante.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 238,
+   "name": "Yashinoki",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma palmeira com vontade própria que ataca os inimigos atirando cocos.",
+   "show": "text"
+  },
+  {
+   "id": 239,
+   "name": "Vishwar Randi",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma guerreira que serve às forças das trevas.",
+   "show": "text"
+  },
+  {
+   "id": 240,
+   "name": "O Drdek",
+   "name_source": "official",
+   "official": "Um globo ocular bípede que raramente erra um inimigo com suas garras letais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 241,
+   "name": "Assassino das Trevas",
+   "name_source": "official",
+   "official": "Armado com a Espada Psicótica, este assassino sinistro domina as terras áridas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 242,
+   "name": "Vela do Destino",
+   "name_source": "official",
+   "official": "Decide o destino de um oponente quando a vela queima as suas impressões digitais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 243,
+   "name": "Water Element",
+   "name_source": "english",
+   "official": null,
+   "text": "Um espírito da água que envolve o oponente numa névoa densa para encobrir seu ataque.",
+   "show": "text"
+  },
+  {
+   "id": 244,
+   "name": "Dissolve-rocha",
+   "name_source": "official",
+   "official": "Nascido nos poços de lava, este monstro gera um calor intenso para derreter seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 245,
+   "name": "Morcego Medah",
+   "name_source": "official",
+   "official": "Um globo ocular demoníaco criado por um servo do mal, que usa bombas negras para explodir os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 246,
+   "name": "Aquele que Caça Almas",
+   "name_source": "official",
+   "official": "Essa criatura perigosa brandi a espada que suga alma.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 247,
+   "name": "Rizo-água",
+   "name_source": "official",
+   "official": "Um anfíbio capaz de invocar um tsunami dos mares negros para exterminar os monstros inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 248,
+   "name": "Mestre & Especialista",
+   "name_source": "official",
+   "official": "Uma dupla letal formada por um mestre de bestas e pelo seu fiel servo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 249,
+   "name": "Omotics da Água",
+   "name_source": "official",
+   "official": "Transforma a água que transborda de uma jarra em dragões atacantes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 250,
+   "name": "Hyo",
+   "name_source": "official",
+   "official": "Ninguém pode sobreviver ao toque frio deste guerreiro gélido.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 251,
+   "name": "Sereia Fascinante",
+   "name_source": "official",
+   "official": "Uma linda sereia que atrai viajantes para um túmulo aquático.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 252,
+   "name": "Nekogal #1",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura felina de aparência fofa, mas que desfere arranhões com suas garras afiadas.",
+   "show": "text"
+  },
+  {
+   "id": 253,
+   "name": "Fadabruxa",
+   "name_source": "official",
+   "official": "Embora destinada a ser uma fada, esta criatura escolheu o caminho da bruxa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 254,
+   "name": "Besta embrionária",
+   "name_source": "official",
+   "official": "Um monstro imperfeito com um vórtice na barriga que suga adversários de qualquer tamanho.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 255,
+   "name": "Rato Prevenido",
+   "name_source": "official",
+   "official": "Esta criatura é protegida por uma rigída camada de pêlos e é excelente ao defender-se.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 256,
+   "name": "Guerreiro D.D.",
+   "name_source": "official",
+   "official": "Quando este card combater um monstro, depois do cálculo de dano, remova de jogo o monstro combatido e este card.",
+   "text": "Um monstro capaz de abrir fendas dimensionais para aprisionar seus inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 257,
+   "name": "Armadilheiro de Pedra",
+   "name_source": "official",
+   "official": "Esss roedor de pedra tennn casssca duuura. Connn isss tennn unnna defesa boooaaa!",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 258,
+   "name": "Beastking of the Swamps",
+   "name_source": "english",
+   "official": null,
+   "text": "Esta criatura transforma o chão sob seus pés em areia movediça para capturar seus inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 259,
+   "name": "Ancient Sorcerer",
+   "name_source": "english",
+   "official": null,
+   "text": "Um mestre do combate que usa vários bastões para deixar os inimigos inconscientes.",
+   "show": "text"
+  },
+  {
+   "id": 260,
+   "name": "Lunar Queen Elzaim",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma bela deusa da lua capaz de erguer uma cortina lunar para bloquear ataques inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 261,
+   "name": "Espelho Arquedemônio",
+   "name_source": "official",
+   "official": "Um espelho malvado que hipinotiza inimigos desviando ataques dos seus alvos originais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 262,
+   "name": "O Pequeno Espadachim de Aile",
+   "name_source": "official",
+   "official": "Ofereça 1 monstro no seu Campo como Tributo para aumentar o ATK deste monstro em 700 pontos até ao final do turno.",
+   "text": "Um guerreiro elfo montado em um enorme lagarto.",
+   "show": "text"
+  },
+  {
+   "id": 263,
+   "name": "Rock Ogre Grotto #2",
+   "name_source": "english",
+   "official": null,
+   "text": "Um golem de pedra que transforma os oponentes em rocha e os reduz a pó.",
+   "show": "text"
+  },
+  {
+   "id": 264,
+   "name": "Ovo Elfo com Asas",
+   "name_source": "official",
+   "official": "Esta fada em uma casca de ovo usa asas enormes para soprar de volta quase todos os ataque projétil.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 265,
+   "name": "O Furioso Rei dos Mares",
+   "name_source": "official",
+   "official": "O Grande Rei dos Sete Mares é capaz de invocar um tsunami para afogar os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 266,
+   "name": "Princesa de Tsurugi",
+   "name_source": "official",
+   "official": "VIRE: Inflija 500 pontos de dano aos Life Points do seu adversário para cada Card de Magia e de Armadilha que ele tem no Campo.",
+   "text": "Uma rainha das espadas praticamente imbatível no domínio de todas as lâminas que se possa imaginar.",
+   "show": "text"
+  },
+  {
+   "id": 267,
+   "name": "Guerreiro Demoníaco Desconhecido",
+   "name_source": "official",
+   "official": "A velocidade deste guerreiro cria um vácuo tão intenso que pode cortar a couraça de um monstro.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 268,
+   "name": "Escrivão dos segredos",
+   "name_source": "official",
+   "official": "Este feiticeiro trabalha na escuridão e é servido por uma mão sinistra que puxa seus inimigos para o esquecimento.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 269,
+   "name": "Versago, o Destruidor",
+   "name_source": "official",
+   "official": null,
+   "text": "Um senhor da destruição nascido do coração das trevas. Ele conjura tempestades para destruir os oponentes.",
+   "show": "text"
+  },
+  {
+   "id": 270,
+   "name": "Wetha",
+   "name_source": "official",
+   "official": "Um espírito que controla a chuva e é capaz de invocar furacões para afastar seu inimigo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 271,
+   "name": "Luz Megirus",
+   "name_source": "official",
+   "official": "Os raios fatais dos olhos deste monstro resultam em cruel destruição.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 272,
+   "name": "Mavelus",
+   "name_source": "official",
+   "official": "\"Tyhone\" + \"Asas da Chama Perversa\"",
+   "text": "Parente da fênix, esta criatura vive nas montanhas. Seu sopro de fogo é extremamente escaldante.",
+   "show": "text"
+  },
+  {
+   "id": 273,
+   "name": "Árvore Anciã do Esclarecimento",
+   "name_source": "official",
+   "official": "Esta árvore anciã utiliza-se do seu vasto conhecimento para evitar os danos de ataques de seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 274,
+   "name": "Rei Fantasma Verde",
+   "name_source": "official",
+   "official": "Este jovem rei das florestas vive num mundo verde cheio de árvores e vida selvagem.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 275,
+   "name": "Bugroth de Ataque Terrestre",
+   "name_source": "official",
+   "official": "Um robô de batalha terrestre que já foi usado em combates marítimos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 276,
+   "name": "Radiação & Temperatura",
+   "name_source": "official",
+   "official": "O Sol e o Vento do Norte se unem para criar uma combinação devastadora de tufões e de calor.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 277,
+   "name": "Gorgon Egg",
+   "name_source": "english",
+   "official": null,
+   "text": "Um ovo de górgona com olhos que, dizem, criam qualquer criatura que cruze seu olhar.",
+   "show": "text"
+  },
+  {
+   "id": 278,
+   "name": "Pequeno Moth",
+   "name_source": "official",
+   "official": "É melhor evitar ficar perto desta criatura que, embora pequena, é extremamente mortífera.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 279,
+   "name": "Rei Nevoeiro",
+   "name_source": "official",
+   "official": "Um demônio que vive numa cegante cortina de fumo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 280,
+   "name": "Protetora do Trono",
+   "name_source": "official",
+   "official": "Enquanto o rei está ausente, esta rainha protege seu trono com uma defesa vigorosa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 281,
+   "name": "Palhaço Místico",
+   "name_source": "official",
+   "official": "Nada pode parar o ataque enlouquecido desta poderosa criatura.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 282,
+   "name": "Ovelha Mística nº 2",
+   "name_source": "official",
+   "official": "Uma ovelha monstruosa que usa a sua longa cauda para hipnotizar seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 283,
+   "name": "Holografia",
+   "name_source": "official",
+   "official": "Esta máquina gera ilusões que deixam um inimigo aberto para o ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 284,
+   "name": "Tao, o Cantador",
+   "name_source": "official",
+   "official": "Mestre do Yin e Yang, este feiticeiro manipula um delicado equilíbrio de magicas e contra mágicas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 285,
+   "name": "Serpente Saqueadora",
+   "name_source": "official",
+   "official": "Uma serpente com um único olho que sopra um hálito gelado para congelar seus oponentes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 286,
+   "name": "Porteiro",
+   "name_source": "official",
+   "official": "Um mecanoide indestrutível criado com o único propósito de guardar os portões.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 287,
+   "name": "Ogre da Sombra Negra",
+   "name_source": "official",
+   "official": "Um ogre possuído pelos poderes das trevas. Poucos conseguem resistir à sua rápida investida.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 288,
+   "name": "Artista Negro",
+   "name_source": "official",
+   "official": "Se este card estiver sendo atacado por um monstro de LUZ, sua DEF é diminuída pela metade, apenas durante o cálculo de dano.",
+   "text": "Um artista demente que cria obras de arte para esmagar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 289,
+   "name": "Limo Mutante",
+   "name_source": "official",
+   "official": "Um limo que pode se transformar e assumir a forma e o tamanho de qualquer monstro que ele escolha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 290,
+   "name": "Moon Envoy",
+   "name_source": "english",
+   "official": null,
+   "text": "Servo da deusa da lua, este guerreiro empunha uma lança com uma espetacular lâmina em forma de lua crescente.",
+   "show": "text"
+  },
+  {
+   "id": 291,
+   "name": "Fireyarou",
+   "name_source": "official",
+   "official": "Uma criatura maléfica envolvida em chamas que ataca os inimigos com fogo intenso.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 292,
+   "name": "Kappa Psíquico",
+   "name_source": "official",
+   "official": null,
+   "text": "Um anfíbio com poderes extrassensoriais que bloqueiam ataques.",
+   "show": "text"
+  },
+  {
+   "id": 293,
+   "name": "Masaki, o Espadachim Lendário",
+   "name_source": "official",
+   "official": "O lendário mestre espadachim Masaki já lutou mais de 100 batalhas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 294,
+   "name": "Dragoness, O Cavaleiro Perverso",
+   "name_source": "official",
+   "official": "\"Armaill\" + \"Dragão Escudo de Um Só Olho\"",
+   "text": "Um guerreiro que usa um equipamento feito de escamas de dragão.",
+   "show": "text"
+  },
+  {
+   "id": 295,
+   "name": "Bio planta",
+   "name_source": "official",
+   "official": "Um monstro criado de um grave acidente em um laboratório subterrâneo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 296,
+   "name": "Dragão Escudo de Um Só Olho",
+   "name_source": "official",
+   "official": "Este dragão usa um escudo não só para sua proteção, mas também para esmagar seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 297,
+   "name": "Soldado Cibernético do Mundo das Trevas",
+   "name_source": "official",
+   "official": "Um soldado mecânico que não vai parar de atacar até que todas as leituras de vida forem extintas a partir de seus sensores.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 298,
+   "name": "Dragão Maléfico com a Cabeça de Ersatz",
+   "name_source": "official",
+   "official": "Um dragão com duas cabeças e um par de mandíbulas que podem rasgar um inimigo em pedaços.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 299,
+   "name": "Dama Sônica",
+   "name_source": "official",
+   "official": "Uma moça que usa o som para a sua vantagem, ela empunha uma foice, que é a forma de uma nota musical.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 300,
+   "name": "Kurama",
+   "name_source": "official",
+   "official": "Um pássaro feroz que ataca dos céus com a sua cauda-chicote.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 301,
+   "name": "Espada Lendária",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Guerreiro. Ele ganha 300 de ATK/DEF.",
+   "text": "Uma espada que desperta o melhor dos guerreiros. Servos das trevas não podem usá-la.",
+   "show": "text"
+  },
+  {
+   "id": 302,
+   "name": "Espada Sombria da Destruição",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro de TREVAS. Ele ganha 400 de ATK e perde 200 de DEF.",
+   "text": "Forças das trevas aumentam o poder dos monstros Guerreiro!",
+   "show": "text"
+  },
+  {
+   "id": 303,
+   "name": "Energia das Trevas",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Demônio, equipado com este card, aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Forças das trevas aumentam o poder dos monstros Demônio e de outros monstros das trevas!",
+   "show": "text"
+  },
+  {
+   "id": 304,
+   "name": "Machado do Desespero",
+   "name_source": "official",
+   "official": "(Este card deve ser sempre considerado como um card \"Arquidemônio\".) O monstro equipado ganha 1000 de ATK. Quando este card for enviado do campo para o Cemitério: você pode oferecer 1 monstro como Tributo; coloque este card no topo do seu Deck.",
+   "text": "Monstros Demônio e Besta-Guerreira podem usar sempre sua força máxima!",
+   "show": "text"
+  },
+  {
+   "id": 305,
+   "name": "Armadura Canhão Laser",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Inseto. Ele ganha 300 de ATK/DEF.",
+   "text": "Arma os monstros Inseto com um poderoso laser!",
+   "show": "text"
+  },
+  {
+   "id": 306,
+   "name": "Armadura Inseto com Canhão Laser",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Inseto. Ele ganha 700 de ATK.",
+   "text": "Permite que monstros Inseto disparem uma intensa rajada de fogo!",
+   "show": "text"
+  },
+  {
+   "id": 307,
+   "name": "Luz do Duende",
+   "name_source": "official",
+   "official": "Um monstro LUZ equipado com esta carta aumenta seu ATK em 400 pontos e diminui sua DEF em 200 pontos.",
+   "text": "Aumenta o poder dos elfos com uma luz mística!",
+   "show": "text"
+  },
+  {
+   "id": 308,
+   "name": "Presas de Besta",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Besta equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Aumenta o poder dos monstros Besta e de outros monstros com presas!",
+   "show": "text"
+  },
+  {
+   "id": 309,
+   "name": "Concha de Aço",
+   "name_source": "official",
+   "official": "Um monstro ÁGUA equipado com esta carta aumenta seu ATK em 400 pontos e diminui sua DEF em 200 pontos.",
+   "text": "Aumenta o poder dos monstros com concha! Dizem que não tem efeito nos que não têm concha.",
+   "show": "text"
+  },
+  {
+   "id": 310,
+   "name": "Germes Vis",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Planta equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Micróbios vis aumentam o poder dos monstros Planta da floresta!",
+   "show": "text"
+  },
+  {
+   "id": 311,
+   "name": "Pendente Negro",
+   "name_source": "official",
+   "official": "O monstro equipado ganha 500 de ATK. Quando este card for enviado do campo para o Cemitério: cause 500 de dano ao seu oponente.",
+   "text": "Este pendente dá poder extra aos magos das trevas!",
+   "show": "text"
+  },
+  {
+   "id": 312,
+   "name": "Arco e Flecha de Prata",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Anjo equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Um arco e flecha de prata que aumenta o poder dos monstros Fada.",
+   "show": "text"
+  },
+  {
+   "id": 313,
+   "name": "Chifre de Luz",
+   "name_source": "official",
+   "official": "O monstro equipado ganha 800 de DEF. Quando esta carta é enviada do campo ao Cemitério, você pode pagar 500 LPs para retornar esta carta para o topo do seu Deck.",
+   "text": "Aumenta o poder das criaturas com chifres! Não tem efeito em monstros das trevas.",
+   "show": "text"
+  },
+  {
+   "id": 314,
+   "name": "Chifre do Unicórnio",
+   "name_source": "official",
+   "official": "O monstro equipado ganha 700 de ATK e DEF. Quando este card for enviado do campo para o Cemitério: devolva-o para o topo do Deck.",
+   "text": "Aumenta o poder dos monstros das trevas com chifres!",
+   "show": "text"
+  },
+  {
+   "id": 315,
+   "name": "Tesouro do Dragão",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Dragão equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Um tesouro lendário que aumenta o poder dos monstros Dragão.",
+   "show": "text"
+  },
+  {
+   "id": 316,
+   "name": "Chicote Elétrico",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Trovão equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Um chicote que paralisa os inimigos. Aumenta o poder quando equipado em criaturas femininas.",
+   "show": "text"
+  },
+  {
+   "id": 317,
+   "name": "Ciberescudo",
+   "name_source": "official",
+   "official": "Só pode ser equipado a \"Lady Harpia\" ou \"Irmãs de Lady Harpia\". Ele ganha 500 de ATK.",
+   "text": "Aumenta o poder dos monstros femininos mudando sua atitude.",
+   "show": "text"
+  },
+  {
+   "id": 318,
+   "name": "Egotista Elegante",
+   "name_source": "official",
+   "official": "Se \"Lady Harpia\" estiver no campo: Invoque por Invocação-Especial 1 \"Lady Harpia\" ou \"Irmãs de Lady Harpia\" da sua mão ou do Deck.",
+   "text": "Cria duas sósias de \"Lady Harpia\" para um ataque triplo!",
+   "show": "text"
+  },
+  {
+   "id": 319,
+   "name": "Lua Mística",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro do Tipo Besta-Guerreira. Ele ganha 300 de ATK e DEF.",
+   "text": "O luar aumenta o poder dos monstros Besta!",
+   "show": "text"
+  },
+  {
+   "id": 320,
+   "name": "Impedir a Defesa",
+   "name_source": "official",
+   "official": "Escolha 1 monstro no Campo do seu adversário e mude-o para a Posição de Ataque. Se o card estiver com a face para baixo, vire a face para cima. Se o card tiver algum efeito, ele é Activado imediatamente.",
+   "text": "Mude 1 monstro do seu oponente em Posição de Defesa para a Posição de Ataque.",
+   "show": "text"
+  },
+  {
+   "id": 321,
+   "name": "Nuzzler Maléfica",
+   "name_source": "official",
+   "official": "O monstro equipado ganha 700 de ATK. Quando este card for enviado do campo para o Cemitério: você pode pagar 500 PV; coloque este card no topo do seu Deck.",
+   "text": "Forças diabólicas aumentam o poder dos monstros femininos e das trevas!",
+   "show": "text"
+  },
+  {
+   "id": 322,
+   "name": "Cristal Violeta",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Zumbi. Ele ganha 300 de ATK/DEF.",
+   "text": "As forças místicas do cristal aumentam o poder dos monstros Zumbi.",
+   "show": "text"
+  },
+  {
+   "id": 323,
+   "name": "Livro das Artes Secretas",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Mago equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Um livro mágico que aumenta o poder dos magos. Feiticeiros de coração perverso não podem usá-lo.",
+   "show": "text"
+  },
+  {
+   "id": 324,
+   "name": "Fortalecimento",
+   "name_source": "official",
+   "official": "Um monstro da TERRA equipado com este card aumenta o seu ATK em 400 pontos e diminui o seu DEF em 200 pontos.",
+   "text": "Aumenta o poder dos monstros Trovão, Rocha e Piro.",
+   "show": "text"
+  },
+  {
+   "id": 325,
+   "name": "Fábrica de Conversão de Máquina",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Máquina. Ele ganha 300 de ATK/DEF.",
+   "text": "Uma fábrica que aprimora todos os monstros Máquina.",
+   "show": "text"
+  },
+  {
+   "id": 326,
+   "name": "Aumentar a Temperatura Corporal",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Dinossauro. Ele ganha 300 de ATK/DEF.",
+   "text": "Absorve a energia do sol para aumentar o poder dos monstros Dinossauro!",
+   "show": "text"
+  },
+  {
+   "id": 327,
+   "name": "Vento Seguidor",
+   "name_source": "official",
+   "official": "Um monstro do Tipo Besta Alada equipado com este card aumenta o seu ATK e DEF em 300 pontos.",
+   "text": "Os ventos ajudam a aumentar o poder dos monstros Besta Alada e de outros monstros voadores!",
+   "show": "text"
+  },
+  {
+   "id": 328,
+   "name": "Poder de Kaishin",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro Aqua. Ele ganha 300 de ATK/DEF.",
+   "text": "A força de Poseidon aumenta o poder dos monstros Aqua, Peixe e Serpente Marinha!",
+   "show": "text"
+  },
+  {
+   "id": 329,
+   "name": "Jarro de Captura de Dragões",
+   "name_source": "official",
+   "official": "Enquanto este card permanece no Campo com a face para cima, todos os monstros do Tipo Dragão no Campo, mudam para Posição de Defesa.",
+   "text": "Destrua todos os monstros Dragão do seu oponente no campo!",
+   "show": "text"
+  },
+  {
+   "id": 330,
+   "name": "Floresta",
+   "name_source": "official",
+   "official": "Todos os monstros Inseto, Besta, Planta e Besta-Guerreira no campo ganham 200 de ATK/DEF.",
+   "text": "Muda o campo a favor dos monstros Besta-Guerreira, Inseto, Planta e Besta!",
+   "show": "text"
+  },
+  {
+   "id": 331,
+   "name": "Terra Árida",
+   "name_source": "official",
+   "official": "Todos os monstros Dinossauro, Zumbi e Rocha no campo ganham 200 de ATK/DEF.",
+   "text": "Muda o campo a favor dos monstros Zumbi, Dinossauro e Rocha!",
+   "show": "text"
+  },
+  {
+   "id": 332,
+   "name": "Montanha",
+   "name_source": "official",
+   "official": "Todos os monstros Dragão, Besta Alada e Trovão no campo ganham 200 de ATK/DEF.",
+   "text": "Muda o campo a favor dos monstros Dragão, Besta Alada e Trovão!",
+   "show": "text"
+  },
+  {
+   "id": 333,
+   "name": "Sogen",
+   "name_source": "official",
+   "official": "Todos os monstros Guerreiro e Besta-Guerreira no campo ganham 200 de ATK/DEF.",
+   "text": "Transforma o campo numa pradaria a favor dos monstros Guerreiro e Besta-Guerreira!",
+   "show": "text"
+  },
+  {
+   "id": 334,
+   "name": "Umi",
+   "name_source": "official",
+   "official": "Todos os monstros Peixe, Serpente Marinha, Trovão e Aqua no campo ganham 200 de ATK/DEF e, além disso, todos os monstros Máquina e Piro no campo perdem 200 de ATK/DEF.",
+   "text": "Muda o campo a favor dos monstros Aqua e Trovão, mas contra os monstros Máquina e Piro!",
+   "show": "text"
+  },
+  {
+   "id": 335,
+   "name": "Yami",
+   "name_source": "official",
+   "official": "Todos os monstros Demônio e Mago no campo ganham 200 de ATK/DEF e, além disso, todos os monstros Fada no campo perdem 200 de ATK/DEF.",
+   "text": "Muda o campo a favor dos monstros Mago e Demônio, mas contra os monstros Fada!",
+   "show": "text"
+  },
+  {
+   "id": 336,
+   "name": "Buraco Negro",
+   "name_source": "official",
+   "official": "Destrua todos os monstros no campo.",
+   "text": "Suga todos os cards em jogo no campo!",
+   "show": "text"
+  },
+  {
+   "id": 337,
+   "name": "Raigeki",
+   "name_source": "official",
+   "official": "Destrua todos os monstros que seu oponente controla.",
+   "text": "Destrói todos os monstros do oponente com um raio!",
+   "show": "text"
+  },
+  {
+   "id": 338,
+   "name": "Mooyan Curry",
+   "name_source": "english",
+   "official": null,
+   "text": "Um delicioso curry de carne aumenta seus PV em 200!",
+   "show": "text"
+  },
+  {
+   "id": 339,
+   "name": "Remédio Vermelho",
+   "name_source": "official",
+   "official": "Aumente os seus Life Points em 500 pontos.",
+   "text": "Uma poção mágica que aumenta seus PV em 500!",
+   "show": "text"
+  },
+  {
+   "id": 340,
+   "name": "Remédio Secreto dos Goblins",
+   "name_source": "official",
+   "official": "Aumente os Life Points do jogador à sua escolha em 600 pontos.",
+   "text": "Uma erva dos goblins que aumenta seus PV em 1000!",
+   "show": "text"
+  },
+  {
+   "id": 341,
+   "name": "ALma do Puro",
+   "name_source": "official",
+   "official": "Você ganha 800 LPs.",
+   "text": "Uma poção das fadas que aumenta seus PV em 2000!",
+   "show": "text"
+  },
+  {
+   "id": 342,
+   "name": "Dian Keto, Mestre da Cura",
+   "name_source": "official",
+   "official": "Aumente os seus Life Points em 1000 pontos.",
+   "text": "Um poder místico que aumenta seus PV em 5000!",
+   "show": "text"
+  },
+  {
+   "id": 343,
+   "name": "Faíscas",
+   "name_source": "official",
+   "official": "Inflija 200 pontos de dano aos Life Points do seu adversário.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 344,
+   "name": "Hinotama",
+   "name_source": "official",
+   "official": "Cause 500 de dano ao seu oponente.",
+   "text": "Uma bola de fogo causa 100 de dano aos PV do seu oponente!",
+   "show": "text"
+  },
+  {
+   "id": 345,
+   "name": "Chama Final",
+   "name_source": "official",
+   "official": "Inflija 600 pontos de dano aos Life Points do seu adversário.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 346,
+   "name": "Ookazi",
+   "name_source": "official",
+   "official": "Inflija 800 pontos de dano aos Life Points do seu adversário.",
+   "text": "Chamas causam 500 de dano aos PV do seu oponente!",
+   "show": "text"
+  },
+  {
+   "id": 347,
+   "name": "Fogo Medonho",
+   "name_source": "official",
+   "official": "Inflija 1000 pontos de dano aos Life Points do seu adversário e 500 pontos de dano aos seus Life Points.",
+   "text": "Um inferno de fogo causa 1000 de dano aos PV do seu oponente!",
+   "show": "text"
+  },
+  {
+   "id": 348,
+   "name": "Espadas da Luz Reveladora",
+   "name_source": "official",
+   "official": "Depois da ativação deste card, ele permanece no campo, mas você deve destruí-lo durante a Fase Final do 3º turno do seu oponente. Quando este card for ativado: se seu oponente controlar um monstro com a face para baixo, vire com a face para cima todos os monstros que ele controla. Enquanto este card estiver com a face para cima no campo, os monstros do seu oponente não podem declarar um ataque.",
+   "text": "Os monstros inimigos são revelados e seu oponente não pode atacar por três turnos.",
+   "show": "text"
+  },
+  {
+   "id": 349,
+   "name": "Círculo da Profecia",
+   "name_source": "official",
+   "official": "Ative este card ao escolher 1 monstro que seu oponente controla; ele não pode atacar ou mudar sua posição de batalha. Quando esse monstro for destruído, destrua este card.",
+   "text": "Uma maldição reduz o poder de todos os monstros inimigos!",
+   "show": "text"
+  },
+  {
+   "id": 350,
+   "name": "Luz que Penetra as Trevas",
+   "name_source": "official",
+   "official": "Vire todos os monstros virados para baixo no lado do campo do seu oponente para cima.",
+   "text": "Uma luz ofuscante revela todos os monstros no campo.",
+   "show": "text"
+  },
+  {
+   "id": 351,
+   "name": "Yaranzo",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro que ataca qualquer um que tente abrir sua tampa.",
+   "show": "text"
+  },
+  {
+   "id": 352,
+   "name": "Kanan the Swordmistress",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma espadachim que flutua como uma borboleta e ferroa como uma abelha.",
+   "show": "text"
+  },
+  {
+   "id": 353,
+   "name": "Takriminos",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura com barbatanas, parente distante dos dragões marinhos.",
+   "show": "text"
+  },
+  {
+   "id": 354,
+   "name": "Stuffed Animal",
+   "name_source": "english",
+   "official": null,
+   "text": "Um bicho de pelúcia de aparência fofa, mas que morde.",
+   "show": "text"
+  },
+  {
+   "id": 355,
+   "name": "Olho Megasonico",
+   "name_source": "official",
+   "official": "Feita de metal misterioso, esse monstro é uma máquina do Juízo Final a partir da borda do universo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 356,
+   "name": "Super Leão-de-Guerra",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Ritual do Leão-de-Guerra\".",
+   "text": "Um leão muito feroz, com garras longas e afiadas.",
+   "show": "text"
+  },
+  {
+   "id": 357,
+   "name": "Yamadron",
+   "name_source": "official",
+   "official": "Este monstro tem três cabeças cuspidoras de fogo e podem formar um mar de chamas ardentes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 358,
+   "name": "Seiyaryu",
+   "name_source": "official",
+   "official": "Um dragão místico que queima os indignos com suas chamas místicas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 359,
+   "name": "Three-legged Zombies",
+   "name_source": "english",
+   "official": null,
+   "text": "Bony e Tubby, uma dupla de esqueletos amigáveis.",
+   "show": "text"
+  },
+  {
+   "id": 360,
+   "name": "Zera o Mante",
+   "name_source": "official",
+   "official": "Esta carta só pode ser convocada por ritual com a carta de mágica de ritual, \"Zera Ritual\".",
+   "text": "Um monstro enorme e brutal que ataca com garras afiadas como navalhas.",
+   "show": "text"
+  },
+  {
+   "id": 361,
+   "name": "Pinguim Voador",
+   "name_source": "official",
+   "official": null,
+   "text": "Um pinguim raro que voa com as asas que tem na cabeça.",
+   "show": "text"
+  },
+  {
+   "id": 362,
+   "name": "Escudo do Milênio",
+   "name_source": "official",
+   "official": "Dizem que esse escudo famoso pertencia a um antigo Faraó egípcio. As lendas dizem que seu poder é capaz de bloquear qualquer ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 363,
+   "name": "Fada Madrinha",
+   "name_source": "official",
+   "official": "Esse monstro alado é conhecido por levar felicidade a todos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 364,
+   "name": "Soldado do Lustro Negro",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Ritual do Lustro Negro\".",
+   "text": "Um guerreiro poderoso com as mesmas capacidades do lendário Dragão Branco de Olhos Azuis.",
+   "show": "text"
+  },
+  {
+   "id": 365,
+   "name": "Espelho do Demônio",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Ritual do Espelho Bestial\".",
+   "text": "Um espelho arcano que arrasta os inimigos para o mundo do espelho.",
+   "show": "text"
+  },
+  {
+   "id": 366,
+   "name": "Paredes do Labirinto",
+   "name_source": "official",
+   "official": "Estas paredes formam um labirinto sem saída para os inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 367,
+   "name": "Jirai Gumo",
+   "name_source": "official",
+   "official": "Quando este card declarar um ataque: lance uma moeda e escolha cara ou coroa. Se você perder, perca metade dos seus Pontos de Vida.",
+   "text": "Uma aranha monstruosa que vive debaixo da terra.",
+   "show": "text"
+  },
+  {
+   "id": 368,
+   "name": "Carniçal das Sombras",
+   "name_source": "official",
+   "official": "Este card ganha 100 de ATK para cada monstro no seu Cemitério.",
+   "text": "Um zumbi perigoso que rasteja na escuridão.",
+   "show": "text"
+  },
+  {
+   "id": 369,
+   "name": "Parede das Sombras",
+   "name_source": "official",
+   "official": "Não pode ser Invocado por Invocação-Normal/Baixado. Primeiro deve ser Invocado por Invocação-Especial com \"Labirinto Mágico\".",
+   "text": "Um monstro extremamente rápido que desliza pelas paredes para atacar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 370,
+   "name": "Tanque do Labirinto",
+   "name_source": "official",
+   "official": "\"Lobo Giga-Tech\" + \"Soldado Canhão\"",
+   "text": "Um tanque que percorre um labirinto caçando seus inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 371,
+   "name": "Sanga do Trovão",
+   "name_source": "official",
+   "official": "Durante o cálculo de dano do turno do seu oponente, se este card estiver sendo atacado: você pode escolher o monstro atacante; o ATK do alvo se torna 0 apenas durante o cálculo de dano (este é um Efeito Rápido). Este efeito só pode ser usado uma vez enquanto este card estiver com a face para cima no campo.",
+   "text": "Um golem que usa ataques de raio, como os Irmãos do Labirinto.",
+   "show": "text"
+  },
+  {
+   "id": 372,
+   "name": "Kazejin",
+   "name_source": "official",
+   "official": "Durante o cálculo de dano do turno do seu oponente, se este card estiver sendo atacado: você pode escolher o monstro atacante; o ATK do alvo se torna 0 apenas durante o cálculo de dano (este é um Efeito Rápido). Este efeito só pode ser usado uma vez enquanto este card estiver com a face para cima no campo.",
+   "text": "Um golem que controla os ventos, como os Irmãos do Labirinto.",
+   "show": "text"
+  },
+  {
+   "id": 373,
+   "name": "Suijin",
+   "name_source": "official",
+   "official": "Durante o cálculo de dano do turno do seu oponente, se este card estiver sendo atacado: você pode escolher o monstro atacante; o ATK do alvo se torna 0 apenas durante o cálculo de dano (este é um Efeito Rápido). Este efeito só pode ser usado uma vez enquanto este card estiver com a face para cima no campo.",
+   "text": "Um golem que usa ataques de água, como os Irmãos do Labirinto.",
+   "show": "text"
+  },
+  {
+   "id": 374,
+   "name": "Guardião do Portão",
+   "name_source": "official",
+   "official": "Não pode ser Invocado por Invocação-Normal/Baixado. Você primeiro deve Invocá-lo por Invocação-Especial (da sua mão) ao oferecer como Tributo 1 \"Sanga do Trovão\", \"Kazejin\" e \"Suijin\".",
+   "text": "Sanga, Kazejin e Suijin se unem para formar um único e poderoso monstro.",
+   "show": "text"
+  },
+  {
+   "id": 375,
+   "name": "Lombriga da Masmorra",
+   "name_source": "official",
+   "official": "Escondido sob o chão de um labirinto, ele engole qualquer um que passe por cima dele.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 376,
+   "name": "Domador de Monstros",
+   "name_source": "official",
+   "official": "Um mestre de monstros que exerce controle sobre várias criaturas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 377,
+   "name": "Ryu-Kishin Potencializado",
+   "name_source": "official",
+   "official": "Um gárgula melhorado pelos poderes das trevas. Garras bem afiadas o tornam um forte adversário.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 378,
+   "name": "Espadachim Sorrateiro",
+   "name_source": "official",
+   "official": "Um monstro formado pelas almas vingativas daqueles que pereceram em batalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 379,
+   "name": "La Jinn, o Gênio Místico da Lâmpada",
+   "name_source": "official",
+   "official": "Um gênio da lâmpada que está sempre à disposição do seu mestre.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 380,
+   "name": "Dragão Definitivo de Olhos Azuis",
+   "name_source": "official",
+   "official": "\"Dragão Branco de Olhos Azuis\" + \"Dragão Branco de Olhos Azuis\" + \"Dragão Branco de Olhos Azuis\"",
+   "text": "O dragão definitivo, formado pela fusão de três Dragões Brancos de Olhos Azuis.",
+   "show": "text"
+  },
+  {
+   "id": 381,
+   "name": "Jacaré Toon",
+   "name_source": "official",
+   "official": "Um monstro jacaré vindo diretamente dos desenhos animados.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 382,
+   "name": "Kaiser Violento",
+   "name_source": "official",
+   "official": "Com um machado em cada mão, este monstro causa grandes estragos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 383,
+   "name": "Dragão Papagaio",
+   "name_source": "official",
+   "official": "Um dragão dos desenhos animados que é mais perigoso do que aparenta.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 384,
+   "name": "Coelhinho Negro",
+   "name_source": "official",
+   "official": "Ele salta para cima, para baixo, e por toda parte! Ninguém consegue tocar esse coelhinho engraçado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 385,
+   "name": "Bickuribox",
+   "name_source": "official",
+   "official": "\"Palhaço Grosseiro\" + \"Palhaço dos Sonhos\"",
+   "text": "Uma caixa de surpresas especialista em ataques surpresa.",
+   "show": "text"
+  },
+  {
+   "id": 386,
+   "name": "Dragão de Estimação da Harpia",
+   "name_source": "official",
+   "official": "Ganha 300 de ATK/DEF para cada \"Lady Harpia\" no campo.",
+   "text": "O mascote favorito das harpias, mas um dragão muito perigoso.",
+   "show": "text"
+  },
+  {
+   "id": 387,
+   "name": "Lâmpada Mística",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Uma lâmpada usada pelos magos para misturar poções.",
+   "show": "text"
+  },
+  {
+   "id": 388,
+   "name": "Máquina do Pêndulo",
+   "name_source": "official",
+   "official": "Uma terrível máquina de tortura com uma grande lâmina em pêndulo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 389,
+   "name": "Giltia, o Cavaleiro D.",
+   "name_source": "official",
+   "official": "\"Guardião do Labirinto\" + \"Protetora do Trono\"",
+   "text": "Armado com uma lança que queima a alma, este monstro prefere ataques mágicos.",
+   "show": "text"
+  },
+  {
+   "id": 390,
+   "name": "Aranha Lançadora",
+   "name_source": "official",
+   "official": "Uma aranha mecânica com lança-foguetes capazes de realizar disparos aleatórios.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 391,
+   "name": "Zoa",
+   "name_source": "official",
+   "official": "Um monstro cujo máximo potencial pode ser alcançado em conjunto com \"Metalmorfo\".",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 392,
+   "name": "Metalzoa",
+   "name_source": "official",
+   "official": "Não pode ser Invocado por Invocação-Normal/Baixado. Você primeiro deve Invocá-lo por Invocação-Especial (do seu Deck) ao oferecer como Tributo \"Zoa\" equipada com \"Metalmorfo\".",
+   "text": "Um Zoa metálico capaz de ataques intensos.",
+   "show": "text"
+  },
+  {
+   "id": 393,
+   "name": "Zone Eater",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura marinha que engole os inimigos e os digere lentamente.",
+   "show": "text"
+  },
+  {
+   "id": 394,
+   "name": "Escorpião de Aço",
+   "name_source": "official",
+   "official": "Um monstro que não seja do Tipo Máquina, que esteja atacando \"Escorpião de Aço\" é destruído na End Phase do 2º turno do seu adversário depois do turno do ataque.",
+   "text": "Um monstro de cauda de ferro equipado com pinças muito afiadas.",
+   "show": "text"
+  },
+  {
+   "id": 395,
+   "name": "Elfa Dançarina",
+   "name_source": "official",
+   "official": "Uma elfa que dança através do céu com asas de lâminas afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 396,
+   "name": "Ocubeam",
+   "name_source": "official",
+   "official": "Com uma aparência assustadora, esta criatura usa o seu grande olho e orelhas para acompanhar qualquer movimento.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 397,
+   "name": "Leghul",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Não é um monstro muito poderoso, apesar de suas grandes presas e espinhos.",
+   "show": "text"
+  },
+  {
+   "id": 398,
+   "name": "Ooguchi",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Uma rã-touro monstruosa com espinhos venenosos.",
+   "show": "text"
+  },
+  {
+   "id": 399,
+   "name": "Espadachim de uma Terra Distante",
+   "name_source": "official",
+   "official": "Se este card atacou um monstro do oponente, depois do cálculo de dano: destrua esse monstro durante a 5ª Fase Final depois do ataque.",
+   "text": "Um guerreiro do Oriente armado com uma espada amaldiçoada.",
+   "show": "text"
+  },
+  {
+   "id": 400,
+   "name": "Emperor of the Land and Sea",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro réptil que cospe fogo.",
+   "show": "text"
+  },
+  {
+   "id": 401,
+   "name": "Ushi Oni",
+   "name_source": "official",
+   "official": "Um boi demônio restaurado pelas artes negras, este monstro aparece de um jarro.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 402,
+   "name": "Monster Eye",
+   "name_source": "english",
+   "official": null,
+   "text": "Um servo que vigia de perto tudo e todos. Quando é descoberto, solta uma cortina de fumaça.",
+   "show": "text"
+  },
+  {
+   "id": 403,
+   "name": "Leogun",
+   "name_source": "official",
+   "official": "Um monstro enorme com uma juba parecida com a do Rei das Bestas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 404,
+   "name": "Tatsunootoshigo",
+   "name_source": "official",
+   "official": "Um monstro bizarro com o torso de um cavalo e uma cauda de peixe. Ele galopa através do mar como se fosse o vento.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 405,
+   "name": "Matador com Espada",
+   "name_source": "official",
+   "official": "Um motor letal de destruição que empunha duas lâminas afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 406,
+   "name": "Yaiba Robo",
+   "name_source": "official",
+   "official": "Uma máquina cúbica equipada com lâminas afiadas para fazer pedacinhos do oponente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 407,
+   "name": "Rei Máquina",
+   "name_source": "official",
+   "official": "Este card ganha 100 de ATK para cada monstro do Tipo Máquina no campo.",
+   "text": "Blindado com uma superliga, este robô ataca com rajadas de fogo lançadas dos dois braços.",
+   "show": "text"
+  },
+  {
+   "id": 408,
+   "name": "Mecha-Soldado Gigante",
+   "name_source": "official",
+   "official": "Este monstro brande um machado capaz de estremecer a terra que não pode ser bloqueado por uma espada comum.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 409,
+   "name": "Dragão de Metal",
+   "name_source": "official",
+   "official": "\"Ogre de Aço da Gruta nº 1\" + \"Dragão Inferior\"",
+   "text": "Um dragão dourado que cospe fogo e queima qualquer oponente em seu caminho.",
+   "show": "text"
+  },
+  {
+   "id": 410,
+   "name": "Mechanical Spider",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro mecânico em forma de aranha, com foices na ponta das pernas.",
+   "show": "text"
+  },
+  {
+   "id": 411,
+   "name": "Bat",
+   "name_source": "english",
+   "official": null,
+   "text": "Um morcego mecânico que ataca soltando esferas explosivas.",
+   "show": "text"
+  },
+  {
+   "id": 412,
+   "name": "Lobo Giga-Tech",
+   "name_source": "official",
+   "official": "Um lobo de ferro com presas afiadas como lâminas, capazes de penetrar qualquer armadura.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 413,
+   "name": "Soldado Cibernético",
+   "name_source": "official",
+   "official": "Guardião do Rei máquina, ela esmaga a oposição rolando.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 414,
+   "name": "Pás esmagadoras",
+   "name_source": "official",
+   "official": "Armado com um par de pás este monstro vai destuir qualquer coisa que fique no caminho dele.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 415,
+   "name": "Caçador Mecânico",
+   "name_source": "official",
+   "official": "Um caçador que persegue incansavelmente seu alvo por ordem do Rei Máquina.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 416,
+   "name": "Blocker",
+   "name_source": "english",
+   "official": null,
+   "text": "Cada parte desta criatura é uma arma independente, capaz de ataques devastadores.",
+   "show": "text"
+  },
+  {
+   "id": 417,
+   "name": "Malabarista Explosivo",
+   "name_source": "official",
+   "official": "Ofereça este card com a face para cima como Tributo durante a sua Standby Phase, para destruir 2 monstros com a face para cima com um ATK de 1000 pontos ou menos.",
+   "text": "Uma bomba-relógio ambulante que adora mandar os inimigos pelos ares.",
+   "show": "text"
+  },
+  {
+   "id": 418,
+   "name": "Golgoil",
+   "name_source": "official",
+   "official": "Um gigante de ferro que aparece em uma fenda dimensional.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 419,
+   "name": "Giganto",
+   "name_source": "official",
+   "official": "Uma bola de aço massiva que arrasta tudo em seu caminho.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 420,
+   "name": "Ciber-Stein",
+   "name_source": "official",
+   "official": "(Este card não é considerado como um card \"Ciber\".) Você pode pagar 5000 PV; Invoque por Invocação-Especial 1 Monstro de Fusão do seu Deck Adicional em Posição de Ataque.",
+   "text": "Criada num laboratório de porão, esta máquina infernal lança foguetes pela boca.",
+   "show": "text"
+  },
+  {
+   "id": 421,
+   "name": "Comandante Cibernético",
+   "name_source": "official",
+   "official": "Uma força de ataque equipados com lançadores de foguetes e bazucas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 422,
+   "name": "Jinzo Nº 7",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Criado num laboratório subterrâneo, este ser artificial às vezes perde o controle.",
+   "show": "text"
+  },
+  {
+   "id": 423,
+   "name": "Tatu dado",
+   "name_source": "official",
+   "official": "Um monstro tatu que rola assumindo a forma de um dado.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 424,
+   "name": "Dragão do Céu",
+   "name_source": "official",
+   "official": "Um dragão voador com quatro asas abrigando algumas lâminas muito perigosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 425,
+   "name": "Dragão do Trovão",
+   "name_source": "official",
+   "official": "Você pode descartar este card; adicione até 2 \"Dragão do Trovão\" do seu Deck à sua mão.",
+   "text": "Um dragão que chama trovões e relâmpagos para atacar seus oponentes.",
+   "show": "text"
+  },
+  {
+   "id": 426,
+   "name": "Dragão de Pedra",
+   "name_source": "official",
+   "official": "Um dragão formado por pedras enormes que também são usados para atacar o inimigo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 427,
+   "name": "Kaiser Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Um dragão imperador muito orgulhoso e poderoso.",
+   "show": "text"
+  },
+  {
+   "id": 428,
+   "name": "Maga da Fé",
+   "name_source": "official",
+   "official": "VIRE: Escolha 1 Magia no seu Cemitério; adicione o alvo à sua mão.",
+   "text": "Apesar de sua pouca força, esta maga é capaz de lançar magias que eliminam a escuridão.",
+   "show": "text"
+  },
+  {
+   "id": 429,
+   "name": "Deusa do Capricho",
+   "name_source": "official",
+   "official": "Uma vez por turno: Você pode jogar uma moeda e chamar Heads ou Tails. Se você chamar corretamente, dobre o ATK desta carta durante este turno. Se você chamar errado, reduza pela metade seu ATK durante este turno.",
+   "text": "Uma deusa tímida que parece passar a maior parte do tempo dormindo.",
+   "show": "text"
+  },
+  {
+   "id": 430,
+   "name": "Mago da Água",
+   "name_source": "official",
+   "official": "Este monstro inunda o oponente com uma fonte quase inesgotável de água.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 431,
+   "name": "Água de Gelo",
+   "name_source": "official",
+   "official": "Uma sereia muito agressiva que ataca seus inimgos com espinhos que crescem de seu corpo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 432,
+   "name": "Fada do Dragão de Água",
+   "name_source": "official",
+   "official": "Uma fada da água que dizem ser capaz de invocar uma serpente do mar gigante.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 433,
+   "name": "Elfo Ancião",
+   "name_source": "official",
+   "official": "Rumores indicam que este elfo vive há milhares de anos. Ele lidera um exército de espíritos contra seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 434,
+   "name": "Beautiful Beast Trainer",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma rara usuária de magia armada com um chicote cruel.",
+   "show": "text"
+  },
+  {
+   "id": 435,
+   "name": "Garota da água",
+   "name_source": "official",
+   "official": "Uma adorável dama que pode lançar projéteis de água que se transformam em letais espetos de gelo antes de atingir o oponente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 436,
+   "name": "Golfinho Branco",
+   "name_source": "official",
+   "official": "Um golfinho branco com um chifre que convoca enormes ondas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 437,
+   "name": "Tubarão das Profundezas do Mar",
+   "name_source": "official",
+   "official": "\"Habitante das Profundezas\" + \"Tongyo\"",
+   "text": "Um tubarão violento que ataca tudo o que encontra no mar.",
+   "show": "text"
+  },
+  {
+   "id": 438,
+   "name": "Peixe de Metal",
+   "name_source": "official",
+   "official": "Um peixe de metal com uma barbatana caudal afiada como navalha.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 439,
+   "name": "Habitante das Profundezas",
+   "name_source": "official",
+   "official": "Esta é uma criatura marinha cuja ira outros monstros temem enfrentar.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 440,
+   "name": "Peixe de 7 Cores",
+   "name_source": "official",
+   "official": "Um raro peixe arco-íris que nunca foi apanhado por homens mortais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 441,
+   "name": "Mech Bass",
+   "name_source": "english",
+   "official": null,
+   "text": "Esta criatura carrega um canhão de plasma nas costas.",
+   "show": "text"
+  },
+  {
+   "id": 442,
+   "name": "Aqua Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Um dragão que vive no mar. É capaz de cuspir jatos de água de alta pressão.",
+   "show": "text"
+  },
+  {
+   "id": 443,
+   "name": "Dragão Rei dos Mares",
+   "name_source": "official",
+   "official": "Protegido por uma dura casca, este mestre do oceano ataca seus inimigos com bolhas tóxicas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 444,
+   "name": "Turu-Purun",
+   "name_source": "official",
+   "official": "Um estranho monstro de um olho só que pode derrubar seus inimigos com um único golpe de sua lança.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 445,
+   "name": "Sentinela dos Mares",
+   "name_source": "official",
+   "official": "Um guerreiro tritão dedicada à defesa do oceano contra qualquer pessoa que se contamina-lo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 446,
+   "name": "Cobra da Água",
+   "name_source": "official",
+   "official": "Este monstro hipnotiza um oponente com a bola em sua cauda e leva-os para uma morte aquosa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 447,
+   "name": "Cobra d'Água Vermelha Gigante",
+   "name_source": "official",
+   "official": "Uma cobra que vive no mar e ataca os inimigos com suas presas afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 448,
+   "name": "Seadra Espinhosa",
+   "name_source": "official",
+   "official": "Usando os espinhos que brotam por todo seu corpo, esta criatura apunhala seus oponentes e inunda-os de eletricidade.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 449,
+   "name": "Tartaruga Branca de 30,000 Anos",
+   "name_source": "official",
+   "official": "Uma tartaruga enorme que existe há mais de 30.000 anos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 450,
+   "name": "Kappa Avenger",
+   "name_source": "english",
+   "official": null,
+   "text": "Um anfíbio que jurou vingar a morte de seus irmãos.",
+   "show": "text"
+  },
+  {
+   "id": 451,
+   "name": "Kanikabuto",
+   "name_source": "official",
+   "official": "Um monstro com garras enormes para recortar inimigos a pequenos pedaços.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 452,
+   "name": "Zarigun",
+   "name_source": "official",
+   "official": "Lagostas com garras letais extremamente perigosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 453,
+   "name": "Golem Milênio",
+   "name_source": "official",
+   "official": "Por quase um milênio, este golem serviu como guardião de um antigo tesouro.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 454,
+   "name": "Golem Destruidor",
+   "name_source": "official",
+   "official": "Um golem com uma poderosa mão direita e que a usa para esmagar as suas vítimas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 455,
+   "name": "Rocha Revólver",
+   "name_source": "official",
+   "official": "Empurrando um par de metralhadoras, este monstro é imparável.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 456,
+   "name": "Guerreiro Minomushi",
+   "name_source": "official",
+   "official": "Um guerreiro da rocha que empunha uma lâmina pesada esculpidos em pedra.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 457,
+   "name": "Stone Ghost",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura que explode de raiva, causando uma chuva esmagadora de pedras.",
+   "show": "text"
+  },
+  {
+   "id": 458,
+   "name": "Ataque Kaminari",
+   "name_source": "official",
+   "official": "\"Ocubeam\" + \"Mega Esfera de Trovão\"",
+   "text": "Um monstro que julga os malfeitores e os pune como merecem.",
+   "show": "text"
+  },
+  {
+   "id": 459,
+   "name": "Besta Eletro-Transmissora",
+   "name_source": "official",
+   "official": "Esta criatura ataca com ondas eletromagnéticas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 460,
+   "name": "Escargot Relâmpago",
+   "name_source": "official",
+   "official": "Depois de render um oponente imóvel por cuspir uma gosma pegajosa, este monstro se aproxima para o ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 461,
+   "name": "Pinguim Elétrico",
+   "name_source": "official",
+   "official": "Os braços desse monstro formam chicotes elétricos que paralisam seus inimigos com choques elétricos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 462,
+   "name": "O Imortal do Trovão",
+   "name_source": "official",
+   "official": "VIRE: Aumente os seus Life Points em 3000 pontos. Depois disso, quando este card for enviado do Campo para o Cemitério você perde 5000 Life Points.",
+   "text": "Uma criatura que ataca os inimigos com raios.",
+   "show": "text"
+  },
+  {
+   "id": 463,
+   "name": "Serpente Eléctrica",
+   "name_source": "official",
+   "official": "Quando esta carta é descartada da sua mão ao Cemitério por um efeito de carta controlada pelo seu oponente, compre 2 cartas.",
+   "text": "Uma serpente com uma cauda que armazena eletricidade.",
+   "show": "text"
+  },
+  {
+   "id": 464,
+   "name": "Wing Eagle",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma caçadora dos céus que nunca errou um alvo.",
+   "show": "text"
+  },
+  {
+   "id": 465,
+   "name": "Águia Punida",
+   "name_source": "official",
+   "official": "\"Coroa de Asas Azuis\" + \"Niwatori\"",
+   "text": "Uma juíza dos céus que aplica sua sentença com garras punitivas branco-prateadas.",
+   "show": "text"
+  },
+  {
+   "id": 466,
+   "name": "Pássaro da Crista Vermelha",
+   "name_source": "official",
+   "official": "Este monstro mergulha dos céus e ataca com uma chuva de facas guardadas em suas asas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 467,
+   "name": "Pássaro-solar Carmesin",
+   "name_source": "official",
+   "official": "\"Pássaro da Fé\" + \"Pássaro da Crista Vermelha\"",
+   "text": "Um monstro que arde em chamas carmesins e, ao bater as asas, solta uma chuva de faíscas.",
+   "show": "text"
+  },
+  {
+   "id": 468,
+   "name": "Pássaro Rainha",
+   "name_source": "official",
+   "official": "Este monstro ataca inimigos usando seu enorme bico.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 469,
+   "name": "Ninja Armado",
+   "name_source": "official",
+   "official": "VIRE: Destrói 1 Card de Magia no Campo. Se o alvo deste card está com a face para baixo, vire a face para cima. Se for um Card de Magia é destruído. Se não, coloque-o novamente com a face para baixo. O card virado não é Activado.",
+   "text": "Um ninja azul que ataca com uma grande foice e pés cheios de cravos.",
+   "show": "text"
+  },
+  {
+   "id": 470,
+   "name": "Fantasma Mágico",
+   "name_source": "official",
+   "official": "Esta criatura lança uma mágica de terror e confusão logo antes de atacar seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 471,
+   "name": "Caçador de Almas",
+   "name_source": "official",
+   "official": "\"Senhor da Lampada\" + \"Invasor de Outra Dimenção\"",
+   "text": "Este palhaço alimenta um lagarto monstruoso com a força vital de seus inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 472,
+   "name": "Comedor de ar",
+   "name_source": "official",
+   "official": "Um monstro que se alimenta de oxigênio, sufocando qualquer um que ficar perto dele.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 473,
+   "name": "Pardal Vermillion",
+   "name_source": "official",
+   "official": "\"Rhaimundos da Espada Vermelha\" + \"Fireyarou\"",
+   "text": "Uma criatura guerreira de fogo que libera um calor intenso do corpo.",
+   "show": "text"
+  },
+  {
+   "id": 474,
+   "name": "Kamen do Mar",
+   "name_source": "official",
+   "official": "Um monstro misericordioso que destroça seus oponentes com garras afiadas como navalhas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 475,
+   "name": "Serpente Sinistra",
+   "name_source": "official",
+   "official": "Durante sua Fase de Apoio, se este card estiver no seu Cemitério: você pode adicioná-lo à sua mão e, além disso, banir 1 \"Serpente Sinistra\" do seu Cemitério durante a próxima Fase Final do seu oponente. Você só pode usar este efeito de \"Serpente Sinistra\" uma vez por turno.",
+   "text": "Uma cobra venenosa voadora que não é muito boa em se mover no chão.",
+   "show": "text"
+  },
+  {
+   "id": 476,
+   "name": "Ganigumo",
+   "name_source": "official",
+   "official": "Uma aranha que prende seus inimigos com uma teia grudenta e ataca eles com suas garras afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 477,
+   "name": "Alinsection",
+   "name_source": "official",
+   "official": "Um escaravelho-veado com a cabeça e os braços em forma de serra.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 478,
+   "name": "Soldados Insectos do Céu",
+   "name_source": "official",
+   "official": "O ATK deste card aumenta em 1000 pontos durante o Damage Step, sempre que atacar um monstro do VENTO.",
+   "text": "Soldados insetos que atacam em enxames.",
+   "show": "text"
+  },
+  {
+   "id": 479,
+   "name": "Cavaleiro Barata",
+   "name_source": "official",
+   "official": "Quando está carta é enviada ao cemitério, retorna para o topo do seu deck.",
+   "text": "Um guerreiro barata que se esconde em espaços pequenos e sai para atacar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 480,
+   "name": "Kuwagata α",
+   "name_source": "official",
+   "official": "Um besouro muito feroz que ataca a cabeça.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 481,
+   "name": "Arrombador",
+   "name_source": "official",
+   "official": "Um rato astuto .Ele vai vir até você com sua enorme garra esquerda.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 482,
+   "name": "Prágtico",
+   "name_source": "official",
+   "official": "\"Trakodon\" + \"Víbora de Chama\"",
+   "text": "Um monstro muito perigoso, com espinhos na cabeça e na cauda.",
+   "show": "text"
+  },
+  {
+   "id": 483,
+   "name": "Garvas",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura malévola que lembra um leão alado.",
+   "show": "text"
+  },
+  {
+   "id": 484,
+   "name": "Ameba",
+   "name_source": "official",
+   "official": "Quando o controle desta carta virada para cima no campo é passado para outro jogador, inflija 2000 de dano ao seu novo controlador. Esse efeito somente pode ser utilizado uma vez enquanto esta carta permanecer virada para cima no campo.",
+   "text": "Um monstro que envolve o inimigo e o digere lentamente.",
+   "show": "text"
+  },
+  {
+   "id": 485,
+   "name": "Korogashi",
+   "name_source": "official",
+   "official": "Um besouro de estrume de alta potência que pode rolar estrume maior do que a si mesmo. Ele esmaga seus inimigos com a sua esfera maciça de esterco.",
+   "text": "Esta criatura rola objetos enormes para esmagar os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 486,
+   "name": "Boo Koo",
+   "name_source": "english",
+   "official": null,
+   "text": "Um mago-livro com páginas e mais páginas de magias poderosas.",
+   "show": "text"
+  },
+  {
+   "id": 487,
+   "name": "Lobo Flor",
+   "name_source": "official",
+   "official": "\"O Presa de Prata\" + \"Espinhos do Mundo das Trevas\"",
+   "text": "Uma fera coberta de flores da cabeça aos pés.",
+   "show": "text"
+  },
+  {
+   "id": 488,
+   "name": "Flor Arco-íris",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Uma criatura-flor com pétalas cor de arco-íris que atraem o inimigo até suas mandíbulas.",
+   "show": "text"
+  },
+  {
+   "id": 489,
+   "name": "Lírio de Cano",
+   "name_source": "official",
+   "official": "Esta flor maldita ataca seus inimigos com projéteis de polen.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 490,
+   "name": "Needle Ball",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma bola coberta de agulhas afiadas. Costuma cair em grupo sobre os inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 491,
+   "name": "Pavão",
+   "name_source": "official",
+   "official": "Um grande pavão que lança suas penas em um ataque letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 492,
+   "name": "Hoshiningen",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK de todos os monstros da LUZ em 500 pontos e diminua o ATK de todos os monstros das TREVAS em 400 pontos.",
+   "text": "Seguida por uma bela cauda, esta estrela cadente causa dano quando atinge um inimigo.",
+   "show": "text"
+  },
+  {
+   "id": 493,
+   "name": "Maha Vailo",
+   "name_source": "official",
+   "official": "Este card ganha 500 de ATK para cada Card de Equipamento equipado a este card.",
+   "text": "Um mago vestido de azul que costuma ser visto meditando.",
+   "show": "text"
+  },
+  {
+   "id": 494,
+   "name": "Sereia Marinha do Arco Iris",
+   "name_source": "official",
+   "official": "A sereia reticente que aparece apenas em ocasiões muito raras. Ela só surge quando um grande arco-íris no céu.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 495,
+   "name": "Rei Músico",
+   "name_source": "official",
+   "official": "\"Bruxa da Floresta Negra\" + \"Lady da Fé\"",
+   "text": "Um guitarrista fantástico que ataca os inimigos com emissões ultrassônicas.",
+   "show": "text"
+  },
+  {
+   "id": 496,
+   "name": "Wilmee",
+   "name_source": "official",
+   "official": "Um coelho raivoso que rasga o seu caminho através da oposição, com suas garras afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 497,
+   "name": "Yado Karu",
+   "name_source": "official",
+   "official": "Quando este card é mudado da Posição de Ataque para a Posição de Defesa, você pode devolver qualquer número de cards da sua mão para o fundo do seu Deck na ordem que você desejar.",
+   "text": "Um caranguejo-eremita com cabeça de dragão.",
+   "show": "text"
+  },
+  {
+   "id": 498,
+   "name": "Morinphen",
+   "name_source": "official",
+   "official": "Um estranho demônio com longos braços e garras afiadas como lâminas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 499,
+   "name": "Kattapillar",
+   "name_source": "official",
+   "official": "Ataca inimigos cospindo teias finas e grudentas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 500,
+   "name": "Caçador de Dragões",
+   "name_source": "official",
+   "official": "Quando esta carta é Normal ou Flip Summoned, destrua 1 monstro Dragon-Type virado para cima no campo.",
+   "text": "Um monstro temível enviado do submundo para destruir dragões.",
+   "show": "text"
+  },
+  {
+   "id": 501,
+   "name": "Inseto Devorador de Homens",
+   "name_source": "official",
+   "official": "VIRE: Escolha 1 monstro no campo; destrua-o.",
+   "text": "Uma criatura que retalha tudo com suas pinças e se alimenta das suas vítimas.",
+   "show": "text"
+  },
+  {
+   "id": 502,
+   "name": "Humano Dragão",
+   "name_source": "official",
+   "official": "Dotado do poder dos dragões, este guerreiro empunha uma espada criada de uma garra de um dragão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 503,
+   "name": "Tartaruga Guaxinim",
+   "name_source": "official",
+   "official": "Um pequeno guaxinim rotundo que arca uma grande concha de tartaruga. É inimigos truques usando técnicas de transformação e ilusão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 504,
+   "name": "Fungi of the Musk",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro que libera ácido pelos poros para derreter tudo o que toca a sua pele.",
+   "show": "text"
+  },
+  {
+   "id": 505,
+   "name": "Prisman",
+   "name_source": "official",
+   "official": "Este monstro cristalino foca a luz para criar um laser letal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 506,
+   "name": "Dogra do Vendaval",
+   "name_source": "official",
+   "official": "Você pode pagar 3000 PV; envie 1 monstro do seu Deck Adicional para o Cemitério.",
+   "text": "Uma mariposa enorme que cria um redemoinho cheio de pó venenoso.",
+   "show": "text"
+  },
+  {
+   "id": 507,
+   "name": "Peixe Louco",
+   "name_source": "official",
+   "official": "Um peixe voador que ataca com sua cabeça pontiaguda.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 508,
+   "name": "Ciber Saurus",
+   "name_source": "official",
+   "official": "\"Malabarista Explosivo\" + \"Rei Rex de Duas Cabeças\" (Este card não é considerado como um card \"Ciber\".)",
+   "text": "Um dinossauro mecânico equipado com um canhão de raios.",
+   "show": "text"
+  },
+  {
+   "id": 509,
+   "name": "Braquio-raidus",
+   "name_source": "official",
+   "official": "\"Rei Rex de Duas Cabeças\" + \"Dragão Rastejante #2\"",
+   "text": "Um dinossauro colossal que esmaga tudo o que cruza o seu caminho.",
+   "show": "text"
+  },
+  {
+   "id": 510,
+   "name": "Flor risonha",
+   "name_source": "official",
+   "official": "Uma flor cujo riso pode confundir as mentes dos inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 511,
+   "name": "Soldado de Feijão",
+   "name_source": "official",
+   "official": "Uma planta-guerreira que ataca com sementes e espada.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 512,
+   "name": "Soldado Canhão",
+   "name_source": "official",
+   "official": "Ofereça 1 monstro no seu Campo como Tributo para infligir 500 pontos de dano aos Life Points do seu adversário.",
+   "text": "Uma máquina altamente destrutiva armada com um poderoso canhão.",
+   "show": "text"
+  },
+  {
+   "id": 513,
+   "name": "Guardião da Sala do Trono",
+   "name_source": "official",
+   "official": "Um guarda robô construído para proteger salas de trono. Está armado com mísseis automáticos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 514,
+   "name": "Talhador Corajoso",
+   "name_source": "official",
+   "official": "Armado com diversas tesouras, este monstro pode talhar um inimigo em qualquer forma e tamanho.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 515,
+   "name": "The Statue of Easter Island",
+   "name_source": "english",
+   "official": null,
+   "text": "Um enorme ídolo de pedra da Ilha de Páscoa que dispara anéis de laser pela boca.",
+   "show": "text"
+  },
+  {
+   "id": 516,
+   "name": "Muka Muka",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK e a DEF deste monstro em 300 pontos por cada card na sua mão.",
+   "text": "Um monstro que irrita o oponente a ponto de deixá-lo fora de si de tanta fúria.",
+   "show": "text"
+  },
+  {
+   "id": 517,
+   "name": "Monstro de Arenito",
+   "name_source": "official",
+   "official": "Ele aparece do sub-solo e ataca com longos tentáculos em forma de serpentes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 518,
+   "name": "Boulder Tortoise",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma tartaruga de pedra com uma defesa muito alta.",
+   "show": "text"
+  },
+  {
+   "id": 519,
+   "name": "Kraken de Fogo",
+   "name_source": "official",
+   "official": "Uma lula que prospera em chamas e calor.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 520,
+   "name": "Turtle Bird",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma rara tartaruga voadora que habita o mar.",
+   "show": "text"
+  },
+  {
+   "id": 521,
+   "name": "Pássaro Crânio",
+   "name_source": "official",
+   "official": "\"Takuhee\" + \"Templo de Crânios\"",
+   "text": "O sopro desta ave rouba a força vital das criaturas.",
+   "show": "text"
+  },
+  {
+   "id": 522,
+   "name": "Pássaro monstruoso",
+   "name_source": "official",
+   "official": "Poucos puseram os olhos neste pássaro mergulhador e viveram para contar a história.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 523,
+   "name": "O Carniceiro do Bar",
+   "name_source": "official",
+   "official": "Quando este card inflige dano de batalha ao seu adversário, o seu adversário compra 2 cards do seu próprio Deck.",
+   "text": "Os inimigos derrotados viram ingredientes para este monstro gourmet.",
+   "show": "text"
+  },
+  {
+   "id": 524,
+   "name": "Menino Estrela",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK de todos os monstros da ÁGUA em 500 pontos e diminua o ATK de todos os monstros do FOGO em 400 pontos.",
+   "text": "Uma forma de vida extraterrestre que adora viver na água.",
+   "show": "text"
+  },
+  {
+   "id": 525,
+   "name": "Espírito da Montanha",
+   "name_source": "official",
+   "official": "Um mago idoso que levanta montanhas com sua flauta.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 526,
+   "name": "Caçador de Cabeças",
+   "name_source": "official",
+   "official": "Um demônio que leva uma foice e dispara raios devastadores dos seus olhos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 527,
+   "name": "Milus Radiante",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK de todos os monstros da TERRA em 500 pontos e diminua o ATK de todos os monstros do VENTO em 400 pontos.",
+   "text": "Muitas vezes confundida com um bichinho fofo, esta criatura é uma fera muito perigosa.",
+   "show": "text"
+  },
+  {
+   "id": 528,
+   "name": "Togex",
+   "name_source": "official",
+   "official": "Um monstro ágil que rola para atropelar seus oponentes.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 529,
+   "name": "Cerebrus de Chamas",
+   "name_source": "official",
+   "official": "Conhecido por muitos como \"Carrasco em Chamas\", este monstro é capaz de transformar seus inimigos em cinzas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 530,
+   "name": "Eldeen",
+   "name_source": "official",
+   "official": "A bengala deste monstro é a fonte de muitas magias poderosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 531,
+   "name": "Areia Mística",
+   "name_source": "official",
+   "official": "\"Soldado de Pedra Gigante\" + \"Elfo Ancião\"",
+   "text": "Transforma os inimigos em pedra e os reduz a pó.",
+   "show": "text"
+  },
+  {
+   "id": 532,
+   "name": "Elfos Gêmeos",
+   "name_source": "official",
+   "official": "Elfos gêmeos que alternam os seus ataques.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 533,
+   "name": "Kwagar Hércules",
+   "name_source": "official",
+   "official": "\"Kuwagata α\" + \"Escaravelho-Hércules\"",
+   "text": "Um monstro inseto com as mandíbulas de um cervo-volante e o chifre de um besouro.",
+   "show": "text"
+  },
+  {
+   "id": 534,
+   "name": "Minar",
+   "name_source": "official",
+   "official": "Quando esta carta é descartada diretamente da sua mão ao Cemitério por um efeito de carta controlada pelo seu oponente, inflija 1000 de dano ao seu oponente.",
+   "text": "Um monstro com quatro braços muito habilidosos, capazes de atacar cada um por conta própria.",
+   "show": "text"
+  },
+  {
+   "id": 535,
+   "name": "Homemkamakiri",
+   "name_source": "official",
+   "official": "Um gafanhoto em forma de homem com duas foices afiadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 536,
+   "name": "Mechaleon",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro parecido com um camaleão que se esconde em qualquer lugar mudando de cor.",
+   "show": "text"
+  },
+  {
+   "id": 537,
+   "name": "Mega Esfera de Trovão",
+   "name_source": "official",
+   "official": "Ela rola pelo chão soltando raios de eletricidade para atacar seus inimigos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 538,
+   "name": "Niwatori",
+   "name_source": "official",
+   "official": "Engole os inimigos por inteiro e usa suas essências como energia.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 539,
+   "name": "Tubarão Corroido",
+   "name_source": "official",
+   "official": "Um tubarão zumbi que pode transmitir a sua maldição letal com um feitiço.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 540,
+   "name": "Skelengel",
+   "name_source": "official",
+   "official": "Vire: Compre 1 card.",
+   "text": "Uma fada fantasma que dispara inúmeras flechas em quem tiver vontade de atacar.",
+   "show": "text"
+  },
+  {
+   "id": 541,
+   "name": "Hane-Hane",
+   "name_source": "official",
+   "official": "VIRE: Devolva para a mão do seu dono 1 Card de Monstro no Campo à sua escolha.",
+   "text": "Esta criatura bloqueia o avanço inimigo com ventos fortíssimos e ataca com um enorme machado de batalha.",
+   "show": "text"
+  },
+  {
+   "id": 542,
+   "name": "Misairuzame",
+   "name_source": "official",
+   "official": "Um peixe lança-mísseis protegido por espinhos letais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 543,
+   "name": "Tongyo",
+   "name_source": "official",
+   "official": "Este monstro captura outros peixes com sua longa língua e suga toda a energia que tiverem.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 544,
+   "name": "Dharma Cannon",
+   "name_source": "english",
+   "official": null,
+   "text": "Um monstro mecânico de altíssima precisão, coberto de canhões de grosso calibre.",
+   "show": "text"
+  },
+  {
+   "id": 545,
+   "name": "Skelgon",
+   "name_source": "official",
+   "official": "\"Cabelos de Cobras\" + \"Dragão de Fogo da Terra Negra\"",
+   "text": "Um dragão zumbi esquelético capaz de voar pelos céus.",
+   "show": "text"
+  },
+  {
+   "id": 546,
+   "name": "Guerreiro Wow",
+   "name_source": "official",
+   "official": "Um peixe com braços, pernas, e dentes muito afiados.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 547,
+   "name": "Griggle",
+   "name_source": "official",
+   "official": "Quando o controle desta carta virada para cima no campo é passado para outro jogador, você ganha 3000 LPs. Esse efeito somente pode ser utilizado uma vez enquanto esta carta permanecer virada para cima no campo.",
+   "text": "Este monstro gira em volta do inimigo lançando folhas que cegam e sementes dolorosas.",
+   "show": "text"
+  },
+  {
+   "id": 548,
+   "name": "Rato de Osso",
+   "name_source": "official",
+   "official": "Um rato que retornou como um zumbi para buscar vingança nos gatos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 549,
+   "name": "Rã Limo",
+   "name_source": "official",
+   "official": "Um limo com a cabeça de um sapo que ataca com um coaxar terrível.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 550,
+   "name": "Behegon",
+   "name_source": "official",
+   "official": "Esta monstruosidade com uma mandíbula enorme e dentes massivos, é uma serpente perigosa e estranha das profundezas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 551,
+   "name": "Elfa Negra",
+   "name_source": "official",
+   "official": "Este card requer um custo de 1000 Life Points para atacar.",
+   "text": "Uma elfa perversa que simplesmente adora entrar em batalha.",
+   "show": "text"
+  },
+  {
+   "id": 552,
+   "name": "Winged Dragon #2",
+   "name_source": "english",
+   "official": null,
+   "text": "Cria tornados poderosos com suas enormes asas.",
+   "show": "text"
+  },
+  {
+   "id": 553,
+   "name": "Homem Cogumelo Nº2",
+   "name_source": "official",
+   "official": "Enquanto este card estiver no Campo com a face para cima, o controlador deste monstro perde 300 Life Points durante cada uma das suas Standby Phases. O controle deste card passa para o seu adversário se você pagar 500 Life Points na sua End Phase.",
+   "text": "Um Homem Cogumelo adulto, com um poder de ataque maior.",
+   "show": "text"
+  },
+  {
+   "id": 554,
+   "name": "Guarda de Batalha da Lava",
+   "name_source": "official",
+   "official": "Ganha 500 de ATK para cada \"Guarda de Batalha do Pântano\" que você controla.",
+   "text": "Este irmão do Guarda de Batalha do Pântano pode não ser forte, mas é muito bom na defesa.",
+   "show": "text"
+  },
+  {
+   "id": 555,
+   "name": "Tyhone #2",
+   "name_source": "official",
+   "official": null,
+   "text": "Um dragão carmesim que cospe bolas de fogo nos inimigos.",
+   "show": "text"
+  },
+  {
+   "id": 556,
+   "name": "O Andarilho Condenado",
+   "name_source": "official",
+   "official": "Um monstro que vaga nos limites do mundo inferior.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 557,
+   "name": "Ogre de Aço da Gruta nº 1",
+   "name_source": "official",
+   "official": "Um ídolo de aço adorado na Terra das Máquinas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 558,
+   "name": "Pote, o Truque",
+   "name_source": "official",
+   "official": "A servo não tão poderoso, ele é um garoto de recados de um feiticeiro mestre.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 559,
+   "name": "Oscillo Hero",
+   "name_source": "english",
+   "official": null,
+   "text": "Um estranho guerreiro de outra dimensão.",
+   "show": "text"
+  },
+  {
+   "id": 560,
+   "name": "Invasor de Outra Dimenção",
+   "name_source": "official",
+   "official": "Um monstro extraterrestre que veio de uma galáxia distante.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 561,
+   "name": "Dragão Inferior",
+   "name_source": "official",
+   "official": "Um dragão inferior incapaz de cuspir fogo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 562,
+   "name": "Verme Agulha",
+   "name_source": "official",
+   "official": "FLIP: Envie 5 cartas do topo do Deck do seu oponente ao Cemitério.",
+   "text": "Uma larva com espinhos de aço para atacar os desatentos.",
+   "show": "text"
+  },
+  {
+   "id": 563,
+   "name": "Mísero Fantasma do Sotão",
+   "name_source": "official",
+   "official": "Um monstro inofensivo que pode ser encontrado em qualquer sotão.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 564,
+   "name": "Grande Mamute de Goldfine",
+   "name_source": "official",
+   "official": "\"Cabelos de Cobras\" + \"Dragão Zumbi\"",
+   "text": "Um elefante zumbi esquelético muito incomum, com ossos dourados reluzentes.",
+   "show": "text"
+  },
+  {
+   "id": 565,
+   "name": "Tubarão Negro Devorador de Homens",
+   "name_source": "official",
+   "official": "\"Kamen do Mar\" + \"Gosma Horripilante\" + \"Amazona dos Mares\"",
+   "text": "Um tubarão negro capaz de detectar quase qualquer cheiro na água.",
+   "show": "text"
+  },
+  {
+   "id": 566,
+   "name": "Yormungarde",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma serpente muito longa que aparece com frequência em lendas e mitos.",
+   "show": "text"
+  },
+  {
+   "id": 567,
+   "name": "Espinhos do Mundo das Trevas",
+   "name_source": "official",
+   "official": "Uma planta espinhosa encontrada nas terras sombrias, que se enrola em viajantes desatentos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 568,
+   "name": "Antrossauro",
+   "name_source": "official",
+   "official": "Esss homem dinosssaurrr esssperto esss, mesmmm sen tannnta forrrzzz. (Quasss como você, se tivesss forrrzzz! Nyaah!)",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 569,
+   "name": "Lagarto Salivador",
+   "name_source": "official",
+   "official": "Um réptil humanóide que suga o sangue de qualquer ser vivo que passa por perto dele.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 570,
+   "name": "Trakodonte",
+   "name_source": "official",
+   "official": "Um dragão listrado que muitas vezes é visto correndo por todo o deserto à uma velocidade tremenda.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 571,
+   "name": "B. Dragon Jungle King",
+   "name_source": "english",
+   "official": null,
+   "text": "Um dragão totalmente negro que vive nas selvas e se alimenta de árvores.",
+   "show": "text"
+  },
+  {
+   "id": 572,
+   "name": "Juíza Imperatriz",
+   "name_source": "official",
+   "official": "\"Sósia da Rainha\" + \"Hibikime\"",
+   "text": "Imperatriz do Reino Dourado. Ninguém pode recusar a sua vontade.",
+   "show": "text"
+  },
+  {
+   "id": 573,
+   "name": "Pequeno D",
+   "name_source": "official",
+   "official": "Wow, esse tiranossauro tem um gênio terrível.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 574,
+   "name": "Bruxa da Floresta Negra",
+   "name_source": "official",
+   "official": "Se este card for enviado do campo para o Cemitério: adicione 1 monstro com 1500 ou menos de DEF do seu Deck à sua mão, mas você não pode ativar cards, ou os efeitos de cards, com esse nome pelo resto deste turno. Você só pode usar este efeito de \"Bruxa da Floresta Negra\" uma vez por turno.",
+   "text": "Esta bruxa que vive na floresta pode ver tudo com o olho em sua testa.",
+   "show": "text"
+  },
+  {
+   "id": 575,
+   "name": "O Ancião da Floresta Profunda",
+   "name_source": "official",
+   "official": "Esta criatura adota a forma de um bode branco vivendo na floresta, mas é na verdade um Ancião da Floresta.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 576,
+   "name": "Escorpião gigante da tundra",
+   "name_source": "official",
+   "official": "Um extraordinário escorpião azul encontrado na tundra e não nos desertos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 577,
+   "name": "Goblin corvo",
+   "name_source": "official",
+   "official": "Um esperto goblin de nariz pontudo, ele é uma força a ser reconhecida.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 578,
+   "name": "Leão feitiçeiro",
+   "name_source": "official",
+   "official": "Um mago misterioso que se disfarça com uma capa preta. Sua identidade é uma besta leão falante.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 579,
+   "name": "Flor do Abismo",
+   "name_source": "official",
+   "official": "Uma flor raramente vista que desabrocha quietamente nos confins das trevas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 580,
+   "name": "Robô Patrulha",
+   "name_source": "official",
+   "official": "Durante sua Fase de Espera, você pode olhar 1 carta virada para baixo que foi Baixada por seu oponente, enquanto esta carta permanecer virada para cima no campo.",
+   "text": "Um robô de última geração que elimina intrusos assim que os detecta.",
+   "show": "text"
+  },
+  {
+   "id": 581,
+   "name": "Takuhee",
+   "name_source": "official",
+   "official": "Este pássaro é amplamente conhecido como um arauto da condenação.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 582,
+   "name": "Feiticeira das Sombras",
+   "name_source": "official",
+   "official": "Uma criatura popular da mitologia que profere ataques fatais com uma lança afiada.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 583,
+   "name": "Relatório do Tempo",
+   "name_source": "official",
+   "official": "VIRE: Destrua todas as \"Espadas da Luz Reveladora\" viradas para cima de seu no campo. Se \"Espadas da Luz Reveladora\" for destruída, você pode conduzir sua Battle Phase duas vezes neste turno (ou no seu próximo turno, se ativado durante o turno de seu oponente).",
+   "text": "Esta criatura é conhecida por prever o tempo com pouquíssima precisão.",
+   "show": "text"
+  },
+  {
+   "id": 584,
+   "name": "Corrente do aprisionamento",
+   "name_source": "official",
+   "official": "Os elos místicos desta corrente separam inimigos do poder deles.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 585,
+   "name": "Caracol Mecânico",
+   "name_source": "official",
+   "official": "Um caracol cyborg que ainda viaja a um ritmo lento.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 586,
+   "name": "Greenkappa",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura que assume a forma do inimigo e copia cada um de seus ataques.",
+   "show": "text"
+  },
+  {
+   "id": 587,
+   "name": "Mon Larvas",
+   "name_source": "official",
+   "official": "Um passo adiante na cadeia evolucionária, ele é muito mais poderoso que \"Larvas\".",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 588,
+   "name": "Living Vase",
+   "name_source": "english",
+   "official": null,
+   "text": "Um vaso vivo que cega os inimigos com pólen e ataca com seus dentes afiados.",
+   "show": "text"
+  },
+  {
+   "id": 589,
+   "name": "Planta com Tentáculos",
+   "name_source": "official",
+   "official": "Uma planta carnívora que tem uma protuberância de tentáculos. Ele ataca alguém próximo, estendendo seus tentáculos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 590,
+   "name": "Beaked Snake",
+   "name_source": "english",
+   "official": null,
+   "text": "Enrola-se nos oponentes e os bica com o seu enorme bico.",
+   "show": "text"
+  },
+  {
+   "id": 591,
+   "name": "Jarro Metamórfico",
+   "name_source": "official",
+   "official": "VIRE: Os dois duelistas descartam tantos cards quanto possível de suas mãos e, depois, cada duelista compra 5 cards.",
+   "text": "Um grande jarro que ataca os inimigos próximos libertando o monstro que guarda dentro de si.",
+   "show": "text"
+  },
+  {
+   "id": 592,
+   "name": "Musa-A",
+   "name_source": "official",
+   "official": "Uma fada das artes que é imbatível na harpa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 593,
+   "name": "Tartaruga Gigante Que Se Alimenta de Chamas",
+   "name_source": "official",
+   "official": "Uma tartaruga de casco carmesim que se alimenta de chamas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 594,
+   "name": "Espectro da Rosa de Dunn",
+   "name_source": "official",
+   "official": "\"Diabrete Selvagem\" + \"Serpentyashi\"",
+   "text": "Uma rosa vermelha possuída por um espírito vil que suga a força vital dos outros para nutrir a flor.",
+   "show": "text"
+  },
+  {
+   "id": 595,
+   "name": "Fiend Refrection #1",
+   "name_source": "english",
+   "official": null,
+   "text": "Arrasta os inimigos para o mundo do espelho.",
+   "show": "text"
+  },
+  {
+   "id": 596,
+   "name": "Carniçal com um Apetite",
+   "name_source": "official",
+   "official": "Um monstro com um apetite pesado que nunca foi satisfeito.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 597,
+   "name": "Besta Pálida",
+   "name_source": "official",
+   "official": "Com a sua pele tingida por um branco azulado, é difícil suportar a aparência aterradora desta estranha criatura.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 598,
+   "name": "Quimera Pequena",
+   "name_source": "official",
+   "official": "Todos os monstros de FOGO no campo ganham 500 de ATK. Todos os monstros de ÁGUA no campo perdem 400 de ATK.",
+   "text": "Um monstro nascido de uma experiência que tentava enxertar asas em feras.",
+   "show": "text"
+  },
+  {
+   "id": 599,
+   "name": "Chuva Violenta",
+   "name_source": "official",
+   "official": "Esse monstro pode chamar correntezas de chuvas poderosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 600,
+   "name": "Key Mace #2",
+   "name_source": "english",
+   "official": null,
+   "text": "Sela o bem que há em uma alma para criar um ser perverso.",
+   "show": "text"
+  },
+  {
+   "id": 601,
+   "name": "Ternura",
+   "name_source": "official",
+   "official": "Uma fada adorável, que celebra o dom do amor.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 602,
+   "name": "Soldado Pinguim",
+   "name_source": "official",
+   "official": "VIRE: Você pode escolher até 2 monstros no campo; devolva os alvos para a mão.",
+   "text": "Um soldado pinguim de baixa patente que ataca em grupo.",
+   "show": "text"
+  },
+  {
+   "id": 603,
+   "name": "Fairy Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma fada dragão bela e poderosa.",
+   "show": "text"
+  },
+  {
+   "id": 604,
+   "name": "Marmota Obesa da Maldade",
+   "name_source": "official",
+   "official": "Um rato de campo mal-educado que vai afundar seus dentes em tudo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 605,
+   "name": "Fera Líquida",
+   "name_source": "official",
+   "official": "Uma forma de vida que prospera na água.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 606,
+   "name": "Varas Gêmeas e Longas nº 2",
+   "name_source": "official",
+   "official": null,
+   "text": "Uma criatura submarina que ataca com duas caudas que parecem chicotes.",
+   "show": "text"
+  },
+  {
+   "id": 607,
+   "name": "Grande Bill",
+   "name_source": "official",
+   "official": "Esta besta tem uma boca que irá engolir qualquer coisa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 608,
+   "name": "Amizade Brilhante",
+   "name_source": "official",
+   "official": "O pacificador entre os monstros.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 609,
+   "name": "Bladefly",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK de todos os monstros do VENTO em 500 pontos e diminua o ATK de todos os monstros da TERRA em 400 pontos.",
+   "text": "Uma mosca monstruosa que mergulha sobre o alvo com braços afiados como espadas estendidos à frente.",
+   "show": "text"
+  },
+  {
+   "id": 610,
+   "name": "Lagarto Elétrico",
+   "name_source": "official",
+   "official": "Um monstro que não seja do Tipo Zumbi que esteja atacando \"Lagarto Elétrico\" não pode atacar no seu turno seguinte.",
+   "text": "Um lagarto que descarrega a eletricidade armazenada em seu corpo.",
+   "show": "text"
+  },
+  {
+   "id": 611,
+   "name": "Escuteiro das Sombras de Hiro",
+   "name_source": "official",
+   "official": "FLIP: Seu oponente compra 3 cartas, revelando-as. Todos os Spell Cards comprados são enviados ao Cemitério.",
+   "text": "Um servo dos demônios usado principalmente para fazer o reconhecimento de uma área.",
+   "show": "text"
+  },
+  {
+   "id": 612,
+   "name": "Lady da Fé",
+   "name_source": "official",
+   "official": "Aquieta as almas dos outros entoando uma mágica misteriosa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 613,
+   "name": "Dragão do Trovão de Duas Cabeças",
+   "name_source": "official",
+   "official": "\"Dragão do Trovão\" + \"Dragão do Trovão\"",
+   "text": "Um Dragão do Trovão de duas cabeças capaz de poderosos ataques elétricos.",
+   "show": "text"
+  },
+  {
+   "id": 614,
+   "name": "Aranha Caçadora",
+   "name_source": "official",
+   "official": "Este monstro come tudo o que apanhar sua teia.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 615,
+   "name": "Estrela-do-Mar Encouraçada",
+   "name_source": "official",
+   "official": "Uma estrela-do-mar azulada com uma couraça capaz de repelir ataques.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 616,
+   "name": "Hourglass of Courage",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma fada que controla os sentimentos dos outros, enchendo-os de coragem.",
+   "show": "text"
+  },
+  {
+   "id": 617,
+   "name": "Besta Marinha",
+   "name_source": "official",
+   "official": "\"Mago da Água\" + \"Behegon\"",
+   "text": "Uma criatura marinha de dentes afiados que nunca solta a vítima depois de mordê-la.",
+   "show": "text"
+  },
+  {
+   "id": 618,
+   "name": "Guerreira de Tradição",
+   "name_source": "official",
+   "official": "\"Dama Sônica\" + \"Bela Caçadora-de-Cabeças\"",
+   "text": "Uma guerreira impregnada da essência de mil campos de batalha.",
+   "show": "text"
+  },
+  {
+   "id": 619,
+   "name": "Rock Spirit",
+   "name_source": "english",
+   "official": null,
+   "text": "Um ídolo de argila que representa um espírito da rocha. Tem ataque e defesa consideráveis.",
+   "show": "text"
+  },
+  {
+   "id": 620,
+   "name": "Serpentyashi",
+   "name_source": "official",
+   "official": "Esse monstro é formado por diversas serpentes que se separam para atacar individualmente os inimigos próximos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 621,
+   "name": "Campeã Succubus",
+   "name_source": "official",
+   "official": "Uma indigna maga guerreira perita em mágicas letais.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 622,
+   "name": "Ill Witch",
+   "name_source": "english",
+   "official": null,
+   "text": "Controla as correntes de ar e pode criar uma súbita rajada de vento para afastar o oponente.",
+   "show": "text"
+  },
+  {
+   "id": 623,
+   "name": "A Coisa que se Esconde na Lama",
+   "name_source": "official",
+   "official": "Este monstro se funde e caminha pelo subterrâneo para atacar inimigos por baixo.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 624,
+   "name": "Gyojin da Maré Alta",
+   "name_source": "official",
+   "official": "Um guerreiro meio peixe, muito ágil e conhecido pelos seus ataques implacáveis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 625,
+   "name": "Fada da Fonte",
+   "name_source": "official",
+   "official": "Esta fada protege uma fonte de qualquer um que procure sujar suas águas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 626,
+   "name": "Amazona dos Mares",
+   "name_source": "official",
+   "official": "Uma sereia que serve como arauto do Senhor dos Oceanos. Ela protege os domínios sagrados de Atlantis.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 627,
+   "name": "Nekogal N°2",
+   "name_source": "official",
+   "official": "Uma rápida e letal criatura com garras muito perigosas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 628,
+   "name": "Aprendiz de Bruxa",
+   "name_source": "official",
+   "official": "Enquanto este card permanecer no Campo com a face para a cima, aumente o ATK de todos os monstros das TREVAS em 500 pontos e diminua o ATK de todos os monstros da LUZ em 400 pontos.",
+   "text": "Uma bruxa inexperiente que acabou de começar a aprender as artes místicas.",
+   "show": "text"
+  },
+  {
+   "id": 629,
+   "name": "Rato Armadurado",
+   "name_source": "official",
+   "official": "A pele superior neste monstro rato é resistente o suficiente para repelir espadas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 630,
+   "name": "Lagarto Guerreiro Ancião",
+   "name_source": "official",
+   "official": "Antes da aurora da humanidade, este lagarto guerreiro governava livremente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 631,
+   "name": "Dama da Luz da Lua",
+   "name_source": "official",
+   "official": "Uma feiticeira abençoada pela luz lunar com poderes muito além da compreensão mortal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 632,
+   "name": "Ogro de Pedra da Gruta",
+   "name_source": "official",
+   "official": "Uma criatura formada por pedras gigantes",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 633,
+   "name": "Ovo Alado da nova vida",
+   "name_source": "official",
+   "official": "Diz a lenda que essa criatura pode prever o nascimento de crianças.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 634,
+   "name": "Night Lizard",
+   "name_source": "english",
+   "official": null,
+   "text": "Um guerreiro lagarto de escamas verdes dedicado a proteger o mar.",
+   "show": "text"
+  },
+  {
+   "id": 635,
+   "name": "Sósia da Rainha",
+   "name_source": "official",
+   "official": "Este monstro pode atacar diretamente os Life Points do seu adversário.",
+   "text": "Uma sósia de rainha que não serve para muita coisa.",
+   "show": "text"
+  },
+  {
+   "id": 636,
+   "name": "Coroa de Asas Azuis",
+   "name_source": "official",
+   "official": "Com cabelo em forma de coroa e corpo envolto por chamas branco-azuladas, este pásssaro é uma visão formidável.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 637,
+   "name": "Trent",
+   "name_source": "official",
+   "official": "Um guardião das florestas. Acredita-se que esta árvore sólida é imortal.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 638,
+   "name": "Rainha das Folhas de Outono",
+   "name_source": "official",
+   "official": "Rainha da Floresta de Esmeraldas e esposa do Rei Espírito, ela vive rodeada por folhas de um vermelho vívido.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 639,
+   "name": "Amphibious Bugroth",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma unidade Bugroth modificada para o combate submarino.",
+   "show": "text"
+  },
+  {
+   "id": 640,
+   "name": "Rastejante do Ácido",
+   "name_source": "official",
+   "official": "Uma lagarta gigante que secreta uma névoa de ácido que derrete qualquer coisa.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 641,
+   "name": "Invasora do Trono",
+   "name_source": "official",
+   "official": "VIRAR: Selecione 1 monstro no campo de seu oponente e troque o controle dele com esse card. Esse efeito não pode ser ativado durante a Fase de Batalha.",
+   "text": "Uma rainha ardilosa que cobiça o trono do rei durante a ausência dele.",
+   "show": "text"
+  },
+  {
+   "id": 642,
+   "name": "Mystical Sheep #1",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma ovelha de pelo negro capaz de usar feitiçaria.",
+   "show": "text"
+  },
+  {
+   "id": 643,
+   "name": "Mago do Disco",
+   "name_source": "official",
+   "official": "Este monstro esconde-se num disco e só aparece para executar um ataque.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 644,
+   "name": "Víbora das chamas",
+   "name_source": "official",
+   "official": "Uma cobra capaz de cospir fogo cuja velocidade a torna um alvo difícil.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 645,
+   "name": "Guarda Real",
+   "name_source": "official",
+   "official": "Um soldado mecanizado criado para proteger a realeza.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 646,
+   "name": "Gosma Horripilante",
+   "name_source": "official",
+   "official": "Uma gosma soberana que é definitivamente mais ameaçadora do que parece.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 647,
+   "name": "Hyosube",
+   "name_source": "official",
+   "official": "Este anfíbio tem um ataque forte, mas deixa muito a desejar quanto às suas defesas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 648,
+   "name": "Machine Attacker",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma máquina criada para arrasar seus inimigos num ataque relâmpago.",
+   "show": "text"
+  },
+  {
+   "id": 649,
+   "name": "Hibikime",
+   "name_source": "official",
+   "official": "Confunde os monstros inimigos com um barulho que agride os ouvidos.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 650,
+   "name": "Corvo Cauda de Chicote",
+   "name_source": "official",
+   "official": "Ataca dos céus com uma cauda similar a um chicote.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 651,
+   "name": "Kunai com Corrente",
+   "name_source": "official",
+   "official": "Ative 1 ou os dois efeitos abaixo (simultaneamente). -Quando um monstro do oponente declarar um ataque: escolha o monstro atacante; mude o alvo para a Posição de Defesa. -Escolha 1 monstro com a face para cima que você controla; equipe este card no alvo. Ele ganha 500 de ATK.",
+   "text": "Um bumerangue com os efeitos de dois cards: Espada Lendária e Espada Sombria da Destruição.",
+   "show": "text"
+  },
+  {
+   "id": 652,
+   "name": "Labirinto Mágico",
+   "name_source": "official",
+   "official": "Só pode ser equipado a \"Paredes do Labirinto\". Você pode oferecer o monstro equipado como Tributo; Invoque por Invocação-Especial \"Parede das Sombras\" do seu Deck.",
+   "text": "Um card que aumenta o poder de Paredes do Labirinto.",
+   "show": "text"
+  },
+  {
+   "id": 653,
+   "name": "Eliminação de Guerreiros",
+   "name_source": "official",
+   "official": "Destrua todos os monstros Guerreiro no campo.",
+   "text": "Destrua todos os monstros Guerreiro do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 654,
+   "name": "Salamandra",
+   "name_source": "official",
+   "official": "Só pode ser equipado a um monstro de FOGO. Ele ganha 700 de ATK.",
+   "text": "Aumenta a força dos que dominam o poder de Salamandra.",
+   "show": "text"
+  },
+  {
+   "id": 655,
+   "name": "Cursebreaker",
+   "name_source": "english",
+   "official": null,
+   "text": "Anula a magia sobre todos os monstros com nível reduzido e os deixa no nível 0.",
+   "show": "text"
+  },
+  {
+   "id": 656,
+   "name": "Descanso Eterno",
+   "name_source": "official",
+   "official": "Destrua todos os monstros equipados com Cards de Equipamento.",
+   "text": "Destrua todos os monstros Zumbi.",
+   "show": "text"
+  },
+  {
+   "id": 657,
+   "name": "Megamorph",
+   "name_source": "official",
+   "official": "Enquanto você tiver menos PV que seu oponente, o ATK do monstro equipado se torna o dobro do seu ATK original. Enquanto você tiver mais PV que seu oponente, o ATK do monstro equipado se torna metade do seu ATK original.",
+   "text": "Um card que aumenta o poder de um monstro escolhido em 2 níveis.",
+   "show": "text"
+  },
+  {
+   "id": 658,
+   "name": "Metalmorfo",
+   "name_source": "official",
+   "official": "Escolha 1 monstro com a face para cima no campo; equipe este card no alvo. Ele ganha 300 de ATK/DEF. Se ele atacar, ele ganha ATK igual à metade do ATK do alvo do ataque, apenas durante o cálculo de dano.",
+   "text": "Um card que transforma o monstro escolhido em um monstro Máquina.",
+   "show": "text"
+  },
+  {
+   "id": 659,
+   "name": "Winged Trumpeter",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma trombeta que aumenta o poder dos monstros Fada.",
+   "show": "text"
+  },
+  {
+   "id": 660,
+   "name": "Chuva Ácida",
+   "name_source": "official",
+   "official": "Destrua todos os monstros Machine virados para cima no campo.",
+   "text": "Uma chuva ácida que destrói os monstros Máquina do seu oponente.",
+   "show": "text"
+  },
+  {
+   "id": 661,
+   "name": "Vírus Esmaga-Card",
+   "name_source": "official",
+   "official": "Ofereça como Tributo 1 monstro de TREVAS com 1000 ou menos de ATK; seu oponente não sofre dano até o final do próximo turno depois que este card resolver e, além disso, você olha a mão do seu oponente e todos os monstros que ele controla e, se isso acontecer, destrua os monstros entre eles com 1500 ou mais de ATK e, depois, seu oponente pode destruir até 3 monstros com 1500 ou mais de ATK no Deck dele.",
+   "text": "Destrua os monstros do seu oponente no campo com 1500 ou mais de ATK.",
+   "show": "text"
+  },
+  {
+   "id": 662,
+   "name": "Aerossol Erradicador",
+   "name_source": "official",
+   "official": "Destrua todos os monstros Inseto no campo.",
+   "text": "Um inseticida que extermina os monstros Inseto do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 663,
+   "name": "Fôlego da Luz",
+   "name_source": "official",
+   "official": "Destrua todos os monstros do tipo pedra virados para cima no campo.",
+   "text": "Um vento mágico que reduz a escombros os monstros Rocha do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 664,
+   "name": "Aridez Eterna",
+   "name_source": "official",
+   "official": "Destura todos os monstros do tipo peixe virados para cima no campo.",
+   "text": "Uma onda de calor que seca e elimina os monstros Peixe do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 665,
+   "name": "Curse of Millennium Shield",
+   "name_source": "english",
+   "official": null,
+   "text": "Oferece como Tributo o monstro com a maior DEF e Invoca Escudo do Milênio.",
+   "show": "text"
+  },
+  {
+   "id": 666,
+   "name": "Yamadron Ritual",
+   "name_source": "english",
+   "official": null,
+   "text": "Oferece como Tributo monstros Besta-Guerreira, Dragão e Piro para Invocar Yamadron.",
+   "show": "text"
+  },
+  {
+   "id": 667,
+   "name": "Gate Guardian Ritual",
+   "name_source": "english",
+   "official": null,
+   "text": "Oferece como Tributo Kazejin, Suijin e Sanga do Trovão para Invocar Guardião do Portão.",
+   "show": "text"
+  },
+  {
+   "id": 668,
+   "name": "Palácio Brilhante",
+   "name_source": "official",
+   "official": "Equipe somente em um monstro LIGHT. Ele ganha 700 de ATK.",
+   "text": "Uma luz ofuscante que aumenta o poder de qualquer monstro.",
+   "show": "text"
+  },
+  {
+   "id": 669,
+   "name": "Feitiço Sombra",
+   "name_source": "official",
+   "official": "Ative este card ao escolher 1 monstro com a face para cima que seu oponente controla; ele perde 700 de ATK e, além disso, ele não pode atacar ou mudar sua posição de batalha. Quando ele deixar o campo, destrua este card.",
+   "text": "Reduz em dois níveis os monstros do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 670,
+   "name": "Ritual do Lustro Negro",
+   "name_source": "official",
+   "official": "Este card é usado para a Invocação-Ritual de \"Soldado do Lustro Negro\". Você também deve oferecer como Tributo monstros da sua mão ou do campo cuja soma dos Níveis seja igual a 8 ou mais.",
+   "text": "Cerimônia realizada para Invocar Soldado do Lustro Negro. Requer Tributo.",
+   "show": "text"
+  },
+  {
+   "id": 671,
+   "name": "Ritual de Zera",
+   "name_source": "official",
+   "official": "Esta carta é utilizada para o Ritual Summon de \"Zera o Mante\". Você deve Tributar monstros do seu lado do campo e/ou da sua mão até obter um Nível total igual a 8 ou maior.",
+   "text": "Cerimônia realizada para Invocar Zera o Mante. Requer Tributo.",
+   "show": "text"
+  },
+  {
+   "id": 672,
+   "name": "Espanador de Penas da Harpia",
+   "name_source": "official",
+   "official": "Destrua todas as Magias e Armadilhas que seu oponente controla.",
+   "text": "Destrua todos os cards de Magia do seu oponente no campo.",
+   "show": "text"
+  },
+  {
+   "id": 673,
+   "name": "Ritual do Leão-de-Guerra",
+   "name_source": "official",
+   "official": "Este card é usado para a Invocação-Ritual de \"Super Leão-de-Guerra\". Você também deve oferecer como Tributo monstros da sua mão ou do campo cuja soma dos Níveis seja 7 ou mais.",
+   "text": "Cerimônia realizada para Invocar Super Leão-de-Guerra. Requer Tributo.",
+   "show": "text"
+  },
+  {
+   "id": 674,
+   "name": "Ritual do Espelho Bestial",
+   "name_source": "official",
+   "official": "Este card é usado para a Invocação-Ritual de \"Demônio Mascarado\". Você também deve oferecer como Tributo monstros da sua mão ou do campo cuja soma dos Níveis seja igual ou maior que 6.",
+   "text": "Cerimônia realizada para Invocar Espelho do Demônio. Requer Tributo.",
+   "show": "text"
+  },
+  {
+   "id": 675,
+   "name": "Ultimate Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo três Dragões Brancos de Olhos Azuis para Invocar Dragão Definitivo de Olhos Azuis.",
+   "show": "text"
+  },
+  {
+   "id": 676,
+   "name": "Inicio da Dança",
+   "name_source": "official",
+   "official": "Este cartão é usado para invocar por ritual \"Performance of Sword\". Você também deve oferecer monstros cujo total Level em estrelas igual ou superior a 6 do campo ou a sua mão como um tributo.",
+   "text": "Ofereça como Tributo um Dançarino e um Guerreiro para Invocar Execução de Espada.",
+   "show": "text"
+  },
+  {
+   "id": 677,
+   "name": "Receita de Hamburguer",
+   "name_source": "official",
+   "official": "Este carta é usada para invocar por ritual \"Hungry Burger\". Você também deve oferecer monstro cujo total Level em estrelas igual ou superior a 6 do campo ou a sua mão como um tributo.",
+   "text": "Um card com os ingredientes para fazer um delicioso hambúrguer.",
+   "show": "text"
+  },
+  {
+   "id": 678,
+   "name": "Revival of Sennen Genjin",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo uma Besta-Guerreira e um Golem para Invocar Sengenjin.",
+   "show": "text"
+  },
+  {
+   "id": 679,
+   "name": "Oração de Novox",
+   "name_source": "official",
+   "official": "Esta carta é usada para invocar por ritual \"Skull Guardian\". Você também deve oferecer um monstro cujo level seja igual ou superior a 7 como um tributo a partir do campo ou da sua mão.",
+   "text": "Ofereça como Tributo um Guerreiro e um portador de foice para Invocar Guardião da Caveira.",
+   "show": "text"
+  },
+  {
+   "id": 680,
+   "name": "Curse of Tri-Horned Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo um monstro com chifres para Invocar Dragão de Três Chifres.",
+   "show": "text"
+  },
+  {
+   "id": 681,
+   "name": "Casa de Fita Adesiva",
+   "name_source": "official",
+   "official": "Se o DEF de um monstro chamado por seu oponente (excluindo Invocação Especial) é de 500 pontos ou menos, o monstro é destruído.",
+   "text": "Monstros com 500 ou menos de ATK são eliminados do campo.",
+   "show": "text"
+  },
+  {
+   "id": 682,
+   "name": "Eatgaboon",
+   "name_source": "official",
+   "official": "Se o ATK de um monstro chamado por seu oponente (excluindo Invocação Especial) é de 500 pontos ou menos, o monstro é destruído.",
+   "text": "Monstros com 1000 ou menos de ATK são eliminados do campo.",
+   "show": "text"
+  },
+  {
+   "id": 683,
+   "name": "Bear Trap",
+   "name_source": "english",
+   "official": null,
+   "text": "Se o monstro do seu oponente tiver 1500 ou menos de ATK, ele é eliminado do campo.",
+   "show": "text"
+  },
+  {
+   "id": 684,
+   "name": "Invisible Wire",
+   "name_source": "english",
+   "official": null,
+   "text": "Se o monstro do seu oponente tiver 2000 ou menos de ATK, ele é eliminado do campo.",
+   "show": "text"
+  },
+  {
+   "id": 685,
+   "name": "Buraco Armadilha Ácido",
+   "name_source": "official",
+   "official": "Escolha 1 monstro em Posição de Defesa com a face para baixo no campo; vire-o com a face para cima e, depois, destrua-o se sua DEF for 2000 ou menos, ou coloque-o com a face para baixo se sua DEF for mais de 2000.",
+   "text": "Se o monstro do seu oponente tiver 3000 ou menos de ATK, ele é eliminado do campo.",
+   "show": "text"
+  },
+  {
+   "id": 686,
+   "name": "Ruína Generalizada",
+   "name_source": "official",
+   "official": "Quando um monstro do oponente declarar um ataque: destrua o monstro em Posição de Ataque que seu oponente controla com o maior ATK (em caso de empate, você escolhe).",
+   "text": "Quando um monstro do seu oponente atacar, ele é feito em pedaços e eliminado do campo.",
+   "show": "text"
+  },
+  {
+   "id": 687,
+   "name": "Leque Goblin",
+   "name_source": "official",
+   "official": "Quando um monstro de nível 2 ou inferior é Flip Summoned, destrua-o. Seus efeitos não são ativados naquele momento.",
+   "text": "Devolve ao seu oponente o dano de cards de ataque direto, como Faíscas e Inferno.",
+   "show": "text"
+  },
+  {
+   "id": 688,
+   "name": "Alergia ao Simochi",
+   "name_source": "official",
+   "official": "Enquanto esta carta permanecer virada para cima no campo, qualquer efeito que aumente os pontos de vida do seu oponente é alterado para infligir a mesma quantidade de pontos em dano aos LPs de seu oponente.",
+   "text": "Um card que inverte o efeito dos cards de recuperação e transforma os pontos em dano.",
+   "show": "text"
+  },
+  {
+   "id": 689,
+   "name": "Armadilha de Inversão",
+   "name_source": "official",
+   "official": "Até a Fase Final, todos os efeitos de adicionar ou subtrair ATK ou DEF são invertidos. (Adições agora subtraem e subtrações agora adicionam. Multiplicações e divisões, incluindo efeitos de dobrar ou diminuir pela metade, não são afetados.)",
+   "text": "Um card que inverte o efeito dos cards de fortalecimento, fazendo-os reduzir o poder.",
+   "show": "text"
+  },
+  {
+   "id": 690,
+   "name": "Armadilha Falsa",
+   "name_source": "official",
+   "official": "Você pode Activar o efeito deste card quando o seu adversário usar um Card de Magia, Arnadilha ou Monstro de Efeito que destrua um ou mais Cards de Armadilha no seu Campo. Ao invés disso, destrua este card.",
+   "text": "Um card de Armadilha para enganar seu oponente. Nada acontece quando ele ataca.",
+   "show": "text"
+  },
+  {
+   "id": 691,
+   "name": "Revived of Serpent Night Dragon",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo um monstro específico para Invocar Dragão-Serpente da Noite.",
+   "show": "text"
+  },
+  {
+   "id": 692,
+   "name": "Juramento da Tartaruga",
+   "name_source": "official",
+   "official": "Esta carta é usada para o Ritual Summon de \"Crab Turtle\". Você também deve oferecer monstros cujo Nível total de Estrelas seja igual a 8 ou mais do campo ou da sua mão como um Tributo.",
+   "text": "Ofereça como Tributo um caranguejo e uma tartaruga para Invocar Tartaruga Caranguejo.",
+   "show": "text"
+  },
+  {
+   "id": 693,
+   "name": "Contruct of Mask",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo um mascarado para Invocar uma nova máscara.",
+   "show": "text"
+  },
+  {
+   "id": 694,
+   "name": "Ressurreição de Chakra",
+   "name_source": "official",
+   "official": "Este card é usado para Invocar \"Chakra\" por Invocação-Ritual. Você também deve oferecer como Tributo monstros da sua mão ou campo cuja soma dos Níveis seja igual a 7 ou mais.",
+   "text": "Ofereça como Tributo 3 monstros Demônio para realizar o ritual da Ressurreição de Chakra.",
+   "show": "text"
+  },
+  {
+   "id": 695,
+   "name": "Marionete Ritual",
+   "name_source": "official",
+   "official": "Se os Pontos de Vida do seu oponente estiverem pelo menos 2000 acima dos seus: você pode escolher 2 monstros \"Engenhoca Marionete\" de Nível 8 no seu Cemitério; Invoque os alvos por Invocação-Especial. Você só pode ativar 1 \"Marionete Ritual\" por turno. Você não pode conduzir sua Fase de Batalha no turno em que ativar este card.",
+   "text": "Ofereça como Tributo um Mestre das Marionetes e um monstro Máquina para Invocar a Marionete.",
+   "show": "text"
+  },
+  {
+   "id": 696,
+   "name": "Pacto com o Besouro Javelin",
+   "name_source": "official",
+   "official": "Esta carta é utilizada para o Ritual Summon de \"Javelin Beetle\". Você deve Tributar monstros do seu lado do campo e/ou da sua mão até obter um Nível total igual a 8 ou maior.",
+   "text": "Ofereça como Tributo um besouro-veado e um besouro para Invocar Besouro da lança.",
+   "show": "text"
+  },
+  {
+   "id": 697,
+   "name": "Juramento da Espada Garma",
+   "name_source": "official",
+   "official": "Este carta é usado para invocar por ritual \"Garma Sword\". Você também deve oferecer como tributo um monstro cujos o nível total igual ou superior a 7 do campo ou a sua mão.",
+   "text": "Ofereça como Tributo o Braço de Ashura e um espadachim para Invocar Espada Garma.",
+   "show": "text"
+  },
+  {
+   "id": 698,
+   "name": "Cosmo Queen's Prayer",
+   "name_source": "english",
+   "official": null,
+   "text": "Ofereça como Tributo uma rainha comum para Invocar Rainha Cosmos.",
+   "show": "text"
+  },
+  {
+   "id": 699,
+   "name": "Renascimento de Dokurorider",
+   "name_source": "official",
+   "official": "Esta carta é usada para invocar por ritual \"Dokurorider\". Você também deve oferecer um monstro cujo nível seja igual ou superior a 6 como um tributo a partir do campo ou da sua mão",
+   "text": "Ofereça como Tributo um templo e uma barata para Invocar Dokurorider.",
+   "show": "text"
+  },
+  {
+   "id": 700,
+   "name": "Juramento da Baleia Fortaleza",
+   "name_source": "official",
+   "official": "Este card é usado para a Invocação-Ritual de \"Baleia Fortaleza\". Você também deve oferecer como Tributo monstros da sua mão ou do campo cuja soma dos Níveis seja igual a 7 ou mais.",
+   "text": "Ofereça como Tributo um chifre e um peixe-máquina para Invocar Baleia Fortaleza.",
+   "show": "text"
+  },
+  {
+   "id": 701,
+   "name": "Execução de Espada",
+   "name_source": "official",
+   "official": "Este cartão só pode ser convocado por ritual com o cartão mágica de ritual, \"Commencement Dance\". Você também deve oferecer um monstro como tributo cujo nível seja igual ou superior a 6 de campo ou da sua mão.",
+   "text": "Um guerreiro dançarino com passos de dança extravagantes.",
+   "show": "text"
+  },
+  {
+   "id": 702,
+   "name": "Hamburguer Faminto",
+   "name_source": "official",
+   "official": "Este carta só pode ser invocada por ritual com o a carta mágica de ritual, \"Hamburger Recipe\". Você também deve oferecer com tributo um monstros cujo total Level seja igual ou superior a 6 do campo ou da sua mão.",
+   "text": "Atrai inimigos famintos com seu aroma delicioso e os devora quando chegam perto.",
+   "show": "text"
+  },
+  {
+   "id": 703,
+   "name": "Sengenjin",
+   "name_source": "official",
+   "official": "Um selvágem incontrolável que carrega itens do milênio.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 704,
+   "name": "Guardião da Caveira",
+   "name_source": "official",
+   "official": "Este monstro de ritual só podem ser convocados com o cartão de magia ritual, \"Novox's Prayer\". Você também deve oferecer monstros cujo nível total seja igual ou superior a 7 como um tributo a partir do campo ou da sua mão.",
+   "text": "Um guardião da lei que não perdoa trapaças. Ataca os inimigos com braços que parecem espadas.",
+   "show": "text"
+  },
+  {
+   "id": 705,
+   "name": "Dragão de Três Chifres",
+   "name_source": "official",
+   "official": "Um dragão indigno com três chifres afiados brotando da sua cabeça.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 706,
+   "name": "Dragão-Serpente da Noite",
+   "name_source": "official",
+   "official": "Um dragão criado a partir da alma de um cavaleiro perverso.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 707,
+   "name": "Cavaleiro Caveira",
+   "name_source": "official",
+   "official": "\"Sabedoria Corrompida\" + \"Cérebro Ancião\"",
+   "text": "Um monge que realizou vários rituais no submundo e sabe usar armas e magia.",
+   "show": "text"
+  },
+  {
+   "id": 708,
+   "name": "Rainha Cosmos",
+   "name_source": "official",
+   "official": "Rainha das galáxias e patrona das estrelas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 709,
+   "name": "Chakra",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Ressurreição de Chakra\".",
+   "text": "Uma forma retorcida que ataca com braços parecidos com tentáculos.",
+   "show": "text"
+  },
+  {
+   "id": 710,
+   "name": "Tartaruga Caranguejo",
+   "name_source": "official",
+   "official": "Este monstro só pode ser invocado por ritual com a carta mágica de ritual, \"Turtle Oath\". Você também deve oferecer monstros cujo total Level em estrelas igual ou superior a 8 como um tributo a partir do campo ou a sua mão.",
+   "text": "Uma criatura com casco de tartaruga e pinças de caranguejo que lhe dão alto ATK e DEF.",
+   "show": "text"
+  },
+  {
+   "id": 711,
+   "name": "Mikazukinoyaiba",
+   "name_source": "official",
+   "official": "Um guerreiro-dragão da lua armado com uma espada crescente.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 712,
+   "name": "Dragão Meteoro",
+   "name_source": "official",
+   "official": "Este dragão surgiu nos céus e colidiu na terra.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 713,
+   "name": "Dragão Negro Meteoro",
+   "name_source": "official",
+   "official": null,
+   "text": "Com a pele em chamas de um meteorito, esta criatura vaporiza tudo o que toca.",
+   "show": "text"
+  },
+  {
+   "id": 714,
+   "name": "Pegasus Asas de Fogo",
+   "name_source": "official",
+   "official": "Um garanhão celeste atravessando os céus nas asas vermelhas.",
+   "text": null,
+   "show": "official"
+  },
+  {
+   "id": 715,
+   "name": "Psycho-Puppet",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma boneca misteriosa cuja dança estranha rouba o poder dos monstros do oponente.",
+   "show": "text"
+  },
+  {
+   "id": 716,
+   "name": "Espada Garma",
+   "name_source": "official",
+   "official": "Este carta só pode ser invocada por ritual com a carta mágica de ritual, \"Garma Sword Oath\".",
+   "text": "Um guerreiro habilidoso que empunha seis espadas contra os monstros do oponente.",
+   "show": "text"
+  },
+  {
+   "id": 717,
+   "name": "Besouro da lança",
+   "name_source": "official",
+   "official": "Esta carta somente pode ser Ritual Summoned com o Ritual Spell Card, \"Javelin Beetle Pact\".",
+   "text": "Uma criatura com pinças letais que cortam quase tudo.",
+   "show": "text"
+  },
+  {
+   "id": 718,
+   "name": "Baleia Fortaleza",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Juramento da Baleia Fortaleza\".",
+   "text": "Um monstro marinho com um canhão nas costas para varrer seus inimigos do mar.",
+   "show": "text"
+  },
+  {
+   "id": 719,
+   "name": "Dokurorider",
+   "name_source": "official",
+   "official": "Este monstro só pode ser invocado por ritual com o Carta Mágica de Ritual, \"Revival of Dokurorider\". Você também deve oferecer monstros cujo total Level em estrelas igualdade de 6 ou mais como um tributo de seu campo ou a sua mão.",
+   "text": "Um piloto solitário que corre pelas terras áridas, levantando densas nuvens de poeira.",
+   "show": "text"
+  },
+  {
+   "id": 720,
+   "name": "Mask of Shine & Dark",
+   "name_source": "english",
+   "official": null,
+   "text": "Uma criatura que distorce a luz e a escuridão para criar imagens que confundem os oponentes.",
+   "show": "text"
+  },
+  {
+   "id": 721,
+   "name": "Dark Magic Ritual",
+   "name_source": "english",
+   "official": null,
+   "text": "Cerimônia para Invocar o Mago do Caos das Trevas. Requer Tributo.",
+   "show": "text"
+  },
+  {
+   "id": 722,
+   "name": "Mago do Caos das Trevas",
+   "name_source": "official",
+   "official": "Você pode Invocar este card por Invocação-Ritual com \"Ritual de Magia Negra\".",
+   "text": "O mago definitivo, que domina o poder do caos nascido da fusão das Trevas e da Luz.",
+   "show": "text"
+  }
+ ],
+ "strings": [
+  {
+   "bank": "names",
+   "ids": "8300 8322 8323 8324 8325 8326 8327",
+   "text": "Dragão"
+  },
+  {
+   "bank": "names",
+   "ids": "8301",
+   "text": "Mago"
+  },
+  {
+   "bank": "names",
+   "ids": "8302",
+   "text": "Zumbi"
+  },
+  {
+   "bank": "names",
+   "ids": "8303",
+   "text": "Guerreiro"
+  },
+  {
+   "bank": "names",
+   "ids": "8304",
+   "text": "Besta-Guerreira"
+  },
+  {
+   "bank": "names",
+   "ids": "8305",
+   "text": "Besta"
+  },
+  {
+   "bank": "names",
+   "ids": "8306",
+   "text": "Besta Alada"
+  },
+  {
+   "bank": "names",
+   "ids": "8307",
+   "text": "Demônio"
+  },
+  {
+   "bank": "names",
+   "ids": "8308",
+   "text": "Fada"
+  },
+  {
+   "bank": "names",
+   "ids": "8309",
+   "text": "Inseto"
+  },
+  {
+   "bank": "names",
+   "ids": "830A",
+   "text": "Dinossauro"
+  },
+  {
+   "bank": "names",
+   "ids": "830B",
+   "text": "Réptil"
+  },
+  {
+   "bank": "names",
+   "ids": "830C",
+   "text": "Peixe"
+  },
+  {
+   "bank": "names",
+   "ids": "830D",
+   "text": "Serpente Marinha"
+  },
+  {
+   "bank": "names",
+   "ids": "830E",
+   "text": "Máquina"
+  },
+  {
+   "bank": "names",
+   "ids": "830F",
+   "text": "Trovão"
+  },
+  {
+   "bank": "names",
+   "ids": "8310",
+   "text": "Aqua"
+  },
+  {
+   "bank": "names",
+   "ids": "8311",
+   "text": "Piro"
+  },
+  {
+   "bank": "names",
+   "ids": "8312",
+   "text": "Rocha"
+  },
+  {
+   "bank": "names",
+   "ids": "8313",
+   "text": "Planta"
+  },
+  {
+   "bank": "names",
+   "ids": "8314",
+   "text": "Magia"
+  },
+  {
+   "bank": "names",
+   "ids": "8315",
+   "text": "Armadilha"
+  },
+  {
+   "bank": "names",
+   "ids": "8316",
+   "text": "Ritual"
+  },
+  {
+   "bank": "names",
+   "ids": "8317",
+   "text": "Equipamento"
+  },
+  {
+   "bank": "names",
+   "ids": "8318",
+   "text": "Marte {sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "8319",
+   "text": "Júpiter"
+  },
+  {
+   "bank": "names",
+   "ids": "831A",
+   "text": "Saturno"
+  },
+  {
+   "bank": "names",
+   "ids": "831B",
+   "text": "Urano {sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "831C",
+   "text": "Plutão{sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "831D",
+   "text": "Netuno{sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "831E",
+   "text": "Mercúrio"
+  },
+  {
+   "bank": "names",
+   "ids": "831F",
+   "text": "Sol   {sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "8320",
+   "text": "Lua   {sp}"
+  },
+  {
+   "bank": "names",
+   "ids": "8321",
+   "text": "Vênus {sp}"
+  },
+  {
+   "bank": "dialog",
+   "ids": "0003",
+   "text": "{f8 00 00} {f8 00 80}{f8 01 18}ESTRELA GUARDIÃ\n{f8 01 04} {f8 00 01} {f8 00 81}{f8 01 10} {f8 00 02} {f8 00 82}{f8 01 18}{f8 00 40}{end}"
+  },
+  {
+   "bank": "dialog",
+   "ids": "0021",
+   "text": "{choice 5B 8F}ESCOLHA SUA ESTRELA\n      {f8 00 01} {f8 00 81}\n      {f8 00 02} {f8 00 82}\n{choose 80 0 0}"
+  },
+  {
+   "bank": "dialog",
+   "ids": "0005",
+   "text": "{f8 04 01}{f8 03 08 56 1D 80 C3}{f8 01 0E}{f8 04 02}{f8 00 10}{f8 07 24 00}{f8 00 20}{end}"
+  }
+ ]
+}

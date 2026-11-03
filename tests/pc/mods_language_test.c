@@ -50,6 +50,19 @@ int main(void)
     make_dir("mods/listed/lang");
     write_text("mods/listed/lang/pt-BR.json", "{\"name\":\"Listado\",\"settings\":[{\"label\":\"x\"}]}");
 
+    /* The game's own text and the mod's cards in the language: "text" files
+     * after the manifest's, and "cards" by an added card's id or by what a
+     * card entry replaces. */
+    make_dir("mods/cardsmod");
+    write_text("mods/cardsmod/mod.json",
+               "{\"id\":\"cardsmod\",\"name\":\"Cards\",\"text\":\"base.txt\",\"settings\":["
+               "{\"key\":\"names\",\"label\":\"Names\",\"type\":\"choice\",\"choices\":[\"A\",\"B\"]}]}");
+    make_dir("mods/cardsmod/lang");
+    write_text("mods/cardsmod/lang/pt-BR.json",
+               "{\"name\":\"Cartas\",\"text\":[\"cartas.txt\",{\"file\":\"nomes.txt\",\"setting\":\"names\","
+               "\"value\":1}],\"cards\":{\"arrow\":{\"name\":\"Flecha\",\"description\":\"Uma flecha.\"},"
+               "\"Great Moth\":{\"description\":\"Mariposa.\"},\"14\":{\"name\":\"Catorze\"},\"bad\":3,"
+               "\"odd\":{\"nome\":\"x\"},\"num\":{\"name\":5}}}");
     snprintf(path, sizeof(path), "%s/mods", root);
     assert(!setenv("MEMORIES_MODS_DIR", path, 1));
     snprintf(path, sizeof(path), "%s/settings.txt", root);
@@ -73,11 +86,57 @@ int main(void)
     assert(!strcmp(Mods_OptionText(words, 0, "label", "?"), "Speed"));
     assert(!strcmp(Mods_OptionChoice(words, 1, 2, "?"), "All"));
 
+    {   /* English: the manifest's file only, no card words. */
+        int cards = find("cardsmod");
+        const char *name;
+        JsonDocument *arrow = Json_Parse("{\"id\":\"arrow\",\"copy\":\"Hinotama\"}", NULL, 0);
+        assert(cards >= 0 && arrow);
+        assert(Mods_File(cards, "text", 0, path, sizeof(path), &name) && strstr(path, "/base.txt"));
+        assert(!Mods_File(cards, "text", 1, path, sizeof(path), &name));
+        assert(!Mods_CardWords("cardsmod", Json_Root(arrow), "name"));
+        Json_Free(arrow);
+    }
     /* The system's language, as SDL names it. */
     Mods_SetLanguage("pt-BR");
     assert(!strcmp(Mods_Name(words), "Palavras"));
     assert(!strcmp(Mods_Metadata(words, "description"), "Em portugu\xC3\xAAs."));
     assert(!strcmp(Mods_Metadata(words, "version"), ""));
+    {   /* pt-BR: the lang file's files after the manifest's, and its cards. */
+        int cards = find("cardsmod");
+        const char *name;
+        JsonDocument *arrow = Json_Parse("{\"id\":\"arrow\",\"copy\":\"Hinotama\",\"name\":\"Arrow\"}", NULL, 0);
+        JsonDocument *moth = Json_Parse("{\"replace\":\"Great Moth\",\"description\":\"Dust.\"}", NULL, 0);
+        JsonDocument *fourteen = Json_Parse("{\"replace\":14}", NULL, 0);
+        JsonDocument *other = Json_Parse("{\"copy\":\"Hinotama\"}", NULL, 0);
+        JsonDocument *num = Json_Parse("{\"id\":\"num\"}", NULL, 0);
+        assert(arrow && moth && fourteen && other && num);
+        assert(Mods_File(cards, "text", 0, path, sizeof(path), &name) && strstr(path, "/base.txt"));
+        assert(Mods_File(cards, "text", 1, path, sizeof(path), &name) && strstr(path, "/cartas.txt"));
+        assert(!strcmp(name, "cartas.txt"));
+        /* Its setting's choice 0 is not the entry's value: left out, but counted. */
+        assert(Mods_File(cards, "text", 2, path, sizeof(path), &name) && !path[0] && !strcmp(name, "nomes.txt"));
+        assert(!Mods_File(cards, "text", 3, path, sizeof(path), &name));
+        assert(!Mods_File(cards, "font", 0, path, sizeof(path), &name));
+        assert(!strcmp(Mods_CardWords("cardsmod", Json_Root(arrow), "name"), "Flecha"));
+        assert(!strcmp(Mods_CardWords("cardsmod", Json_Root(arrow), "description"), "Uma flecha."));
+        assert(!strcmp(Mods_CardWords("cardsmod", Json_Root(moth), "description"), "Mariposa."));
+        assert(!Mods_CardWords("cardsmod", Json_Root(moth), "name"));
+        assert(!strcmp(Mods_CardWords("cardsmod", Json_Root(fourteen), "name"), "Catorze"));
+        assert(!Mods_CardWords("cardsmod", Json_Root(other), "name"));   /* neither an id nor a replace */
+        assert(!Mods_CardWords("cardsmod", Json_Root(num), "name"));     /* not a string */
+        assert(!Mods_CardWords("words", Json_Root(arrow), "name"));      /* a lang file with no cards */
+        assert(!Mods_CardWords("nobody", Json_Root(arrow), "name"));
+        assert(!Mods_CardWords(NULL, Json_Root(arrow), "name"));
+        assert(strstr(Mods_Status(cards), "the card \"bad\" is not an object"));
+        assert(strstr(Mods_Status(cards), "the card \"odd\" has an unknown key \"nome\""));
+        assert(strstr(Mods_Status(cards), "the card \"num\"'s name is not a string"));
+        assert(Mods_RequiresRestart(cards));
+        Json_Free(arrow);
+        Json_Free(moth);
+        Json_Free(fourteen);
+        Json_Free(other);
+        Json_Free(num);
+    }
     assert(!strcmp(Mods_Id(words), "words"));
     assert(!strcmp(Mods_OptionText(words, 0, "label", "?"), "Velocidade"));
     assert(!strcmp(Mods_OptionText(words, 0, "suffix", ""), " quadros"));
