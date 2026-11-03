@@ -1,4 +1,4 @@
-"""The card passwords for the site (gasparjs.com.br, /lab/forbidden-memories/senhas): every card of the
+"""The card passwords for the site (gasparjs.com.br, /lab/forbidden-memories/passwords): every card of the
 user's disc and the cards the Duelist Kingdom rules add, as JSON facts (number, name, kind, ATK/DEF,
 password, StarChip price). Nothing of the disc but those facts is written.
 
