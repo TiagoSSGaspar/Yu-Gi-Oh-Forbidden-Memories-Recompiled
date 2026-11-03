@@ -41,5 +41,27 @@ class Drops(unittest.TestCase):
         self.assertEqual(self.cards[2][0], {"duelist": 1, "pow": 1000, "tec": 2048, "bcd": 2048})
 
 
+class Card:
+    def __init__(self, name):
+        self.name = name
+
+
+class ModDrops(unittest.TestCase):
+    def test_listed_weights_by_card(self):
+        mod = {"id": "drop-missing-cards", "drops": {
+            "Teana": {"pow": {"Kuriboh": 40}, "bcd": {"Kuriboh": 20}},
+            "Simon Muran": {"pow": {"Kuriboh": 40, "Mystical Elf": 0}}}}
+        out = ex.mod_drops(mod, NAMES, {i: Card(n) for i, n in CARDS.items()})
+        self.assertEqual(out, {"id": "drop-missing-cards", "cards": [{"id": 4, "drops": [
+            {"duelist": 1, "pow": 40, "tec": 0, "bcd": 0}, {"duelist": 2, "pow": 40, "tec": 0, "bcd": 20}]}]})
+
+    def test_refuses_a_mod_that_changes_the_whole_pool(self):
+        cards = {i: Card(n) for i, n in CARDS.items()}
+        with self.assertRaises(ValueError):
+            ex.mod_drops({"id": "m", "drops": {"Teana": {"pow": {"replace": True, "Kuriboh": 1}}}}, NAMES, cards)
+        with self.assertRaises(ValueError):
+            ex.mod_drops({"id": "m", "drops": {"Teana": {"pow": {"Kuriboh": 2048}}}}, NAMES, cards)
+
+
 if __name__ == "__main__":
     unittest.main()
