@@ -1,6 +1,7 @@
 """The card passwords for the site (gasparjs.com.br, /lab/forbidden-memories/passwords): every card of the
 user's disc and the cards the Duelist Kingdom rules add, as JSON facts (number, name, kind, ATK/DEF,
-password, StarChip price). Nothing of the disc but those facts is written.
+password, StarChip price, and the type number the game gives it: 0-19 the monster types, 20-23
+magic, trap, ritual, equip). Nothing of the disc but those facts is written.
 
 usage: python3 tools/pc/site/export_card_passwords.py --disc game/rpg-yfm.bin \\
            --mod mods/modern-rules/mod.json --out <site>/src/content/lab/fm-cards.json
@@ -18,7 +19,7 @@ def _kind(type_):
 def _entry(id_, name, base, password, starchips, mod):
     kind = _kind(base.type)
     monster = kind == "monster"
-    return {"id": id_, "name": name, "kind": kind, "attack": base.attack if monster else None,
+    return {"id": id_, "name": name, "kind": kind, "type": base.type, "attack": base.attack if monster else None,
             "defense": base.defense if monster else None, "password": password or "", "starchips": starchips,
             "mod": mod}
 

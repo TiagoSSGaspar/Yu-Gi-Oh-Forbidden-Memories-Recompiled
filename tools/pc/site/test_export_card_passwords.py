@@ -33,7 +33,7 @@ class ExportTest(unittest.TestCase):
     def test_disc_cards(self):
         out = ex.cards(Data(), {"cards": []}, first_added=723)
         self.assertEqual([c["id"] for c in out], [1, 301, 344, 686])
-        self.assertEqual(out[0], {"id": 1, "name": "Blue-eyes White Dragon", "kind": "monster", "attack": 3000,
+        self.assertEqual(out[0], {"id": 1, "name": "Blue-eyes White Dragon", "kind": "monster", "type": 0, "attack": 3000,
                                   "defense": 2500, "password": "89631139", "starchips": 999999, "mod": False})
         self.assertEqual(out[2]["kind"], "magic")
         self.assertIsNone(out[2]["attack"])
