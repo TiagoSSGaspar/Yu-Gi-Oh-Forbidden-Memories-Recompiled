@@ -37,11 +37,11 @@ broken at spaces), a letter the game cannot draw, and a missing card.
 Only Konami's names. A card has its official Portuguese name (from the card
 game's Portuguese cards, checked against Konami's own card database); a card
 that never had one keeps the game's English name (`name_source`: `official` or
-`english`). No name is made up or shortened. Where a box is narrower than a
-name, the game cuts it as it cuts the English ones: the card lists after 16
-letters, the duel's bar after 24, and the Library's line after 36 (the game's
-longest English name; this mod sets that limit, which the game left out
-because no English name needed it).
+`english`). No name is made up or shortened. Where a box is narrower than a name, the
+port draws its letters closer, in the box's width (down to 6 pixels a letter):
+the duel's bar holds 32 letters that way, the card lists 21, and the Library's
+line, which this mod limits to 36 cells (the game left it without a limit, as
+no English name needed one), 48. Only a name longer still is cut.
 
 The cards the Duelist Kingdom rules add have their Portuguese names and texts
 in that mod's own `lang/pt-BR.json`.

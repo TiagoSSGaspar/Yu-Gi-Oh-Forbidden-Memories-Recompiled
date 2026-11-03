@@ -14,6 +14,7 @@
 #include "pc/free_duel/duelists.h"
 #include "pc/text/text.h"
 #include "pc/text/number_width.h"
+#include "pc/text/language.h"
 #include "pc/cards/stars.h"
 #include "pc/cards/card_text_colors.h"
 #include "pc/cards/duel_ui.h"
@@ -209,6 +210,14 @@ store:
 #ifdef MEMORIES_PC
     if (naming) {
         DuelUi_NameStream(object, 1);
+        /* A name longer than the letters F8 07 just gave it is drawn
+           closer, in the same width, rather than cut (number_width.h).
+           The European text counts its limit in pixels as the PAL does
+           (language.h), and is left to it. */
+        if (object->field_61 != 0 && object->field_60 == 0 && Language_Current() == LANGUAGE_US) {
+            object->field_61 = (u8)NumberWidth_SqueezeName(object->index_57, text, object->field_61,
+                                                           object->field_5A);
+        }
     }
 #endif
     return;

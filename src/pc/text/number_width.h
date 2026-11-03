@@ -21,4 +21,17 @@ void NumberWidth_Reset(int channel);
  * steps: 0 unless it is one of a squeezed number's. */
 int NumberWidth_Take(int channel);
 
+/* A card's name ({f8 00 20}) longer than the letters its string's F8 07
+ * lets it have (24 on the duel's bar, 16 in the card lists): the retail
+ * game cut it there, which a translation's longer names suffer from far
+ * more than the English (notes/translation.md). Its letters are drawn
+ * closer instead, in the same `limit` cells of `cell` pixels, down to
+ * NAME_MIN_STEP pixels a letter (the letters are 7 wide, outline and all);
+ * a name longer even than that is cut after the letters that fit. Returns
+ * how many letters to draw, the limit F8 07 should now hold; `limit` when
+ * the name fits as it is. `text` is the name's encoded text: a letter a
+ * byte below 0xF0, or F1-F5 and a low byte (glyphs.h). */
+#define NAME_MIN_STEP 6
+int NumberWidth_SqueezeName(int channel, const unsigned char *text, int limit, int cell);
+
 #endif

@@ -125,6 +125,15 @@ wind of your activities...
   a box has as many columns as its width in pixels over 8, and the width is
   the box's, not the string's: `[0021]`, the guardian star choice, has 22
   columns, and `[0022]`, the two-player duel's quit box, 10.
+* A card's name is cut where its string's `{f8 07 NN 00}` says: 16 letters
+  in the card lists, 24 on the duel's bar, 28 on a magic card's. With the
+  US text (not Game > Language's European), a name longer than that is
+  drawn with its letters closer instead, in the same width, down to 6
+  pixels a letter (`NumberWidth_SqueezeName`, `src/pc/text/number_width.h`):
+  32 letters fit the bar's 24 cells, and only a longer name is cut. The
+  Library's line (`[0005]`) has no limit and wraps; a translation with names
+  past 36 letters gives it one (`{f8 07 24 00}` before its `{f8 00 20}`), as
+  Cards in Portuguese does.
 * In a menu with choices (`{choice ...}` then `{choose ...}`) that row is
   worse: when it pushes the choices past the bottom of the box, the console
   stops for good, with no frame after (the menu is laid out in one go and

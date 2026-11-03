@@ -31,3 +31,20 @@ int NumberWidth_Take(int channel)
     return squeezes[channel].total / squeezes[channel].digits +
            (i < squeezes[channel].total % squeezes[channel].digits ? 1 : 0);
 }
+
+int NumberWidth_SqueezeName(int channel, const unsigned char *text, int limit, int cell)
+{
+    int letters = 0, shown;
+    if (!text || limit <= 0 || cell <= NAME_MIN_STEP) return limit;
+    for (;;) {
+        if (*text < 0xF0) text++;
+        else if (*text >= 0xF1 && *text <= 0xF5) text += 2;   /* F1 00 is code 0x100, the first added */
+        else break;   /* its end, or a code: the name stops here */
+        letters++;
+    }
+    if (letters <= limit) return limit;
+    shown = letters;
+    if (shown * NAME_MIN_STEP > limit * cell) shown = limit * cell / NAME_MIN_STEP;
+    NumberWidth_Squeeze(channel, shown, limit, cell);
+    return shown;
+}
