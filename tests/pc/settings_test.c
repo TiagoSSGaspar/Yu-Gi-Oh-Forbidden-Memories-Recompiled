@@ -103,6 +103,21 @@ int main(void)
     }
     assert(!setenv("MEMORIES_SETTINGS", path, 1));
     assert(Settings_Save() && !*Settings_LastError() && !Settings_TakeNewError());
+    /* The fork's default changes, once per file: one written before them
+     * holds the old default (every key is written) and takes the new; one
+     * that has taken them keeps the player's choice. */
+    file = fopen(path, "wb");
+    assert(file);
+    fputs("hd_text=0\nvolume=40\n", file);
+    assert(!fclose(file));
+    Settings_Load();
+    assert(Settings_Get(SET_HD_TEXT) == 1 && Settings_GetNamed("fork_defaults", 0) == 1);
+    Settings_Set(SET_HD_TEXT, 0);
+    assert(Settings_Save() && contains(path, "fork_defaults=1\n") && contains(path, "hd_text=0\n"));
+    Settings_Load();
+    assert(Settings_Get(SET_HD_TEXT) == 0 && Settings_Get(SET_MASTER_VOLUME) == 40);
     unlink(path);
+    Settings_Load();   /* no file at all: the defaults, HD text among them */
+    assert(Settings_Get(SET_HD_TEXT) == 1);
     return 0;
 }

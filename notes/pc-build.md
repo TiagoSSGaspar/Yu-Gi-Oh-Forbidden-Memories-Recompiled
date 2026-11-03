@@ -2350,7 +2350,9 @@ build, frame dumps of the scaled picture (`MEMORIES_DETERMINISTIC=1`,
 
 ### HD text
 
-Video > HD text (`hd_text`, `MEMORIES_HD_TEXT=1`, off by default) sets the
+Video > HD text (`hd_text`, `MEMORIES_HD_TEXT=1`; on by default in this fork, off upstream, and
+turned on once in a settings file written before, which holds every key: `fork_defaults`
+in the file says it has been, settings.c) sets the
 text's letters in a font at the internal resolution instead of drawing the
 retail 8x12 and 16x16 cells texel by texel (`src/pc/text/hd_text.c`). It is
 a change to the OpenGL picture above, so it shows at internal 2x and up,

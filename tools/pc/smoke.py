@@ -29,6 +29,8 @@ FORK_DEFAULTS_OFF = {
     "mod.extra-hand-plays": 0,
     "mod.card-game-colors": 0,
     "mod.cards-pt-br": 0,
+    "hd_text": 0,
+    "fork_defaults": 1,   # settings.c: the file has taken the fork's default changes
     "mod.modern-rules": 0,
     "mod.3d-monsters.attack": 0,
     "mod.3d-monsters.summon": 0,
