@@ -27,6 +27,7 @@ FIXTURES = ROOT / "tests/pc/smoke"
 # any of these on sets it in its own "settings", which win.
 FORK_DEFAULTS_OFF = {
     "mod.extra-hand-plays": 0,
+    "mod.card-game-colors": 0,
     "mod.modern-rules": 0,
     "mod.3d-monsters.attack": 0,
     "mod.3d-monsters.summon": 0,

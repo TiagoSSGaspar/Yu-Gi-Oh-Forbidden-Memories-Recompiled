@@ -11,7 +11,7 @@ that is off or does not load any more ([Mod manager](mods-window.md)).
 
 | Directory | What is in it |
 |---|---|
-| `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `extra-hand-plays`, `modern-rules`, `yamyi-mods`, `drop-missing-cards`) |
+| `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `extra-hand-plays`, `modern-rules`, `yamyi-mods`, `drop-missing-cards`, `card-game-colors`) |
 | `mods/` in the user directory | mods the player installed |
 
 The user directory is where everything the player owns lives: settings,
@@ -2634,6 +2634,7 @@ the reason beside any that failed to load.
 | `mods/ai-hard-mode` | optional stronger opponent decisions |
 | `mods/yamyi-mods` | return-to-title confirmation and Library drop odds, with independent switches |
 | `mods/drop-missing-cards` | off by default: gives the 82 cards no duelist drops a duelist to win them from, as the old static recomp's option did; a data-only `drops` table |
+| `mods/card-game-colors` | on by default: each card's frame in its card game color, from the two frames the disc has and never uses (orange for an effect monster, purple for a fusion) and blue moved from the ritual spell to the ritual monster; a data-only `cards` table of `frame`s ([Frame color](more-cards.md#frame-color)) |
 
 The first two were part of the executable until they became mods; they are the worked
 examples of a code mod that reaches deep into the game. 3D Monsters' knobs
