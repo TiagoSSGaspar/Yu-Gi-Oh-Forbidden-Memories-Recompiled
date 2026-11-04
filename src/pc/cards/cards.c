@@ -1445,9 +1445,12 @@ static void add_entry(const char *mod, const char *directory, int index, const J
     const JsonValue *replace = Json_Member(entry, "replace");
     const JsonValue *copy = replace ? replace : Json_Member(entry, "copy");
     const JsonValue *stars = Json_Member(entry, "stars");
-    const char *name = Json_String(Json_Member(entry, "name"), NULL);
+    /* The mod's lang file may say them in the player's language (Mods_CardWords). */
+    const char *name = Mods_CardWords(mod, entry, "name") ? Mods_CardWords(mod, entry, "name")
+                                                          : Json_String(Json_Member(entry, "name"), NULL);
     const char *setting = Json_String(Json_Member(entry, "count_setting"), NULL);
-    const char *description = Json_String(Json_Member(entry, "description"), NULL);
+    const char *description = Mods_CardWords(mod, entry, "description")
+        ? Mods_CardWords(mod, entry, "description") : Json_String(Json_Member(entry, "description"), NULL);
     const JsonValue *password_value = Json_Member(entry, "password");
     unsigned char *record = NULL, *title = NULL, *named_plate = NULL, *field_art_record = NULL;
     int parts = 0;

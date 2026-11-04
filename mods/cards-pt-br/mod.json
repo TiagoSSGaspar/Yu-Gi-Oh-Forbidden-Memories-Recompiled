@@ -1,0 +1,9 @@
+{
+  "id": "cards-pt-br",
+  "name": "Cards in Portuguese",
+  "version": "1.0.0",
+  "author": "DecompRecomp",
+  "description": "The cards' names and texts in Brazilian Portuguese, with Konami's official translations, when the system's language is Portuguese. In any other language it changes nothing.",
+  "min_api": 23,
+  "enabled": true
+}

@@ -38,8 +38,7 @@
       "art": "images/multiply.png",
       "description": "Equip Kuriboh only. It multiplies into a wall of hundreds: it stays in defense, and an attack on it destroys only one of the many.",
       "password": "40703222",
-      "drops": true,
-      "opponents": true
+      "drops": true
     },
     {
       "id": "polymerization",
@@ -49,7 +48,6 @@
       "description": "Fuses monsters. With Living Arrow and a Zombie from your hand, it fuses the Zombie into a living monster of your opponent's, which rots from within.",
       "password": "24094653",
       "drops": true,
-      "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
     },
@@ -61,7 +59,6 @@
       "description": "With Polymerization and a Zombie from your hand: shoots the Zombie into a living monster, which loses the Zombie's ATK every turn of yours.",
       "password": "41180607",
       "drops": true,
-      "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
     },
@@ -72,8 +69,7 @@
       "art": "images/mirror_force.png",
       "description": "Springs on an attack: it turns back on every enemy monster in attack position. All are destroyed; the foe loses the attacker's ATK over each.",
       "password": "44095762",
-      "drops": true,
-      "opponents": true
+      "drops": true
     },
     {
       "id": "change_of_heart",
@@ -83,7 +79,6 @@
       "description": "Take control of one monster of your opponent's until the end of this turn. It may attack.",
       "password": "04031928",
       "drops": true,
-      "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
     },
@@ -95,7 +90,6 @@
       "description": "Bring back one monster from either player's graveyard to your side of the field.",
       "password": "83764718",
       "drops": true,
-      "opponents": true,
       "card_effects_mode": "replace",
       "card_effects": []
     },
@@ -106,8 +100,7 @@
       "art": "images/magical_hats.png",
       "description": "When your monster is attacked: the attack stops and it hides face down among up to three hats. An empty hat dies with no damage.",
       "password": "81210420",
-      "drops": true,
-      "opponents": true
+      "drops": true
     },
     {
       "id": "magical_hat",
@@ -221,7 +214,7 @@
       "label": "Mirror Force",
       "type": "bool",
       "default": 1,
-      "description": "Mirror Force, a trap of this mod's (password 44095762), springs on any attack of the opponent's: it stops the attack and turns it back on every monster of theirs in attack position, as Yugi did to Pegasus: all are destroyed, and the opponent loses the attacker's ATK minus each weaker one's (2500 on 1400 and 2200: 1100 + 300). Off, it destroys only the attacker, as Widespread Ruin does."
+      "description": "Mirror Force, a trap of this mod's (password 44095762, won in duels), springs on any attack of the opponent's: it stops the attack and turns it back on every monster of theirs in attack position, as Yugi did to Pegasus: all are destroyed, and the opponent loses the attacker's ATK minus each weaker one's (2500 on 1400 and 2200: 1100 + 300). Off, it destroys only the attacker, as Widespread Ruin does."
     },
     {
       "key": "change_of_heart",
@@ -247,104 +240,48 @@
   ],
   "decks": {
     "Heishin": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
     },
     "Mai Valentine": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
-      "Harpie's Feather Duster": 60
+      "Harpie's Feather Duster": 60,
+      "Harpie Lady": 100,
+      "Elegant Egotist": 100,
+      "Harpie's Pet Dragon": 100
     },
     "Yami Bakura": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
-      "Harpie's Feather Duster": 60
+      "Harpie's Feather Duster": 60,
+      "modern-rules:change_of_heart:1": 100
     },
     "Pegasus": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
     },
     "Isis": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
     },
     "Kaiba": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
-      "Harpie's Feather Duster": 60
+      "Harpie's Feather Duster": 60,
+      "modern-rules:monster_reborn:1": 100
     },
     "Labyrinth Mage": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
     },
     "Heishin 2nd": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
     },
     "Seto 3rd": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
-      "Harpie's Feather Duster": 60
+      "Harpie's Feather Duster": 60,
+      "modern-rules:monster_reborn:1": 100
     },
     "Nitemare": {
-      "Kuriboh": 100,
-      "modern-rules:multiply:1": 100,
-      "modern-rules:polymerization:1": 100,
-      "modern-rules:living_arrow:1": 100,
-      "Mammoth Graveyard": 100,
-      "Swamp Battleguard": 90,
-      "Lava Battleguard": 90,
       "Harpie's Feather Duster": 60
+    },
+    "Jono": {
+      "Swamp Battleguard": 100,
+      "Lava Battleguard": 100
+    },
+    "Jono 2nd": {
+      "Swamp Battleguard": 100,
+      "Lava Battleguard": 100
     }
   }
 }

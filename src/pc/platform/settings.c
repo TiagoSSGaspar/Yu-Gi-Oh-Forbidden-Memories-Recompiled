@@ -111,8 +111,9 @@ static const SettingInfo info[SET_COUNT] = {
     /* 1: xBR smoothing of the picture's pixel art (present_pass.c). */
     [SET_XBR] = {"xbr", NULL, "MEMORIES_XBR", NULL, 0, 0, 1},
     /* 1: text, and the duel's numbers and labels, set in a font at the
-     * internal resolution (src/pc/text/hd_text.h). */
-    [SET_HD_TEXT] = {"hd_text", NULL, "MEMORIES_HD_TEXT", NULL, 0, 0, 1},
+     * internal resolution (src/pc/text/hd_text.h). On by default in this
+     * fork: it only shows at internal 2x and up, where it is the sharper. */
+    [SET_HD_TEXT] = {"hd_text", NULL, "MEMORIES_HD_TEXT", NULL, 1, 0, 1},
     /* Samples a pixel of the OpenGL picture is drawn with: 0 (off), 2, 4, 8
      * (gl_picture.c). */
     [SET_MSAA] = {"msaa", NULL, "MEMORIES_MSAA", NULL, 0, 0, 8},
@@ -131,6 +132,10 @@ static char unknown[MAX_UNKNOWN][MAX_LINE];
 static int unknown_count;
 static Named *named;
 static int named_count, named_capacity, named_error;
+/* How many of the fork's later default changes a settings file has taken
+ * (Settings_Load). */
+#define FORK_DEFAULTS_KEY "fork_defaults"
+#define FORK_DEFAULTS 1
 static void (*observers[MAX_OBSERVERS])(SettingId, int);
 static int observer_count;
 /* Why the last save failed ("" after one succeeded), and whether that is
@@ -251,6 +256,14 @@ void Settings_Load(void)
         }
         fclose(file);
     }
+    /* The fork's defaults changed after a release. A settings file holds
+     * every key, so what one written before then says is the old default,
+     * not a choice: it takes the new default once. "fork_defaults" says how
+     * many of these changes the file has taken. 1: HD text on (v1.2). */
+    if (Settings_GetNamed(FORK_DEFAULTS_KEY, 0) < 1) {
+        values[SET_HD_TEXT] = stored[SET_HD_TEXT] = info[SET_HD_TEXT].def;
+    }
+    set_named(FORK_DEFAULTS_KEY, FORK_DEFAULTS);
     for (id = 0; id < SET_COUNT; id++) {
         const char *text = info[id].env ? getenv(info[id].env) : NULL;
         int value;

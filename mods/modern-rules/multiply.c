@@ -12,7 +12,7 @@
  * points, and a Kuriboh that leaves the field is born again in its zone,
  * with the ritual's light and sound: the side always has one, so there is no direct attack on it. The
  * wall itself takes no monster zone and has no cards: with 3D Monsters it is
- * five more Kuribohs floating in front of the side's zones, more of the
+ * three more Kuribohs floating in front of the side's zones, more of the
  * Kuriboh's model (monsters_3d.h). It falls with Multiply. A second Multiply
  * on a side that has one cannot be played
  * (modern_rules.c).
@@ -96,12 +96,14 @@ int Multiply_InChain(const int *ids, int count)
     return 0;
 }
 
-/* The wall: five more Kuribohs floating in front of the side's zones, as
- * 3D Monsters' models (monsters_3d.h): no card under them, and no zone. */
-#define CLONES 5
-static const s16 clone_x[CLONES] = {-112, -56, 0, 56, 112};
-static const s16 clone_z[CLONES] = {44, 58, 44, 58, 44};      /* from the monsters' row, toward the other side */
-static const s16 clone_yaw[CLONES] = {96, -64, 0, 64, -96};  /* a little turned each */
+/* The wall: three more Kuribohs floating in front of the side's zones, as
+ * 3D Monsters' models (monsters_3d.h): no card under them, and no zone.
+ * Each is a whole model drawn each frame: three, not more, keeps the phone
+ * smooth (five doubled the frame's cost). */
+#define CLONES 3
+static const s16 clone_x[CLONES] = {-90, 0, 90};
+static const s16 clone_z[CLONES] = {48, 60, 48};     /* from the monsters' row, toward the other side */
+static const s16 clone_yaw[CLONES] = {80, 0, -80};   /* a little turned each */
 
 /* Whether record `r` is the wall's Kuriboh. Another Kuriboh of the side is
  * a monster as any other. */

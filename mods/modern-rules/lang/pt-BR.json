@@ -77,5 +77,40 @@
         "Change of Heart: %s (ATK %d)  Left/Right, X: take it": "Change of Heart: %s (ATK %d)  Esquerda/Direita, X: pega",
         "Monster Reborn: %s %d/%d, yours  Left/Right, X: revive": "Monster Reborn: %s %d/%d, seu  Esquerda/Direita, X: revive",
         "Monster Reborn: %s %d/%d, the opponent's  Left/Right, X: revive": "Monster Reborn: %s %d/%d, do oponente  Esquerda/Direita, X: revive"
+    },
+    "cards": {
+        "Great Moth": {
+            "description": "{f8 0A 05}<Pó venenoso>{f8 0A 00} No início de cada turno do seu dono, os monstros do oponente perdem 300 de ATK, e a perda fica."
+        },
+        "multiply": {
+            "name": "Multiplicação",
+            "description": "Equipe somente em Kuriboh. Ele vira uma muralha de centenas: fica em defesa, e um ataque destrói só um dos muitos."
+        },
+        "polymerization": {
+            "name": "Polimerização",
+            "description": "Funde monstros. Com Living Arrow e um Zumbi da mão, funde o Zumbi a um monstro vivo do oponente, que apodrece por dentro."
+        },
+        "living_arrow": {
+            "description": "Com Polimerização e um Zumbi da mão: dispara o Zumbi num monstro vivo, que perde o ATK do Zumbi a cada turno seu."
+        },
+        "mirror_force": {
+            "name": "Força do Espelho",
+            "description": "Ativa num ataque: reflete em todo monstro do oponente em Posição de Ataque. Todos são destruídos; ele perde o ATK do atacante por cada."
+        },
+        "change_of_heart": {
+            "name": "Mudança de Opinião",
+            "description": "Controle 1 monstro do seu oponente até o fim deste turno. Ele pode atacar."
+        },
+        "monster_reborn": {
+            "name": "Reviver Monstro",
+            "description": "Traga de volta 1 monstro do Cemitério de qualquer jogador para o seu lado do campo."
+        },
+        "magical_hats": {
+            "name": "Cartolas Mágicas",
+            "description": "Quando seu monstro for atacado: o ataque para e ele se esconde virado para baixo entre até três cartolas. Uma vazia cai sem dano."
+        },
+        "magical_hat": {
+            "description": "Uma das Cartolas Mágicas: vazia. Não faz nada, e sai quando sai o monstro escondido entre as cartolas."
+        }
     }
 }

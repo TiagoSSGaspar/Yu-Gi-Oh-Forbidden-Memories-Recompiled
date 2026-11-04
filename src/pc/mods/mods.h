@@ -189,6 +189,11 @@ void Mods_SetLanguage(const char *tag);
  * player's language (host->text); `english` itself when there is none, or
  * when the translation takes other printf values than the English. */
 const char *Mods_Text(int mod, const char *english);
+/* A card a mod adds or replaces (one of its "cards" entries, `entry`), in
+ * the player's language: the "name" or "description" (`what`) the mod's lang
+ * file gives it under "cards", keyed by the entry's "id" (an added card) or
+ * by what it replaces ("Great Moth", "14"); NULL when it gives none. */
+const char *Mods_CardWords(const char *id, const struct JsonValue *entry, const char *what);
 const char *Mods_Directory(int mod);
 /* Where players put new mods (MEMORIES_MODS_DIR, else the user mods
  * folder), created if missing; 0 on success. */
