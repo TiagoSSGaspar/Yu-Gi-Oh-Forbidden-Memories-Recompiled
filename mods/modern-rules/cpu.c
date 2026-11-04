@@ -207,11 +207,23 @@ void Cpu_Play(int slot, int col, int spell)
     D_800EAE88[AI_FACE_DOWN] = 0;
 }
 
+/* The end of the CPU's hand in its snapshot. The snapshot lists the hand
+ * packed, then the upcoming deck right after it (func_80027DF8), so with
+ * fewer than five cards the last of slots 11-15 are deck cards; the disc
+ * takes a pick there as a hand slot, an empty one, whose card record still
+ * holds an old card -- a card the CPU does not hold, played over and over. */
+static int hand_end(void)
+{
+    int side = D_8009B1D5 & 1, slot, held = 0;
+    for (slot = 0; slot < DUEL_FIELD_ROW_SIZE; slot++) held += D_800E9FF0[side].hand[slot] >= 0;
+    return AI_HAND_FIRST + held;
+}
+
 int Cpu_HandSlot(int card)
 {
-    int slot;
+    int slot, end = hand_end();
     if (card <= 0) return 0;
-    for (slot = AI_HAND_FIRST; slot < AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE; slot++)
+    for (slot = AI_HAND_FIRST; slot < end; slot++)
         if (gDuel_aActiveCards[slot].card_id == card) return slot;
     return 0;
 }
@@ -240,7 +252,7 @@ int Cpu_Brothers(void)
             return 1;
         }
     }
-    for (slot = AI_HAND_FIRST; slot < AI_HAND_FIRST + DUEL_FIELD_ROW_SIZE; slot++) {
+    for (slot = AI_HAND_FIRST; slot < hand_end(); slot++) {
         int id = gDuel_aActiveCards[slot].card_id, brother = Swamp_Brother(id);
         if (brother && Cpu_HandSlot(brother)) {
             Cpu_Play(slot, free, 0);

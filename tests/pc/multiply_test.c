@@ -341,6 +341,14 @@ int main(void)
     gDuel_bOpponentID = 17;
     assert(Multiply_CpuBreak() && D_800EAE88[0] == 12 && D_800EAE88[1] == 0 && D_800EAE88[AI_ZONE] == AI_SPELL_ZONE &&
            D_800EAE88[AI_FACE_DOWN] == 0);
+    /* A short hand: the snapshot lists the upcoming deck right after it, so
+     * with one card held slot 12 is a deck card, not a hand slot. */
+    memset(D_800E9FF0[1].hand, -1, sizeof D_800E9FF0[1].hand);
+    D_800E9FF0[1].hand[0] = 40;
+    assert(!Multiply_CpuBreak());
+    D_800E9FF0[1].hand[1] = 41;
+    assert(Multiply_CpuBreak() && D_800EAE88[0] == 12);
+    memset(D_800E9FF0[1].hand, 0, sizeof D_800E9FF0[1].hand);
     empty(SPELL_RECORD(0, 2));
     assert(!Multiply_CpuBreak());
     gDuel_aActiveCards[12].card_id = 0;

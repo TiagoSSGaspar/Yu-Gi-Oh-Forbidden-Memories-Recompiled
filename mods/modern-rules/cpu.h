@@ -25,7 +25,8 @@ void Cpu_Attack(void);
  * down, face up, in monster zone `col` (onto the monster there, for an
  * equip), or in the magic and trap row's column `col` when `spell`. */
 void Cpu_Play(int slot, int col, int spell);
-/* The snapshot slot of `card` in the CPU's hand (its first five), or 0. */
+/* The snapshot slot of `card` in the CPU's hand (its first five, the cards
+ * it holds: not the deck cards listed after a short hand), or 0. */
 int Cpu_HandSlot(int card);
 /* The CPU's first free monster zone, or -1. */
 int Cpu_FreeZone(int spell);
