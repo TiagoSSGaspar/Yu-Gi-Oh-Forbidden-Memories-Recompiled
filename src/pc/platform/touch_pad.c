@@ -67,8 +67,9 @@ static int button_size(void)
 
 /* Game: the D-pad and the face buttons sit in the middle of the left and
  * right sides (where the 4:3 picture leaves black bars on a phone), the
- * shoulders above them, SELECT and START below; MENU under L2/L1, the
- * D-pad's reach (two buttons from its middle) starting below MENU's. */
+ * shoulders above them, SELECT and START below; MENU and STATES under
+ * L2/L1 and SPEED under R1/R2, the D-pad's reach (two buttons from its
+ * middle) starting below their row. */
 static void lay_out_game(int s)
 {
     int m = s * 35 / 100, bottom, menu_y;
@@ -80,6 +81,8 @@ static void lay_out_game(int s)
     menu_y = top + m / 2 + s + m / 2;
     if (dpad_y - 2 * s < menu_y + s) dpad_y = face_y = menu_y + 3 * s;
     place(TOUCH_MENU, m, menu_y + s / 4, s * 4 / 3, s / 2);
+    place(TOUCH_STATES, m + s * 4 / 3 + s / 5, menu_y + s / 4, s * 4 / 3, s / 2);
+    place(TOUCH_SPEED, width - m - s * 4 / 3, menu_y + s / 4, s * 4 / 3, s / 2);
     place(TOUCH_UP, dpad_x - s / 2, dpad_y - s * 3 / 2, s, s);
     place(TOUCH_DOWN, dpad_x - s / 2, dpad_y + s / 2, s, s);
     place(TOUCH_LEFT, dpad_x - s * 3 / 2, dpad_y - s / 2, s, s);
@@ -419,7 +422,7 @@ int TouchPad_Finger(int kind, uint64_t id, int x, int y)
         finger->y = y;
         finger->bits = press_at(finger, x, y);
         /* Game's MENU opens on the touch, as it always did. */
-        if (zone == ZONE_BUTTON && TOP_ROW(button) && style != TOUCH_STYLE_SIMPLE) row_taps[button]++;
+        if (zone == ZONE_BUTTON && button == TOUCH_MENU && style != TOUCH_STYLE_SIMPLE) row_taps[button]++;
         return refresh();
     }
     if (!finger) return 0;
@@ -428,11 +431,11 @@ int TouchPad_Finger(int kind, uint64_t id, int x, int y)
         finger->y = y;
         finger->bits = press_at(finger, x, y);
     } else {
-        /* Simple's top row takes a tap as the finger lifts on the button it
-         * landed on, so one brushing SPEED changes nothing; a touch the
-         * system cancelled taps nothing. */
-        if (kind == TOUCH_FINGER_UP && style == TOUCH_STYLE_SIMPLE && finger->zone == ZONE_BUTTON &&
-            TOP_ROW(finger->button) && in_button(finger->button, x, y))
+        /* STATES and SPEED (and Simple's MENU) take a tap as the finger
+         * lifts on the button it landed on, so one brushing SPEED changes
+         * nothing; a touch the system cancelled taps nothing. */
+        if (kind == TOUCH_FINGER_UP && finger->zone == ZONE_BUTTON && TOP_ROW(finger->button) &&
+            (style == TOUCH_STYLE_SIMPLE || finger->button != TOUCH_MENU) && in_button(finger->button, x, y))
             row_taps[finger->button]++;
         memset(finger, 0, sizeof(*finger));
     }

@@ -362,8 +362,12 @@ two styles, **View > Touch controls > Style** (`touch_style`,
   edge brightens. **MENU**, under L2/L1 (the D-pad below it), opens the
   menu bar's first menu as it is touched (`TouchPad_TakeMenu`, taken in the
   event pump): the way to the menus where the bar is hidden, as in
-  fullscreen or on a phone. The D-pad and the face buttons take a touch
-  two buttons from their middles.
+  fullscreen or on a phone. **STATES**, beside MENU, opens its File menu
+  (Save state, Load state, the state slot) and **SPEED**, under R1/R2,
+  steps Game speed x1 to x4 a tap and shows it beside its two arrows, as
+  Simple's top row does, each taking its tap as the finger lifts on it.
+  The D-pad and the face buttons take a touch two buttons from their
+  middles.
 - **Simple** (1): laid out as a handheld's: L2, L1 and SELECT down the top
   left corner and R2, R1 and START down the top right, each a frame 1.6
   buttons wide; the D-pad in the bottom left corner, its arrows in a ring

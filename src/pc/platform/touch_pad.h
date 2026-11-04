@@ -4,9 +4,9 @@
  * laptops), in one of two styles (View > Touch controls > Style):
  *
  * Game, the default: a D-pad, the four face buttons, L1/L2/R1/R2, SELECT
- * and START at the sides of the window, and MENU (which opens the menu
- * bar's first menu) under L2/L1, drawn smooth at the screen's size
- * (touch_pad_art.c).
+ * and START at the sides of the window, MENU (which opens the menu bar's
+ * first menu) and STATES under L2/L1 and SPEED under R1/R2 (as Simple's
+ * top row), drawn smooth at the screen's size (touch_pad_art.c).
  *
  * Simple: laid out as a handheld's, L2, L1 and SELECT down the top left
  * corner and R2, R1 and START down the top right, the D-pad in the bottom

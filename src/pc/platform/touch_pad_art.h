@@ -7,9 +7,9 @@
  * Game: drawn here at the window's own size so they stay smooth on any
  * screen: dark see-through buttons with a thin light edge, the face
  * buttons' symbols in the PlayStation's colors, the D-pad's arrows, and the
- * L/R, SELECT, START and MENU pills labelled in the overlay's face
- * (overlay_text.h). Each button's picture, let go and held, is drawn once
- * per size.
+ * L/R, SELECT, START, MENU and STATES pills labelled in the overlay's face
+ * (overlay_text.h), and SPEED's with two arrows and the game speed. Each
+ * button's picture, let go and held, is drawn once per size.
  *
  * Simple (touch_pad_simple_art.c): one grey scale, frames and discs with a
  * light edge, the D-pad's solid arrows in a ring, the face buttons'

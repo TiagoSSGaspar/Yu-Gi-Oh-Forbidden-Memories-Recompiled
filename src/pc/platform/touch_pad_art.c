@@ -2,8 +2,10 @@
 #include "touch_pad_art.h"
 #include "touch_pad.h"
 #include "settings.h"
+#include "ui_text.h"
 #include "pc/text/overlay_text.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,7 +27,7 @@ static const uint32_t symbol_color[TOUCH_BUTTONS] = {
 };
 static const char *const label[TOUCH_BUTTONS] = {
     [TOUCH_L1] = "L1", [TOUCH_L2] = "L2", [TOUCH_R1] = "R1", [TOUCH_R2] = "R2",
-    [TOUCH_SELECT] = "SELECT", [TOUCH_START] = "START", [TOUCH_MENU] = "MENU",
+    [TOUCH_SELECT] = "SELECT", [TOUCH_START] = "START", [TOUCH_MENU] = "MENU", [TOUCH_STATES] = "STATES",
 };
 
 /* A button's picture at its size, let go (0) and held (1): straight-alpha
@@ -159,6 +161,18 @@ static void arrow(Tile *tile, TouchButton button, float cx, float cy, float r)
             over(tile, x, y, INK, cover(triangle(x + 0.5f, y + 0.5f, p)) * INK_ALPHA);
 }
 
+/* SPEED: where its arrows' middle sits across the pill, and its words, the
+ * game speed as Game > Game speed sets it (x1 to x4, or MAX uncapped). */
+#define SPEED_ICON 0.27f
+static const char *speed_words(char *out, size_t size)
+{
+    int speed = Settings_Get(SET_SPEED);
+    if (speed < 0) snprintf(out, size, "MAX");
+    else if (speed % 100 == 0) snprintf(out, size, "x%d", speed / 100);
+    else snprintf(out, size, "x%d.%d", speed / 100, speed % 100 / 10);
+    return out;
+}
+
 /* The pill a labelled button is: as tall as the shorter side allows, its
  * text set in the menu's face (overlay_text.h) when drawn. */
 static float pill_height(TouchButton button, int w, int h)
@@ -193,6 +207,11 @@ static int make_tile(Tile *tile, TouchButton button, int w, int h, int held)
     } else {
         float ph = pill_height(button, w, h) - line * 2;
         body(tile, 0, cx, cy, w / 2.f - line, ph / 2, ph / 2, held, line);
+        if (button == TOUCH_SPEED) { /* fast forward: two arrows, the speed beside them as drawn */
+            float r = ph * 0.26f;
+            arrow(tile, TOUCH_RIGHT, w * SPEED_ICON - r * 0.55f, cy, r);
+            arrow(tile, TOUCH_RIGHT, w * SPEED_ICON + r * 0.55f, cy, r);
+        }
     }
     return 1;
 }
@@ -235,10 +254,14 @@ void TouchPadArt_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
                 OverlayText_Blend(canvas, bx + tx, by + ty, tile->color[ty * bw + tx], (unsigned)(a * 255 + 0.5f));
             }
         }
-        if (label[i]) {
+        if (label[i] || i == TOUCH_SPEED) {
+            char speed[16];
+            const char *words = i == TOUCH_SPEED ? speed_words(speed, sizeof(speed)) : UI(label[i]);
             int pixels = (int)(pill_height((TouchButton)i, bw, bh) * (i >= TOUCH_SELECT ? 0.46f : 0.44f));
-            int text_w = OverlayText_Width(label[i], pixels);
-            OverlayText_Draw(canvas, bx + (bw - text_w) / 2, by + bh / 2, bx + bw, label[i], pixels, INK);
+            int text_w = OverlayText_Width(words, pixels);
+            /* SPEED's words sit right of its arrows, the others in the middle. */
+            int left = i == TOUCH_SPEED ? bx + (int)(bw * (1 + SPEED_ICON) / 2) - text_w / 2 : bx + (bw - text_w) / 2;
+            OverlayText_Draw(canvas, left, by + bh / 2, bx + bw, words, pixels, INK);
         }
     }
     if (x0 < 0) x0 = 0;

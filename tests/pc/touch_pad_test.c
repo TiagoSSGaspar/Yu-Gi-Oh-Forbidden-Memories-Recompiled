@@ -136,7 +136,7 @@ int main(void)
 
     /* MENU: tapped once, it presses no pad button; it sits clear of the
      * D-pad (a touch on it is not an arrow) and is a button tall. The Game
-     * style has no STATES, SPEED or top row. */
+     * style has no top row: its STATES and SPEED are below. */
     assert(TouchPad_SetMode(TOUCH_PAD_SHOW) && TouchPad_Shown());
     centre(TOUCH_MENU, &x, &y);
     assert(TouchPad_Covers(x, y) && !TouchPad_TakeMenu());
@@ -148,8 +148,32 @@ int main(void)
         TouchPad_Rect(TOUCH_UP, &ax, &ay, &aw, &ah);
         assert(my + mh <= ay);
         assert(TouchPad_Covers(x, my - (1080 * 13 / 100 - mh) / 2 + 2)); /* the taller hit box */
-        assert(!TouchPad_Rect(TOUCH_STATES, &ax, &ay, &aw, &ah) && !TouchPad_Rect(TOUCH_SPEED, &ax, &ay, &aw, &ah));
         assert(!TouchPad_TopRowBottom());
+    }
+
+    /* Game's STATES (beside MENU) and SPEED (under R1/R2): clear of MENU,
+     * the D-pad and the face buttons, pressing no pad button, each taking
+     * its tap as the finger lifts on it; one that slides off taps nothing. */
+    {
+        int mx, my, mw, mh, sx, sy, sw, sh, vx, vy, vw, vh, ax, ay, aw, ah, tx, ty, tw, th;
+        TouchPad_Rect(TOUCH_MENU, &mx, &my, &mw, &mh);
+        assert(TouchPad_Rect(TOUCH_STATES, &sx, &sy, &sw, &sh) && TouchPad_Rect(TOUCH_SPEED, &vx, &vy, &vw, &vh));
+        TouchPad_Rect(TOUCH_UP, &ax, &ay, &aw, &ah);
+        TouchPad_Rect(TOUCH_TRIANGLE, &tx, &ty, &tw, &th);
+        assert(sx >= mx + mw && sy + sh <= ay && vy + vh <= ty && vx > 2280 / 2 && sx + sw < 2280 / 2);
+        centre(TOUCH_STATES, &x, &y);
+        assert(TouchPad_Finger(TOUCH_FINGER_DOWN, 20, x, y) && TouchPad_Held(TOUCH_STATES));
+        assert(TouchPad_Update() == 0 && !TouchPad_TakeStates() && !TouchPad_TakeMenu());
+        TouchPad_Finger(TOUCH_FINGER_UP, 20, x, y);
+        assert(TouchPad_TakeStates() && !TouchPad_TakeStates() && !TouchPad_TakeSpeed());
+        centre(TOUCH_SPEED, &x, &y);
+        TouchPad_Finger(TOUCH_FINGER_DOWN, 21, x, y);
+        TouchPad_Finger(TOUCH_FINGER_UP, 21, x, y);
+        assert(TouchPad_Update() == 0 && TouchPad_TakeSpeed() && !TouchPad_TakeSpeed());
+        TouchPad_Finger(TOUCH_FINGER_DOWN, 22, x, y);
+        TouchPad_Finger(TOUCH_FINGER_MOVE, 22, 1140, 540);
+        TouchPad_Finger(TOUCH_FINGER_UP, 22, 1140, 540);
+        assert(!TouchPad_TakeSpeed());
     }
 
     /* Blocked (a menu is up): nothing drawn, no touch taken, held let go. */
