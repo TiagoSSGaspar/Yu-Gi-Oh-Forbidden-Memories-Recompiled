@@ -108,9 +108,9 @@ static void *original_dim, *original_window;
 static ExtraHandTurnDraws turn_draws;
 static ExtraHandOptionalPlay optional_play;
 
-/* A text the mod draws, in the player's language (host API 22: its
+/* A text the mod draws, in the player's language (host API 23: its
  * lang/<language>.json's "texts"); the English on an older host. */
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 
 static int setting(const char *key, int fallback, int low, int high)
 {
@@ -810,12 +810,12 @@ static void phase_menu(int phase)
                     MENU_OTHER_RGB, small);
 }
 /* Where a point of the game's picture (320 x 240) is on the canvas: the
- * host's answer from API 22, else a 4:3 picture as tall as the canvas, in
+ * host's answer from API 23, else a 4:3 picture as tall as the canvas, in
  * its middle. */
 static void picture_point(int x, int y, int *cx, int *cy)
 {
     int width, height, scale;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, x, y, cx, cy);
         return;
     }

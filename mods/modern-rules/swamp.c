@@ -124,7 +124,7 @@ static void battle(void)
 }
 
 /* The line while the brothers fight together. */
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 static int shown(void) { return W.record >= 0 && (gDuel_wSceneStateFlags & SCENE_MASK) == SCENE_BATTLE; }
 static void overlay(void)
 {
@@ -135,7 +135,7 @@ static void overlay(void)
     snprintf(text, sizeof text, T("The swamp brothers join: %d"), W.total);
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, 160, 34, &cx, &cy);
     } else {
         cx = width / 2;

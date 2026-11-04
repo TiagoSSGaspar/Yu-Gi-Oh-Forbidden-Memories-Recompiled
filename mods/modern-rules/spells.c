@@ -435,7 +435,7 @@ int Spells_Cpu(void)
 
 /* --- the line while the player picks ----------------------------------- */
 
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 static void name(int id, char *out, size_t size)
 {
     if (!Cards_NameUtf8(id, out, size)) snprintf(out, size, "#%d", id);
@@ -460,7 +460,7 @@ static void overlay(void)
     }
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, 160, 34, &cx, &cy);
     } else {
         cx = width / 2;

@@ -64,9 +64,12 @@
  *      reads a mod's model at Cards_ModelSector (-1 for one bigger than a
  *      record: its base stands in), and AnimatedBattleModelProperties's
  *      model_id is unsigned (0x8000 up)
- *  22  text: a code mod's own words in the player's language, from its
+ *  22  packet_area: room for a mod's polygons past the game's 140 KB frame
+ *      buffer (the mods' packet area, src/pc/memory.h)
+ *  23  text: a code mod's own words in the player's language, from its
  *      lang/<language>.json's "texts"; picture_point: where a point of the
- *      game's picture shows on the overlay's canvas; no manifest feature
+ *      game's picture shows on the overlay's canvas; a lang file's "cards"
+ *      and the game's own text in the player's language (manifest)
  * A data mod declares its required version with min_api in mod.json. */
 #include "mod_types.h"
 
@@ -269,6 +272,16 @@ struct MemoriesModHost {
     void (*sound_free)(const MemoriesModHost *, int sound);
 
     /* --- API 22 ---
+     * `bytes` of this frame's share of the mods' packet area (src/pc/memory.h),
+     * for polygons the game's own 140 KB frame buffer has no room for, or
+     * NULL (none left this frame, or a build without one: then use the game's
+     * buffer as before). Packets there link into the ordering tables like any
+     * other: sort into it by pointing the packet cursor D_800FE240 at it
+     * around GsSortPoly and the like, and putting the cursor back after. Good
+     * until the frame's list is drawn (DrawOTag): ask again each frame. */
+    void *(*packet_area)(const MemoriesModHost *, size_t bytes);
+
+    /* --- API 23 ---
      * A text the mod draws, in the player's language: `english`, written
      * exactly as the mod passes it, looked up in "texts" of the mod's
      * lang/<language>.json (notes/modding.md, "A mod in the player's

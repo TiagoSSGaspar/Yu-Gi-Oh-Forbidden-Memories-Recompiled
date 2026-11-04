@@ -13,8 +13,10 @@
 #include "mods_window.h"
 #include "ui_text.h"
 #include "../../types.h"
+#include "pc/compat/fs.h"
 #include "pc/mods/hd_pack.h"
 #include "pc/mods/import.h"
+#include "pc/mods/import_job.h"
 #include "pc/mods/json.h"
 #include "pc/mods/mods.h"
 #include "pc/mods/overlap.h"
@@ -44,7 +46,7 @@ typedef struct {
 } Rect;
 typedef struct {
     Rect search, filter, list, list_bar, detail, toggle, tabs[3], view, bar, apply, close, profile, save, load,
-        order[2], defaults, folder, remove, back, hd;
+        order[2], defaults, folder, remove, back, hd, modsdir;
     int name_y, meta_y; /* the middles of the details' name and metadata lines */
     int lift;           /* with a finger: how far a long message raises the footer's top */
 } Layout;
@@ -56,17 +58,47 @@ static int touch, compact, page, drag_rest;
 static int wanted[MODS_MAX], ranks[MODS_MAX], *values[MODS_MAX], counts[MODS_MAX];
 static int slider_drag = -1, bar_drag, bar_grab; /* bar_drag: 1 the list's scrollbar, 2 the details' */
 /* Import mod... (ModsWindow_SetImport): the platform's picker, the step an
- * import is at (1 the picker is open, 2 a .zip came and is read at the
- * next tick), the .zip, and the import that waits for Replace or Cancel
- * (pending 3). */
+ * import is at (1 the picker is open, 2 the copy and the reading run on
+ * the job's thread, 3 the unpacking does; import_job.h), the share of the
+ * step last shown (a new one draws the window again), the .zip, and the
+ * import that waits for Replace or Cancel (pending 3) or is unpacked. */
 static int (*import_pick)(char *, size_t), (*import_picked)(char *, size_t),
-    (*import_fetch)(char *, size_t, char *, size_t);
-static int import_step;
+    (*import_fetch)(char *, size_t, char *, size_t, unsigned *, unsigned *, const int *);
+static int import_step, import_shown = -1;
 static char import_zip[1024];
 static ModsImport *import_waiting;
+/* A .zip the player opened with the game (ModsWindow_ImportOpened) is
+ * imported as the picked one is, but asks first, whether it replaces a mod
+ * or not: import_outside while the import is under way, import_plain while
+ * the question is not a Replace one. */
+static int import_outside, import_plain;
 /* Remove (touch panels with Import mod...): the mod its question (pending
  * 5) is about. */
 static int remove_target = -1;
+/* Mods folder... (ModsWindow_SetFolderPicker): the platform's folder picker,
+ * whether it is open (folder_step 1), and the folder the game was started
+ * with: a choice is read at the next launch, so a different one is a restart
+ * to offer (folder_restart). Pending 6 is the question that asks what to do
+ * with the folder. */
+static int (*folder_pick)(char *, size_t), (*folder_picked)(char *, size_t, char *, size_t);
+static int folder_step, launch_known;
+static char launch_folder[1024];
+/* Where the right to read the folder is the player's to give (Android's All
+ * files access, ModsWindow_SetFolderAccess): whether it is held now, whether
+ * the folder the game started with could not be read (so that the right,
+ * given since, is a restart too), and the question that asks for it (pending
+ * 7; folder_step 2 while the system's page is up). */
+static int (*access_have)(void), (*access_ask)(char *, size_t), (*access_asked)(char *, size_t);
+static int (*access_can_ask)(void);
+static const char *(*access_right)(void);
+static int access_now = 1, launch_unread, launch_access = -1;
+static volatile int access_recheck_now; /* the app came back to the front (ModsWindow_RefreshAccess) */
+static int folder_restart(void);
+static void folder_launch(void);
+static const char *access_hint(void);
+static void put(char *out, size_t size, const char *format, ...);
+/* Where a mod comes from, as the details say it (Mods_Origin). */
+static const char *origin_text(const char *origin) { return !strcmp(origin, "folder") ? UI("from your mods folder") : origin; }
 /* HD pack... (hd_pack.h, where the platform has a network for it): what
  * the window did with the job (0 nothing, 1 asked GitHub, 2 asks the
  * player (pending 4), 3 downloads, 4 unpacks), and the share of the step
@@ -128,7 +160,7 @@ static void layout_touch(Layout *l)
      * platform has a file picker for it (an app has no folder window to
      * open: Platform_OpenFolder fails on Android); on the list's page. */
     l->folder = none();
-    if (import_pick && (!compact || page == 0)) {
+    if (import_pick && pending != 6 && (!compact || page == 0)) {
         int w = max(120 * unit, width_text(UI("Import mod...")) + 24 * unit);
         l->folder = rect(l->close.x - g - w, footer, w, t);
     }
@@ -138,14 +170,25 @@ static void layout_touch(Layout *l)
      * question is up (pending 5) the answer is the Apply button, which reads
      * Remove, so this one steps aside rather than showing a second, dead one. */
     l->remove = none();
-    if (import_pick && selected >= 0 && pending != 5 && (!compact || page == 1)) {
+    if (import_pick && selected >= 0 && pending != 5 && pending != 6 && (!compact || page == 1)) {
         int w = max(90 * unit, width_text(UI("Remove")) + 24 * unit), edge = l->folder.w ? l->folder.x : l->close.x;
         l->remove = rect(edge - g - w, footer, w, t);
+    }
+    /* Mods folder..., where the platform has a folder picker for it: the
+     * leftmost of the footer's buttons on the list's page, if the message
+     * keeps room beside them (a few words: counts or a line that wraps). */
+    l->modsdir = none();
+    if (folder_pick && pending != 7 && (!compact || page == 0)) {
+        int w = max(130 * unit, width_text(UI("Mods folder...")) + 24 * unit);
+        int edge = l->remove.w ? l->remove.x : l->folder.w ? l->folder.x : l->close.x;
+        if (edge - g - w >= 140 * unit)
+            l->modsdir = rect(edge - g - w, footer, w, t);
     }
     {   /* A message of two to four lines beside the buttons (a refusal, a
          * mod that cannot run here) raises the footer's top instead of
          * being cut: the list and the details end above it. */
-        int room = (l->remove.w ? l->remove.x : l->folder.w ? l->folder.x : l->close.x) - 20 * unit;
+        int room = (l->modsdir.w ? l->modsdir.x : l->remove.w ? l->remove.x : l->folder.w ? l->folder.x : l->close.x) -
+                   20 * unit;
         int lines = *status ? min(4, max(1, wrap(NULL, 0, 0, room, status, 0) / LINE)) : 1;
         l->lift = max(0, lines * LINE + 6 * unit - t);
         footer -= l->lift; /* where the list and the details end; the buttons are placed */
@@ -243,6 +286,8 @@ static void layout(Layout *l)
     l->apply = rect(width - p - 150 * unit, height - 48 * unit, 150 * unit, 30 * unit);
     l->close = rect(width - p - 252 * unit, height - 48 * unit, 94 * unit, 30 * unit);
     l->folder = rect(width - p - 418 * unit, height - 48 * unit, 158 * unit, 30 * unit);
+    l->modsdir = folder_pick ? rect(l->folder.x - 8 * unit - 130 * unit, height - 48 * unit, 130 * unit, 30 * unit)
+                             : none();
     l->back = rect(0, 0, 0, 0);
     l->hd = none(); /* a phone's panel only (layout_touch) */
     l->remove = none(); /* so is Remove */
@@ -340,6 +385,7 @@ void ModsWindow_Init(void)
 {
     unit = Menu_Scale();
     touch = Menu_TouchTarget();
+    folder_launch();
     compact = page = drag_rest = 0;
     width = 920 * unit;
     height = 640 * unit;
@@ -359,16 +405,27 @@ void ModsWindow_Init(void)
     }
     for (int i = 0; i < Mods_Count(); i++)
         adopt(i);
-    if (import_waiting) { /* a Replace question the last showing left open */
+    {   /* a mods folder the game could not read this time */
+        char path[1024];
+        access_now = access_have ? access_have() : 1;
+        access_recheck_now = 0;
+        if (!Mods_Folder(path, sizeof(path)) && !access_now)
+            /* a phone's footer has few lines: the hint, without the path */
+            put(status, sizeof(status), touch ? "%.0s%s" : "%.300s: %s", path, access_hint());
+        else if (!Mods_Folder(path, sizeof(path)) && *Mods_FolderProblem())
+            put(status, sizeof(status), "%s", Mods_FolderProblem());
+    }
+    if (import_waiting && import_step != 3) { /* a Replace question the last showing left open */
         Mods_ImportClose(import_waiting);
         import_waiting = NULL;
+        import_plain = 0;
         Mods_ImportRemoveTree(import_zip);
     }
     if (hd_step == 2) { /* the HD pack's Download question, left open */
         HdPack_Reset();
         hd_step = 0;
     }
-    hd_shown = -1;
+    hd_shown = import_shown = -1;
 }
 void ModsWindow_Resize(int w, int h)
 {
@@ -651,8 +708,9 @@ static int body(MenuCanvas *c, int w, int y)
         y = wrap(c, 0, y, w, line, DIM);
         y = wrap(c, 0, y, w, Mods_Directory(selected), DIM) + 16 * unit;
         y = wrap(c, 0, y, w,
-                 Mods_HasCode(selected) ? UI("Native code mod: runs game code from this author.")
-                                        : UI("Content mod: assets, cards or data patches."),
+                 Mods_CodeSkipped(selected) ? UI("Native code mod: only its data is used from your mods folder.")
+                 : Mods_HasCode(selected)   ? UI("Native code mod: runs game code from this author.")
+                                            : UI("Content mod: assets, cards or data patches."),
                  DIM);
         if (Mods_Status(selected)[0])
             y = wrap(c, 0, y + 16 * unit, w, Mods_Status(selected), Mods_Failed(selected) ? RED : WARN);
@@ -810,7 +868,7 @@ static void draw_details(MenuCanvas *c, const Layout *l)
         text(c, name_x, l->name_y, (touch ? order_x : l->toggle.x) - 12 * unit - name_x, Mods_Name(selected), TEXT);
         button(c, l->toggle, wanted[selected] ? "Enabled" : "Disabled", wanted[selected]);
         snprintf(line, sizeof(line), "%s  /  %s  /  %s", Mods_Metadata(selected, "version"),
-                 Mods_Metadata(selected, "author"), UI(Mods_Origin(selected))); /* "shipped", "installed" */
+                 Mods_Metadata(selected, "author"), UI(origin_text(Mods_Origin(selected)))); /* "shipped", "installed", or origin_text's */
         text(c, name_x, l->meta_y, order_x - 12 * unit - name_x, line, DIM);
         if (label)
             text(c, order_x, touch ? l->order[0].y + l->order[0].h / 2 : l->meta_y, width_text(UI("Load order")) + unit,
@@ -844,16 +902,31 @@ static void draw_details(MenuCanvas *c, const Layout *l)
         text(c, l->detail.x + 20 * unit, l->detail.y + 30 * unit, l->detail.w - 40 * unit,
              UI("Select a mod to view its details"), DIM);
 }
+/* Mods folder..., or while its question is up (pending 6) the answer that
+ * chooses none, if a folder is chosen. */
+static void draw_modsdir(MenuCanvas *c, const Layout *l)
+{
+    char path[1024];
+    if (!l->modsdir.w)
+        return;
+    if (pending != 6)
+        button(c, l->modsdir, "Mods folder...", 0);
+    else if (!Mods_Folder(path, sizeof(path)))
+        button(c, l->modsdir, "Use no folder", 0);
+}
 static const char *apply_label(void)
 {
-    return pending == 5 ? "Remove" : pending == 4 ? "Download" : pending == 3 ? "Replace" : pending == 2 ? "Discard changes" : pending == 1 ? "Apply & restart" : "Apply changes";
+    return pending == 7 ? "Allow" : pending == 6 ? "Choose folder..." : pending == 5 ? "Remove" : pending == 4 ? "Download" : pending == 3 ? (import_plain ? "Import" : "Replace") : pending == 2 ? "Discard changes" : pending == 1 ? "Apply & restart" : "Apply changes";
 }
 /* With a finger: the fields and the list, the details (side by side or the
  * page shown), and the footer: the message (or the counts) beside Close and
  * Apply, up to four lines in the footer's band (layout_touch raises it). */
-/* Where the footer's buttons start: Remove when it is shown, else the
- * files slot when it has a button, else Close. */
-static int footer_left(const Layout *l) { return l->remove.w ? l->remove.x : l->folder.w ? l->folder.x : l->close.x; }
+/* Where the footer's buttons start: Mods folder... when it is shown, else
+ * Remove, else the files slot when it has a button, else Close. */
+static int footer_left(const Layout *l)
+{
+    return l->modsdir.w ? l->modsdir.x : l->remove.w ? l->remove.x : l->folder.w ? l->folder.x : l->close.x;
+}
 static void draw_touch(MenuCanvas *c, const Layout *l)
 {
     char line[512];
@@ -880,11 +953,13 @@ static void draw_touch(MenuCanvas *c, const Layout *l)
              pending ? WARN : *status ? TEXT : DIM);
     }
     if (l->folder.w)
-        button(c, l->folder, import_step == 2 ? "Importing..." : "Import mod...", 0);
+        button(c, l->folder, import_step >= 2 ? "Stop" : "Import mod...",
+               import_step >= 2); /* Stop where import_tap stops */
     if (l->remove.w)
         button(c, l->remove, "Remove", 0);
+    draw_modsdir(c, l);
     button(c, l->close, pending ? "Cancel" : "Close", 0);
-    button(c, l->apply, apply_label(), changed() || pending);
+    button(c, l->apply, apply_label(), changed() || pending || folder_restart());
 }
 void ModsWindow_Draw(MenuCanvas *c)
 {
@@ -912,14 +987,24 @@ void ModsWindow_Draw(MenuCanvas *c)
     else
         text(c, 20 * unit, height - 59 * unit, width - 40 * unit,
              *status ? status : UI("Changes are staged. Apply once when you are ready."), pending ? WARN : DIM);
-    text(c, 20 * unit, height - 32 * unit, l.folder.x - 28 * unit,
-         UI("Arrow keys: select / toggle   Tab: search   Mouse wheel: scroll"), DIM);
+    {   /* the keys, as fully as the room beside the buttons lets */
+        int room = (l.modsdir.w ? l.modsdir.x : l.folder.x) - 28 * unit;
+        const char *hint = UI("Arrow keys: select / toggle   Tab: search   Mouse wheel: scroll");
+        if (width_text(hint) > room)
+            hint = UI("Arrows: select   Tab: search   Wheel: scroll");
+        if (width_text(hint) > room)
+            hint = UI("Tab: search   Wheel: scroll");
+        text(c, 20 * unit, height - 32 * unit, room, hint, DIM);
+    }
     button(c, l.folder, "Open mods folder", 0);
+    draw_modsdir(c, &l);
     button(c, l.close, pending ? "Cancel" : "Close", 0);
-    button(c, l.apply, apply_label(), changed() || pending);
+    button(c, l.apply, apply_label(), changed() || pending || folder_restart());
 }
 static int needs_restart(void)
 {
+    if (folder_restart())
+        return 1;
     for (int i = 0; i < Mods_Count(); i++) {
         char key[160];
         snprintf(key, sizeof(key), "mod.%s.order", Mods_Id(i));
@@ -940,7 +1025,7 @@ static int needs_restart(void)
 static void apply(void)
 {
     int restart = needs_restart(), old_ranks[MODS_MAX], *old_values[MODS_MAX] = {0};
-    if (!changed()) {
+    if (!changed() && !folder_restart()) {
         snprintf(status, sizeof(status), "%s", UI("No pending changes"));
         return;
     }
@@ -1021,7 +1106,7 @@ static void put(char *out, size_t size, const char *format, ...)
     va_end(list);
 }
 void ModsWindow_SetImport(int (*pick)(char *, size_t), int (*picked)(char *, size_t),
-                          int (*fetch)(char *, size_t, char *, size_t))
+                          int (*fetch)(char *, size_t, char *, size_t, unsigned *, unsigned *, const int *))
 {
     char folder[1024];
     import_pick = pick;
@@ -1029,7 +1114,7 @@ void ModsWindow_SetImport(int (*pick)(char *, size_t), int (*picked)(char *, siz
     import_fetch = fetch;
     /* what an import cut short (the app ended in it) left in the mods
      * folder; never while the HD pack's job has files there */
-    if (pick && !import_step && !import_waiting && HdPack_State() == HD_IDLE &&
+    if (pick && !import_step && !import_waiting && !ImportJob_Busy() && HdPack_State() == HD_IDLE &&
         !Mods_InstallDirectory(folder, sizeof(folder))) {
         Mods_ImportCleanup(folder);
         if (HdPack_Available() && !Paths_User(folder, sizeof(folder), "downloads"))
@@ -1040,6 +1125,7 @@ static void import_done(void)
 {
     Mods_ImportClose(import_waiting);
     import_waiting = NULL;
+    import_plain = 0;
     Mods_ImportRemoveTree(import_zip);
 }
 /* The names of the mods of `import` that `pick` picks, "A", "A and B",
@@ -1130,17 +1216,35 @@ static void import_show(int first)
     if (at < scroll || at >= scroll + rows())
         scroll = max(0, min(at, shown_count() - rows()));
 }
-static void import_install(void)
+/* A step of the import ended in IMPORT_JOB_FAILED: why, in the words the
+ * player always had (what a Stop left out, and what the unpacking refused,
+ * "Nothing was imported."), and the job over. Its files are gone: the copy
+ * with the reading, the hidden folder with the unpacking. */
+static void import_failed(void)
 {
-    char why[400], folder[1024], names[300], line[512];
-    int first, later, n, several, lost;
-    if (Mods_InstallDirectory(folder, sizeof(folder))) {
-        put(status, sizeof(status), "%s", UI("Could not make the mods folder."));
+    const char *said = ImportJob_Why(), *why = UI(said); /* the job's words, in the player's language */
+    if (ImportJob_Cancelled())
+        put(status, sizeof(status), UI("The import was stopped. Nothing was imported."));
+    else if (import_waiting) /* the unpacking */
+        put(status, sizeof(status), "%s%s", strncmp(said, "Nothing was", 11) ? UI("Nothing was imported. ") : "", why);
+    else
+        put(status, sizeof(status), "%s", why);
+    ImportJob_Reset();
+    import_step = 0;
+    import_outside = 0;
+    if (import_waiting)
         import_done();
-        return;
-    }
-    if (!Mods_ImportInstall(import_waiting, folder, why, sizeof(why))) {
-        put(status, sizeof(status), "%s%s", strncmp(why, "Nothing was", 11) ? UI("Nothing was imported. ") : "", why);
+}
+/* The mods are in place: into the list, and the word on what came. */
+static void import_finish(void)
+{
+    char folder[1024], names[300], line[512];
+    int first, later, n, several, lost;
+    ImportJob_Reset();
+    import_step = 0;
+    if (Mods_InstallDirectory(folder, sizeof(folder))) { /* it was made for the unpacking */
+        put(status, sizeof(status), UI("The mods are in the mods folder, but could not be added to the list. Restart "
+            "the game to see them."));
         import_done();
         return;
     }
@@ -1175,6 +1279,24 @@ static void import_install(void)
     fprintf(stderr, "memories-pc: import: %s\n", status);
     import_done();
     import_show(first);
+}
+/* The mods go into the mods folder, on the job's thread: after the reading
+ * when no mod is installed already, else after Replace. */
+static void import_install(void)
+{
+    char folder[1024];
+    if (Mods_InstallDirectory(folder, sizeof(folder))) {
+        put(status, sizeof(status), UI("Could not make the mods folder."));
+        import_done();
+        return;
+    }
+    import_shown = -1;
+    if (!ImportJob_Install(import_waiting, folder)) { /* a Stop that came after the reading, or no thread */
+        import_failed();
+        return;
+    }
+    import_step = 3;
+    put(status, sizeof(status), UI("Unpacking the mod..."));
 }
 /* Another mod of `import` than mod `index` has the folder `name` (its own,
  * or the free one it was given), letter case aside: one folder on a
@@ -1239,24 +1361,19 @@ static int import_target(ModsImport *import, int index, const char *folder)
     }
     return 0;
 }
-/* A .zip came: read, and either installed or held for Replace/Cancel when
- * a mod in it is installed already. */
-static void import_read(void)
+/* A .zip came and was copied and read, on the job's thread: unpacked, or
+ * held for Replace/Cancel when a mod in it is installed already. These
+ * questions read the mod list, so they are the game thread's. */
+static void import_opened(void)
 {
-    char why[400], folder[1024], names[300];
-    int taken = 0, fresh = 0;
-    if (!import_fetch(import_zip, sizeof(import_zip), why, sizeof(why))) {
-        put(status, sizeof(status), "%s", why);
-        return;
-    }
-    import_waiting = Mods_ImportOpen(import_zip, why, sizeof(why));
-    if (!import_waiting) {
-        put(status, sizeof(status), "%s", why);
-        import_done();
-        return;
-    }
-    if (!Mods_ImportCount(import_waiting)) {
-        put(status, sizeof(status), "%s", UI("This .zip has no mod in it."));
+    char folder[1024], names[300];
+    int taken = 0, fresh = 0, outside = import_outside;
+    import_outside = 0;
+    import_step = 0;
+    import_waiting = ImportJob_Take(); /* with at least one mod */
+    if (ImportJob_StopAsked()) { /* a Stop that came as the reading ended */
+        ImportJob_Reset();
+        put(status, sizeof(status), UI("The import was stopped. Nothing was imported."));
         import_done();
         return;
     }
@@ -1282,11 +1399,17 @@ static void import_read(void)
         import_done();
         return;
     }
-    if (!taken) {
+    if (!taken && !outside) {
         import_install();
         return;
     }
     pending = 3;
+    if (!taken) {
+        import_plain = 1;
+        import_names(import_waiting, any_mod, names, sizeof(names));
+        put(status, sizeof(status), UI("Import %s from the .zip you opened with the game?"), names);
+        return;
+    }
     import_names(import_waiting, replacing, names, sizeof(names));
     if (taken == 1)
         put(status, sizeof(status), UI("%s is already installed. Replace it with the one in this .zip?"), names);
@@ -1305,6 +1428,42 @@ static void import_start(void)
     import_step = 1;
     put(status, sizeof(status), "%s", UI("Choose a mod's .zip."));
 }
+/* The picker answered: the copy and the reading, on the job's thread. */
+static void import_begin(void)
+{
+    import_shown = -1;
+    if (!ImportJob_Read(import_fetch, import_zip, sizeof(import_zip))) {
+        put(status, sizeof(status), "%s", ImportJob_State() == IMPORT_JOB_FAILED ? ImportJob_Why()
+                                                                                  : UI("Could not start importing."));
+        ImportJob_Reset();
+        import_outside = 0;
+        return;
+    }
+    import_step = 2;
+    put(status, sizeof(status), UI("Importing..."));
+}
+int ModsWindow_ImportBusy(int shown)
+{
+    /* a question the panel left open (the HD pack's Download, a Replace) is
+     * answered no when it shows again (Init): it holds nothing up */
+    return (hd_step && (shown || hd_step != 2)) || import_step || (shown && (import_waiting || pending));
+}
+int ModsWindow_ImportOpened(const char *refusal)
+{
+    if (!import_pick)
+        return 0;
+    if (refusal) {
+        put(status, sizeof(status), "%s", refusal);
+        return 0;
+    }
+    if (ModsWindow_ImportBusy(1)) /* the caller waits for it (sdl.c); its question stays as it is */
+        return 0;
+    import_outside = 1;
+    import_start();
+    if (!import_step)
+        import_outside = 0;
+    return import_step != 0;
+}
 /* --- Remove ------------------------------------------------------------ */
 
 /* The selected mod's Remove was pressed: the question (pending 5), or why
@@ -1321,6 +1480,11 @@ static void remove_start(void)
     name = Mods_Name(selected);
     if (hd_step || import_step || import_waiting) {
         put(status, sizeof(status), "%s", UI("Wait for the import or the HD pack to finish first."));
+        return;
+    }
+    if (!strcmp(Mods_Origin(selected), "folder")) {
+        put(status, sizeof(status), UI("%s is in your own mods folder, which the game does not delete from. "
+            "Delete it there."), name);
         return;
     }
     if (strcmp(Mods_Origin(selected), "installed")) {
@@ -1387,6 +1551,246 @@ static void remove_confirm(void)
     scroll = max(0, min(scroll, shown_count() - rows()));
     put(status, sizeof(status), UI("Removed %s."), name);
     fprintf(stderr, "memories-pc: remove: %s\n", status);
+}
+/* --- Mods folder... (ModsWindow_SetFolderPicker) ------------------------- */
+
+void ModsWindow_SetFolderPicker(int (*pick)(char *why, size_t why_size),
+                                int (*picked)(char *path, size_t size, char *why, size_t why_size))
+{
+    if (pick == folder_pick && picked == folder_picked)   /* the platform sets them whenever the window is asked for */
+        return;
+    folder_pick = pick;
+    folder_picked = picked;
+    folder_step = 0;
+}
+/* The folder is read at the next launch, not this one: a restart is due
+ * when the choice is not the one the game started with. Not when
+ * MEMORIES_MODS_DIR names the only folder read, which a restart does not
+ * change. */
+static int folder_restart(void)
+{
+    char now[1024];
+    const char *only = getenv("MEMORIES_MODS_DIR");
+    if (!launch_known || (only && *only))
+        return 0;
+    if (Mods_Folder(now, sizeof(now)))
+        now[0] = 0;
+    return strcmp(now, launch_folder) != 0 ||
+           (launch_folder[0] && (launch_unread || launch_access == 0) && access_have && access_now);
+}
+/* Note which folder the game started with: at the first showing, after the
+ * mods were scanned. */
+static void folder_launch(void)
+{
+    if (launch_known)
+        return;
+    if (Mods_Folder(launch_folder, sizeof(launch_folder)))
+        launch_folder[0] = 0;
+    launch_unread = launch_folder[0] && *Mods_FolderProblem();
+    launch_known = 1;
+}
+void ModsWindow_SetFolderAccess(int (*have)(void), int (*ask)(char *why, size_t why_size),
+                                int (*asked)(char *why, size_t why_size), int (*can_ask)(void),
+                                const char *(*right)(void))
+{
+    folder_launch(); /* the mods are scanned by now */
+    access_have = have;
+    access_ask = ask;
+    access_asked = asked;
+    access_can_ask = can_ask;
+    access_right = right;
+    access_now = have ? have() : 1;
+    if (have && launch_access < 0) /* as the start scanned the folder, whatever the player gave since */
+        launch_access = access_now;
+}
+void ModsWindow_RefreshAccess(void)
+{
+    access_recheck_now = 1;
+}
+/* The right's name, as Android calls it (All files access from Android 11). */
+static const char *access_name(void)
+{
+    return access_right ? access_right() : UI("All files access");
+}
+/* Whether the device has a way to give the right at all. */
+static int access_possible(void)
+{
+    return !access_can_ask || access_can_ask();
+}
+/* The folder is chosen, and the game cannot read it for want of the right:
+ * what to do about it, for the message line. */
+static const char *access_hint(void)
+{
+    static char hint[256];
+    if (!access_possible())
+        put(hint, sizeof(hint), UI("This device cannot give the game %s. Use Import mod... instead."), access_name());
+    else
+        put(hint, sizeof(hint), UI("Without %s the game cannot read it. Allow it in this app's settings."),
+            access_name());
+    return hint;
+}
+/* The right is held after all (given on the system's page, or in Settings while
+ * the game was behind it): what the window says, and 1 to draw again. */
+static int access_came(void)
+{
+    char path[1024];
+    access_now = 1;
+    if (pending == 7) /* the question is answered */
+        pending = 0;
+    /* A question or a step has the message line: the Apply button is lit already,
+     * and the line says nothing of the right that it would have to push out. */
+    if (Mods_Folder(path, sizeof(path)) || pending || hd_step || import_step || import_waiting)
+        return 1;
+    put(status, sizeof(status), UI("%s is on.%s"), access_name(),
+        folder_restart() ? UI(" The game reads the folder after a restart: Apply changes.") : "");
+    return 1;
+}
+/* While a folder is chosen that the game cannot read: whether the right came
+ * (asked of the system about twice a second, and at once when the app returns
+ * to the front). 1 when the window must be drawn again. */
+static int access_recheck(void)
+{
+    static int ticks;
+    char path[1024];
+    int forced = access_recheck_now;
+    access_recheck_now = 0;
+    if (!access_have || access_now)
+        return 0;
+    if (!forced && ++ticks < 30)
+        return 0;
+    ticks = 0;
+    if (Mods_Folder(path, sizeof(path)))
+        return 0;
+    return access_have() ? access_came() : 0;
+}
+/* What the question says (pending 6): the folder, why it is not read if it
+ * is not, and the choices. */
+static void folder_ask(void)
+{
+    char path[1024];
+    pending = 6;
+    if (Mods_Folder(path, sizeof(path)))
+        put(status, sizeof(status), UI("Mods folder: none. Choose a folder to read its mods as well as the game's own?"));
+    else
+        /* in a few lines on a phone: the reason was said when the window opened */
+        put(status, sizeof(status), UI("Mods folder: %.300s %s Choose another folder, or use none?"), path,
+            !access_now ? (touch ? UI("The game cannot read it yet.") : access_hint())
+            : *Mods_FolderProblem() ? (touch ? UI("It was not read this time.") : Mods_FolderProblem())
+                                    : UI("It is read when the game starts."));
+}
+/* The folder was chosen on a phone that has not given the right to read it:
+ * the question (pending 7) says why it is asked, with one sentence. */
+static void folder_offer_access(const char *path)
+{
+    if (!access_possible()) {
+        pending = 0;
+        put(status, sizeof(status), "%s", access_hint());
+        return;
+    }
+    pending = 7;
+    put(status, sizeof(status), UI("To read %.300s the game needs %s, which Android asks for on its next screen. "
+        "Allow it?"), path, access_name());
+}
+/* Allow was answered yes: Android's page, and the answer at the next ticks. */
+static void folder_allow(void)
+{
+    char why[400];
+    pending = 0;
+    if (access_ask(why, sizeof(why))) {
+        put(status, sizeof(status), "%s", access_possible() ? why : access_hint());
+        return;
+    }
+    folder_step = 2;
+    put(status, sizeof(status), UI("Allow %s for the game, then come back."), access_name());
+}
+/* The folder the player chose, or none (path NULL): saved now, read at the
+ * next launch (Apply & restart). */
+static void folder_set(const char *path)
+{
+    char why[400], now[1024];
+    pending = 0;
+    if (Mods_SetFolder(path, why, sizeof(why))) {
+        put(status, sizeof(status), "%s", why);
+        return;
+    }
+    if (Mods_Folder(now, sizeof(now)))
+        put(status, sizeof(status), UI("Mods folder: none."));
+    else
+        put(status, sizeof(status), UI("Mods folder: %.300s"), now);
+    if (*why)
+        put(status + strlen(status), sizeof(status) - strlen(status), " %s", why);
+    else if (folder_restart())
+        put(status + strlen(status), sizeof(status) - strlen(status),
+            UI(" The game reads it after a restart: Apply changes."));
+    if (path && access_ask && !access_have()) {
+        access_now = 0;
+        folder_offer_access(now);
+    }
+    fprintf(stderr, "memories-pc: mods folder: %s\n", status);
+}
+static void folder_choose(void)
+{
+    char why[400];
+    pending = 0;
+    if (folder_step)
+        return;
+    if (folder_pick(why, sizeof(why))) {
+        put(status, sizeof(status), "%s", why);
+        return;
+    }
+    folder_step = 1;
+    put(status, sizeof(status), UI("Choose the folder your mods are in."));
+}
+/* Mods folder... was pressed, or (pending 6) its second button, Use no
+ * folder. */
+static void folder_tap(void)
+{
+    char path[1024];
+    if (pending == 6) {
+        if (!Mods_Folder(path, sizeof(path)))
+            folder_set(NULL);
+        return;
+    }
+    if (hd_step || import_step || import_waiting) {
+        put(status, sizeof(status), UI("Wait for the import or the HD pack to finish first."));
+        return;
+    }
+    if (!folder_step)
+        folder_ask();
+}
+/* The picker's answer, once per tick: the folder, or why not. 1 when the
+ * window must be drawn again. */
+static int folder_poll(void)
+{
+    char path[1024], why[400];
+    int result;
+    if (folder_step == 2) {
+        result = access_asked(why, sizeof(why));
+        if (!result)
+            return 0;
+        folder_step = 0;
+        if (result > 0) {
+            access_came();
+        } else {
+            access_now = 0;
+            /* what the system said, or when it has no page to give (the same, in the panel's words) the hint */
+            put(status, sizeof(status), "%s", result < -1 && access_possible() ? why : access_hint());
+        }
+        return 1;
+    }
+    if (folder_step != 1 || !folder_picked)
+        return access_recheck();
+    result = folder_picked(path, sizeof(path), why, sizeof(why));
+    if (!result)
+        return 0;
+    folder_step = 0;
+    if (result > 0)
+        folder_set(path);
+    else if (result == -1)
+        status[0] = 0;
+    else
+        put(status, sizeof(status), "%s", why);
+    return 1;
 }
 /* --- HD pack... (hd_pack.h) -------------------------------------------- */
 
@@ -1604,10 +2008,66 @@ static void hd_tap(void)
     hd_step = 1;
     put(status, sizeof(status), "%s", UI("Asking GitHub for the latest HD pack..."));
 }
+/* The import's step share in the message, as hd_progress says the HD pack's;
+ * 1 when it changed (draw again). A copy the provider gave no size of says
+ * the megabytes so far. */
+static int import_progress(const char *what)
+{
+    unsigned long done = ImportJob_Done(), total = ImportJob_Total();
+    int shown = total ? (int)((unsigned long long)done * 100 / total) : (int)(done >> 20);
+    if (ImportJob_StopAsked() || shown == import_shown) /* "Stopping..." stays */
+        return 0;
+    import_shown = shown;
+    if (total)
+        put(status, sizeof(status), UI("%s: %d%% of %lu MB."), what, shown, megabytes(total));
+    else
+        put(status, sizeof(status), UI("%s: %lu MB."), what, megabytes(done));
+    return 1;
+}
+/* Once per tick while the import's thread has a step (import_step 2, 3):
+ * its next step. The window's own question (Discard your changes?) keeps the
+ * message line and the buttons until it is answered; the job waits. */
+static int import_tick(void)
+{
+    int state = ImportJob_State();
+    if (pending)
+        return 0;
+    if (state == IMPORT_JOB_FAILED) {
+        import_failed();
+        return 1;
+    }
+    if (import_step == 2 && state == IMPORT_JOB_READ) {
+        import_opened();
+        return 1;
+    }
+    if (import_step == 2 && state == IMPORT_JOB_READING)
+        return import_progress(UI("Copying the .zip"));
+    if (import_step == 3 && state == IMPORT_JOB_UNPACKED) {
+        import_finish();
+        return 1;
+    }
+    if (import_step == 3 && state == IMPORT_JOB_UNPACKING)
+        return import_progress(UI("Unpacking the mod"));
+    return 0;
+}
+/* Import mod... while the import runs is Stop: the thread ends its step at
+ * the next chunk and removes what it wrote. A Stop that comes after the
+ * unpacking ended changes nothing: the mods are in. */
+static void import_tap(void)
+{
+    if (import_step >= 2) {
+        ImportJob_Cancel();
+        put(status, sizeof(status), UI("Stopping..."));
+        return;
+    }
+    import_start();
+}
 int ModsWindow_Tick(void)
 {
     char why[400];
     int result;
+    if (folder_poll())
+        return 1;
     if (hd_step)
         return hd_tick();
     if (hd_clearing && HdPack_State() != HD_CLEANING) { /* that message's moment is over */
@@ -1616,19 +2076,18 @@ int ModsWindow_Tick(void)
             put(status, sizeof(status), "%s", UI("Ready: tap HD pack... again."));
         return 1;
     }
-    if (import_step == 2) { /* "Importing..." was drawn: now the work */
-        import_step = 0;
-        import_read();
-        return 1;
-    }
+    if (import_step >= 2)
+        return import_tick();
     if (import_step != 1 || !import_picked)
         return 0;
     result = import_picked(why, sizeof(why));
     if (!result)
         return 0;
-    import_step = result > 0 ? 2 : 0;
+    import_step = 0;
+    if (result <= 0)
+        import_outside = 0;
     if (result > 0)
-        put(status, sizeof(status), "%s", UI("Importing..."));
+        import_begin();
     else if (result == -1)
         status[0] = 0;
     else
@@ -1639,6 +2098,11 @@ int ModsWindow_Tick(void)
  * import's Replace goes with it. */
 static void cancel_pending(void)
 {
+    if (pending == 7) { /* the folder stays chosen, unreadable until it is allowed */
+        pending = 0;
+        put(status, sizeof(status), "%s", access_hint());
+        return;
+    }
     if (pending == 3)
         import_done();
     remove_target = -1;
@@ -1647,7 +2111,7 @@ static void cancel_pending(void)
         hd_step = 0;
     }
     pending = 0;
-    hd_shown = -1; /* a job's share is said again */
+    hd_shown = import_shown = -1; /* a job's share is said again */
     status[0] = 0;
 }
 
@@ -1797,6 +2261,11 @@ int ModsWindow_Locate(int id, int *x, int *y)
     case MODS_UI_FOLDER: r = l.folder; break;
     case MODS_UI_HD: r = l.hd; break;
     case MODS_UI_REMOVE: r = l.remove; break;
+    case MODS_UI_MODSDIR: {
+        char path[1024];
+        r = pending == 6 && Mods_Folder(path, sizeof(path)) ? none() : l.modsdir;
+        break;
+    }
     case MODS_UI_TAB: case MODS_UI_TAB + 1: case MODS_UI_TAB + 2: r = selected >= 0 ? l.tabs[id - MODS_UI_TAB] : none(); break;
     case MODS_UI_ORDER: case MODS_UI_ORDER + 1: r = selected >= 0 ? l.order[id - MODS_UI_ORDER] : none(); break;
     case MODS_UI_ROW_SELECTED: case MODS_UI_ROW_FIRST: case MODS_UI_CHECK_SELECTED: case MODS_UI_CHECK_FIRST:
@@ -1872,7 +2341,7 @@ int ModsWindow_Redraws(const MenuEvent *e)
 }
 int ModsWindow_RequestClose(void)
 {
-    if (pending == 3 || pending == 4 || pending == 5)
+    if (pending == 3 || pending == 4 || pending == 5 || pending == 6 || pending == 7)
         cancel_pending();
     focus = 0;
     slider_drag = -1;
@@ -1948,6 +2417,10 @@ int ModsWindow_Event(const MenuEvent *e)
                     hd_confirm();
                 else if (pending == 5)
                     remove_confirm();
+                else if (pending == 6)
+                    folder_choose();
+                else if (pending == 7)
+                    folder_allow();
                 else
                     apply();
             }
@@ -1990,10 +2463,18 @@ int ModsWindow_Event(const MenuEvent *e)
                 hd_confirm();
             else if (pending == 5)
                 remove_confirm();
+            else if (pending == 6)
+                folder_choose();
+            else if (pending == 7)
+                folder_allow();
             else if (hd_step)
                 put(status, sizeof(status), "%s", UI("Wait for the HD pack to finish, or stop it, before applying changes."));
+            else if (import_step >= 2)
+                put(status, sizeof(status), "%s", UI("Wait for the import to finish, or stop it, before applying changes."));
             else
                 apply();
+        } else if ((!pending || pending == 6) && l.modsdir.w && inside(l.modsdir, e->x, e->y)) {
+            folder_tap();
         } else if (!pending && l.hd.w && inside(l.hd, e->x, e->y)) {
             hd_tap();
         } else if (!pending && touch && l.remove.w && inside(l.remove, e->x, e->y)) {
@@ -2002,7 +2483,7 @@ int ModsWindow_Event(const MenuEvent *e)
             if (hd_step)
                 put(status, sizeof(status), "%s", UI("Wait for the HD pack to finish, or stop it, before importing."));
             else
-                import_start();
+                import_tap();
         } else if (!pending && inside(l.folder, e->x, e->y)) {
             char path[1024];
             if (Mods_InstallDirectory(path, sizeof(path)))

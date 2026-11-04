@@ -42,7 +42,7 @@ static int fuse(int a, int b)
 
 int main(void)
 {
-    fake_host.api = 22;
+    fake_host.api = 23;
     fake_host.setting = fake_setting;
     fake_host.applied = fake_applied;
     fake_host.subscribe = fake_subscribe;

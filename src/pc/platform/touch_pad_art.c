@@ -1,6 +1,7 @@
 /* The on-screen controller's pictures (touch_pad_art.h). */
 #include "touch_pad_art.h"
 #include "touch_pad.h"
+#include "settings.h"
 #include "pc/text/overlay_text.h"
 #include <math.h>
 #include <stdlib.h>
@@ -207,19 +208,29 @@ static void grow(int *x0, int *y0, int *x1, int *y1, int x, int y, int w, int h)
 void TouchPadArt_Draw(MenuCanvas *canvas, int *x, int *y, int *w, int *h)
 {
     int x0 = 1 << 30, y0 = 1 << 30, x1 = -(1 << 30), y1 = -(1 << 30), bx, by, bw, bh;
+    /* View > Touch controls > Opacity scales the pictures' own see-through
+     * (the default, 0, keeps them as drawn: about 150 of 255 let go); a held
+     * button's picture is the more solid one already. */
+    int setting = Settings_Get(SET_TOUCH_OPACITY);
+    float scale = setting > 0 ? setting * 255.f / 100.f / 150.f : 1.f;
+    if (TouchPad_Style() == TOUCH_STYLE_SIMPLE) {
+        TouchPadArt_DrawSimple(canvas, x, y, w, h);
+        return;
+    }
     *x = *y = *w = *h = 0;
     if (!TouchPad_Shown()) return;
     for (int i = 0; i < TOUCH_BUTTONS; i++) {
         int held = TouchPad_Held((TouchButton)i) != 0;
         Tile *tile = &tiles[i][held];
-        if (!TouchPad_Rect((TouchButton)i, &bx, &by, &bw, &bh)) return;
+        if (!TouchPad_Rect((TouchButton)i, &bx, &by, &bw, &bh)) continue; /* Simple's only */
         if (bw <= 0 || bh <= 0) continue;
         grow(&x0, &y0, &x1, &y1, bx, by, bw, bh);
         if ((tile->w != bw || tile->h != bh) && !make_tile(tile, (TouchButton)i, bw, bh, held)) continue;
         for (int ty = 0; ty < bh; ty++) {
             if (by + ty < 0 || by + ty >= canvas->height) continue;
             for (int tx = 0; tx < bw; tx++) {
-                float a = tile->alpha[ty * bw + tx];
+                float a = tile->alpha[ty * bw + tx] * scale;
+                if (a > 1) a = 1;
                 if (a <= 0 || bx + tx < 0 || bx + tx >= canvas->width) continue;
                 OverlayText_Blend(canvas, bx + tx, by + ty, tile->color[ty * bw + tx], (unsigned)(a * 255 + 0.5f));
             }

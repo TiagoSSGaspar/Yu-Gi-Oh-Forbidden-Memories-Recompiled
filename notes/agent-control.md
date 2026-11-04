@@ -383,7 +383,11 @@ CI can hold retail inputs.
   `state-load-cpu` (scripted: a state saved while the CPU duelist thinks,
   loaded again in the same game, must replay its 600 frames; it failed at
   the first before "Port: a loaded state finishes the VSync(0) it resumes
-  in", and passes with it), and `x64-data-mods` (recorded with two data
+  in", and passes with it), `state-load-mips-stack` (scripted: record 330's
+  3D battle from a state, record 320's, then 330's from the same state
+  again must draw the same frames; it failed from +679 before "Port: save
+  states carry the interpreter's stack", and passes with it), and
+  `x64-data-mods` (recorded with two data
   mods, a card pack and a recolored texture pack, made by its `mods.py`:
   the 64-bit build's data mods gate), `dark-hole` and `spellbinding` (the
   bolt effect, 17 and 13, which crashed the 64-bit build until its vertex
@@ -498,6 +502,13 @@ CI can hold retail inputs.
   the opponent's monster came, a second played and an attack on the
   opponent's defending monster (6500 LP after it, the attacker kept), and
   a fusion of two hand cards.
+- **A 3D battle without a duel:** from the debug menu (`goto("debug")`),
+  poke the two model records into `D_800EF658` (card id, then who wins,
+  defense and the guardian star), the mode to come back to into
+  `D_8009B269` and 1 into `D_8009B26C`; the battle runs as the duel's
+  Square would start it and ends when the mode byte leaves 1.
+  `tools/pc/model_oracle.py` runs every MODEL.MRG record's battle this way
+  (notes/pc-build.md, "The model modules' oracle").
 - **Acceptance rewrites:** see Acceptance below.
 
 ### 6. Jump to

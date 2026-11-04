@@ -21,11 +21,51 @@ void Platform_OpenMods(void);
  * or -1 with why); Platform_PickedModZip is 0 while it is open, 1 once a
  * file was chosen, -1 when none was, -2 on a failure (why);
  * Platform_FetchModZip then copies the chosen file to `path` in the mods
- * folder (1; 0 with why). MEMORIES_IMPORT_ZIP=<file> takes that file
+ * folder (1; 0 with why), on the import's thread (import_job.h), never the
+ * game's: it adds the bytes copied to *done, sets *total to the file's size
+ * when the provider gives it, and a nonzero *cancel stops it, the copy
+ * removed (all three atomic). MEMORIES_IMPORT_ZIP=<file> takes that file
  * instead of opening the picker (tests). */
 int Platform_PickModZip(char *why, size_t why_size);
 int Platform_PickedModZip(char *why, size_t why_size);
-int Platform_FetchModZip(char *path, size_t size, char *why, size_t why_size);
+int Platform_FetchModZip(char *path, size_t size, char *why, size_t why_size, unsigned *done, unsigned *total,
+                         const int *cancel);
+/* Android only: a .zip the player opened with the game, from "Open with" or
+ * Share in another app (OpenWith.java writes the document's URI to a record
+ * in the internal files folder). Platform_OpenedModWaiting is whether there
+ * is one; Platform_TakeOpenedMod takes it (removes the record) and makes the
+ * next Platform_PickModZip answer with it at once (1; 0 with why: the
+ * sender's refusal, or a record too old). */
+int Platform_OpenedModWaiting(void);
+int Platform_TakeOpenedMod(char *why, size_t why_size);
+/* The file taken is not imported after all: the next Platform_PickModZip
+ * opens the picker again. */
+void Platform_DropOpenedMod(void);
+/* Android only (android.c; sdl.c hands them to ModsWindow_SetFolderPicker and
+ * ModsWindow_SetFolderAccess there): the Mods panel's Mods folder... The
+ * system's folder picker (SDL has none there) answers with the folder's path
+ * on the phone's storage: Platform_PickModsFolder opens it and returns at
+ * once (0, or -1 with why); Platform_PickedModsFolder is 0 while it is open,
+ * 1 with the path, -1 when none was chosen, -2 on a failure (why). The game
+ * reads the folder with plain file calls, which needs All files access:
+ * Platform_ModsFolderAccess says whether it is held (1) or not (0), and
+ * Platform_AskModsFolderAccess opens the system's page for it (0, or -1 with
+ * why), answered by Platform_AskedModsFolderAccess: 0 while it is up, 1
+ * granted, -1 refused, -2 failed (why). MEMORIES_PICK_FOLDER=<path> takes that
+ * folder instead of opening the picker, and counts access as held (tests). */
+int Platform_PickModsFolder(char *why, size_t why_size);
+int Platform_PickedModsFolder(char *path, size_t size, char *why, size_t why_size);
+int Platform_ModsFolderAccess(void);
+/* Whether this device has a page to give the right on (0: it cannot, and the
+ * panel says so instead of asking), the right's name for the messages ("All
+ * files access", before Android 11 "Storage"), and the folder the picker
+ * chose when the last process was ended with it open (1 with the path), which
+ * menu.c takes before the mods are scanned. */
+int Platform_ModsFolderCanAsk(void);
+const char *Platform_ModsFolderRight(void);
+int Platform_TakePendingModsFolder(char *path, size_t size);
+int Platform_AskModsFolderAccess(char *why, size_t why_size);
+int Platform_AskedModsFolderAccess(char *why, size_t why_size);
 /* Android only (android.c; sdl.c hands it to HdPack_SetNet there): the
  * network for the Mods panel's HD pack... (src/pc/mods/hd_pack.h), Java's
  * HttpURLConnection on the download's own thread. */

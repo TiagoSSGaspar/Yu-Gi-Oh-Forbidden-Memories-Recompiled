@@ -98,7 +98,7 @@ static int find(int side, int id)
 int main(void)
 {
     int round, r;
-    fake_host.api = 22;
+    fake_host.api = 23;
     fake_host.setting = fake_setting;
     fake_host.applied = fake_applied;
     fake_host.hook = fake_hook;

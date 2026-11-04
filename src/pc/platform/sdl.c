@@ -300,11 +300,73 @@ int HERE(Platform_OpenFolder)(const char *path)
     return SDL_OpenURL(path) ? 0 : -1;
 }
 int HERE(Platform_OpenUrl)(const char *url) { return SDL_OpenURL(url) ? 0 : -1; }
+
+#ifndef SDL_PLATFORM_ANDROID
+/* The Mods window's Mods folder... (mods_window.c, ModsWindow_SetFolderPicker):
+ * the system's folder dialog. It answers on a thread of its own, and the
+ * window asks for the answer once per pump, so the game and the window go on
+ * meanwhile. MEMORIES_PICK_FOLDER=<path> takes that folder instead of opening
+ * the dialog (tests, scripted runs). */
+static struct {
+    SDL_AtomicInt done;
+    int result; /* 1 chosen, 0 none, -1 the dialog failed */
+    char path[1024], error[256];
+} folder_pick;
+static int folder_picking;
+static void SDLCALL folder_selected(void *userdata, const char *const *list, int filter)
+{
+    (void)userdata;
+    (void)filter;
+    if (!list) {
+        snprintf(folder_pick.error, sizeof(folder_pick.error), "%s", SDL_GetError());
+        folder_pick.result = -1;
+    } else if (list[0] && strlen(list[0]) < sizeof(folder_pick.path)) {
+        snprintf(folder_pick.path, sizeof(folder_pick.path), "%s", list[0]);
+        folder_pick.result = 1;
+    } else if (list[0]) {
+        snprintf(folder_pick.error, sizeof(folder_pick.error), UI("That folder's name is too long."));
+        folder_pick.result = -1;
+    }
+    SDL_SetAtomicInt(&folder_pick.done, 1); /* last: the thread that asks reads the rest after it */
+}
+static int pick_folder(char *why, size_t why_size)
+{
+    const char *test = getenv("MEMORIES_PICK_FOLDER");
+    (void)why;
+    (void)why_size;
+    if (folder_picking) return 0;
+    memset(&folder_pick, 0, sizeof(folder_pick));
+    folder_picking = 1;
+    if (test && *test) {
+        snprintf(folder_pick.path, sizeof(folder_pick.path), "%s", test);
+        folder_pick.result = 1;
+        SDL_SetAtomicInt(&folder_pick.done, 1);
+        return 0;
+    }
+    SDL_ShowOpenFolderDialog(folder_selected, NULL, mods_window ? mods_window : window, NULL, false);
+    return 0;
+}
+static int picked_folder(char *path, size_t size, char *why, size_t why_size)
+{
+    if (!folder_picking || !SDL_GetAtomicInt(&folder_pick.done)) return 0;
+    folder_picking = 0;
+    if (folder_pick.result < 0) {
+        snprintf(why, why_size, UI("Could not open the folder picker: %s"), folder_pick.error);
+        return -2;
+    }
+    if (!folder_pick.result) return -1;
+    snprintf(path, size, "%s", folder_pick.path);
+    return 1;
+}
+#endif
 static int panel_overlay(void);
 static void open_panel(int kind);
 void HERE(Platform_OpenMods)(void)
 {
     sigset_t previous;
+#ifndef SDL_PLATFORM_ANDROID
+    ModsWindow_SetFolderPicker(pick_folder, picked_folder);
+#endif
     if (panel_overlay()) { open_panel(PANEL_MODS); return; }
     if (mods_window) { SDL_RaiseWindow(mods_window); return; }
     ModsWindow_Init();
@@ -467,6 +529,11 @@ static void open_panel(int kind)
         /* and HD pack... downloads the release's HD pack into it */
         HdPack_SetNet(Platform_HdNet());
         ModsWindow_SetImport(Platform_PickModZip, Platform_PickedModZip, Platform_FetchModZip);
+        /* and Mods folder... takes a folder of the phone's storage */
+        ModsWindow_SetFolderPicker(Platform_PickModsFolder, Platform_PickedModsFolder);
+        ModsWindow_SetFolderAccess(Platform_ModsFolderAccess, Platform_AskModsFolderAccess,
+                                   Platform_AskedModsFolderAccess, Platform_ModsFolderCanAsk,
+                                   Platform_ModsFolderRight);
     }
 #endif
     if (!Panel_Open(kind)) return;
@@ -510,6 +577,34 @@ static void panel_after(int tapped)
 static void pump(void);
 
 #ifdef SDL_PLATFORM_ANDROID
+/* A .zip opened with the game from another app (OpenWith.java; "Open with"
+ * or Share): twice a second, whether it left its record, and then the Mods
+ * panel opens on the import of that file, which asks before it imports. The
+ * record is taken only when the game can show that: it waits (for as long as
+ * it is fresh, Platform_TakeOpenedMod) before the first run's welcome and
+ * disc image, before the game's first frames (a panel opened then pauses it
+ * before anything is drawn: black), while a notice, the menu or the Controls
+ * panel is up (none of them is replaced), and while a job of the Mods
+ * panel's own (an import, a question, the HD pack's download) is not over:
+ * the panel is opened by the player then, never forced open again. */
+static void open_with(void)
+{
+    static Uint64 checked;
+    Uint64 now = SDL_GetTicks();
+    char why[400];
+    int taken, shown = Panel_Shown();
+    if (now - checked < 500) return;
+    checked = now;
+    if (current_frame < 60 || !Platform_OpenedModWaiting()) return;
+    if (Menu_NoticeShown() || Menu_IsOpen() || shown == PANEL_CONTROLS || ModsWindow_ImportBusy(shown == PANEL_MODS))
+        return;
+    if (shown != PANEL_MODS) open_panel(PANEL_MODS);
+    if (Panel_Shown() != PANEL_MODS) return;
+    taken = Platform_TakeOpenedMod(why, sizeof(why));
+    if (!ModsWindow_ImportOpened(taken ? NULL : why)) Platform_DropOpenedMod();
+    menu_dirty = 1;
+}
+
 /* MEMORIES_TEST_JAVA=<frame>, or <frame>box: at that frame, from inside
  * the game loop, the Java calls a player's input or a menu can make (the
  * cursor hidden and shown, the clipboard; with "box" a message box too),
@@ -1668,7 +1763,7 @@ static int es_take_frame(void)
 
 static void draw_overlay(int *x, int *y, int *w, int *h)
 {
-    int hx, hy, hw, hh, tx, ty, tw, th, left, right;
+    int hx, hy, hw, hh, tx, ty, tw, th, left, right, row;
     FusionHelper_Viewport((int)layout.dst.x, (int)layout.dst.y, (int)layout.dst.w, (int)layout.dst.h);
     if (Panel_Shown()) { /* the panel covers the window: nothing else shows */
         Panel_Draw(&canvas);
@@ -1683,11 +1778,12 @@ static void draw_overlay(int *x, int *y, int *w, int *h)
     if (TouchPad_Shown()) Hud_DrawMods(&canvas);
     TouchPadArt_Draw(&canvas, &tx, &ty, &tw, &th); /* under the menu and the HUD */
     /* The save and deck slot menus keep between the pad's columns (they are
-     * played with the pad), and below the bar while it shows (pushing the
-     * picture down or drawn over it); from the top only where a bar drawn
-     * over the picture is hidden. */
+     * played with the pad) and below its top row, and below the bar while
+     * it shows (pushing the picture down or drawn over it); from the top
+     * only where a bar drawn over the picture is hidden. */
     if (!TouchPad_FreeSpan(&left, &right)) left = right = 0;
-    Menu_SetOverlayArea(left, right, bar_overlays() && !menu_visible ? 0 : -1);
+    row = TouchPad_TopRowBottom();
+    Menu_SetOverlayArea(left, right, row ? row : bar_overlays() && !menu_visible ? 0 : -1);
     if (Settings_Get(SET_SHOW_HUD) == 2 || Menu_IsOpen()) {
         Hud_Draw(&canvas);
         Menu_Draw(&canvas); /* dropdowns stay above the full statistics panel */
@@ -2024,6 +2120,9 @@ static bool SDLCALL app_event(void *userdata, SDL_Event *event)
         }
         break;
     case SDL_EVENT_DID_ENTER_FOREGROUND:
+#ifdef SDL_PLATFORM_ANDROID
+        ModsWindow_RefreshAccess(); /* All files access may have been given in Settings meanwhile */
+#endif
         if (background_paused) {
             background_paused = 0;
             if (background_clock_rate && Platform_ClockRate() == 0) Platform_SetClockRate(background_clock_rate);
@@ -2077,14 +2176,16 @@ static void pump(void)
             event.type == SDL_EVENT_FINGER_UP || event.type == SDL_EVENT_FINGER_CANCELED) {
             int kind = event.type == SDL_EVENT_FINGER_DOWN     ? TOUCH_FINGER_DOWN
                        : event.type == SDL_EVENT_FINGER_MOTION ? TOUCH_FINGER_MOVE
-                                                               : TOUCH_FINGER_UP;
+                       : event.type == SDL_EVENT_FINGER_UP     ? TOUCH_FINGER_UP
+                                                               : TOUCH_FINGER_CANCEL;
             int fx = (int)(event.tfinger.x * (float)layout.win_w), fy = (int)(event.tfinger.y * (float)layout.win_h);
             if (SDL_GetWindowFromEvent(&event) == window &&
                 TouchPad_Finger(kind, (uint64_t)event.tfinger.fingerID, fx, fy))
                 menu_dirty = 1;
             if (kind != TOUCH_FINGER_MOVE)
                 LOG(LOG_INPUT, "finger %d %s at %d,%d: touch pad %s", (int)event.tfinger.fingerID,
-                    kind == TOUCH_FINGER_DOWN ? "down" : "up", fx, fy, TouchPad_Shown() ? "shown" : "hidden");
+                    kind == TOUCH_FINGER_DOWN ? "down" : kind == TOUCH_FINGER_UP ? "up" : "cancelled", fx, fy,
+                    TouchPad_Shown() ? "shown" : "hidden");
             continue;
         }
         /* The mouse events SDL makes of a touch: on the pad they are the
@@ -2277,16 +2378,33 @@ static void pump(void)
         default: break;
         }
     }
+    if (mods_window && ModsWindow_Tick()) mods_dirty = 1; /* the folder picker's answer */
     if (mods_window && mods_dirty) draw_mods();
     mods_dirty = 0;
     if (TouchPad_SetMode(Settings_Get(SET_TOUCH_PAD))) menu_dirty = 1;
+    if (TouchPad_SetStyle(Settings_Get(SET_TOUCH_STYLE))) menu_dirty = 1;
     /* Once per pump, after every event of it: SDL delivers a tap as finger
      * events and mouse events made of them, and the pad yielding or coming
      * back between the two would hand one half to the menu and the other to
-     * the pad. MENU opens the first menu; while a menu, a notice or the bar
-     * drawn over the picture is up, the pad steps aside (touch_pad.h). */
+     * the pad. MENU opens the first menu (Game's style) or the Game menu
+     * (Simple's), and STATES the File menu (save and load a state, its
+     * slot); SPEED steps Game speed through x1 to x4, back to x1 after x4 or
+     * from any other speed, and saves it as the menu does. While a menu, a
+     * notice or the bar drawn over the picture is up, the pad steps aside
+     * (touch_pad.h). */
     if (TouchPad_TakeMenu()) {
-        Menu_Open();
+        if (TouchPad_Style() == TOUCH_STYLE_SIMPLE) Menu_OpenAt(MENU_BAR_GAME);
+        else Menu_Open();
+        menu_dirty = 1;
+    }
+    if (TouchPad_TakeStates()) {
+        Menu_OpenAt(MENU_BAR_FILE);
+        menu_dirty = 1;
+    }
+    if (TouchPad_TakeSpeed()) {
+        int speed = Settings_Get(SET_SPEED);
+        Settings_Set(SET_SPEED, speed >= 100 && speed < 400 ? (speed / 100 + 1) * 100 : 100);
+        Settings_Save();
         menu_dirty = 1;
     }
     update_menu_visibility();
@@ -2298,6 +2416,9 @@ static void pump(void)
     /* A notice answers a controller and keeps the game's input at rest. */
     ControlsRuntime_Hold(Menu_NoticeShown());
     if (Menu_NoticePad(ControlsRuntime_TakePadPresses() | TouchPad_TakePresses(), &quit)) menu_dirty = 1;
+#ifdef SDL_PLATFORM_ANDROID
+    open_with();
+#endif
     if (Panel_Shown()) {
         if (Panel_Tick()) menu_dirty = 1;
         if (!Panel_Shown()) panel_after(0);
@@ -2611,6 +2732,12 @@ int Platform_Open(const char *title)
     sigset_t previous;
     ControlsRuntime_Init();
     Menu_LoadSettings(); /* the volume and scale apply with or without a window */
+#ifdef SDL_PLATFORM_ANDROID
+    /* What the mods folder could be read with at this start, for the panel's
+     * Apply & restart: noted now that the mods are scanned. */
+    ModsWindow_SetFolderAccess(Platform_ModsFolderAccess, Platform_AskModsFolderAccess, Platform_AskedModsFolderAccess,
+                               Platform_ModsFolderCanAsk, Platform_ModsFolderRight);
+#endif
     if (getenv("MEMORIES_HEADLESS")) {
         return 0;
     }
@@ -2947,7 +3074,9 @@ int Platform_PadConnected(int port) { return port == 0 || Gamepad_Connected(port
  * a pointer (external synthetic X input does not reach SDL correctly).
  * "key" presses and releases at once; "keydown" and "keyup" hold a key
  * between two frames, so the game sees it ("600:keydown:s,606:keyup:s").
- * "300:shot" saves the composed window (menu included) like Shift+F12. */
+ * "tap:x:y", "fdown:x:y" and "fup:x:y" do the same with a finger, for the
+ * touch controls. "300:shot" saves the composed window (menu included)
+ * like Shift+F12. */
 static void run_event_script(unsigned frame)
 {
     static const char *script;
@@ -3015,6 +3144,20 @@ static void run_event_script(unsigned frame)
             event.key.down = false;
             if (release) SDL_PushEvent(&event);
             script = name + n;
+        } else if (strcmp(kind, "tap") == 0 || strcmp(kind, "fdown") == 0 || strcmp(kind, "fup") == 0) {
+            /* A finger at window pixels x, y (the touch controls): "tap"
+             * lands and lifts in one go, "fdown"/"fup" hold it across frames. */
+            x = (int)strtol(script + 1, &end, 10);
+            y = (int)strtol(end + 1, &end, 10);
+            script = end;
+            event.type = SDL_EVENT_FINGER_DOWN;
+            event.tfinger.fingerID = 1;
+            event.tfinger.x = layout.win_w > 0 ? (float)x / (float)layout.win_w : 0;
+            event.tfinger.y = layout.win_h > 0 ? (float)y / (float)layout.win_h : 0;
+            event.tfinger.windowID = SDL_GetWindowID(window);
+            if (strcmp(kind, "fup") != 0) SDL_PushEvent(&event);
+            event.type = SDL_EVENT_FINGER_UP;
+            if (strcmp(kind, "fdown") != 0) SDL_PushEvent(&event);
         } else {
             x = (int)strtol(script + 1, &end, 10);
             y = (int)strtol(end + 1, &end, 10);

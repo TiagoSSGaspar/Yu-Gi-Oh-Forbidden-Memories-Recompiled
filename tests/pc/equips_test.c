@@ -221,7 +221,7 @@ int main(void)
         D_800907D8[i] = (u8)(row == 2 ? MONSTER_RECORD(side, col) : row == 3 ? SPELL_RECORD(side, col) :
                              row == 1 ? MONSTER_RECORD(side ^ 1, 4 - col) : SPELL_RECORD(side ^ 1, 4 - col));
     }
-    fake_host.api = 22;
+    fake_host.api = 23;
     fake_host.setting = fake_setting;
     fake_host.applied = fake_applied;
     fake_host.hook = fake_hook;

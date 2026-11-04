@@ -122,7 +122,7 @@ int main(void)
         int i;
         for (i = 0; i < 511; i++) gDuel_adwCardStats[i] = (i + 1) | (i + 1) << CARD_STAT_DEFENSE_SHIFT;
     }
-    fake_host.api = 22;
+    fake_host.api = 23;
     fake_host.setting = fake_setting;
     fake_host.applied = fake_applied;
     fake_host.subscribe = fake_subscribe;

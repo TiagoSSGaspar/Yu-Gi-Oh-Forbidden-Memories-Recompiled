@@ -12,7 +12,15 @@ that is off or does not load any more ([Mod manager](mods-window.md)).
 | Directory | What is in it |
 |---|---|
 | `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `extra-hand-plays`, `modern-rules`, `yamyi-mods`, `drop-missing-cards`, `card-game-colors`) |
+| `mods/` beside the executable | the mods the release ships (`3d-monsters`, `hand-camera`, `ai-hard-mode`, `yamyi-mods`, `drop-missing-cards`) |
+| a mods folder the player chose (below) | mods the player keeps wherever they like |
 | `mods/` in the user directory | mods the player installed |
+
+The three are read in that order, and on one `id` the later wins: the chosen
+folder over the release's mods, the user directory's over both (so a mod
+imported in the game, or an HD pack update, is never hidden by an older copy
+in the chosen folder). In one folder, the first of two with an id, in the
+order of their names, is kept.
 
 The user directory is where everything the player owns lives: settings,
 controls, memory cards, save states, screenshots, their mods and whatever a
@@ -21,10 +29,52 @@ mod stores. It is `Documents\My Games\YFM Re-Decomp` on Windows and
 [`src/pc/platform/paths.h`](../src/pc/platform/paths.h). A mod in the user
 directory replaces one the release ships with the same `id`.
 
+### Your own mods folder
+
+A player who keeps their mods in a folder of their own (a download folder, a
+pack on another disk) names it in `mods-folder.txt` in the user directory:
+one path, UTF-8, on the first line that says anything (a byte order mark and
+a CRLF are fine; on Windows `\` and `/` both do). A path that is not
+absolute is taken from the program directory, so a portable pack can say
+`mods-extra`. `MEMORIES_MODS_FOLDER` names it for one run instead and wins
+over the file (set to nothing, it says there is none). Mods are scanned once
+at start-up, so a change applies at the next launch. In code:
+`Mods_SetFolder` writes the file (an empty path removes it), `Mods_Folder`
+reads it, `Mods_FolderProblem` says why a folder was not read
+([`src/pc/mods/mods.h`](../src/pc/mods/mods.h)).
+
+It is one more folder the game reads, not a replacement for the others, and
+the game never writes to it. Importing a mod or the HD pack, `mod-data/<id>/`,
+the settings and profiles all stay in the user directory, and **Remove** does
+not delete a mod that lives in the chosen folder (delete it there). A mod in
+the chosen folder shows as `folder` where the Mods window shows where a mod
+came from. On Android its code is not run (other apps can write to shared
+storage): the mod's data is used, `Mods_CodeSkipped` is true and the status says
+so; Import mod... puts it where its code runs (`Mods_SetFolderCode`).
+
+A folder that is gone, is a file or cannot be read is left out, with no
+notice at start-up: the reason is in the log (`mods folder: ...`) and
+`Mods_FolderProblem`, for the Mods window to show, and the choice stays so
+the mods come back when the folder does. The choice is refused when the
+folder is one of the game's own: the release's `mods/`, `MEMORIES_MODS_DIR`, the
+user directory (the game writes there: `mods/`, `downloads/`, saves) or a
+folder inside one. Folders are compared after `.` and `..` are taken out and,
+where the folder exists, its links are followed (`realpath`; on Windows
+`GetFullPathNameW`, which does not follow a junction or a link, so a link
+into the user directory is not caught there). `Mods_SetFolder` also drops double
+quotes around the path (Explorer's "Copy as path") and refuses a name with a
+line break, and a drive's current folder (`C:`, `C:foo`: give the full path).
+If `MEMORIES_MODS_FOLDER` or `MEMORIES_MODS_DIR` is set, the choice is saved (or
+cleared) all the same: `Mods_SetFolder` returns 0 and its `why` says that it is
+overridden ("Saved, but ..."), for the window to show. On Windows a `\?\` or
+`\.\` prefix is taken off and 8.3 short names are made long before folders
+are compared.
+
 | Variable | Effect |
 |---|---|
 | `MEMORIES_USER_DIR` | the user directory, instead of the platform's |
-| `MEMORIES_MODS_DIR` | the only directory scanned for mods |
+| `MEMORIES_MODS_DIR` | the only directory scanned for mods (the release's `mods/`, the chosen folder and the user directory's are then not read) |
+| `MEMORIES_MODS_FOLDER` | the player's mods folder for this run, over `mods-folder.txt`; empty means none |
 | `MEMORIES_MODS=0` | load no mods at all this run |
 | `MEMORIES_MOD_<ID>=0/1` | settle one mod for this run; the id uppercased, everything that is not a letter or a digit an underscore (`MEMORIES_MOD_3D_MONSTERS=1`) |
 | `MEMORIES_MOD_<ID>_<KEY>=n` | one of a code mod's settings for this run, over what the settings file says (`MEMORIES_MOD_3D_MONSTERS_SCALE=5000`) |
@@ -140,7 +190,7 @@ the window does). The language changes only what the window
 shows, never what the game says (that is [a translation](translation.md)).
 
 A code mod's own words, the ones it draws over the game, go in the same
-file under `texts` (host API 22). Each key is the English exactly as the
+file under `texts` (host API 23). Each key is the English exactly as the
 mod's code writes it, `%` conversions and all; each value its translation:
 
 ```json
@@ -158,7 +208,7 @@ the same order; `%%` may go anywhere. One that does not is a warning beside
 the mod, and the English is used. A plural is two texts, one for each form
 the English picks. The words follow the language when the player changes
 it, and the overlays are drawn again in them. A mod that also runs on an
-older game checks `host->api >= 22` first and keeps its English there.
+older game checks `host->api >= 23` first and keeps its English there.
 
 The mods the release ships have `lang/pt-BR.json`; Extra hand plays'
 translates its hints, its phase menu and its notices this way.
@@ -223,7 +273,7 @@ feature an older game would leave out raises `MEMORIES_MOD_API`
 (`src/pc/mods/mod_types.h`), lists the feature here and in `compat.py`,
 and keeps every lower `min_api` loading.
 API 12 (v0.3.0 too) added no mod.json feature, only a code mod's sounds;
-API 22 none either, only a code mod's words in the player's language.
+API 22 none either, only the mods' packet area.
 When tagging the first release past v0.3.0, replace the unreleased descriptions in
 the table and add that tag to `compat.RELEASES`; do not assign an unchosen
 release number in advance.
@@ -548,8 +598,9 @@ console, rather than drawn black.
 
 A pack's PNG is read when the game first uploads the words it covers, or
 first draws them through its palette, and is given to them before the next
-frame, as it always was. The reading itself happens on three threads, side
-by side, and the main thread waits only for what that frame asked for; when
+frame, as it always was. The reading itself happens on one thread per core
+but one (3 to 8; `MEMORIES_PACK_THREADS=<n>` sets it, 2 to 16), side by
+side, and the main thread waits only for what that frame asked for; when
 an image is given to the first entry of some words (the head), the other
 entries of the same words (their other palettes) are read ahead, before the
 game draws them, since a screen typically draws its sheets through those
@@ -2293,7 +2344,7 @@ the player's settings file as `mod.<id>.<key>`, and read from
 `MEMORIES_MOD_<ID>_<KEY>` first when that is set; a key is letters, digits,
 `_` and `-`, and `order` is the manager's), `disc_file_start`/
 `disc_read`, `pad`, and from mod API 2 `now_us` (a clock) and `map_fixed`
-(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`). API 14 adds no entry or event either; it marks the [tower](tower-mode.md)'s mod.json features, API 17 a duelist's [bust](more-duelists.md#bust--the-large-character), and API 18 the [card frames](#frame-styles-and-the-rules-that-pick-them)'s keys. API 22 adds `text`, a text the mod draws in the player's language from its `lang/<language>.json`'s `texts` ([A mod in the player's language](#a-mod-in-the-players-language)), and `picture_point`, where a point of the game's picture shows on the overlay's canvas.
+(memory at an address the mod chooses, as 3D Monsters' model arenas need). API 4 adds `hook`/`unhook`/`symbol`, below; API 5 adds `duelist_id`, which resolves an added duelist's identity to the id it has this run as `card_id` does for a card. API 7 adds `card_notes` and `card_tag`, a card's [notes](more-cards.md#notes-on-a-card) and the `<tag: value>` tags in them. API 8 adds `limit`, the numbers the game caps and its other values as the mods' `limits` set them ([Gameplay tables](gameplay-tables.md#values-atk-def-lp-starchips-and-more)): `host->limit(host, "attack")` is 9999 without such a mod, `host->limit(host, "deck_copies")` 3. API 9 adds `menu_item`, the name of an item of the title's menus, and the event `MEMORIES_EVENT_MENU` ([The title's menus](#the-titles-menus)). API 10 adds the event `MEMORIES_EVENT_MONSTER`: a monster summoned, flipped, at its owner's draw, in a battle, destroyed or destroying the monster it battled, for every monster, with `handled` to skip a card's own `monster_effects` ([Monster effects](more-cards.md#monster-effects)). API 11 adds no entry or event; it marks the mod.json features a game of API 10 leaves out ([Which game a mod needs](#which-game-a-mod-needs)). API 12 adds `sound_add`, `sound_play` and `sound_free`, sounds of the mod's own: `sound_add` copies signed 16-bit PCM at any rate and channel count and returns a handle, and `sound_play(host, sound, volume, pan)` plays it once on the channels the audio replacement mixes the game's replaced sound effects on ([Audio](#audio-songs-voices-and-sounds-from-files)), under the player's sound-effect volume, restarting it if it is still playing, as a game sound effect takes its own voice again. Both work only while the mod is applied, not from `MemoriesModInit`: the host frees a mod's sounds when it is turned off, so a mod adds them when it needs them, or in `applied(1)`. 3D Monsters plays its fighters' arena sounds this way (`fight_sounds.c`). API 14 adds no entry or event either; it marks the [tower](tower-mode.md)'s mod.json features, API 17 a duelist's [bust](more-duelists.md#bust--the-large-character), and API 18 the [card frames](#frame-styles-and-the-rules-that-pick-them)'s keys. API 22 adds `packet_area` ([Packets of the mod's own](#packets-of-the-mods-own-api-22)). API 23 adds `text`, a text the mod draws in the player's language from its `lang/<language>.json`'s `texts` ([A mod in the player's language](#a-mod-in-the-players-language)), and `picture_point`, where a point of the game's picture shows on the overlay's canvas.
 A mod that uses an entry newer than API 1 should refuse to start when
 `host->api` is older.
 
@@ -2360,7 +2411,7 @@ same with no mod hooking anything (the smoke screenshots are unchanged).
   `host->overlay_size` gives the window's size in pixels and the scale the
   port draws its own menus at, `host->draw_text` writes ASCII text (its `y`
   is the line's middle), `host->text_width` measures it and `host->fill`
-  blends a rectangle in. From API 22 `host->picture_point(host, x, y, &cx,
+  blends a rectangle in. From API 23 `host->picture_point(host, x, y, &cx,
   &cy)` says where a point of the game's picture, in the disc's 320 x 240,
   is on the canvas, so a mark can sit beside something the game draws
   whatever the window, widescreen or touch pad. It is drawn at the window's resolution over the
@@ -2383,6 +2434,33 @@ same with no mod hooking anything (the smoke screenshots are unchanged).
   `tanf`, `expf`, `logf`, `<ctype.h>` (ASCII, in the header) and `rand`/
   `srand`, which give the same numbers on Linux and Windows and leave the
   game's own random numbers (and so its duels) alone.
+
+### Packets of the mod's own (API 22)
+
+Every polygon a mod sorts (`GsSortPoly` and the like) is written into the
+game's frame packet buffer, 140 KB a frame (`GRAPHICS_PACKET_BUFFER_SIZE`),
+after the game's own and every other mod's; running past its end breaks the
+next frame. A mod that draws a lot can ask for room of its own instead:
+
+* **`packet_area(host, bytes)`** (check `host->api >= 22`): `bytes` of this
+  frame's share of the mods' packet area, a megabyte past guest RAM. NULL when
+  it is used up this frame, or in a build without one (the translated macOS
+  and Android builds): then draw into the game's buffer as before. The packets
+  link into the ordering tables like any other, so they sort with the cards
+  and the field as before. Sort into the area by pointing the packet cursor
+  at it, and put the cursor back after:
+
+  ```c
+  extern u32 D_800FE240;               /* the frame's packet cursor */
+  void *area = host->api >= 22 ? host->packet_area(host, need) : NULL;
+  u32 saved = D_800FE240;
+  if (area) D_800FE240 = (u32)(uintptr_t)area;
+  /* ... GsSortPoly(...) as usual, at most `need` bytes ... */
+  if (area) D_800FE240 = saved;  /* the game's buffer goes on where it was */
+  ```
+
+  Ask again every frame: the area is free again once the frame's list has
+  been drawn (`DrawOTag`).
 
 ### One click: build a mod with nothing installed
 

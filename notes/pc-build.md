@@ -347,19 +347,54 @@ after-hook sees what the game gets ([mod API](mod-api-3.md)).
 
 **View > Touch controls** (`touch_controls`, `MEMORIES_TOUCH_CONTROLS`: 0
 Automatic, the default; 1 Show; 2 Hide) is an on-screen controller for touch
-screens (phones, tablets, touch laptops): a D-pad and the four face buttons
-at the middle of the left and right sides, L2/L1 and R1/R2 above them,
-SELECT and START below (`platform/touch_pad.c`). `touch_pad_art.c` draws it at
-the window's own size, from distance fields, so its edges stay smooth on any
-screen:
+screens (phones, tablets, touch laptops) (`platform/touch_pad.c`), in one of
+two styles, **View > Touch controls > Style** (`touch_style`,
+`MEMORIES_TOUCH_STYLE`):
 
-- dark see-through buttons with a thin light edge;
-- the face buttons' symbols in the PlayStation's colors;
-- the D-pad's arrows;
-- the L/R, SELECT, START and MENU pills, labelled in the overlay's face.
+- **Game** (0, the default): a D-pad and the four face buttons at the
+  middle of the left and right sides, L2/L1 and R1/R2 above them, SELECT
+  and START below. `touch_pad_art.c` draws it at the window's own size,
+  from distance fields, so its edges stay smooth on any screen: dark
+  see-through buttons with a thin light edge, the face buttons' symbols in
+  the PlayStation's colors, the D-pad's arrows, and the L/R, SELECT, START
+  and MENU pills, labelled in the overlay's face. Each button's picture,
+  let go and held, is drawn once per size; a held button lightens and its
+  edge brightens. **MENU**, under L2/L1 (the D-pad below it), opens the
+  menu bar's first menu as it is touched (`TouchPad_TakeMenu`, taken in the
+  event pump): the way to the menus where the bar is hidden, as in
+  fullscreen or on a phone. The D-pad and the face buttons take a touch
+  two buttons from their middles.
+- **Simple** (1): laid out as a handheld's: L2, L1 and SELECT down the top
+  left corner and R2, R1 and START down the top right, each a frame 1.6
+  buttons wide; the D-pad in the bottom left corner, its arrows in a ring
+  3.2 buttons across, and the four face buttons in the bottom right, each
+  ring taking a touch only inside what is drawn of it; the picture's middle
+  is left clear, and on a phone the corners fall in the black bars beside
+  the 4:3 picture. It is drawn in one grey scale (`touch_pad_simple_art.c`):
+  frames and the face buttons' discs are dark with a light edge; the
+  D-pad's arrows are solid triangles in dark discs inside a light ring; the
+  face buttons' marks are outlines (triangle, circle, cross, square), with
+  none of the PlayStation's colours. Everything is drawn (no picture of the
+  game's), and each part is drawn whole into a layer first, so its edge,
+  fill and mark fade together. L1/L2/R1/R2, SELECT and START are words in
+  the game text's font (`overlay_text.h`). A column's frames take a touch
+  between them by the nearer middle. **The top row**, three frames in the
+  middle of the top edge, presses no pad button; each takes its tap as the
+  finger lifts on it (so one brushing SPEED changes nothing, and a touch
+  the system cancels, `TOUCH_FINGER_CANCEL`, taps nothing), in the event
+  pump (`TouchPad_TakeMenu`, `TouchPad_TakeStates`, `TouchPad_TakeSpeed`):
+  **MENU** (a cog) opens the menu bar's Game menu and **STATES** (a
+  triangle pointing down) its File menu, Save state, Load state and the
+  state slot (`Menu_OpenAt`); **SPEED** (two triangles and the speed, x1 to
+  x4) steps Game speed through 100% to 400% a tap, back to 100% after 400%
+  or from any other speed, and saves it as the menu does.
 
-Each button's picture, let go and held, is drawn once per size. A held button
-lightens and its edge brightens. Automatic shows it once
+Either style is laid over the picture at **View > Touch controls >
+Opacity** (`touch_opacity`, `MEMORIES_TOUCH_OPACITY`): 0, the default, is
+the style's own (Game's 59%, as it always was; Simple's 25%); 25%, 50% or
+75% from the menu, any 1-100 in the file; a button held is more solid
+(Game: its held picture; Simple: twice as solid).
+Changing the style lets go of what the pad held. Automatic shows it once
 the screen is touched (that touch presses nothing) and hides it when a key or
 a controller button is pressed. Several fingers work at once; a finger that
 lands on the pad stays the pad's while it slides (the D-pad goes by the angle
@@ -367,10 +402,9 @@ from its middle, so between two arrows presses both), and one that lands
 elsewhere is the mouse SDL makes of it (the menu bar). It presses the button
 it shows: its bits join the pad state beside the mouse's, which View >
 Japanese buttons does not exchange, and a tap shorter than a frame counts
-once. Hidden, it draws nothing and takes no touch.
-**MENU**, under L2/L1 (the D-pad below it), opens the
-menu bar's first menu (`TouchPad_TakeMenu`, taken in the event pump): the
-way to the menus where the bar is hidden, as in fullscreen or on a phone.
+once. Hidden, it draws nothing and takes no touch. `MEMORIES_SDL_SCRIPT`'s
+`tap:x:y`, `fdown:x:y` and `fup:x:y` put a finger there, which is how both
+layouts and the top row were checked in a window.
 While a menu, a notice or a bar drawn over the picture is up, the pad
 steps aside (`TouchPad_Block`: it draws nothing, takes no touch and lets
 go of what it held), so their rows and buttons are the finger's; it is
@@ -382,10 +416,12 @@ the top of the screen shows a hidden bar under it. Where the window is
 always the whole screen (`Platform_HasWindowModes` 0, an Android app) the
 bar is drawn over the picture instead of pushing it down. Where the system
 gives the density (Android), a button is 48 to 80 dp wide (13% of the
-short side otherwise, and never above 16% of it), and SELECT, START and
-MENU take a touch a button tall. The save slot and deck slot menus, which
-the pad plays, keep between its columns while it shows
-(`TouchPad_FreeSpan`, `Menu_SetOverlayArea`); narrower than their one-row
+short side otherwise, and never above 16% of it; with Simple, nor so big
+that the columns would reach the D-pad's ring: 6.4 buttons tall in all),
+and SELECT, START, MENU and Simple's frames take a touch a button tall. The
+save slot and deck slot menus, which the pad plays, keep between its
+columns (and below Simple's top row) while it shows (`TouchPad_FreeSpan`,
+`TouchPad_TopRowBottom`, `Menu_SetOverlayArea`); narrower than their one-row
 layout, a slot's details go on lines under its name and the hints wrap
 (`saves/flow_text.h`); the deck slot menu's messages break at spaces where
 the box is narrower than them (`centred_words`, `deck_menu.c`); the text
@@ -583,6 +619,32 @@ of MODEL, WA and SU found no other variadic callee: `printf` is handled in
 `Model_SetSlotProperties` are never called from them.
 `tests/pc/mips_varargs_test.c` runs such a call through the interpreter.
 
+Retail module code reads stack words it never wrote, as on the console,
+where they hold what earlier code left at that depth. Variant module 128
+(record 330, slot A; 258 in slot B) sets only the colour bytes of the two
+`CVECTOR`s it hands `Model_QueueTintRequestForParts` (`0x8013B474`-`0x8013B4D4`:
+`lbu` of `sp+0x3BB` and `sp+0x3C3`), and the start colour's fourth byte is the
+tint pass's draw mode (`func_800528AC`, `Model_HasInsufficientBufferSpace`);
+it also reads the corners of a `POLY_FT4` that only `SetPolyFT4` touched
+(`sp+0x80`/`0x82`, `0x8013C0AC`) for a `ratan2`. Those are the only reads
+whose values differed between the two histories below (an instrumented
+interpreter, 2026-11-02). The bridge forwards eight stack words to every
+native call, written or not; every callee that got an unwritten one in those
+battles takes fewer parameters than that word's place, so it is not among
+them. On the console the words are game RAM and a
+save state holds them; the port's interpreted code runs on its own stack, and
+since "Port: save states carry the interpreter's stack" a state holds it too
+(chunk `mips-stack`, all 256 KiB; the translated build already kept it with
+its mappings). Before, a battle started from a state looked different after
+other battles in the same game: record 330's second-star battle drew other
+sparks from 679 frames in after record 320's (the model oracle;
+`tests/pc/replays/state-load-mips-stack`). A state from before the chunk
+clears the stack. Within one game the words still hold what earlier
+interpreted modules left (the console's would hold what its native code
+left, which the port's native frames on the host stack cannot give).
+`tests/pc/mips_stack_test.c` checks the stack the states carry is the one
+the interpreter runs on.
+
 Checked from `slot1.state`: the AI's attack (card clash, damage lettering,
 burn destruction: ids 2 and 3), the player's attack committed with Square
 (the 3D battle: arena, both monsters, the variant module's setup command and
@@ -620,11 +682,84 @@ is retail (the reference for comparisons); `MEMORIES_DUEL_EFFECTS=skip`
 (called `native` before the bank ran as native C; `native` now means the
 default) restores the bring-up behaviour
 (ids 1-3 interpreted, others complete at once); `MEMORIES_FRAME_HASHES=<file>`
-writes a hash of VRAM per presented frame for comparing two runs; `MEMORIES_MODEL_MODULES=native`
-uses the resident spark burst instead of the monster's module; an effect or
-module the interpreter cannot run is reported once on stderr and falls back
-the same way. `MEMORIES_TRACE_MIPS_PRINTF=1` prints the modules' own
-`printf` format strings.
+writes a hash of VRAM per presented frame for comparing two runs;
+`MEMORIES_MODEL_MODULES=interpreter` interprets every battle model module
+even one native C stands in for (the reference, as the duel effects'
+switch; with no native C linked in for the models yet it is the default);
+`MEMORIES_MODEL_MODULES=spark` puts the resident spark burst in place of
+every monster's module (it was called `native`; `native` now means the
+default, as for the duel effects, so that it names the native C once there
+is some; any other value is the default too, and says so once on stderr);
+an effect or module the interpreter cannot run is reported once on stderr
+and falls back the same way. `MEMORIES_TRACE=model` logs every call
+of a model module with the module's identifier, its slot and what ran it
+(`variant slot=0 command=1 module 418 in A: interpreter`; `slot=` is the
+active model, `D_8009AFA0`). `MEMORIES_TRACE_MIPS_PRINTF=1` prints the
+modules' own `printf` format strings.
+
+**The model modules' oracle** (`tools/pc/model_oracle.py`): before native C
+replaces any variant module, every MODEL.MRG record's 3D battle run two
+ways, frame for frame. A record holds four variant images: one per guardian
+star of the card (the "alternative": `D_800EF658`'s last byte, set by the
+duel from the card's `DUEL_CARD_FLAG_USE_GUARDIAN_STAR_2`) in each slot
+(stages 7-10 of the load, `func_80056D7C`: alternative 0 slot A, 0 B, 1 A,
+1 B; ten sectors each from sector 180 of the record). On the disc that is
+1,181 distinct images per slot (595 and 602 per alternative in slot A, 595
+and 600 in slot B). The script drives one battle per alternative with the
+record's monster on both sides, no duel needed: from a state saved at the
+debug menu (`goto("debug")`) it pokes the two model records into
+`D_800EF658`, the mode to come back to into `D_8009B269` and the animated
+battle (1) into `D_8009B26C`, as the duel's phase 5 does
+(`duel_scene_battle.c`), and steps until the mode byte leaves 1. Each battle
+starts from that state, so none depends on what ran before it. Which slot
+runs: the attacker's (A) always; the defender's (B) only when the attacker
+does not win (`field_02`: 1 is the side that wins), so the default outcome
+is a tie (both modules run; `--outcomes attacker,defender` adds the other
+paths). Every battle runs twice, by default the build's default against
+`MEMORIES_MODEL_MODULES=interpreter`, in games of their own (`--jobs`), and
+the two must agree on every frame hash and every module call the trace logs
+(setup commands by frame, updates by count). A battle where either run did
+not call the variant module of a slot its outcome runs (A always, B unless
+the attacker wins) is an error, not a match: two battles that never started
+would agree on everything. Slot B's images are asked for only from battles
+that run it. The report gives per record
+identical or the first differing frame counted from the battle's start, the
+modules that ran (identifier and slot) and those that cannot run. Coverage:
+the script steps a VBlank at a time while the two models load and peeks
+each slot's 0x5000 bytes once its transfer has landed (the slot's load step,
+`field_E14`, past 0) and before step 9, the first that can call the module;
+it hashes them against the disc's image for that record, alternative and
+slot. An image counts when its slot held the disc's bytes, hashed before its
+module's first call, and its module was called there on both sides, and
+every distinct image of the records asked for must count. Hashing after the
+battle is not enough: record 40's second-star modules (762 in slot A, 859
+in B) write six bytes at +0x1FFC inside their own image. The primary
+modules are reported too: 10 of the 605 distinct ones in slot A (604 in B)
+are called in these battles. The VRAM hash covers the frame being drawn, so
+it differs a frame before the screen does: `--shots N` pictures the first
+differing frame, the one before and the one after.
+
+Checked on Windows (i7-8700K, 6 cores): all 621 records, both
+alternatives, tie, the default against `interpreter` (on master the same
+code, so this is the determinism check at scale): 1,242 of 1,242 battles
+identical, 1,181 of 1,181 distinct images covered in each slot, in 40 min
+with `--jobs 11` (a battle is 1,053 to 2,544 frames, 1,559 on average,
+about 7 s alone; 1.2 s a battle and side with eleven games at once). It catches a difference where
+it is: a build whose default skipped the 200th update of module 418 in slot
+A (that call at frame +836 of record 34's battle) was reported "first
+differing frame +838" for that battle only, and its pictures differ from
++839 on (the stand-in: +639, its first update at +637). The 418 experiment
+(that shape linked as native C, gated by hash) against the interpreter: the
+13 records with it in slot A identical. **Battles are only comparable with
+the same history:** the interpreter's stack (`0x9FF00000`, mips.c) is not in
+save states, and a module that reads a stack word it never wrote sees what
+the battle before left there. With `--reverse-reference` (the reference
+runs the battles in the opposite order) record 330's second-star battle
+differed at +679 (a few sparks) whenever record 320's second-star battle
+came just before it, and was identical with the interpreter's stack zeroed
+before each outermost call (a diagnostic build). The sweep's two sides run
+the same battles in the same order, so they compare alike; native C for such
+a module would read the host's stack instead, and differ.
 
 ### Credits
 
@@ -698,6 +833,7 @@ under it:
 | `states/slot1.state` ... | save states (`MEMORIES_STATE_DIR`) |
 | `screenshots/` | F12 and **File > Screenshot** (`MEMORIES_SCREENSHOT_DIR`) |
 | `mods/` | mods the player installed (`notes/modding.md`) |
+| `mods-folder.txt` | the path of a mods folder the player chose, read but never written to (`MEMORIES_MODS_FOLDER` names another for one run; `notes/modding.md`, "Your own mods folder") |
 | `mod-data/<id>/` | whatever a mod stores, the only place one may write |
 
 Portable mode: when a file named `portable.txt` sits beside the executable
@@ -817,7 +953,7 @@ move, Enter activates, Esc closes (with no menu open it is Exit game, asking fir
 | Video | Window scale and Menu size submenus, window mode, scaling/aspect/filter/VSync choices |
 | View | Fusion helper (`fusion_helper`, [notes/fusion-helper.md](fusion-helper.md)), Card passwords, Library: show every card, Free Duel progress (see [View > Free Duel progress](#view--free-duel-progress)); Duel rank submenu: Off, Rank, Rank and score (`rank_meter` 0/1/2, see [Duel rank](#duel-rank)); Opponent's name for COM; Japanese buttons |
 | Game | Game speed and Frame rate submenus, Card drops, Deck slots, card browsing, Restart game |
-| Mods | opens the mods window, which lists every mod found in `mods/` beside the executable and in the user directory (`notes/modding.md`) |
+| Mods | opens the mods window, which lists every mod found in `mods/` beside the executable, in the player's mods folder if they chose one, and in the user directory (`notes/modding.md`) |
 | Debug | HUD levels, pause/step, frame and VRAM dumps |
 | Trace | Live frames, disc, SPU, input and state log-channel switches |
 
@@ -2423,6 +2559,38 @@ strip, or a piece of the turning card) samples the picture instead. Twenty
 titles are kept, the least recently drawn made over. So no pack needs to
 carry names, and a card a mod adds reads like the rest.
 
+### Fast HD pack drawing
+
+Video > Fast HD pack drawing (`hd_fast`, `MEMORIES_HD_FAST`: 0 Off, 1 On,
+2 Automatic, the default) draws a texture pack's images with a shorter
+program at internal 2x and up (`gl_picture.c`, `lean_program`).
+Automatic turns it on once the game falls behind on the GPU's account
+while a pack is drawn: two windows of 120 frames running in which the
+game's work and the present take more than 17.5 ms a frame together, the
+present the longer, a pack drawn in half the frames, and no frame held
+past 40 ms (a screen reading its pack's images). It stays on while the
+setting and the internal resolution stay. A machine that holds 60 never
+sees it: the Samsung A22 turns it on at 4x with the HD pack, not at 2x.
+
+With a pack, nearly all a screen draws can be pack images (the duel field: 2.6 of 2.7 Mpx a frame at
+4x), and the picture's program spends about ten cycles a pixel on each,
+finding the texel's entry and place in the pack's maps; on a Samsung A22
+(Mali-G52) a duel ran at 47 fps at 4x with the Forbidden Memories HD pack,
+60 without it.
+
+A primitive that samples one entry's image within the words the entry
+covers, without perspective, semi-transparency or HD text, has its image
+pixel on a straight line of its texel coordinate, so the shorter program
+reads the image once from the interpolated texel, with the same clamp and
+the same sums (about 1.9 cycles a pixel); the half-pixel moves the
+picture's program makes at each pixel are made once per triangle instead.
+Anything else draws as before, in the same order. With it on the A22
+holds 60 fps at 4x. It is nearly the same picture, not the same: the
+texel coordinate moved once rounds a little differently from one moved at
+each pixel, so now and then a pixel on a texel's edge takes its
+neighbour (15 of the 1,228,800 pixels of the duel field at 4x on the A22,
+2 of 1,262,080 on Windows). Off, the picture is exactly as before.
+
 ### HD numbers and labels
 
 HD numbers and labels come with HD text (the same item; they had one of
@@ -3960,7 +4128,10 @@ adb install -r tmp/pc/android-x86/memories-x86.apk
   builds SDL3 (shared), libpng and FreeType (static) with the NDK from the
   same pinned archives as the Linux and Windows builds, into
   `tmp/pc/android-deps/<abi>`, and keeps SDL's Java shell (`org.libsdl.app`)
-  from the same SDL release. zlib is the system's.
+  from the same SDL release. zlib is the system's. libpng has its NEON row
+  filters and palette expansion on arm64-v8a; `<abi>/.complete` names how
+  the folder was built, and one built otherwise (before 30 October 2026,
+  without NEON) is built again.
 - `build_game32.py --target android-<abi>` compiles every unit with NDK clang
   for the ABI at API 24, `-fPIC`, and links the game as the shared object
   `libgame.so` (`-Bsymbolic`, `--no-undefined`; pins `HIDDEN`, no fixed
@@ -4135,6 +4306,83 @@ the program directory's `game/` (`files/program/game/` in the internal
 files folder), which `game_files.c` searches first.
 Screenshots of the device, never the host: `adb exec-out screencap -p`.
 
+### A mods folder on the phone's storage
+
+The Mods panel's **Mods folder...** (mods_window.c, [Mods window](mods-window.md))
+lets the player point the game at a folder such as `Download/MyMods`, one more
+folder it reads ([Mods](modding.md#your-own-mods-folder)). The game reads mods
+with plain file calls (`fopen`, `opendir`, the object loader's `fread` into
+anonymous memory), so on Android it needs a path and the right to read it:
+
+- **The path.** SDL has no folder dialog on Android (`SDL_ShowOpenFolderDialog`
+  is unsupported there), so `ModsFolderPicker.java` asks for
+  `ACTION_OPEN_DOCUMENT_TREE` (opening in Download) and turns the tree URI of
+  the external storage provider into a path: `primary:Download/MyMods` is
+  `/storage/emulated/0/Download/MyMods`, `home:` is Documents, and
+  `1234-ABCD:Mods` is `/storage/1234-ABCD/Mods` (an SD card; a USB drive's
+  16-digit id is `/storage/<id>` too; neither tried on a device). The path is
+  canonical and must stay inside its volume: `primary:../../data` is refused.
+  Any other provider (a cloud drive, another app's files) has no path: the
+  picker says so, in the panel. No lasting URI right is taken; only the
+  path is kept, in `mods-folder.txt` like on the desktop. Android 11 and later
+  will not hand back `Download` itself or the storage root: the player picks a
+  folder inside it.
+- **The right.** `MANAGE_EXTERNAL_STORAGE` ("All files access", Android 11 and
+  later; `READ_EXTERNAL_STORAGE` with `maxSdkVersion` 29 before, asked as a
+  runtime permission, not tried on a device), both in the manifest
+  (`package_android.py`). On Android 10 (API 29) that permission covers media
+  files only, and the folder's `.json` and `.mod` are not media: the manifest
+  keeps the old storage model there with `android:requestLegacyExternalStorage`
+  (honoured on API 29 only; Android 11 and later ignore it). The panel calls the
+  right "Storage" before Android 11 (`Platform_ModsFolderRight`). It is asked for only after a folder is chosen and
+  saved (`Mods_SetFolder` accepts a folder that cannot be read yet), and only
+  after the panel says why in a sentence and the player taps Allow;
+  `ModsFolderAccess.java` then opens `ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`
+  for the app, else the list of apps, and answers "granted" or "refused" when
+  the player comes back. The app's details page is not tried: it opens on every
+  device and has no switch, so a phone without the two pages (an Android TV,
+  some Go and Fire OS builds) would only loop. Those two are looked for before
+  the question is even offered (`ModsFolderAccess.canAsk`, with a `<queries>`
+  entry for both actions, which Android 11 needs to let the app see them):
+  without them the panel says "This device cannot give the game All files access.
+  Use Import mod... instead." and asks nothing. Refused, the folder stays
+  chosen and the panel says how to allow it (`Mods_FolderProblem` is a fact
+  about the launch, so the panel composes this text itself; on the A22, Android
+  13, a folder of Download that the game may not read lists as empty rather
+  than failing, so the launch log has no reason to give). `Platform_ModsFolderAccess`
+  (`ModsFolderAccess.has`, through JNI) is what the panel asks to know whether
+  to say it, whenever it opens with a folder chosen; an allowance given in
+  Settings later is a restart too. What the start could read is noted when the
+  mods are scanned (`ModsWindow_SetFolderAccess` in `Platform_Open`, not at the
+  panel's first showing), and the right is looked for again whenever the app
+  comes back to the front (`SDL_EVENT_DID_ENTER_FOREGROUND`: some makers' Settings
+  answer the request at once, and the player gives the right behind it) and about
+  twice a second while the panel shows a folder it cannot read.
+- **The answers** reach C as DiscPicker's do: a record file in the internal
+  files folder, `mods-folder.txt` (`ModsFolderBase.java`), one request id per
+  question, read by `take_pick` and polled with the panel's ticks
+  (`Platform_PickedModsFolder`, `Platform_AskedModsFolderAccess`).
+  `MEMORIES_PICK_FOLDER=<path>` stands in for the picker (and counts access as
+  held) in scripted runs. When the system ends the game's process while the
+  picker is in front, the answer waits in the record: the next start takes a
+  fresh folder from it before the mods are scanned
+  (`Platform_TakePendingModsFolder`, as the disc setup takes its pick), and drops
+  anything else. A path that does not fit the panel's buffer is no answer.
+- **Code mods** from the chosen folder are read for their data only on Android
+  (`Mods_SetFolderCode`, off by default there, `mods.c`): shared storage is
+  written to by every app that holds the same right, and the object loader
+  would run whatever is in the file. The mod is listed, its data is used, its
+  status says "Code not run: import it to run its code" and its details say that
+  only its data is used. Import mod... copies a mod into the game's own folder,
+  where its code runs. Desktop is unchanged: there the folder is the player's.
+  `pc_mods_folder_datacode` and `pc_mods_folder_allcode` check both.
+- **Google Play** restricts `MANAGE_EXTERNAL_STORAGE` to file managers and
+  similar apps, so a store build has to drop the permission and the Mods
+  folder... button; the sideloaded APK keeps both.
+- Reading `Download/...` goes through the system's file provider, not the app's
+  own `Android/data` folder; the first launches with a large pack there should
+  be timed before they are promised to be as fast.
+
 ### Crash reports on Android
 
 A crash writes its report as on Linux (`crash.c`, in the process: there is
@@ -4245,8 +4493,9 @@ launch, let it crash, remove the line, launch again; `adb shell ls
   dp. The bar is hidden, as in a desktop's fullscreen, and drawn over the
   picture when it shows (where the window is always the whole screen,
   `bar_overlays`), so the picture and the touch controls never move: MENU on
-  the touch controls opens it, as does a tap at the top of the screen or
-  Back's Menu. The mouse SDL makes of a finger does not hover: before, its
+  the touch controls opens it (Simple's opens its Game menu, and STATES its
+  File menu), as do a tap at the top of the screen and Back's Menu. The
+  mouse SDL makes of a finger does not hover: before, its
   last place (0,0 at start, the top after a tap on the bar) kept the bar
   shown for good, and its move to a tap opened the menu that the press then
   closed. Everything else there is the desktop's.
@@ -4338,13 +4587,23 @@ untouched: with a mouse every path is the old one, pixel for pixel.
   a code mod staying off, what it refuses). `Platform_PickModZip`
   returns at once and the answer comes on the Java thread; the panel asks
   for it once per pump (`Panel_Tick`, `ModsWindow_Tick`,
-  `Platform_PickedModZip`), shows "Importing...", and then the document is
-  copied into the mods folder (`mods/.incoming.zip`, `Platform_FetchModZip`)
-  through `SDL_IOFromFile` before it is read, so a provider's stream that
-  cannot seek works too. A big `.zip` holds the frame while it is copied and
-  unpacked. `MEMORIES_IMPORT_ZIP=<file>` in `environment.txt` takes that file
+  `Platform_PickedModZip`), and then the document is copied into the mods
+  folder (`mods/.incoming.zip`, `Platform_FetchModZip`) through
+  `SDL_IOFromFile` before it is read, so a provider's stream that cannot
+  seek works too. The copy, the reading and the unpacking run on the import's
+  thread (`src/pc/mods/import_job.c`), never the game's: SDL attaches that
+  thread to Java by itself (`Android_JNI_GetEnv`), the panel shows the share
+  and Import mod... is Stop meanwhile. `MEMORIES_IMPORT_ZIP=<file>` in `environment.txt` takes that file
   instead of the picker. The picker puts the app in the background; coming
   back is as above (the panel repainted for a second).
+- **Open with** A mod's `.zip` opened with, or shared to, the game from a
+  browser, Discord or a file manager goes to the same import as Import
+  mod...: `OpenWith.java` (an exported translucent activity in its own
+  process, `:open`, with the `VIEW` and `SEND` filters for the zip types in
+  `tools/pc/package_android.py`; `content://` URIs only) writes the URI to
+  `open-with.txt` and brings `SDLActivity` forward; `open_with` in `sdl.c`
+  opens the Mods panel on it when nothing else of the game's is up, and the
+  panel asks before importing ([Mod manager](mods-window.md)).
 - **Remove** In the Mods panel's footer, left of Import mod... (on a phone,
   on the selected mod's page): deletes the selected mod's folder from
   `mods/` after a question, for a mod that is off or does not load (the

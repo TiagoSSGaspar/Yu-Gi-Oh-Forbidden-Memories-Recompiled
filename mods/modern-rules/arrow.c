@@ -339,7 +339,7 @@ static void draw_card(void *record, POLY_GT4 *prim, POLY_FT4 *sprite, s32 *color
 }
 
 /* The line: the aim, or what the arrow just did. */
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 static void name(int id, char *out, size_t size)
 {
     if (!Cards_NameUtf8(id, out, size)) snprintf(out, size, "#%d", id);
@@ -377,7 +377,7 @@ static void overlay(void)
     if (!line(text, sizeof text)) return;
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, 160, TEXT_Y, &cx, &cy);
     } else {
         cx = width / 2;

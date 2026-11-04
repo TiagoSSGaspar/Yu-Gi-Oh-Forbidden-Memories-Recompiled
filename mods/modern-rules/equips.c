@@ -337,7 +337,7 @@ static void snapshot(void)
 #define FIELD_CURSOR_RECORD 2
 #define TEXT_Y 34
 
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 
 /* The player's field cursor's record, while the player walks the field;
  * -1 otherwise. */
@@ -449,7 +449,7 @@ static void draw_field(void)
 static void picture_point(int x, int y, int *cx, int *cy)
 {
     int width, height, scale;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, x, y, cx, cy);
         return;
     }

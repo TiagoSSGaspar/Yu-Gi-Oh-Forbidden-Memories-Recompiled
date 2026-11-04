@@ -168,13 +168,13 @@ int Moth_Hold(void)
     return Moth_Hold();
 }
 
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
-/* Where a point of the game's picture is on the canvas (API 22), else a 4:3
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
+/* Where a point of the game's picture is on the canvas (API 23), else a 4:3
  * picture as tall as the canvas, in its middle. */
 static void picture_point(int x, int y, int *cx, int *cy)
 {
     int width, height, scale;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, x, y, cx, cy);
         return;
     }

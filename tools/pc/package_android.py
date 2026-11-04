@@ -7,7 +7,8 @@ be run on its own: package_android.py <build dir> <abi>. Uses only the JDK
 (javac) and the Android SDK's own tools, no Gradle: SDL's Java shell
 (org.libsdl.app, from the same SDL release as libSDL3.so; build_android_deps.py)
 and the game's own Java (src/pc/platform/android/*.java: the restart activity,
-in a process of its own, and the first run's document picker, among others)
+in a process of its own, the first run's document picker and "Open with" for
+a mod's .zip, among others)
 are compiled against the SDK's android.jar and dexed with d8, aapt2 links the
 manifest, the native libraries go in lib/<abi>/, and the APK is aligned
 (zipalign) and signed (apksigner). The key is the release key named by the
@@ -100,10 +101,32 @@ MANIFEST = f"""<?xml version="1.0" encoding="utf-8"?>
     <!-- The Mods panel's HD pack... (hd_pack.h): granted at install, no
          prompt; nothing is contacted until the player taps it. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- The Mods panel's Mods folder... (ModsFolderAccess.java): the player
+         names a folder of the phone's shared storage and the game reads it
+         with plain file calls, which Android 11 and later allow an app that
+         holds All files access (a switch in the app's settings page, asked
+         for only when the player agrees to it in the panel; the game works
+         without it), and before that the read permission. Google Play
+         restricts this permission, so a build for the store has to drop it
+         and the Mods folder... button (the sideloaded APK keeps both). -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <!-- Android 11 and later hide the system's settings pages from an app
+         unless it asks to see them: ModsFolderAccess.java looks for the two
+         All files access pages before it offers the question. -->
+    <queries>
+        <intent><action android:name="android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION" /></intent>
+        <intent><action android:name="android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION" /></intent>
+    </queries>
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <!-- requestLegacyExternalStorage: on Android 10 (API 29) the read permission
+         covers media files only unless the app keeps the old storage model, and
+         the chosen mods folder's .json and .mod files are not media. Android 11
+         and later ignore it (All files access does the work). -->
     <application android:label="{LABEL}" android:icon="@mipmap/ic_launcher" android:hasCode="true" android:allowBackup="false"
+        android:requestLegacyExternalStorage="true"
         android:extractNativeLibs="true" android:hardwareAccelerated="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name="org.libsdl.app.SDLActivity" android:exported="true"
@@ -125,6 +148,48 @@ MANIFEST = f"""<?xml version="1.0" encoding="utf-8"?>
              recent apps (the game's entry is the one to come back to). -->
         <activity android:name="org.yfmredecomp.game.DiscPicker" android:exported="false"
             android:taskAffinity="{PACKAGE}.disc" android:excludeFromRecents="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- Open with: a mod's .zip chosen for the game in a browser, Discord
+             or a file manager (VIEW), or shared to it (SEND). OpenWith.java
+             takes the document's URI and brings the game forward, which opens
+             the Mods panel on the same import as Import mod...; in a process
+             of its own (as Restart), so that an intent from any app cannot
+             take the running game down with it, shown to nobody. Not
+             application/octet-stream, which would offer the game for every
+             file of no known type; not BROWSABLE, so that a web page cannot
+             bring the game forward. -->
+        <activity android:name="org.yfmredecomp.game.OpenWith" android:exported="true"
+            android:process=":open" android:taskAffinity="{PACKAGE}.open"
+            android:excludeFromRecents="true" android:noHistory="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="multipart/x-zip" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="multipart/x-zip" />
+            </intent-filter>
+        </activity>
+        <!-- Mods folder... (ModsFolderPicker.java, ModsFolderAccess.java): the
+             system's folder picker and its All files access page, each in a
+             task of its own like DiscPicker's. -->
+        <activity android:name="org.yfmredecomp.game.ModsFolderPicker" android:exported="false"
+            android:taskAffinity="{PACKAGE}.modsfolder" android:excludeFromRecents="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name="org.yfmredecomp.game.ModsFolderAccess" android:exported="false"
+            android:taskAffinity="{PACKAGE}.modsfolder" android:excludeFromRecents="true"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <provider android:name="org.yfmredecomp.game.ReportProvider"
@@ -423,9 +488,9 @@ def package(build, abi, library, game, assets):
     os.makedirs(os.path.join(work, "dex"))
     # SDL's Java shell, from the SDL release libSDL3.so was built from, and
     # the game's own (JAVA): the activity that restarts it (Restart.java), the
-    # first run's document picker (DiscPicker.java), the HD pack's download
-    # (HdDownload.java), the message boxes and the crash report's
-    # ReportProvider.
+    # first run's document picker (DiscPicker.java), "Open with" for a mod's
+    # .zip (OpenWith.java), the HD pack's download (HdDownload.java), the
+    # message boxes and the crash report's ReportProvider.
     sources = sorted(glob.glob(os.path.join(build_android_deps.OUT, "java", "**", "*.java"), recursive=True))
     sources += sorted(glob.glob(os.path.join(JAVA, "*.java")))
     check_report_authority()

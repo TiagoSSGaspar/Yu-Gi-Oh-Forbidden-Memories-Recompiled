@@ -23,6 +23,7 @@ add_library(memories_pc_core STATIC
     src/pc/compat/pgxp.c
     src/pc/compat/libgs_ot.c
     src/pc/memory.c
+    src/pc/mod_packets.c
     src/pc/render/packets.c
     src/pc/render/soft_gpu.c
     src/pc/render/texture_dump.c
@@ -604,7 +605,7 @@ if(BUILD_TESTING)
     # Guest addresses are 32-bit words: a 32-bit build only.
     if(NOT MSVC AND (CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT WIN32))
         add_executable(memories_mips_varargs_test tests/pc/mips_varargs_test.c src/pc/guest/mips.c
-            src/game/func_80058838.c)
+            src/pc/guest/state_io.c src/game/func_80058838.c)
         target_include_directories(memories_mips_varargs_test PRIVATE src)
         target_compile_definitions(memories_mips_varargs_test PRIVATE MEMORIES_PC _LANGUAGE_C LANGUAGE_C)
         target_compile_options(memories_mips_varargs_test PRIVATE -Wall)
@@ -618,10 +619,24 @@ if(BUILD_TESTING)
             target_compile_options(memories_mips_varargs_test PRIVATE -mno-ms-bitfields)
         endif()
         add_test(NAME pc_mips_varargs COMMAND memories_mips_varargs_test)
+        # The interpreter's stack as save states carry it (chunk "mips-stack").
+        add_executable(memories_mips_stack_test tests/pc/mips_stack_test.c src/pc/guest/mips.c
+            src/pc/guest/state_io.c)
+        target_include_directories(memories_mips_stack_test PRIVATE src)
+        target_compile_definitions(memories_mips_stack_test PRIVATE MEMORIES_PC _LANGUAGE_C LANGUAGE_C)
+        target_compile_options(memories_mips_stack_test PRIVATE -Wall)
+        target_link_libraries(memories_mips_stack_test PRIVATE Threads::Threads)
+        if(NOT WIN32)
+            target_compile_options(memories_mips_stack_test PRIVATE -m32)
+            target_link_options(memories_mips_stack_test PRIVATE -m32)
+        else()
+            target_compile_options(memories_mips_stack_test PRIVATE -mno-ms-bitfields)
+        endif()
+        add_test(NAME pc_mips_stack COMMAND memories_mips_stack_test)
     endif()
     # mod_libc.c lends mods the indirect-branch thunks (src/pc/guest/branch_thunks.c).
     add_executable(memories_mods_test tests/pc/mods_test.c src/pc/mods/mods.c src/pc/mods/events.c src/pc/mods/hooks.c src/pc/mods/manager.c src/pc/mods/overlap.c src/pc/mods/mod_libc.c
-        src/pc/mods/object_loader.c src/pc/mods/json.c src/pc/guest/branch_thunks.c
+        src/pc/mods/object_loader.c src/pc/mods/json.c src/pc/guest/branch_thunks.c src/pc/mod_packets.c
         src/pc/platform/paths.c src/pc/platform/settings.c src/pc/platform/ui_text.c)
     target_include_directories(memories_mods_test PRIVATE src)
     # The mod C library hands mods the maths functions and reads the monotonic
@@ -633,7 +648,7 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME pc_mods COMMAND memories_mods_test)
     set(MOD_TEST_SOURCES src/pc/mods/mods.c src/pc/mods/manager.c src/pc/mods/overlap.c src/pc/mods/events.c src/pc/mods/hooks.c
-        src/pc/mods/mod_libc.c src/pc/mods/object_loader.c src/pc/mods/json.c src/pc/guest/branch_thunks.c
+        src/pc/mods/mod_libc.c src/pc/mods/object_loader.c src/pc/mods/json.c src/pc/guest/branch_thunks.c src/pc/mod_packets.c
         src/pc/platform/paths.c src/pc/platform/settings.c src/pc/platform/ui_text.c)
     add_executable(memories_mods_manager_test tests/pc/mods_manager_test.c ${MOD_TEST_SOURCES})
     target_include_directories(memories_mods_manager_test PRIVATE src)
@@ -656,6 +671,17 @@ if(BUILD_TESTING)
         target_compile_options(memories_ui_text_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_ui_text COMMAND memories_ui_text_test)
+    # The mods folder the player chose (src/pc/mods/mods.c, Mods_Folder): each case
+    # is a process of its own, as Mods_Load scans once.
+    find_package(ZLIB REQUIRED)
+    add_executable(memories_mods_folder_test tests/pc/mods_folder_test.c src/pc/mods/import.c ${MOD_TEST_SOURCES})
+    target_include_directories(memories_mods_folder_test PRIVATE src)
+    target_link_libraries(memories_mods_folder_test PRIVATE m Threads::Threads ZLIB::ZLIB)
+    foreach(mods_folder_case file precedence missing notfolder owned owned-up owned-user env envempty exclusive datacode allcode)
+        add_test(NAME pc_mods_folder_${mods_folder_case} COMMAND memories_mods_folder_test ${mods_folder_case})
+    endforeach()
+    # envempty has nothing to test on Windows, which removes a variable set to nothing: it exits 77 there.
+    set_tests_properties(pc_mods_folder_envempty PROPERTIES SKIP_RETURN_CODE 77)
     # What enabled mods change in common (src/pc/mods/overlap.c): the mods in
     # tests/pc/mod_overlaps, whose lines the FM Editor's check must find too.
     add_executable(memories_mods_overlap_test tests/pc/mods_overlap_test.c src/pc/mods/overlap.c src/pc/mods/json.c
@@ -994,17 +1020,19 @@ if(BUILD_TESTING)
     # Import mod... (src/pc/mods/import.c) inflates with zlib.
     find_package(ZLIB REQUIRED)
     add_executable(memories_mods_window_test tests/pc/mods_window_test.c src/pc/platform/mods_window.c
-        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
+        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/mods/import_job.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
     target_link_libraries(memories_mods_window_test PRIVATE m Threads::Threads ZLIB::ZLIB)
     target_include_directories(memories_mods_window_test PRIVATE src)
     if(NOT MSVC)
         target_compile_options(memories_mods_window_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
     add_test(NAME pc_mods_window COMMAND memories_mods_window_test)
+    # Mods folder...: the run where MEMORIES_MODS_DIR is not set.
+    add_test(NAME pc_mods_window_folder COMMAND memories_mods_window_test folder)
     # The same with no code mod loader (MEMORIES_NO_CODE_MODS, which no game
     # build sets now): what an import says about a code mod there.
     add_executable(memories_mods_window_no_code_test tests/pc/mods_window_test.c src/pc/platform/mods_window.c
-        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
+        src/pc/mods/import.c src/pc/mods/hd_pack.c src/pc/mods/import_job.c src/pc/platform/update.c ${MOD_TEST_SOURCES})
     target_compile_definitions(memories_mods_window_no_code_test PRIVATE MEMORIES_NO_CODE_MODS)
     target_link_libraries(memories_mods_window_no_code_test PRIVATE m Threads::Threads ZLIB::ZLIB)
     target_include_directories(memories_mods_window_no_code_test PRIVATE src)
@@ -1127,6 +1155,19 @@ if(BUILD_TESTING)
         endif()
         add_test(NAME pc_card_plate COMMAND memories_card_plate_test)
         set_tests_properties(pc_card_plate PROPERTIES SKIP_RETURN_CODE 77)
+        # The records art.c makes of a PNG, byte for byte (card picture,
+        # thumbnail, field cutout, portrait) against hashes held.
+        add_executable(memories_card_art_test tests/pc/card_art_test.c src/pc/cards/art.c)
+        target_include_directories(memories_card_art_test PRIVATE src ${MEMORIES_FREETYPE_INCLUDE})
+        target_link_libraries(memories_card_art_test PRIVATE ${MEMORIES_FREETYPE_LIBRARY} ${memories_plate_fonts}
+            PNG::PNG)
+        if(WIN32)
+            target_link_libraries(memories_card_art_test PRIVATE memories_pc_fs)
+        endif()
+        if(NOT MSVC)
+            target_compile_options(memories_card_art_test PRIVATE -Wall -Wextra -Werror)
+        endif()
+        add_test(NAME pc_card_art COMMAND memories_card_art_test "${CMAKE_CURRENT_BINARY_DIR}/card-art-test")
         # What a duelist's bust costs the start (busts.c Busts_Make with the
         # real art.c): the biggest bust and a typical one, drawn at runtime.
         add_executable(memories_busts_make_test tests/pc/busts_make_test.c src/pc/cards/art.c src/pc/mods/json.c)
@@ -1312,6 +1353,11 @@ if(Python3_Interpreter_FOUND)
         # replay.py's check on made-up recordings (notes/agent-control.md).
         add_test(NAME pc_replay_check
             COMMAND "${Python3_EXECUTABLE}" tests/pc/replay_check_test.py
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        # model_oracle.py's comparison and coverage on made-up games
+        # (notes/pc-build.md, "MIPS-only effects").
+        add_test(NAME pc_model_oracle_check
+            COMMAND "${Python3_EXECUTABLE}" tests/pc/model_oracle_test.py
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
         # Native units that name files reach compat/fs.h (notes/pc-build.md).
         add_test(NAME pc_utf8_paths

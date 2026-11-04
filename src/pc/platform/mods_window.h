@@ -31,6 +31,7 @@ enum {
     MODS_UI_CHECK_SELECTED, MODS_UI_CHECK_FIRST, /* a row's [x], which switches its mod on or off */
     MODS_UI_HD,         /* HD pack... (where the platform can download it, hd_pack.h) */
     MODS_UI_REMOVE,     /* Remove, beside Import mod... (the selected mod's folder goes) */
+    MODS_UI_MODSDIR,    /* Mods folder... (where the platform has a folder picker); while its question is up, Use no folder */
     MODS_UI_TAB = 20,   /* + 0 About, 1 Settings, 2 Compatibility */
     MODS_UI_ORDER = 30, /* + 0 -, 1 + */
     MODS_UI_OPTION = 100
@@ -40,15 +41,62 @@ int ModsWindow_Locate(int id, int *x, int *y);
  * `pick` opens the system's file picker and returns at once (0, or -1 with
  * the reason); `picked`, asked once per ModsWindow_Tick while it is open,
  * says 0 while it is, 1 once a file was chosen, -1 when none was and -2 on
- * a failure (why); then, with "Importing..." shown, `fetch` copies the
- * chosen file to `path` (1; 0 with why), a .zip the window imports and
- * then removes. Without them (NULL, the default: every desktop) the panel
+ * a failure (why); then `fetch` copies the chosen file to `path` (1; 0 with
+ * why), a .zip the window imports and then removes. The copy, the reading
+ * and the unpacking run on a thread of their own (import_job.h), `fetch`
+ * with it: it reports its progress and takes a Stop as ImportJobFetch says
+ * (platform.h, Platform_FetchModZip), and the panel shows how far the import
+ * is, with a Stop button. Without them (NULL, the default: every desktop) the panel
  * has no Import button and nothing else changes. Setting them clears what
  * an import cut short left in the mods folder. They also give the panel a
  * Remove button: an app cannot open its mods folder to delete a mod by hand,
  * so it deletes the selected mod's folder itself, after a question. */
 void ModsWindow_SetImport(int (*pick)(char *why, size_t why_size), int (*picked)(char *why, size_t why_size),
-                          int (*fetch)(char *path, size_t size, char *why, size_t why_size));
+                          int (*fetch)(char *path, size_t size, char *why, size_t why_size, unsigned *done,
+                                       unsigned *total, const int *cancel));
+/* A .zip the player opened with the game (Android's "Open with" and Share):
+ * the import Import mod... runs, with the picker's answer already `fetch`'s
+ * file, which asks before it imports (the Replace question, or "Import X
+ * from the .zip you opened with the game?"). `refusal`, when the platform
+ * could not take the file, is shown instead. 1 when the import started; 0
+ * when it did not (the message says why, but for a busy panel, which is left
+ * as it is). The panel is busy while a
+ * question is up or an import or the HD pack runs (ModsWindow_ImportBusy;
+ * `shown`: the panel is open, which a question left open by a closed panel
+ * does not count): the caller waits for it to end rather than open the
+ * panel on it, or ask. */
+int ModsWindow_ImportBusy(int shown);
+int ModsWindow_ImportOpened(const char *refusal);
+/* Mods folder...: `pick` opens the system's folder picker and returns at
+ * once (0, or -1 with the reason); `picked`, asked once per ModsWindow_Tick
+ * while it is open, says 0 while it is, 1 once a folder was chosen (its full
+ * path in `path`), -1 when none was and -2 on a failure (why). The window
+ * saves the choice (Mods_SetFolder), says why when that is refused, and
+ * offers Apply & restart, since the folder is read at the next launch. It
+ * shows the folder and why it was not read (Mods_FolderProblem), and can
+ * choose none. Without them (NULL, the default: the developer window) there
+ * is no such button. */
+void ModsWindow_SetFolderPicker(int (*pick)(char *why, size_t why_size),
+                                int (*picked)(char *path, size_t size, char *why, size_t why_size));
+/* Where the folder can be read only with a right the player gives (Android's
+ * All files access): `have` says whether it is held now (1) or not (0); after
+ * a folder was chosen without it, the window asks, in a sentence, whether to
+ * `ask`, which opens the system's page for it and returns at once (0, or -1
+ * with why), and `asked` is polled with the ticks: 0 while the page is up, 1
+ * granted, -1 refused, -2 failed (why). A folder stays chosen when the right
+ * is refused; the window says how to give it, whenever it shows a folder it
+ * cannot read. `can_ask` says whether the device has a page to give it on
+ * (0: the window sends the player to Import mod... instead of asking), and
+ * `right` names it ("All files access"; before Android 11 "Storage"); both may
+ * be NULL (yes, and "All files access"). Called once at the start, after the
+ * mods are scanned, so that the window knows what the start could read.
+ * Without them (NULL, the default: every desktop) nothing is asked. */
+void ModsWindow_SetFolderAccess(int (*have)(void), int (*ask)(char *why, size_t why_size),
+                                int (*asked)(char *why, size_t why_size), int (*can_ask)(void),
+                                const char *(*right)(void));
+/* The app is back in front: the right may have been given meanwhile, in the
+ * system's Settings; it is asked about at the next ModsWindow_Tick. Any thread. */
+void ModsWindow_RefreshAccess(void);
 /* Once per pump while the panel shows: an import's next step. 1 when the
  * window must be drawn again. */
 int ModsWindow_Tick(void);

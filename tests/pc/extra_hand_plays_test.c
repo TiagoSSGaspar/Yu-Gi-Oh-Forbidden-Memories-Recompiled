@@ -377,7 +377,7 @@ static void limits_ten(int side, int *max, int *keep)
     *max = 10;
     *keep = 6;
 }
-/* The host's words in the player's language (API 22), as a lang file of
+/* The host's words in the player's language (API 23), as a lang file of
  * the mod's would give them; what it does not have stays English. */
 static const char *fake_text(const MemoriesModHost *h, const char *english)
 {
@@ -388,7 +388,7 @@ static const char *fake_text(const MemoriesModHost *h, const char *english)
     if (!strcmp(english, "Hand limit: discard %u cards")) return "Limite da m\xC3\xA3o: descarte %u cartas";
     return english;
 }
-/* The picture as the host places it (API 22): a 16:9 window, 1706 wide,
+/* The picture as the host places it (API 23): a 16:9 window, 1706 wide,
  * the picture 4:3 in its middle. */
 static void fake_picture_point(const MemoriesModHost *h, int x, int y, int *cx, int *cy)
 {
@@ -1482,9 +1482,9 @@ int main(void)
     }
 
     /* The mod's words in the player's language, from a host that has them
-     * (API 22); a host before it keeps them English, as every check above. */
+     * (API 23); a host before it keeps them English, as every check above. */
     {
-        fake_host.api = 22;
+        fake_host.api = 23;
         fake_host.text = fake_text;
         fake_host.picture_point = fake_picture_point;
         provided->set_hand_limits(limits_forty);

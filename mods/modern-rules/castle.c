@@ -99,7 +99,7 @@ static void effect(MemoriesModEvent *e)
 }
 
 /* The line while the player's attack aims into the dark. */
-static const char *T(const char *english) { return host->api >= 22 ? host->text(host, english) : english; }
+static const char *T(const char *english) { return host->api >= 23 ? host->text(host, english) : english; }
 static int aiming_dark(void)
 {
     DuelSelectionRecord *target;
@@ -118,7 +118,7 @@ static void overlay(void)
     text = T("In the dark: it cannot be attacked");
     host->overlay_size(host, &width, &height, &scale);
     if (scale < 1) scale = 1;
-    if (host->api >= 22) {
+    if (host->api >= 23) {
         host->picture_point(host, 160, 34, &cx, &cy);
     } else {
         cx = width / 2;
