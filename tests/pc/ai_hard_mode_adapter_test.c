@@ -114,6 +114,12 @@ static int fake_hook(const MemoriesModHost *h, void *fn, void *replacement, void
 {
     (void)h; assert(replacement); *previous = fn; return 1;
 }
+/* "ai-hard-mode:on", shared at init for the Duelist Kingdom rules' CPU. */
+static void *provided_on;
+static int fake_provide(const MemoriesModHost *h, const char *name, void *value)
+{
+    (void)h; assert(!strcmp(name, "on") && value); provided_on = value; return 1;
+}
 static MemoriesModHost fake_host;
 
 static void reset(void)
@@ -150,8 +156,8 @@ static void reset(void)
 int main(void)
 {
     MemoriesMod mod = {0}; HmOptions o; HmBoard b; int i;
-    fake_host.api = 4; fake_host.setting = fake_setting; fake_host.hook = fake_hook;
-    assert(MemoriesModInit(&fake_host,&mod));
+    fake_host.api = 4; fake_host.setting = fake_setting; fake_host.hook = fake_hook; fake_host.provide = fake_provide;
+    assert(MemoriesModInit(&fake_host,&mod) && provided_on);
     /* The adapter must use modded terrain and stars, including a zero
      * terrain override instead of falling back to the retail bonus. */
     gDuel_aTerrainBoost[3][1] = 50;
