@@ -580,6 +580,10 @@ def write_guest_branches(build, branches):
     return f"{build}/guest_branches.o"
 
 MOD_INTERNALS = ("Mods_", "Json_", "ObjectLoader_")  # the mod system itself (src/pc/mods)
+# The mod system's own functions a code mod calls as the game's code does:
+# Mods_DamageLife, life points lost through the port so every mod's damage
+# event sees them (modern-rules' Mirror Force, mirror.c).
+MOD_SHARED = {"Mods_DamageLife"}
 # Guest variables a release exported that the port's own code no longer
 # uses: still pinned, so a mod built against that release still loads
 # (tools/pc/check_mod_abi.py). D_801A8008: the disc's password table from
@@ -600,7 +604,7 @@ def write_mod_exports(build, names, aliases):
     identifier = lambda name: (name[:1].isalpha() or name[:1] == "_") and all(c.isalnum() or c == "_" for c in name)
     table = {name: name for name in names
              if identifier(name) and name not in HOST_LIBC and name != "main"
-             and not name.startswith(MOD_INTERNALS + ("__",))}
+             and (not name.startswith(MOD_INTERNALS + ("__",)) or name in MOD_SHARED)}
     table.update((name, target) for name, target in aliases.items() if target in table)
     with open(f"{build}/mod_exports.c", "w") as handle:
         handle.write('#include "pc/mods/exports.h"\n')
