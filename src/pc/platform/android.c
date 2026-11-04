@@ -757,9 +757,14 @@ int Platform_PickModZip(char *why, size_t why_size)
     return 0;
 }
 
+/* Memories_AndroidMain ran (defined below, with the exit handling): the app,
+ * with its Java side. The headless runner (tools/pc/android/runner.c) has
+ * none, so SDL's Android calls would crash there. */
+static int app_process;
+
 static int opened_record(char *path, size_t size)
 {
-    const char *internal = SDL_GetAndroidInternalStoragePath();
+    const char *internal = app_process ? SDL_GetAndroidInternalStoragePath() : NULL;
     return internal && *internal && snprintf(path, size, "%s/open-with.txt", internal) < (int)size;
 }
 
@@ -941,7 +946,7 @@ static int folder_asking;
 
 static int folder_record(char *path, size_t size)
 {
-    const char *internal = SDL_GetAndroidInternalStoragePath();
+    const char *internal = app_process ? SDL_GetAndroidInternalStoragePath() : NULL;
     return internal && *internal && snprintf(path, size, "%s/mods-folder.txt", internal) < (int)size;
 }
 
@@ -1885,7 +1890,6 @@ static void drain_log(void)
  * save states, deck slots and settings are written (and renamed into
  * place) when they change. The headless runner (tools/pc/android/runner.c)
  * calls main and never Memories_AndroidMain: its exit() is the system's. */
-static int app_process;  /* Memories_AndroidMain ran */
 static int exit_status;
 
 void __real_exit(int status) __attribute__((noreturn));
