@@ -3,6 +3,7 @@
  * Its own unit, linked wherever the GPU's walker is (build_config.py's
  * common files). Only the fixed-address builds map it, and resolve its
  * addresses (guest/resolve.c); the translated ones never have one. */
+#define _GNU_SOURCE /* MAP_ANONYMOUS, MAP_FIXED_NOREPLACE under -std=c11 */
 #include "memory.h"
 #include "memory_map.h"
 #include "pc/compat/mman.h"
