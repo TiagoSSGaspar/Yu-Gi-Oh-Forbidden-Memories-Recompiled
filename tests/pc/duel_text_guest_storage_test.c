@@ -18,6 +18,9 @@ void Stars_MarkIcon(int id) { (void)id; abort(); }
 void TypeIcons_MarkIcon(int type) { (void)type; abort(); }
 const u8 *Text_Resolve(int id, const u8 *retail) { (void)id; (void)retail; abort(); }
 void func_80036C14(DuelEffectChannel *p, s32 id) { (void)p; (void)id; abort(); }
+int Language_Current(void) { abort(); }
+int NumberWidth_SqueezeName(int channel, const unsigned char *text, int limit, int cell)
+{ (void)channel; (void)text; (void)limit; (void)cell; abort(); }
 /* Color rendering is covered by its own native contract; keep these hooks
  * inert while this test exercises the translated stream pointer updates. */
 void CardTextColors_Apply(DuelEffectChannel *channel, int part, int star)
