@@ -66,6 +66,7 @@
 #define MODEL_SLOT_SETUP_EXPLICIT_TRANSFER_ARGS
 #include "game/model_slot_setup.h"
 #include "game/model_slot_updates.h"
+#include "game/model_slot_properties.h"
 #include "game/model_load_step.h"
 #include "game/func_800540B4.h"
 #include "game/func_800556E8.h"
@@ -1976,7 +1977,15 @@ static void update_battle(void)
  * the two monsters, and left it dark for a while after. The mat is drawn
  * with the ambient the field had at rest during a battle with the fight on
  * the field, and after it until the battle's own has come back up (at most
- * FIGHT_LIT_AFTER frames); the slot's value is the game's again once drawn. */
+ * FIGHT_LIT_AFTER frames); the slot's value is the game's again once drawn.
+ *
+ * It is the attacker's module that brings the light back up, a step a frame,
+ * and the module can be over first: its animation moves by the frame step,
+ * so a game running behind (a raised speed on a phone) ends it with the mat
+ * still dark, or the fight's limit lets it go. Nothing in the duel lights the
+ * mat again then, and it stayed dark, or was not drawn at all, until some
+ * later attack's module happened to finish. So once no module is going, or
+ * the frames are up, the slot is given the light it had at rest. */
 #define FIGHT_LIT_AFTER 600
 static void *original_draw_slot;
 static s32 rest_ambient[3];
@@ -1994,7 +2003,14 @@ static void draw_slot(s32 slot)
         ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_BATTLE || attack.phase != ATTACK_IDLE)) {
         lit_after = FIGHT_LIT_AFTER;
     } else if (lit_after > 0 && memcmp(mat->field_DA0, rest_ambient, sizeof(rest_ambient)) != 0) {
-        lit_after--;
+        if (!effect_monster) {
+            lit_after = 0;
+        } else {
+            lit_after--;
+        }
+        if (!lit_after && rest_light_kept) {
+            func_800595C8(2, rest_ambient[0], rest_ambient[1], rest_ambient[2]);
+        }
     } else {
         lit_after = 0;
         if ((gDuel_wSceneStateFlags & DUEL_SCENE_PHASE_MASK) == DUEL_SCENE_AFTER_BATTLE) { /* the field */
