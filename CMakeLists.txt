@@ -704,7 +704,7 @@ if(BUILD_TESTING)
     # A mod's own words in the player's language (lang/<language>.json).
     add_executable(memories_mods_language_test tests/pc/mods_language_test.c ${MOD_TEST_SOURCES})
     target_include_directories(memories_mods_language_test PRIVATE src)
-    target_link_libraries(memories_mods_language_test PRIVATE m Threads::Threads)
+    target_link_libraries(memories_mods_language_test PRIVATE m Threads::Threads PNG::PNG)
     target_compile_definitions(memories_mods_language_test PRIVATE MODS_SOURCE_DIR="${CMAKE_SOURCE_DIR}/mods")
     if(NOT MSVC)
         target_compile_options(memories_mods_language_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
