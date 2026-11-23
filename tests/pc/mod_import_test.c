@@ -256,6 +256,92 @@ int main(void)
             }
         }
     }
+    /* A big mod.json (a card mod's is tens of MB) names the mod as the loader
+     * will, wherever it is in the .zip: its id and "library" are read from
+     * the end of one past 4 MB, where an unread one would give "imported-mod"
+     * or the folder's name. */
+    reset();
+    {
+        enum { PAD = (4 << 20) + 4096 };
+        char *big = malloc(PAD + 256), *code = malloc(PAD + 256);
+        ZipItem root_items[] = {{"mod.json", big, 1, 0, 0, 0, 0, 0}, {"name.txt", "big", 0, 0, 0, 0, 0, 0}};
+        ZipItem wrapped[] = {{"more-1.5/mod.json", big, 1, 0, 0, 0, 0, 0}, {"more-1.5/name.txt", "big", 0, 0, 0, 0, 0, 0}};
+        ZipItem coded[] = {{"mod.json", code, 1, 0, 0, 0, 0, 0}};
+        ModsImport *imp;
+        CHECK(big && code);
+        if (big && code) {
+            memset(big, 'x', PAD);
+            memcpy(big, "{\"pad\": \"", 9); /* without the NUL */
+            snprintf(big + PAD, 256, "\", \"id\": \"bigmod\", \"name\": \"Big mod\"}");
+            memcpy(code, big, PAD);
+            snprintf(code + PAD, 256, "\", \"id\": \"bigcode\", \"name\": \"Big code\", \"library\": \"bigcode\"}");
+            write_zip(zip, root_items, 2);
+            imp = Mods_ImportOpen(zip, why, sizeof(why));
+            CHECK(imp && Mods_ImportCount(imp) == 1);
+            if (imp) {
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->id, "bigmod"));
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->folder, "bigmod"));
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->name, "Big mod"));
+                CHECK(!Mods_ImportMod(imp, 0)->code);
+                CHECK(Mods_ImportInstall(imp, mods, why, sizeof(why)));
+                Mods_ImportClose(imp);
+            }
+            CHECK(!strcmp(listing("mods"), "bigmod") && file_is("mods/bigmod/name.txt", "big"));
+            /* In a folder of another name: the id is the manifest's, the folder the .zip's. */
+            reset();
+            write_zip(zip, wrapped, 2);
+            imp = Mods_ImportOpen(zip, why, sizeof(why));
+            CHECK(imp && Mods_ImportCount(imp) == 1);
+            if (imp) {
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->id, "bigmod"));
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->folder, "more-1.5"));
+                Mods_ImportClose(imp);
+            }
+            /* And the code is found in one too. */
+            write_zip(zip, coded, 1);
+            imp = Mods_ImportOpen(zip, why, sizeof(why));
+            CHECK(imp && Mods_ImportCount(imp) == 1);
+            if (imp) {
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->id, "bigcode"));
+                CHECK(!strcmp(Mods_ImportMod(imp, 0)->folder, "bigcode"));
+                CHECK(Mods_ImportMod(imp, 0)->code);
+                Mods_ImportClose(imp);
+            }
+        }
+        free(big);
+        free(code);
+    }
+    /* An installed mod is named without reading its fusions: a mistake among them
+     * does not lose its id, as parsing the whole file would. */
+    reset();
+    {
+        char id[64], path[2048];
+        make("mods/folder");
+        file_write("mods/folder/mod.json", "{\"id\": \"named\", \"fusions\": [{\"with\" 1}]}");
+        snprintf(path, sizeof(path), "%s/folder", mods);
+        CHECK(Mods_ImportFolderId(path, id, sizeof(id)) && !strcmp(id, "named"));
+    }
+    /* A mod.json that says it unpacks to more than the importer reads (1536 MB)
+     * is refused, before a byte of it is allocated: the loader would read the
+     * whole file at every launch. A deflated one that says more than deflate
+     * can make of its packed bytes is a damaged .zip. */
+    reset();
+    {
+        ZipItem stored[] = {{"mod.json", "{\"id\": \"huge\"}", 0, 0, 0, 0, 0, 1600L << 20}};
+        ZipItem packed[] = {{"mod.json", "{\"id\": \"huge\"}", 1, 0, 0, 0, 0, 1600L << 20}};
+        ModsImport *imp;
+        write_zip(zip, stored, 1);
+        imp = Mods_ImportOpen(zip, why, sizeof(why));
+        CHECK(!imp && strstr(why, "mod.json in the .zip is too large (more than 1536 MB)") && strstr(why, "Nothing was imported"));
+        if (imp)
+            Mods_ImportClose(imp);
+        write_zip(zip, packed, 1);
+        imp = Mods_ImportOpen(zip, why, sizeof(why));
+        CHECK(!imp && strstr(why, "damaged"));
+        if (imp)
+            Mods_ImportClose(imp);
+        CHECK(!listing("mods")[0]);
+    }
     /* Two names that differ only beyond ASCII: one file where the storage
      * folds them (NTFS, APFS, Android's shared storage; probed here), so the
      * import is refused there with nothing written; two files elsewhere. */
@@ -363,7 +449,8 @@ int main(void)
             {{"alpha/./x.txt", "x", 0, 0, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
             {{"alpha//x.txt", "x", 0, 0, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
             {{"alpha/\x01x.txt", "x", 0, 0, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
-            {{"alpha/\xff.txt", "x", 0, 0, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
+            {{"alpha/\xff.txt", "x", 0, 0, 0x800, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
+            {{"alpha/caf\xC3\xA9.txt", "x", 0, 0, 0, 0, 0, 0}, {"alpha/caf\x82.txt", "y", 0, 0, 0, 0, 0, 0}},
             {{"alpha/link", "../../evil", 0, 0120777, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
             {{"alpha/fifo", "", 0, 0010644, 0, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
             {{"alpha/x.txt", "x", 0, 0, 1, 0, 0, 0}, {"alpha/mod.json", "{}", 0, 0, 0, 0, 0, 0}},
@@ -386,6 +473,33 @@ int main(void)
             CHECK(!exists("evil.txt") && !exists("mods/evil.txt"));
         }
         CHECK(!strcmp(listing(""), "in.zip mods"));
+    }
+    /* A name with no UTF-8 flag that is not UTF-8 is code page 850, as Windows'
+     * tools write it; UTF-8 with no flag stays UTF-8 (Info-ZIP's). */
+    {
+        static const ZipItem legacy[] = {
+            {"alpha/mod.json", MANIFEST_A, 0, 0, 0, 0, 0, 0},
+            {"alpha/read me - me l\x88 carai.txt", "x", 0, 0, 0, 0, 0, 0},
+            {"alpha/cora\x87\xC6o/\xE4.txt", "x", 0, 0, 0, 0, 0, 0},
+            {"alpha/caf\xC3\xA9.txt", "x", 0, 0, 0, 0, 0, 0},
+            {"alpha/\xffx.txt", "x", 0, 0, 0, 0, 0, 0},
+        };
+        char too_long[520];
+        ZipItem wide[2] = {{"alpha/mod.json", MANIFEST_A, 0, 0, 0, 0, 0, 0}, {too_long, "x", 0, 0, 0, 0, 0, 0}};
+        reset();
+        CHECK(import(legacy, 5, &count, why, sizeof(why)));
+        CHECK(count == 1);
+        CHECK(exists("mods/alpha/read me - me l\xC3\xAA carai.txt"));
+        CHECK(exists("mods/alpha/cora\xC3\xA7\xC3\xA3o/\xC3\xB5.txt"));
+        CHECK(exists("mods/alpha/caf\xC3\xA9.txt"));
+        CHECK(exists("mods/alpha/\xC2\xA0x.txt"));
+        /* One that grows past a name's limit is refused, as a long one is. */
+        memset(too_long, 'a', sizeof(too_long) - 2);
+        too_long[0] = '\x88';
+        too_long[sizeof(too_long) - 2] = 0;
+        reset();
+        write_zip(zip, wide, 2);
+        CHECK(Mods_ImportOpen(zip, why, sizeof(why)) == NULL);
     }
     /* Damage found while unpacking: a wrong CRC, a size the data does not
      * keep to. Nothing is left in the mods folder. */

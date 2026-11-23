@@ -66,7 +66,22 @@
  *      model_id is unsigned (0x8000 up)
  *  22  packet_area: room for a mod's polygons past the game's 140 KB frame
  *      buffer (the mods' packet area, src/pc/memory.h)
- *  23  text: a code mod's own words in the player's language, from its
+ *  23  mouse, capture_mouse: the mouse's motion and buttons, for a mod
+ *      that steers with it, and Escape (MEMORIES_MOUSE_ESCAPE);
+ *      overlay_picture: where the game's picture is on the overlay;
+ *      draw_text_alpha; hide_hud (MEMORIES_HUD_*); load_image, free_image,
+ *      draw_image, alloc_image, image_changed, prefetch_image: pictures on
+ *      the overlay;
+ *      clip: the overlay's drawing kept inside a rectangle;
+ *      picture_only_frame: a frame the CPU does not raster as well
+ *  24  pointer, wheel, take_wheel: where the mouse is over the game's
+ *      picture and the wheel, for a mod that points with it
+ *  25  a frame style's atk_label/dfd_label picture or "digits" strip on a
+ *      style that keeps retail's frame (manifest only); no host layout or
+ *      event change
+ *  26  a card's "variant_permille" and "variant_label" (notes/more-cards.md)
+ *      only; no host layout or event change
+ *  27  text: a code mod's own words in the player's language, from its
  *      lang/<language>.json's "texts"; picture_point: where a point of the
  *      game's picture shows on the overlay's canvas; a lang file's "cards"
  *      and the game's own text in the player's language (manifest)
@@ -74,6 +89,16 @@
 #include "mod_types.h"
 
 typedef struct MemoriesModHost MemoriesModHost;
+
+/* host->mouse's `buttons` bit for an Escape press a mod took with
+ * capture_mouse (API 23). */
+#define MEMORIES_MOUSE_ESCAPE 0x100u
+/* host->hide_hud's parts of the port's HUD (API 23): the fusion helper
+ * (View > Fusion helper) and the duel rank meter; also the Free Duel
+ * screen's owned/obtainable count (View > Free Duel progress). */
+#define MEMORIES_HUD_FUSION_HELPER 1u
+#define MEMORIES_HUD_RANK 2u
+#define MEMORIES_HUD_FREE_DUEL_PROGRESS 4u
 
 
 typedef struct {
@@ -93,7 +118,11 @@ typedef struct {
      * draw_text and fill (only valid in here). The overlay is drawn again
      * only when overlay_signature returns something new, so return a number
      * that changes with what you draw; without one it is drawn every
-     * frame. Only while the mod is applied. */
+     * frame. Only while the mod is applied. The window may call it twice
+     * for one frame, the first time only to list what it draws, which it
+     * compares with the last frame's to draw again only where that
+     * changed: draw from the mod's state, the same thing every call, and
+     * change none of that state in here. */
     void (*overlay)(void);
     unsigned (*overlay_signature)(void);
 } MemoriesMod;
@@ -282,6 +311,108 @@ struct MemoriesModHost {
     void *(*packet_area)(const MemoriesModHost *, size_t bytes);
 
     /* --- API 23 ---
+     * The mouse: how far it has moved, in window pixels, since the last call
+     * (each call takes what has gathered, so call it once a frame), and the
+     * buttons held, bit 0 the left, 1 the right, 2 the middle. Motion and
+     * buttons over the menu bar, or while a menu or one of the port's
+     * windows has the mouse, do not count. capture_mouse(1) hides the
+     * pointer and keeps it in the window, so the motion never stops at an
+     * edge, until capture_mouse(0), the mod being turned off, or the player
+     * opening the menu (which lets it go; it comes back by itself once the
+     * menu, a notice or a panel of the port's is closed, with the focus, and
+     * when the game is no longer paused).
+     * While captured, the mouse's buttons do nothing in the game itself.
+     * capture_mouse(1) and capture_mouse(2) also take Escape (the Exit game
+     * control's keys and buttons) from the port: pressed in the game's
+     * window with no menu, notice or panel of the port's up, it does not
+     * ask to quit but sets MEMORIES_MOUSE_ESCAPE in `buttons`, once per
+     * press, for the claiming mod's next call (presses before it count as
+     * one). 2 takes Escape only and
+     * leaves the pointer free (a pause screen, the menu bar in reach); an
+     * Escape under 1 lets the pointer go at once, as 2. Escape still leaves
+     * fullscreen and closes a menu first, and File > Exit still quits.
+     * capture_mouse(0) gives both back. */
+    void (*mouse)(const MemoriesModHost *, int *dx, int *dy, unsigned *buttons);
+    void (*capture_mouse)(const MemoriesModHost *, int mode);
+    /* Where the game's picture is on the overlay's canvas (overlay_size's),
+     * in its pixels, and how wide the game's own 320x240 picture is drawn
+     * in game pixels across that: 320, or 426 when the 3D is widened
+     * (Video > Widescreen). A point the game draws at gx, gy is at
+     * x + w / 2 + (gx - 160) * w / game_width, y + gy * h / 240. Only
+     * valid in the overlay callback. */
+    void (*overlay_picture)(const MemoriesModHost *, int *x, int *y, int *w, int *h, int *game_width);
+    /* draw_text, blended in at `alpha` (0 gone to 255 as draw_text). */
+    void (*draw_text_alpha)(const MemoriesModHost *, int x, int middle, const char *text, uint32_t rgb, int scale,
+                            unsigned alpha);
+    /* Parts of the port's own HUD not drawn while this mod is applied:
+     * MEMORIES_HUD_* bits, 0 to show them again. The player's settings stay
+     * as they are; the parts come back when the mod is turned off. With
+     * several mods, a part any of them hides is hidden. */
+    void (*hide_hud)(const MemoriesModHost *, unsigned mask);
+    /* Pictures on the overlay: load_image reads a PNG under the mod's
+     * directory into w x h 0xAARRGGBB pixels (NULL when it cannot), freed
+     * with free_image; draw_image stretches such pixels (the mod's own made
+     * any way, too) over dw x dh at (x, y), smoothly, blended by their alpha
+     * times `alpha` (0-255). Outside the overlay callback draw_image does
+     * nothing. */
+    uint32_t *(*load_image)(const MemoriesModHost *, const char *relative, int *w, int *h);
+    void (*free_image)(const MemoriesModHost *, uint32_t *pixels);
+    void (*draw_image)(const MemoriesModHost *, const uint32_t *pixels, int w, int h, int x, int y, int dw, int dh,
+                       unsigned alpha);
+
+    /* The overlay's drawing (fill, draw_text, draw_text_alpha, draw_image)
+     * kept inside the rectangle x, y, w x h of the canvas, in the canvas's
+     * own coordinates as ever, until clip is called again or the overlay
+     * callback returns; w or h of 0 or less takes the clip away. For a
+     * picture that slides past the edge of the game's picture
+     * (overlay_picture's rectangle) rather than over the window round it.
+     * Only valid in the overlay callback. */
+    void (*clip)(const MemoriesModHost *, int x, int y, int w, int h);
+
+    /* A picture of the mod's own for draw_image: w x h pixels, all clear,
+     * freed with free_image. What draw_image is given is compared pixel by
+     * pixel every time, to see whether it changed, unless it came from here
+     * or load_image: the host takes those as they were when first drawn, and
+     * one the mod writes again afterwards must be followed by image_changed.
+     * Worth it for a picture of any size that stays as it is. */
+    uint32_t *(*alloc_image)(const MemoriesModHost *, int w, int h);
+    void (*image_changed)(const MemoriesModHost *, const uint32_t *pixels);
+    /* A PNG load_image will be asked for soon read on another thread, so
+     * that call returns at once; the same file load_image would read, not
+     * loaded until it asks. For a list whose pictures come one at a time. */
+    void (*prefetch_image)(const MemoriesModHost *, const char *relative);
+    /* This frame's primitives into a full-screen drawing area are drawn
+     * only in the picture the GPU shows at a raised internal resolution,
+     * not rastered into VRAM by the CPU besides (at 1x, or with no such
+     * picture, they are, as ever). For a scene nothing reads back from the
+     * frame buffer: no StoreImage, MoveImage or texture taken from it, now
+     * or in a later frame. Called from the frame callback, every frame it is
+     * for; it lapses when the frame is shown. */
+    void (*picture_only_frame)(const MemoriesModHost *);
+
+    /* --- API 24 ---
+     * The mouse as a pointer, for a mod that points with it instead of
+     * steering (mouse's motion is for that): returns 1 with where it is in the
+     * game's picture coordinates (320x240; a widened picture reaches x -53 to
+     * 372) and the buttons it holds, bit 0 the left, 1 the right, 2 the middle,
+     * whatever else they do in the game; either pointer may be NULL. Returns
+     * 0 when the pointer is not a mouse's (a touch), is outside the picture
+     * or on the menu bar, the window has no input focus, a menu, a notice or
+     * one of the port's windows has the pointer, or the mod has capture_mouse(1).
+     * Only while the mod is applied. */
+    int (*pointer)(const MemoriesModHost *, int *x, int *y, unsigned *buttons);
+    /* The mouse wheel: the notches turned since the last call, positive away
+     * from the player and negative toward, cleared by the call. By default
+     * a notch is a D-pad Up or Down press in the game and none is kept here;
+     * take_wheel(1) makes the wheel the mod's: notches are kept for it and
+     * no longer press anything, until take_wheel(0), the mod being turned
+     * off, or another mod taking it. Notches turned while a menu, a notice or a
+     * port window has the mouse do not count; under capture_mouse(1) the
+     * wheel the mod has taken still counts. */
+    int (*wheel)(const MemoriesModHost *);
+    void (*take_wheel)(const MemoriesModHost *, int on);
+
+    /* --- API 27 ---
      * A text the mod draws, in the player's language: `english`, written
      * exactly as the mod passes it, looked up in "texts" of the mod's
      * lang/<language>.json (notes/modding.md, "A mod in the player's

@@ -26,11 +26,13 @@ from build_config import (
     GATED_MODULES,
     MODULE_CONFIG,
     MODULES,
+    SOURCE_ADDRESSED_MODULES,
     TARGETS,
     game_sources,
     native_sources,
 )
 from direct_overlay_bridges import ENTRIES as DIRECT_OVERLAY_ENTRIES
+import model_gate_port
 from direct_overlay_bridges import emit_bridge, validate_signature
 from guest_build import (
     CHECKED_LIBC,
@@ -46,7 +48,17 @@ SOFT_GPU = "src/pc/render/soft_gpu.c"
 # Renderer caches and decoded PNGs never enter 32-bit guest storage.
 # Keep their LP64 pointers and lifetimes on the host, outside the token arena.
 # State restoration may replace guest heaps, but must not free live GL buffers.
-HOST_HEAP_UNITS = {"src/pc/render/texture_pack.c", "src/pc/render/gl_picture.c"}
+# So does a parsed manifest, and the overlap report, which points into manifests:
+# only src/pc reads them, a manifest can be hundreds of megabytes, and neither goes
+# in a save state. So no block that does (any other src/pc allocation) may point
+# into them: such a pointer is stale once a state loads in another session.
+HOST_HEAP_UNITS = {
+    "src/pc/render/texture_pack.c",
+    "src/pc/render/gl_picture.c",
+    "src/pc/mods/json.c",
+    "src/pc/mods/overlap.c",
+    "src/pc/cards/fusion_table.c",
+}
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,6 +90,16 @@ ORDINARY = {
 
 def definitions(ir):
     return set(inspect(ir)["definitions"])
+
+
+def own_variables(ir):
+    """The writable variables an IR module defines (a `global`, not a
+    `constant`, not a declaration)."""
+    return [
+        name
+        for name, modifiers in re.findall(r"^@(\S+) = ((?:\w+ )*)global ", ir, re.M)
+        if "external" not in modifiers.split()
+    ]
 
 
 def replace_names(ir, renames):
@@ -218,6 +240,13 @@ def prepare_guest_units(jobs, groups, natives, ordinary, path_for, address_table
         clashes = group_defs[name] & others
         if name in GATED_MODULES:
             clashes |= group_defs[name]
+        if name in SOURCE_ADDRESSED_MODULES:
+            # As build_game32.py: the gate runs the C against the record's own
+            # data in guest memory, and a variable of the module's own would
+            # be host storage the image never sees.
+            variables = [v for source in groups[name] for v in own_variables(raw_text[source])]
+            if variables:
+                raise SystemExit(f"{name}: a gated module with variables of its own: {', '.join(variables[:8])}")
         renames[name] = {symbol: name + "__" + symbol for symbol in clashes}
         for s in groups[name]:
             raw_text[s] = replace_names(raw_text[s], renames[name])
@@ -244,6 +273,11 @@ def prepare_guest_units(jobs, groups, natives, ordinary, path_for, address_table
                     for k, v in address_tables.get(group, {}).items()
                 }
             )
+        if group in SOURCE_ADDRESSED_MODULES:
+            # Upstream's names for resident functions the ported C calls
+            # (model_gate_names.txt): aliases to the port's name below.
+            for symbol, address in model_gate_port.read_names().items():
+                pins.setdefault(symbol, address)
         pin_maps[group] = pins
     pin_maps["native"] = {
         **address_tables["SLUS_014.11"],
@@ -273,6 +307,8 @@ def prepare_guest_units(jobs, groups, natives, ordinary, path_for, address_table
     for row in rows:
         row["name"] = host_renames.get(row["name"], row["name"])
     for name, _, identifier, bank in MODULES:
+        if name in SOURCE_ADDRESSED_MODULES:
+            continue  # gated, with no function list of its own
         for row in csv.DictReader(
             (
                 ROOT
@@ -808,7 +844,7 @@ def main():
     fingerprint_inputs.extend(
         path
         for path in (ROOT / "src").rglob("*")
-        if path.is_file() and path.suffix in {".c", ".h", ".S"}
+        if path.is_file() and path.suffix in {".c", ".h", ".inc", ".S"}
     )
     fingerprint_inputs.extend(
         path

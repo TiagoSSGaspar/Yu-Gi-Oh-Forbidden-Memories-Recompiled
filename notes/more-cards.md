@@ -59,6 +59,8 @@ The release ships no card mod; the checks below were made with test mods
 | `fusion_groups` | the fusion guides' groups the card is in, for a ritual's `fusion_group` condition ([Gameplay tables](gameplay-tables.md#rituals)): a list such as `["Elf", "Female"]`, `[]` for none; without it, its base's |
 | `drops` | whether the card can be won in its base's place (default `true`, below) |
 | `opponents` | whether an opponent's deck can be dealt it in its base's place (default `false`) |
+| `variant_permille` | makes the copy a **variant** of its base: the chance, in thousandths (1 to 1000: 50 is 5%), that a roll of the base card gives this card instead ([Variants](#variants-alternate-versions-of-a-card)) |
+| `variant_label` | a short name for the variant ("Rainbow foil"), 24 letters at most; needs `variant_permille` |
 | `password` | the password used by the Password shop and shown on the card by View > Card passwords: up to eight digits as a string (`"08124921"`, leading zeros kept) or a number, `""` or `null` for none. The [gameplay tables'](gameplay-tables.md#passwords-and-prices-on-the-password-screen) `passwords` entry overrides it and sets the price, for added cards as well as replacements. Added cards default to 999999 starchips and allow repeat purchases. A copy without a password has none (its base's would give the base) |
 | `monster_effects` | what the monster does on the field: on summon, on flip, at its owner's draw, before a battle, when destroyed, or while face up ([below](#monster-effects)). Left out, a copy has its base's and a replace keeps an earlier one's; `[]` takes them away |
 | `notes` | text of the modder's own, which the game shows and plays by none of ([below](#notes-on-a-card)) |
@@ -428,6 +430,22 @@ destroys a monster whose `destroyed` effect fires next), and the CPU's
 monsters' effects fire as the player's do. Apart from putting such
 monsters down face up, the CPU plays as it always has: it sees the boosts
 in its view of the board, but it does not plan around a card's effects.
+A `combat` boost is in that view too, though it exists only in its battle:
+a monster's own (`self`) are in the ATK and DEF the CPU sees for it on the
+field, and those on the monster it battles (`battle`) in its weighing of
+each attack (counted as the battle counts them, both monsters face up), so
+it does not attack into a monster that would win once its boost comes, and
+does attack with one of its own that would. AI Hard Mode weighs them the
+same way, in its attacks and in the threats it keeps its monsters safe
+from. What it cannot foresee: a code mod that takes the battle's occasion,
+a `combat` heal or damage, what a `destroyed` or `destroy_opponent`
+effect does after the battle, and, in the retail AI, the field script's
+lethal check, which compares printed ATK (`CalcCardPower`), so at 500 LP
+its 1800 still attacks a 1200 with +1500 and loses. A boost is added to
+stats already held to 0 and the cap, so a monster past the cap reads low (a
+real 11000 with -2000 is 9000, the CPU sees 7999). What each CPU knows does
+not change: its own face-down monsters count, a player's face-down one only
+for a duelist that sees hidden stats already.
 
 The [FM Editor](../tools/pc/fm_editor/README.md#monster-effects) edits
 them in the Cards tab. A [code mod](modding.md#code-mods) hears every one of
@@ -453,6 +471,13 @@ with the monsters chosen in place of its ATK test. A `magic` effect runs through
 card-effect dispatch (`DuelEffect_StartCardEffect`), first handler then
 second, as playing the card does. On the other side's turn, the turn is
 lent to the owner (`D_8009B1D5`, `D_8009B1C8`, `D_8009B22C`) while it runs.
+The CPU chooses its attacks before a battle begins, so it foresees the
+battle's `combat` boosts as `MonsterEffects_Battle` will make them, and
+makes none: `MonsterEffects_AiStats` adds a monster's own to the AI
+snapshot (`func_80027DF8`), and `MonsterEffects_AiBattleEdge` those on the
+monster it battles to `AiScript_FindKiller`'s difference and AI Hard
+Mode's board (its `edge` and `hit`). Both add nothing when no monster
+declares one, so the disc's duels play as ever.
 The state is a game variable (`src/pc/game/trigger_state.c`), so save states
 carry it.
 
@@ -499,6 +524,56 @@ if (host->api >= 7 && host->card_tag(host, card, "burn", value, sizeof(value)) >
 ```
 
 The notes are known once the card tables are built, before the title screen.
+
+## Variants: alternate versions of a card
+
+A copy of a retail card that has `variant_permille` is an **alternate version**
+of it, as a card of the trading card game comes with another picture or
+frame: it has the base's name, stats, effect, fusions and model unless its
+entry says otherwise, and a picture (`art`) and frame (`frame_style`) of its
+own.
+
+```json
+{ "copy": "Blue-eyes White Dragon", "id": "bewd-rainbow",
+  "art": "art/bewd-rainbow.png", "frame_style": "rainbow",
+  "variant_permille": 50, "variant_label": "Rainbow foil" }
+```
+
+* **The chance.** When a roll of a disc table lands on the base card (a duel's
+  reward, an opponent's deal), each of its variants gets its own chance to take
+  its place, in card order, one random number apiece; the first to hit is the
+  card. A variant ignores `drops`, and the CPU rolls it only with
+  `"opponents": true`. A card with no variants draws no number, so without
+  variants the game's random numbers are as they were. Packs, passwords (a
+  variant with its own `password` can be bought) and the tower's fixed rewards
+  do not roll variants.
+* **The deck limit.** A deck holds three (or the mods' `deck_copies`) of a card
+  and its variants **together**: Build Deck refuses a card when its family is
+  full, and the list's red count marks every member of a full family.
+* Only a retail card that is not a piece of Exodia can have variants (copies
+  of added cards cannot). A chance outside 1 to 1000, a `variant_label` with no
+  `variant_permille`, and the keys on a `replace` entry are noted in the Mods
+  window and the card is an ordinary copy.
+* **The Library** shows a card and its variants as one entry (View > Library:
+  variants in one entry, on unless the player turns it off, [pc-build.md](pc-build.md#library-variants-in-one-entry)).
+  The card's view steps through the entry with L3 and R3 (L1 and R1 turn the list's pages): the card itself,
+  then each variant seen. The entry counts once in the heading, is seen once
+  any of its cards is and owned once any is. What a save keeps is by card.
+* **The Build Deck's chest** has one row for a card and its variants too
+  (View > Build Deck: variants in one row, on unless the player turns it off,
+  [pc-build.md](pc-build.md#build-deck-variants-in-one-row)). The row shows one
+  of the entry's cards, L3 and R3 step through the ones the player has, and it
+  shows that card's own count with what the player has of the whole entry
+  dim above it, and a variant's row has its `variant_label` before the name; the name on
+  the row under the cursor scrolls when it does not fit.
+  L3 and R3 step the card viewer (Triangle) as well. The deck stays one row a card, and the limit of copies in the
+  deck is the entry's.
+* A copy with the older `drops: true` (no `variant_permille`) still takes its
+  base's place in an even share, and is its own card for the deck limit.
+
+A code mod reads them with `Cards_VariantOf`, `Cards_VariantCount`,
+`Cards_VariantMember`, `Cards_VariantPermille`, `Cards_VariantLabel` and
+`Cards_FamilyCopies` (`src/pc/cards/cards.h`).
 
 ## Where a card comes from
 
@@ -712,7 +787,9 @@ rows of 200 (`CARD_GRID_SECTION_ROW_COUNT`).
 * The generated name plate is set in a system font, not the retail plates'
   own lettering; a `title` PNG replaces it.
 * Copies of Exodia's pieces do not complete Exodia, and Build Deck's one-copy
-  rule for the pieces is by id: a copy is another card.
+  rule for the pieces is by id: a copy is another card. The deck's copy limit
+  is by id too, except for a retail card and its [variants](#variants-alternate-versions-of-a-card),
+  which count together.
 * Legacy numeric sidecars require the original card mods and order for an
   explicit migration. See [API 3 migration](mod-api-3.md); new sidecars use stable identities.
 * The Library's panels past section 7 carry no range numbers; the card number

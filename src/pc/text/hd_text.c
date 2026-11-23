@@ -35,6 +35,7 @@
 #include "pc/cards/tables.h"
 #include "pc/cards/duel_ui.h"
 #include "pc/saves/save_slots.h"
+#include "pc/guest/try_alloc.h"
 #include "game/save_data.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -734,15 +735,20 @@ static int render(int slot, const unsigned char cell[CELL][CELL], int large, uin
 /* A new atlas for another factor: every picture is made again. */
 static int make_atlas(int wanted)
 {
+    /* There was no room for this factor (it is kept negative): the game's own
+     * font goes on being drawn, and this is not tried again for every glyph of
+     * every frame. */
+    if (wanted == -factor) return 0;
     free(atlas);
     side = SLOTS_ACROSS * CELL * wanted;
-    atlas = calloc((size_t)side * (size_t)side, 1);
+    atlas = Memories_TryCalloc((size_t)side * (size_t)side, 1);
     memset(entries, 0, sizeof(entries));
     memset(titles, 0, sizeof(titles));
     entry_count = slots_used = 0;
     generation++;
     if (!atlas) {
-        factor = side = 0;
+        factor = -wanted;
+        side = 0;
         return 0;
     }
     factor = wanted;
@@ -811,6 +817,14 @@ int HdText_Cell(int bank, int page_x, int page_y, int large, int u, int v, int w
     *atlas_u = (entry->slot % SLOTS_ACROSS) * CELL;
     *atlas_v = (entry->slot / SLOTS_ACROSS) * CELL;
     return 1;
+}
+
+const uint8_t *HdText_CellPixels(int large, int u, int v, int wanted, int *stride)
+{
+    int au, av;
+    if (!HdText_Cell(0, 10 * 64, 0, large, u, v, wanted, &au, &av)) return NULL;
+    *stride = side;
+    return atlas + (size_t)(av * factor) * side + au * factor;
 }
 
 const uint8_t *HdText_Atlas(int *size, int *first, int *last, unsigned *atlas_generation)

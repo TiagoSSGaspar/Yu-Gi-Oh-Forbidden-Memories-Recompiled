@@ -37,6 +37,13 @@ static const SettingInfo info[SET_COUNT] = {
     /* 1: the Library lays out every card never seen as a seen one, while it
      * is open; nothing is given or saved (Cards_LibraryPlaceholder, cards.h). */
     [SET_LIBRARY_ALL_CARDS] = {"library_all_cards", NULL, "MEMORIES_LIBRARY_ALL_CARDS", NULL, 0, 0, 1},
+    /* 1: a card and its variants (notes/more-cards.md) are one entry of the Library, the variants
+     * browsed with L3 and R3 in its card view (Cards_LibraryBegin, cards.h). Nothing differs
+     * while no mod adds a variant. */
+    [SET_LIBRARY_FOLD_VARIANTS] = {"library_fold_variants", NULL, "MEMORIES_LIBRARY_FOLD_VARIANTS", NULL, 1, 0, 1},
+    /* 1: the Build Deck's chest has one row for a card and its variants, L3 and R3 stepping through them
+     * (build_deck_fold.h). Nothing differs while no mod adds a variant. */
+    [SET_BUILD_DECK_FOLD_VARIANTS] = {"build_deck_fold_variants", NULL, "MEMORIES_BUILD_DECK_FOLD_VARIANTS", NULL, 1, 0, 1},
     /* Help > updates (update_check.h): look for a newer release at start
      * (on unless the player turns it off: it only tells, never installs)
      * and count pre-releases as newer. */
@@ -81,6 +88,9 @@ static const SettingInfo info[SET_COUNT] = {
      * 1 Simple, a handheld's layout in grey with MENU, STATES and SPEED along
      * the top (touch_pad.h). */
     [SET_TOUCH_STYLE] = {"touch_style", NULL, "MEMORIES_TOUCH_STYLE", NULL, 0, 0, 1},
+    /* 1: with View > Aspect 16:9, the duel's life-point panel and FIELD box sit at the right and left edges of the
+     * wider picture instead of where a 4:3 one has them (src/pc/cards/duel_ui.c). Read when a duel starts. */
+    [SET_DUEL_HUD_EDGES] = {"duel_hud_edges", NULL, "MEMORIES_DUEL_HUD_EDGES", NULL, 0, 0, 1},
     [SET_MASTER_VOLUME] = {"master_volume", "volume", "MEMORIES_MASTER_VOLUME", "MEMORIES_VOLUME", 100, 0, 100},
     [SET_MUSIC_VOLUME] = {"music_volume", NULL, "MEMORIES_MUSIC_VOLUME", NULL, 100, 0, 100},
     [SET_SFX_VOLUME] = {"sfx_volume", NULL, "MEMORIES_SFX_VOLUME", NULL, 100, 0, 100},

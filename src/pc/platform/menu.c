@@ -176,11 +176,14 @@ static Menu menus[MENU_COUNT] = {
     {"View", {{"Fusion helper", 0, ITEM_CHECK, 0, SET_FUSION_HELPER},
               {"Card passwords", 0, ITEM_CHECK, 0, SET_CARD_PASSWORDS},
               {"Library: show every card", 0, ITEM_CHECK, 0, SET_LIBRARY_ALL_CARDS},
+              {"Library: variants in one entry", 0, ITEM_CHECK, 0, SET_LIBRARY_FOLD_VARIANTS},
+              {"Build Deck: variants in one row", 0, ITEM_CHECK, 0, SET_BUILD_DECK_FOLD_VARIANTS},
               {"Free Duel progress", 0, ITEM_CHECK, 0, SET_FREE_DUEL_PROGRESS},
               {"Duel rank", 0, ITEM_SUBMENU, 0, -1, SUB_RANK},
+              {"Duel HUD at the 16:9 edges", 0, ITEM_CHECK, 0, SET_DUEL_HUD_EDGES},
               {"Opponent's name for COM", 0, ITEM_CHECK, MENU_ITEM_OPPONENT_NAME, SET_OPPONENT_NAME, 0, ITEM_GROUP_BREAK},
               {"Japanese buttons (Circle confirms)", 0, ITEM_CHECK, 0, SET_JP_BUTTONS},
-              {"Touch controls", 0, ITEM_SUBMENU, 0, -1, SUB_TOUCH}}, 8},
+              {"Touch controls", 0, ITEM_SUBMENU, 0, -1, SUB_TOUCH}}, 11},
     {"Debug", {{"Jump to", 0, ITEM_SUBMENU, 0, -1, SUB_JUMP},
                {"Show HUD", "F3", ITEM_CHECK, CHECK_HUD, -1, 0, ITEM_GROUP_BREAK},
                {"Full stats", 0, ITEM_CHECK, CHECK_HUD_FULL, -1},
@@ -345,7 +348,7 @@ static int changed;
 
 typedef struct { unsigned char *coverage; int w, h, left, top, advance; } Glyph;
 static Glyph glyphs[96];
-static int font_ascent, font_descent, font_loaded;
+static int font_ascent, font_descent, font_loaded, font_scale;
 /* Past ASCII: the face stays open and each character is rendered the first
  * time it is asked for, kept in an open-addressed table (code 0 is a free
  * slot); `missing` marks one the face has no glyph for. */
@@ -495,6 +498,7 @@ static void load_font(void)
     font_descent = (int)(-face->size->metrics.descender >> 6);
     font_loaded = 1;
     UiText_SetPlain(0);
+    font_scale = ui;
 #if !defined(_WIN32) && !defined(__APPLE__)
     FcPatternDestroy(pattern);
     FcPatternDestroy(match);
@@ -791,7 +795,7 @@ void Menu_DrawTextScaled(MenuCanvas *into, int x, int middle, const char *text, 
     }
 }
 
-void Menu_LoadSettings(void)
+void Menu_LoadSettingsWithoutMods(void)
 {
     Paths_MigrateLegacySaves(); /* what older builds left in ./saves */
     Settings_Load();
@@ -818,7 +822,17 @@ void Menu_LoadSettings(void)
         }
     }
 #endif
+}
+
+void Menu_LoadMods(void)
+{
     Mods_Load(); /* the mods the settings say are applied, once they are read */
+}
+
+void Menu_LoadSettings(void)
+{
+    Menu_LoadSettingsWithoutMods();
+    Menu_LoadMods();
 }
 
 static void update_hd_items(void);
@@ -909,12 +923,17 @@ static void choose_language(int language)
     Menu_ShowNotice("Language", text, buttons, 3, 0, language_chosen);
 }
 
+void Menu_PrepareFont(void)
+{
+    if (!font_loaded || font_scale != ui) load_font();
+}
+
 void Menu_Init(void)
 {
     int i;
     for (i = 0; i < menus[MENU_HELP].count; i++)
         if (menus[MENU_HELP].items[i].id == ACT_VERSION) menus[MENU_HELP].items[i].label = Update_VersionLabel();
-    load_font();
+    if (!font_loaded || font_scale != ui) load_font(); /* Menu_PrepareFont may have */
     layout_bar();
     Settings_Observe(setting_changed);
     update_hd_items(); /* until the backend says its picture pass is on */

@@ -25,7 +25,7 @@
 
 #define ZIP_MAX MODS_IMPORT_ZIP_BYTES
 #define DIRECTORY_MAX (32u << 20)       /* its central directory */
-#define MANIFEST_MAX (4u << 20)         /* a mod.json read to name the mod */
+#define MANIFEST_MAX (1536u << 20)      /* a mod.json read to name the mod: the fusions of 25 More Cards */
 #define NAME_MAX_ 512
 #define CHUNK 65536
 #define PARTS_MAX 32                    /* folders deep, in a name */
@@ -90,6 +90,51 @@ static int utf8(const unsigned char *s, size_t n)
         i += need + 1;
     }
     return 1;
+}
+
+/* Windows' tools write a name in the system's OEM code page and leave out the
+ * .zip's UTF-8 flag. The format says code page 437; code page 850, Western
+ * Windows', keeps 437's accented letters where they are and adds the ones 437
+ * lacks (ã, õ, Á) in place of its line art and Greek letters. */
+static const unsigned short CP850[128] = {
+    0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
+    0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+    0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
+    0x00FF, 0x00D6, 0x00DC, 0x00F8, 0x00A3, 0x00D8, 0x00D7, 0x0192,
+    0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
+    0x00BF, 0x00AE, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+    0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x00C1, 0x00C2, 0x00C0,
+    0x00A9, 0x2563, 0x2551, 0x2557, 0x255D, 0x00A2, 0x00A5, 0x2510,
+    0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x00E3, 0x00C3,
+    0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x00A4,
+    0x00F0, 0x00D0, 0x00CA, 0x00CB, 0x00C8, 0x0131, 0x00CD, 0x00CE,
+    0x00CF, 0x2518, 0x250C, 0x2588, 0x2584, 0x00A6, 0x00CC, 0x2580,
+    0x00D3, 0x00DF, 0x00D4, 0x00D2, 0x00F5, 0x00D5, 0x00B5, 0x00FE,
+    0x00DE, 0x00DA, 0x00DB, 0x00D9, 0x00FD, 0x00DD, 0x00AF, 0x00B4,
+    0x00AD, 0x00B1, 0x2017, 0x00BE, 0x00B6, 0x00A7, 0x00F7, 0x00B8,
+    0x00B0, 0x00A8, 0x00B7, 0x00B9, 0x00B3, 0x00B2, 0x25A0, 0x00A0,
+};
+
+/* `raw` from code page 850 to UTF-8 in `out`; its length, 0 when it does not fit. */
+static unsigned cp850_name(const unsigned char *raw, unsigned length, unsigned char *out, unsigned size)
+{
+    unsigned n = 0;
+    for (unsigned i = 0; i < length; i++) {
+        unsigned code = raw[i] < 0x80 ? raw[i] : CP850[raw[i] - 0x80];
+        if (n + 3 >= size)
+            return 0;
+        if (code < 0x80) {
+            out[n++] = (unsigned char)code;
+        } else if (code < 0x800) {
+            out[n++] = (unsigned char)(0xC0 | code >> 6);
+            out[n++] = (unsigned char)(0x80 | (code & 0x3F));
+        } else {
+            out[n++] = (unsigned char)(0xE0 | code >> 12);
+            out[n++] = (unsigned char)(0x80 | (code >> 6 & 0x3F));
+            out[n++] = (unsigned char)(0x80 | (code & 0x3F));
+        }
+    }
+    return n;
 }
 
 /* The entry's name as it goes on disk, or 0 when it would leave the folder
@@ -329,23 +374,52 @@ static int folder_valid(const char *s)
  * manifest, else the folder; code by the loader's own test
  * (Manifest_HasCode): a "library", or "libraries" with any entry, whether
  * or not the .zip has an object for this game. */
-static int describe(ModsImport *import, ModsImportMod *mod, const Entry *manifest, char *why, size_t why_size)
+static int describe(ModsImport *import, ModsImportMod *mod, const Entry *manifest, const char *zip, char *why,
+                    size_t why_size)
 {
-    unsigned char *text = NULL;
-    JsonDocument *document = NULL;
-    const JsonValue *root = NULL;
-    const char *id = NULL, *name, *slash;
+    char unpacked[1200];
+    FILE *out;
+    static const char *const lists[] = {"fusions", "cards"};
+    JsonDeferred deferred[2];
+    JsonDocument *document;
+    const JsonValue *root;
+    const char *id, *name, *slash;
     char folder[NAME_MAX_], error[128];
     size_t plen = strlen(mod->prefix);
-    if (manifest->size <= MANIFEST_MAX && (text = malloc(manifest->size + 1))) {
-        if (!unpack(import, manifest, NULL, text, why, why_size)) {
-            free(text);
-            return 0;
-        }
-        document = Json_Parse((const char *)text, error, sizeof(error));
-        root = Json_Root(document);
+    /* The loader reads the whole file, so a mod.json this game would not
+     * read is refused here, not named from its folder. */
+    if (manifest->size > MANIFEST_MAX) {
+        snprintf(why, why_size, "The mod.json in the .zip is too large (more than %u MB). Nothing was imported.",
+                 MANIFEST_MAX >> 20);
+        return 0;
     }
-    free(text);
+    /* Read as the loader reads it, which needs a file: it goes beside the .zip,
+     * as the fetched .zip's own ".incoming" leftovers do, and is gone below. */
+    if (snprintf(unpacked, sizeof(unpacked), "%s.mod-json", zip) >= (int)sizeof(unpacked) ||
+        !(out = fopen(unpacked, "wb"))) {
+        snprintf(why, why_size, "The mod.json in the .zip could not be unpacked: %s. Nothing was imported.",
+                 strerror(errno));
+        return 0;
+    }
+    if (!unpack(import, manifest, out, NULL, why, why_size)) {
+        fclose(out);
+        remove(unpacked);
+        return 0;
+    }
+    if (fclose(out)) {
+        snprintf(why, why_size, "The mod.json in the .zip could not be unpacked: %s. Nothing was imported.",
+                 strerror(errno));
+        remove(unpacked);
+        return 0;
+    }
+    document = Json_ParseFileDeferring(unpacked, lists, 2, deferred, error, sizeof(error));
+    remove(unpacked);
+    /* Its copy did not fit (no reason given) or its nodes did not. */
+    if (!document && (!error[0] || !strcmp(error, "out of memory"))) {
+        snprintf(why, why_size, "The mod.json in the .zip is too large to read. Nothing was imported.");
+        return 0;
+    }
+    root = Json_Root(document);
     /* The folder it is in, from the .zip ("" for a mod at its root). */
     folder[0] = 0;
     if (plen) {
@@ -464,8 +538,10 @@ ModsImport *Mods_ImportOpen(const char *zip, char *why, size_t why_size)
     end = directory + length;
     for (unsigned i = 0; i < entries; i++) {
         Entry *e = &import->entries[i];
-        unsigned made_by, flags, name_length, extra, comment, mode, type;
+        unsigned made_by, flags, name_length, raw_length, extra, comment, mode, type;
         char name[NAME_MAX_];
+        unsigned char legacy[NAME_MAX_];
+        const unsigned char *raw;
         if (end - p < 46 || le32(p) != 0x02014b50u) {
             snprintf(why, why_size, "The .zip is damaged.");
             goto fail;
@@ -485,7 +561,14 @@ ModsImport *Mods_ImportOpen(const char *zip, char *why, size_t why_size)
             snprintf(why, why_size, "The .zip is damaged.");
             goto fail;
         }
-        if (!clean_name(p + 46, name_length, name, &e->folder)) {
+        raw = p + 46;
+        raw_length = name_length;
+        /* No UTF-8 flag, and not UTF-8 either (some tools write it unflagged). */
+        if (!(flags & 0x800) && !utf8(raw, raw_length)) {
+            raw_length = cp850_name(raw, raw_length, legacy, sizeof(legacy));
+            raw = legacy;
+        }
+        if (!clean_name(raw, raw_length, name, &e->folder)) {
             /* never written: the name is shown cut at the first odd character */
             char shown[64];
             unsigned n = 0;
@@ -523,6 +606,10 @@ ModsImport *Mods_ImportOpen(const char *zip, char *why, size_t why_size)
         }
         if (e->offset >= start) {
             snprintf(why, why_size, "The .zip is damaged.");
+            goto fail;
+        }
+        if (e->method == 8 && e->size > (unsigned long long)e->packed * 1032u + 64) { /* deflate's best ratio */
+            snprintf(why, why_size, "The .zip is damaged (%s).", e->name);
             goto fail;
         }
         import->total += e->size;
@@ -596,7 +683,7 @@ ModsImport *Mods_ImportOpen(const char *zip, char *why, size_t why_size)
             import->mod_count++;
         }
         for (int i = 0; i < import->mod_count; i++) {
-            if (!describe(import, &import->mods[i], manifests[i], why, why_size))
+            if (!describe(import, &import->mods[i], manifests[i], zip, why, why_size))
                 goto fail;
             for (int j = 0; j < i; j++)
                 if (same_name(import->mods[i].folder, import->mods[j].folder)) {
@@ -693,12 +780,15 @@ int Mods_ImportFolderId(const char *directory, char *id, size_t size)
 {
     char path[2048], error[128];
     const char *slash = strrchr(directory, '/'), *text;
+    static const char *const lists[] = {"fusions", "cards"};
+    JsonDeferred deferred[2];
     JsonDocument *document;
     FILE *file;
     if (snprintf(path, sizeof(path), "%s/mod.json", directory) >= (int)sizeof(path) || !(file = fopen(path, "rb")))
         return 0;
     fclose(file);
-    document = Json_ParseFile(path, error, sizeof(error));
+    /* Only the id: a mod with millions of fusions is named as cheaply as any. */
+    document = Json_ParseFileDeferring(path, lists, 2, deferred, error, sizeof(error));
     text = Json_String(Json_Member(Json_Root(document), "id"), NULL);
     /* as the loader names it (mods.c read_manifest): the folder without one */
     copy(id, size, text && *text ? text : slash ? slash + 1 : directory);

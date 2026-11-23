@@ -47,6 +47,34 @@ void Mods_SetAudio(int (*load)(int mod, const char *id, const char *directory, c
 void Mods_SetAudioClips(int (*add)(int mod, const char *id, const int16_t *samples, size_t frames, int channels,
                                    unsigned rate),
                         int (*play)(int mod, int handle, int volume, int pan), void (*release)(int mod, int handle));
+/* The mouse for host->mouse and host->capture_mouse (API 23): the window's
+ * motion since the last call and the buttons held, with
+ * MEMORIES_MOUSE_ESCAPE taken in when `escape` (the mod is the one that
+ * claimed it); and the capture's mode, 0 none, 1 the pointer and Escape, 2
+ * Escape only. Without these the host answers no motion and captures
+ * nothing. */
+void Mods_SetMouse(void (*motion)(int *dx, int *dy, unsigned *buttons, int escape), void (*capture)(int mode));
+/* The pointer and the wheel for host->pointer, host->wheel and
+ * host->take_wheel (API 24): the pointer's place in the game's picture and
+ * the buttons held, 1 when it is a mouse's over the picture and nothing of
+ * the port's has it; the wheel's notches since the last call; and whether a
+ * notch is also a D-pad press (0 when a mod has taken the wheel). Without
+ * these the host answers no pointer and no notches. */
+void Mods_SetPointer(int (*pointer)(int *x, int *y, unsigned *buttons), int (*wheel)(void), void (*take)(int on));
+/* The MEMORIES_HUD_* parts the applied mods hide (host->hide_hud), or 0. */
+unsigned Mods_HiddenHud(void);
+/* Where the window shows the game's picture, for host->overlay_picture
+ * and host->picture_point:
+ * its rectangle on the overlay's canvas and the game pixels across it (320,
+ * or 426 widened). The window sets it whenever it lays the picture out. */
+void Mods_SetPicture(int x, int y, int w, int h, int game_width);
+/* The applied mods' overlays drawn straight over a picture of w x h
+ * 0xFFRRGGBB pixels, as a window of its size shows them, with the port's
+ * menu text (MEMORIES_DUMP_OVERLAY's frame dumps). */
+struct MenuCanvas;
+void Mods_DrawPictureOverlay(uint32_t *pixels, int w, int h, int game_width,
+                             void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
+                             int (*width)(const char *, int));
 void Mods_Shutdown(void);
 /* What a mod's host->pad reads; NULL: Platform_Pad. The game sets it
  * (libetc.c) so mods see the control client's bits and, while a recording
@@ -74,7 +102,9 @@ void Mods_SetEnabled(int mod, int enabled);
 
 /* The "cards" array of every applied mod, with the directory its images are
  * named from, in load order (Mods_Loaded, below), for src/pc/cards (json.h
- * reads them). A data mod needs no code for them. */
+ * reads them). A data mod needs no code for them. Read from each mod.json for
+ * Cards_Build, which frees them as it ends (Mods_CardsRelease): a value is gone by
+ * then, and this is not to be called again. */
 struct JsonValue;
 void Mods_VisitCards(void (*visit)(const char *id, const char *directory, const struct JsonValue *cards, void *context),
                      void *context);
@@ -87,7 +117,12 @@ void Mods_VisitManifests(void (*visit)(const char *id, const char *directory,
 int Mods_LoadedCount(void);
 int Mods_Loaded(int index);
 /* One of a mod's settings (`mod.<id>.<key>`, or MEMORIES_MOD_<ID>_<KEY> for
- * the run), as a code mod's host->setting reads it. */
+ * the run), as the game reads it from a manifest. Until the player or the
+ * environment gives it a value, it reads as the "default" the mod's
+ * "settings" declare for it -- what the Mods window shows. `fallback`
+ * answers for a key the mod does not declare, or declares without a
+ * "default", and for no such mod. (A code mod's host->setting is mods.c's
+ * host_setting: it answers with the fallback the mod passes.) */
 int Mods_Setting(const char *id, const char *key, int fallback);
 /* One of a mod's files of `key` ("text", "font"; src/pc/text): entry `index`
  * of a name or a list of them, each a string or {"file": ..., "setting": ...}
@@ -111,6 +146,9 @@ void Mods_Note(const char *id, const char *format, ...);
 /* Called once the game's frame is on its way to the GPU (libgpu's GsDrawOt),
  * which is where an extra pass can draw over the finished picture. */
 void Mods_DrawFrame(void);
+/* Whether a mod's frame callback, in the last Mods_DrawFrame, asked that
+ * its frame be drawn only in the scaled picture (host->picture_only_frame). */
+int Mods_PictureOnlyFrame(void);
 /* The applied mods' overlays (MemoriesMod.overlay), drawn with the port's
  * menu text; the rectangle they covered, or zeros. Their signature changes
  * whenever one of them would draw something else (`frame` for a mod that
@@ -120,10 +158,42 @@ void Mods_DrawOverlay(struct MenuCanvas *canvas, int scale,
                       void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
                       int (*width)(const char *, int), int *x, int *y, int *w, int *h);
 unsigned Mods_OverlaySignature(unsigned frame);
-/* Where the game's picture shows on the overlays' canvas, and how many of
- * the disc's 320 columns its width spans (more in widescreen), for
- * host->picture_point; set before each Mods_DrawOverlay. */
-void Mods_SetPicture(int x, int y, int w, int h, int columns);
+/* Where the overlays go instead of the canvas: with a sink set a pass of
+ * Mods_DrawOverlay rasters nothing, reports no rectangle, and hands the
+ * sink its calls in order. The sink keeps what it needs: between `begin`
+ * and `end` the pixels are the mod's and alive, after `end` they may not be.
+ * `clip` is x0, y0, x1, y1 of the canvas; `forget` says pixels are gone. */
+typedef struct ModsOverlaySink {
+    void (*begin)(void);
+    void (*fill)(const int clip[4], int x, int y, int w, int h, uint32_t rgb, unsigned alpha);
+    void (*image)(const int clip[4], const uint32_t *pixels, int w, int h, uint32_t hash, int x, int y, int dw, int dh,
+                  unsigned alpha);
+    void (*end)(void);
+    void (*forget)(const uint32_t *pixels);
+} ModsOverlaySink;
+void Mods_SetOverlaySink(const ModsOverlaySink *sink);
+/* The pictures read ahead for the mods (host->prefetch_image): the bytes of
+ * those read and not yet taken, how many jobs there are in all, and how
+ * many of them are still to read or being read. */
+size_t Mods_Prefetched(int *jobs, int *unread);
+/* The overlays once more, only listed, the canvas untouched, and compared
+ * with the calls that last drew it (Mods_DrawOverlay, or a
+ * Mods_RedrawOverlayIn after this): the rectangles of the canvas that
+ * differ, x, y, w, h each into `rects`, at most `max` of them. 0 when
+ * nothing differs; -1 when there is nothing to compare with (no pass on a
+ * canvas of this size yet, or one that could not be listed whole), and
+ * then everything is to be drawn again. */
+int Mods_OverlayChanges(struct MenuCanvas *canvas, int scale,
+                        void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
+                        int (*width)(const char *, int), int *rects, int max);
+/* Then the overlays drawn in those rectangles alone, which the caller has
+ * cleared; outside them the canvas is left as it is, which is what this
+ * pass draws there. 0 when the pass was not the one listed (a mod that
+ * draws something else each time it is asked): nothing on the canvas can
+ * then be trusted, and it is to be drawn again whole. */
+int Mods_RedrawOverlayIn(struct MenuCanvas *canvas, int scale,
+                         void (*text)(struct MenuCanvas *, int, int, const char *, uint32_t, int),
+                         int (*width)(const char *, int), const int *rects, int count);
 /* Drop everything cached from the running game: a resumed save state is
  * another game. */
 void Mods_Reset(void);
@@ -165,6 +235,12 @@ unsigned Mods_DiscSignature(void);
  * model in slot `slot`'s window, 64x256 halfwords each, and how many; NULL
  * and 0 for none. */
 int Mods_ModelCount(void);
+/* A model's "base", once the cards can say what it names. Mods_ModelBaseCard: 0
+ * until then, when Mods_Model's `base` has it; from then on Mods_Model's `base` is
+ * NULL, and a model dropped since still answers (it loads as that). */
+int Mods_ModelBaseCard(int i, int *card);
+/* As Cards_Build ends: no block a save state holds keeps a manifest's value. */
+void Mods_ModelsSettle(int (*card)(const struct JsonValue *));
 int Mods_Model(int i, const char **name, const struct JsonValue **base, int *mod);
 int Mods_ModelSector(int i);
 int Mods_ModelRead(int lba, int sectors, void *out);
@@ -179,8 +255,22 @@ const unsigned char *Mods_ModelPages(int slot, int *count);
 int *Mods_ModelPendings(unsigned *size);
 void Mods_ModelParsed(int slot);
 
-/* Manager metadata and configuration. Borrowed strings live until exit. */
+/* Manager metadata and configuration. Borrowed strings live until exit. "fusions" and
+ * "cards" are empty lists in it: they stay in the mod.json (Mods_EachFusion,
+ * Mods_CardsDocument). */
 const struct JsonValue *Mods_Manifest(int mod);
+/* A mod's "fusions", which is not in its manifest: each entry in turn from the
+ * file, gone when `each` returns (json.h). The count, -1 on a mistake. */
+long Mods_EachFusion(const char *id, int (*each)(const struct JsonValue *, long, void *), void *context, char *error,
+                     size_t error_size);
+unsigned Mods_FusionsHash(int mod); /* 0 with none */
+/* "cards", also not in the manifest: read for Mods_VisitCards and kept until
+ * Mods_CardsRelease, as Cards_Build ends; or a document of them for the caller, which
+ * Json_Frees it. */
+unsigned Mods_CardsHash(int mod); /* 0 with none */
+struct JsonDocument *Mods_CardsDocument(int mod);
+void Mods_CardsRelease(void);
+long Mods_FusionsSize(int mod); /* bytes in the file, 0 for none */
 /* The manifest's string `key`; its "description" in the player's language
  * when the mod has a lang file for it (Mods_SetLanguage), as Mods_Name is. */
 const char *Mods_Metadata(int mod, const char *key);
@@ -262,13 +352,6 @@ int Mods_Failed(int mod);
 /* The mod has code to load (a "library" or "libraries"), whether or not
  * this game can load it. */
 int Mods_HasCode(int mod);
-/* Its code is not run: the mod comes from the mods folder the player chose,
- * where this game reads data only (Android: Mods_SetFolderCode). It is still a
- * mod with its data, and says so in its status. */
-int Mods_CodeSkipped(int mod);
-/* Whether a mod from the chosen mods folder may run its code: yes except on
- * Android (the default there is no), where other apps can write to it. */
-void Mods_SetFolderCode(int allowed);
 /* What the mods in `enabled` change in common, loading in the order `ranks`
  * gives (each mod's Load order, as the Mods window stages it), or the saved
  * order when `ranks` is NULL, with the settings `values` gives (values[mod]

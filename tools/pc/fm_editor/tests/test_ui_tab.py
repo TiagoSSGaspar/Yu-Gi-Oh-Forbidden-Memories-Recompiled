@@ -215,6 +215,33 @@ class RulesTest(unittest.TestCase):
         self.assertFalse([i for i in issues if i.area == "Mod info" and i.where in ("title", "menu", "ui")])
 
 
+class CardLayoutSwitchTest(unittest.TestCase):
+    """validate.py: a card_layout with no "full_bleed" setting never applies."""
+
+    def issues(self, project):
+        return [i for i in validate.validate(project) if i.where == "settings" and "never applies" in i.message]
+
+    def test_warns_without_the_switch(self):
+        p = project({"card_layout": {"frame_styles": {"gold": {"image": "frames/g.png"}}}})
+        self.assertEqual(len(self.issues(p)), 1)
+        self.assertEqual(self.issues(p)[0].level, "warning")
+
+    def test_quiet_with_it_or_without_a_layout(self):
+        p = project({"card_layout": {"frame_styles": {"gold": {}}}})
+        p.info.settings = [{"key": "full_bleed", "type": "bool", "default": 0}]
+        self.assertEqual(self.issues(p), [])
+        self.assertEqual(self.issues(project({})), [])
+        self.assertEqual(self.issues(project({"card_layout": {}})), [])
+
+    def test_declare_full_bleed(self):
+        p = project({})
+        self.assertTrue(manifest.declare_full_bleed(p))
+        self.assertFalse(manifest.declare_full_bleed(p))
+        self.assertEqual(p.info.settings, [manifest.FULL_BLEED_SETTING])
+        self.assertIsNot(p.info.settings[0], manifest.FULL_BLEED_SETTING)     # a copy: edits stay with the mod
+        self.assertEqual(len(self.issues(project({"card_layout": {"stars": {"x": 1}}}))), 1)
+
+
 class AssetsTest(unittest.TestCase):
     def test_vram_sprite(self):
         vram = ui_assets.Vram()
@@ -645,6 +672,171 @@ class UiTabTest(GuiCase):
             page.view.seen = None
             page.view.fit()
         self.assertAlmostEqual(page.stage.zoom, (600 - page.view.tools.winfo_reqheight() - 6) / 196)
+
+    def test_first_frame_style_declares_the_switch(self):
+        """The game applies a mod's card layout only while its "full_bleed"
+        setting is on: the Frames page declares it, on, with the first style,
+        and Mod info's box keeps it through the commit of every tab."""
+        page = self.page("frames")
+        self.assertEqual(self.app.project.info.settings, [])
+        page.style_name.set("gold")
+        page.style(True)
+        self.assertEqual(self.app.project.info.settings, [manifest.FULL_BLEED_SETTING])
+        self.assertEqual(self.app.project.info.settings[0]["default"], 1)
+        self.assertIn('"full_bleed"', self.app.info.settings.get("1.0", "end"))
+        self.assertTrue(self.app.commit_all())
+        self.assertEqual([s["key"] for s in self.app.project.info.settings], ["full_bleed"])
+        self.assertEqual(manifest.build(self.app.project)["settings"][0]["key"], "full_bleed")
+        # A second style does not declare it again.
+        page.style_name.set("green")
+        page.style(True)
+        self.assertEqual(len(self.app.project.info.settings), 1)
+
+    def test_declared_frame_switch_is_the_modders(self):
+        """A mod that declares "full_bleed" already, off by default, keeps it
+        as it is; a mod that already has styles is not touched by editing."""
+        page = self.page("frames")
+        self.app.project.info.settings = [{"key": "full_bleed", "type": "bool", "default": 0}]
+        page.style_name.set("gold")
+        page.style(True)
+        self.assertEqual(self.app.project.info.settings, [{"key": "full_bleed", "type": "bool", "default": 0}])
+        self.app.project.info.settings = []
+        page.style_name.set("again")
+        page.style(True)            # "gold" is already there: not a first style
+        self.assertEqual(self.app.project.info.settings, [])
+
+    def test_only_a_made_first_style_declares_the_switch(self):
+        """Delete and "back to the game's" on a layout with no styles make
+        nothing, so they declare nothing; New style does, as the first one."""
+        from fm_editor import ui_frames
+        page = self.page("frames")
+        page.style_name.set("ghost")
+        with mock.patch.object(ui_frames.messagebox, "askyesno", return_value=True):
+            page.delete_style()
+        for key in ("frame", "atk"):
+            page.chosen = key
+            page.reset()
+        self.assertEqual(self.app.project.info.settings, [])
+        self.assertNotIn("card_layout", self.app.project.other)
+        with mock.patch.object(ui_frames.simpledialog, "askstring", return_value="gold"):
+            page.new_style()
+        self.assertEqual([s["key"] for s in self.app.project.info.settings], ["full_bleed"])
+        with mock.patch.object(ui_frames.simpledialog, "askstring", return_value="green"):
+            page.new_style()
+        self.assertEqual(len(self.app.project.info.settings), 1)
+
+    def test_declaring_the_switch_commits_mod_info_first(self):
+        """A box with typed settings is stored first, and kept; one that
+        cannot be stored is said so, and nothing is overwritten."""
+        from fm_editor import ui_frames
+        page = self.page("frames")
+        info = self.app.info
+        info.settings.delete("1.0", "end")
+        info.settings.insert("1.0", '[{"key": "other", "type": "bool", "default": 0}]')    # typed, not applied
+        page.style_name.set("gold")
+        page.style(True)
+        self.assertEqual([s["key"] for s in self.app.project.info.settings], ["other", "full_bleed"])
+        self.assertIn('"full_bleed"', info.settings.get("1.0", "end"))
+        self.app.project.other.pop("card_layout", None)
+        self.app.project.info.settings = []
+        info.refresh()
+        info.settings.delete("1.0", "end")
+        info.settings.insert("1.0", "[ not json")
+        page.style_name.set("silver")
+        with mock.patch.object(ui_frames.messagebox, "showwarning") as warned:
+            page.style(True)
+        self.assertTrue(warned.called)
+        self.assertIn("full_bleed", warned.call_args.args[1])
+        self.assertEqual(self.app.project.info.settings, [])
+        self.assertEqual(info.settings.get("1.0", "end").strip(), "[ not json")      # the modder's text stays
+
+    def test_frames_label_on_the_games_own_frame(self):
+        """A style with no frame image keeps retail's frame, and the game
+        draws retail's ATK/DFD caption there until a picture replaces it: the
+        preview keeps that caption still, then the picture starts over it."""
+        from fm_editor import ui_frames
+        page = self.page("frames")
+        layout = self.app.project.other.setdefault("card_layout", {})
+        layout["frame_styles"] = {"hp": {"hand_color": "gold"}}
+        page.style_name.set("hp")
+        style = layout["frame_styles"]["hp"]
+        page.chosen = page.list_chosen = "dfd_label"
+        self.assertTrue(page.keeps_retail_frame())
+        self.assertTrue(page.fixed_caption("dfd_label"))
+        self.assertEqual(page.rect("dfd_label"), ui_frames.RETAIL_CAPTIONS["dfd_label"])
+        page.paint()
+        self.assertNotIn("dfd_label", page.stage.draggable)         # retail's own sprite: nothing to drag
+        page.moved("dfd_label", 5, 5); page.wheel("dfd_label", 1)
+        self.assertEqual(style, {"hand_color": "gold"})              # and nothing written
+        # A picture replaces it, starting where retail's caption is.
+        page.set_asset("dfd_label", "frames/hp.png")
+        self.assertEqual(style["dfd_label"], {"image": "frames/hp.png", "x": 72, "y": 173, "width": 21, "height": 8})
+        self.assertFalse(page.fixed_caption("dfd_label"))
+        page.paint()
+        self.assertIn("dfd_label", page.stage.draggable)
+        page.moved("dfd_label", -72, -173)                           # the game's own (0, 0) is written too
+        self.assertEqual((style["dfd_label"]["x"], style["dfd_label"]["y"]), (0, 0))
+        self.assertEqual(page.rect("dfd_label"), (0, 0, 21, 8))
+        page.chosen = "dfd_label"
+        for name, value in (("x", 12), ("y", 184)):                 # the editor's old start places, typed
+            page.vars[name].set(str(value)); page.typed(name)
+        self.assertEqual((style["dfd_label"]["x"], style["dfd_label"]["y"]), (12, 184))
+        self.assertEqual(page.rect("dfd_label")[:2], (12, 184))
+        del style["dfd_label"]["x"], style["dfd_label"]["y"]         # a hand-written one: the game's places
+        self.assertEqual(page.rect("dfd_label")[:2], (0, 0))
+        page.set_asset("dfd_label", None)
+        self.assertTrue(page.fixed_caption("dfd_label"))
+        # A style with a frame image of its own: the editor's start places, as before.
+        style["image"] = "frames/f.png"
+        self.assertFalse(page.keeps_retail_frame())
+        self.assertFalse(page.fixed_caption("atk_label"))
+        style["dfd_label"] = {}
+        page.set_asset("atk_label", "frames/a.png")
+        self.assertEqual(style["atk_label"], {"image": "frames/a.png", "x": 12, "y": 171, "width": 16, "height": 8})
+        # Replacing the picture of a hand-written label with no x/y moves nothing: it is at the game's (0, 0).
+        style["dfd_label"] = {"image": "frames/old.png"}
+        page.set_asset("dfd_label", "frames/new.png")
+        self.assertEqual(style["dfd_label"], {"image": "frames/new.png"})
+        self.assertEqual(page.rect("dfd_label"), (0, 0, 16, 8))
+        style["full_bleed"] = False                                  # a frame image the style says not to use
+        self.assertTrue(page.keeps_retail_frame())
+        style["full_bleed"] = 0                                      # the game reads a number as a bool
+        self.assertTrue(page.keeps_retail_frame())
+        style["full_bleed"] = 1
+        self.assertFalse(page.keeps_retail_frame())
+        del style["image"]
+        self.assertFalse(page.keeps_retail_frame())                  # 1 without an image: full-bleed, as the game has it
+
+    def test_frames_digits_on_the_games_own_frame(self):
+        """ATK/DFD left where they are: the game's own places (0x61, 0x9D and
+        0x61, 0xAB), a box centre on a style's own frame and, on one that
+        keeps retail's frame, the corner of retail's 24 x 13 digit row, which
+        the game centres a strip on (func_80028B08.c)."""
+        from fm_editor import pngio, ui_frames
+        page = self.page("frames")
+        layout = self.app.project.other.setdefault("card_layout", {})
+        layout["frame_styles"] = {"hp": {"hand_color": "gold"}}
+        page.style_name.set("hp")
+        style = layout["frame_styles"]["hp"]
+        self.assertEqual(page.rect("atk")[:2], (97, 157))
+        self.assertEqual(page.rect("def")[:2], (97, 171))
+        page.moved("atk", 0, 12)                                     # y 169 is not the game's: it is written
+        self.assertEqual(style["digits"]["atk"], {"y": 169})
+        del style["digits"]
+        strip = pngio.Image(200, 192, bytes(200 * 192 * 4))
+        real = ui_frames.mod_image
+        with mock.patch.object(ui_frames, "mod_image",
+                               side_effect=lambda project, name: strip if name == "frames/d.png" else real(project, name)):
+            # (Retail's own digits, with no strip, are previewed as text, whose
+            # box Tk measures in the system's font: not compared here.)
+            style["digits"] = {"image": "frames/d.png", "width": 10, "height": 12}
+            page.paint()
+            # 3000 in 10-wide digits, 40 x 12, centred on (109, 163)
+            self.assertEqual(page.stage.boxes["atk"], (89, 157, 40, 12))
+            self.assertEqual(page.stage.boxes["def"], (89, 171, 40, 12))
+            style["image"] = "frames/f.png"                              # a frame of its own: x/y is the centre
+            page.paint()
+            self.assertEqual(page.stage.boxes["atk"], (77, 151, 40, 12))
 
     def test_deleting_frame_style_clears_its_assignments(self):
         """Deleting a referenced style must not leave stale fallback rules."""

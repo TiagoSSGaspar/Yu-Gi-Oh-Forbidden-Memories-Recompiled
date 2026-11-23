@@ -94,14 +94,10 @@ the question has the footer's room (four lines on a phone) and Use no folder
 is in reach. Remove on a mod from that folder answers that it is in the
 player's own mods folder.
 
-On Android a mod from that folder starts off whatever its manifest says, as any
-app with the right can write there.
-On Android a mod from that folder is read for its data only: a mod with code
-is listed, its data applies, and its status says "Code not run: import it to
-run its code" (details: "Native code mod: only its data is used from your mods
-folder"), because other apps can write to shared storage. Import mod... puts
-the mod in the game's own folder, where its code runs. On the desktop nothing
-changes.
+A mod from that folder is treated as any other mod, on Android too: its manifest
+decides whether it starts on, and a mod with code runs its code (the object is
+read into memory and made executable there, as for an imported mod; nothing is
+mapped from the folder). Nothing has to be imported for it to work.
 
 The profile field accepts a name (letters, digits, spaces, `_`, `-`). Save writes
 the currently applied preferences to `mod-profiles/<name>.txt` in the user
@@ -279,13 +275,23 @@ file that is no mod gets the usual refusal ("That file is not a .zip.",
   the storage itself takes for one, such as `É.png` and `é.png` on
   Android's shared storage, are found as the second is written: "Two files
   in the .zip are one file on this storage..."), two mods with
-  one folder or one `id`, names that are not UTF-8, ZIP64 or split
+  one folder or one `id`, names marked UTF-8 that are not, ZIP64 or split
   archives (the plain form holds 65,534 entries and 4 GB, which is what
   the importer takes), more than 4 GB unpacked or more than the free space
   holds, a `.zip` over 4 GB (2 GB where a `long` has 32 bits, where `ftell`
   stops: Windows and the 32-bit builds; Android's arm64 game takes 4 GB),
   a file that is not a `.zip`, or more mods than the game takes (256, in
   one `.zip` or with those installed). A mod at the `.zip`'s root without an `id` goes in `imported-mod`.
+  The `id`, the name and whether it carries code come from its `mod.json`, as
+  the loader reads them: unpacked to `<zip>.mod-json` beside the `.zip` for that
+  moment, its `fusions` skipped, so a mod with millions of them takes no more
+  memory to name than one without. One over 1536 MB (More Cards is 42 MB, a mod
+  of 25 times its fusions 1 GB) is refused.
+  A file's name with no UTF-8 flag that is not UTF-8 either is read as code
+  page 850, which Windows' tools write (the format says 437; 850 keeps 437's
+  accented letters and adds the ones it lacks, like `ã`). A name from another
+  system's code page (Cyrillic, Shift-JIS) comes out odd rather than refused,
+  and still has to pass the same checks.
   Unpacking goes into a hidden `mods/.import-XXXXXX` folder (the scan skips
   names starting with a dot), checking each file's size and CRC; only then
   is each mod renamed into place, and any failure puts back what was moved

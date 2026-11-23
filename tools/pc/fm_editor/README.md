@@ -787,6 +787,11 @@ that the game leaves out).
   on.
 
 * **Frames**: creates and edits a `card_layout.frame_styles` style visually.
+  The game reads a mod's card layout only while the mod's `full_bleed`
+  setting is on, so the layout's first style declares that setting (a bool,
+  on by default; Mod info shows it): the frame drawn here is the frame the game
+  draws, until the player unticks it in the Mods window. Mod info warns about a
+  card layout in a mod that declares no `full_bleed`.
   Choose a style, then an asset slot (front/back, hand, field, Library icon,
   digits, stat captions or type captions) or a card-view element. The front
   preview is a game-scale card viewer: drag title, art, stars, attribute,
@@ -808,6 +813,15 @@ that the game leaves out).
   The frame keys need mod API 18 (a style's images, `hand`, parts and
   `hide`, `default_styles`, a card's `frame_style`): Save raises `min_api`
   to it, so a game of v0.3.0 refuses the mod rather than draw the retail frame.
+  The ATK and DFD captions work on a style that keeps the game's own frame
+  too (no frame image): until you choose an image the preview shows the game's
+  own caption where the game has it, which no style moves; an image replaces
+  it, starts in that place and then drags. That needs API 25 (a game of API 24
+  would leave the game's caption), and Save raises `min_api` to it.
+  A digit strip works there too: the game draws it in place of its own digits,
+  centred on the row they fill, and on such a style the ATK/DEF value's X/Y is
+  that row's top-left corner (the game's own 97, 157 and 97, 171 when left
+  out), where on a frame of the style's own it is the centre. Same API 25.
 
 Colors are the game's: a tint multiplies, so it can only darken what is
 there. The pictures are the console's size here; the game draws a PNG of

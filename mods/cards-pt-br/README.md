@@ -8,7 +8,7 @@ other language the mod changes nothing; turned off, the cards stay English
 in every language.
 
 It works through its `lang/pt-BR.json`, whose `text` file is read only when
-the player's language is Portuguese (mod API 23, [A mod in the player's
+the player's language is Portuguese (mod API 27, [A mod in the player's
 language](../../notes/modding.md#a-mod-in-the-players-language)).
 
 ## The table

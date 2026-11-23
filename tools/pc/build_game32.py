@@ -44,7 +44,10 @@ sections cannot be placed at chosen addresses (as on Windows). The APK is packag
 package_android.py) with the SDK's build tools; notes/pc-build.md, "Android"."""
 import argparse, concurrent.futures, csv, filecmp, glob, hashlib, json, os, re, shutil, struct, subprocess, sys
 import build_process
-from build_config import BACKENDS, GATED_MODULES, MODULE_CONFIG, MODULES, TARGETS, game_sources, native_sources
+from build_config import (BACKENDS, GATED_MODULES, MODULE_CONFIG, MODULES, SOURCE_ADDRESSED_MODULES, TARGETS,
+                          game_sources, native_sources, newest_input)
+import model_gate
+import model_gate_port
 import ptr32_stores
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -276,6 +279,16 @@ def host_address(address):
 
 HOST_LIBC = {"printf", "sprintf", "strcmp", "strcpy", "bzero", "qsort", "memcpy", "memset",
              "memmove", "strlen", "strcat", "strncmp", "strncpy", "memcmp"}
+
+# The stack probe a Windows compiler calls in a function whose frame passes
+# a page (shape 439's sprays, variant456_sprays.c: about 12 KB of arrays),
+# as C names (c_name): i686 `_alloca` (clang's `__alloca`; GCC's
+# `___chkstk_ms` is `__chkstk_ms`), x86-64 `___chkstk_ms`. The toolchain's
+# runtime defines it and the link takes it from there. It is not a C function
+# (the size comes in eax), so it is neither a pinned name nor a stub, nor one
+# of HOST_LIBC, which build_arm64.py renames to GuestRuntime_*. The game stack
+# it walks is committed (state.c), so each page it touches is there.
+STACK_PROBES = ({"___chkstk_ms"} if X64 else {"_alloca", "__chkstk_ms"}) if WINDOWS else set()
 
 def c_name(symbol):
     """The C name of an object-file symbol, or None for toolchain symbols."""
@@ -620,13 +633,31 @@ def write_mod_exports(build, names, aliases):
         del flags[flags.index(ANDROID_COMPAT) - 1:flags.index(ANDROID_COMPAT) + 1]   # and its -include
     run([CC, *flags, "-fno-builtin", "-w", "-c", f"{build}/mod_exports.c", "-o", f"{build}/mod_exports.o"])
 
+def with_source_addressed(lines):
+    """The file's lines with the sections of the modules that have no retail
+    ELF (SOURCE_ADDRESSED_MODULES: MODEL.MRG's variant modules, which the
+    table config/pc/model_gate.csv ports) written from their C, at the end,
+    as tools/pc/model_gate.py gives them."""
+    kept, skipping = [], False
+    for line in lines:
+        if line.startswith("["):
+            skipping = line.strip()[1:-1] in SOURCE_ADDRESSED_MODULES
+        if not skipping:
+            kept.append(line.replace("\r\n", "\n"))
+    for name, found in model_gate.address_sections().items():
+        kept.append(f"[{name}]\n")
+        kept.extend(f"{symbol} {address:08X}\n" for symbol, address in sorted(found.items()))
+    return kept
+
+
 def guest_addresses():
     """The retail address of every global in the resident image and in each
     module, and the resident .text range: from the matching build's ELFs
     when they are here, which also refreshes ADDRESSES, else from ADDRESSES.
     Returns ({name: address}, {module: {name: address}}, (start, end))."""
     elfs = {"SLUS_014.11": ELF}
-    elfs.update((name, "tmp/overlays/{0}/build/{0}.elf".format(MODULE_CONFIG.get(name, name))) for name, _, _, _ in MODULES)
+    elfs.update((name, "tmp/overlays/{0}/build/{0}.elf".format(MODULE_CONFIG.get(name, name))) for name, _, _, _ in MODULES
+                if name not in SOURCE_ADDRESSED_MODULES)
     if all(os.path.exists(path) for path in elfs.values()):
         tables = {}
         for name, path in elfs.items():
@@ -647,6 +678,7 @@ def guest_addresses():
         for name, found in tables.items():
             lines.append(f"[{name}]\n")
             lines.extend(f"{symbol} {address:08X}\n" for symbol, address in sorted(found.items()))
+        lines = with_source_addressed(lines)
         current = open(ADDRESSES).read() if os.path.exists(ADDRESSES) else None
         if current != "".join(lines):
             with open(ADDRESSES, "w", newline="\n") as handle:
@@ -654,6 +686,15 @@ def guest_addresses():
             print(f"{ADDRESSES}: updated from the matching build; commit it")
     elif not os.path.exists(ADDRESSES):
         sys.exit(f"{ADDRESSES} is missing, and so are the matching build's ELFs (make match match-overlays)")
+    else:
+        # No ELFs here: the file stands, but the sections of the modules that
+        # have none follow their C, as they do with the ELFs.
+        with open(ADDRESSES) as handle:
+            lines = handle.readlines()
+        if with_source_addressed(lines) != lines:
+            with open(ADDRESSES, "w", newline="\n") as handle:
+                handle.writelines(with_source_addressed(lines))
+            print(f"{ADDRESSES}: the model modules' sections updated from their C; commit it")
     tables, text, section = {}, (0, 0), None
     with open(ADDRESSES) as handle:
         for line in handle:
@@ -666,7 +707,7 @@ def guest_addresses():
                 section = tables.setdefault(parts[0][1:-1], {})
             else:
                 section[parts[0]] = int(parts[1], 16)
-    missing = [name for name in elfs if name not in tables]
+    missing = [name for name in [*elfs, *sorted(SOURCE_ADDRESSED_MODULES)] if name not in tables]
     if missing:
         sys.exit(f"{ADDRESSES} has no section for {', '.join(missing)}")
     return tables["SLUS_014.11"], {name: tables[name] for name, _, _, _ in MODULES}, text
@@ -1165,7 +1206,9 @@ def main():
               "ptr32: the compiler keeps store widths through __ptr32: the pass can be retired "
               "(notes/pc-build.md)" + ("; skipped" if skip else ""))
         PTR32_PASS = not skip
-    headers = glob.glob("src/**/*.h", recursive=True) + glob.glob("mods/**/*.h", recursive=True) + [__file__, "config/pc/host_symbol_renames.txt"]
+    # .inc: the X-macro tables units include (model_gate_table.inc among them).
+    headers = glob.glob("src/**/*.h", recursive=True) + glob.glob("src/**/*.inc", recursive=True) + \
+        glob.glob("mods/**/*.h", recursive=True) + [__file__, "config/pc/host_symbol_renames.txt"]
     if A64:
         headers.append("tools/pc/ptr32_stores.py")   # it rewrites every unit's IR (compile_unit)
     NEWEST_HEADER = max(os.path.getmtime(path) for path in headers)
@@ -1216,8 +1259,10 @@ def main():
     if not options.release:
         NATIVE_CFLAGS.append("-DMEMORIES_TEST_HOOKS")
     native_newest = max(NEWEST_HEADER, flags_changed(f"{options.build}/native-flags.txt", NATIVE_CFLAGS))
-    jobs = [(s, obj(s), CFLAGS, renames_file, NEWEST_HEADER) for s in game]
-    jobs += [(s, obj(s), NATIVE_CFLAGS, None, native_newest) for s in NATIVE]
+    # A unit's object is stale when anything it includes is newer, not only
+    # a header: slot B's wrappers include slot A's C (build_config.newest_input).
+    jobs = [(s, obj(s), CFLAGS, renames_file, max(NEWEST_HEADER, newest_input(s))) for s in game]
+    jobs += [(s, obj(s), NATIVE_CFLAGS, None, max(native_newest, newest_input(s))) for s in NATIVE]
     with concurrent.futures.ThreadPoolExecutor(os.cpu_count()) as pool:
         list(pool.map(compile_unit, jobs))
 
@@ -1293,7 +1338,8 @@ def main():
     # A shared object (Android) is loaded where the system chooses, so its
     # sections cannot be fixed either.
     fixed = dict(FIXED_SECTIONS) if not WINDOWS and not ANDROID else {}
-    for index, (name, _, _, bank) in enumerate(module for module in MODULES if module[3] and fixed):
+    for index, (name, _, _, bank) in enumerate(
+            module for module in MODULES if module[3] and fixed and module[0] not in SOURCE_ADDRESSED_MODULES):
         fixed[f"ovl_{name}_data"] = MODULE_SECTIONS + index * 0x400000
         fixed[f"ovl_{name}_bss"] = MODULE_SECTIONS + index * 0x400000 + 0x200000
     digest = hashlib.sha256()
@@ -1315,6 +1361,8 @@ def main():
     functions = {row["name"]: row["status"] for row in rows}
     overlay_rows = []
     for name, _, identifier, bank in MODULES:
+        if name in SOURCE_ADDRESSED_MODULES:
+            continue   # gated, with no function list of its own
         with open(f"config/slus_01411/overlays/{MODULE_CONFIG.get(name, name)}_functions.csv") as handle:
             for row in csv.DictReader(handle):
                 row["name"] = renamed.get(name, {}).get(row["name"], row["name"])
@@ -1326,6 +1374,11 @@ def main():
     for name, _, _, _ in MODULES:
         for symbol, address in module_elf[name].items():
             addresses.setdefault(renamed.get(name, {}).get(symbol, symbol), address)
+    # Upstream's names for resident functions the ported model modules call
+    # where the port names the address otherwise (model_gate_names.txt): an
+    # alias to the port's name below, like a func_ name's.
+    for symbol, address in model_gate_port.read_names().items():
+        addresses.setdefault(symbol, address)
 
     # A native definition replaces the game's: weaken the original so the
     # linker prefers src/pc/overrides (calls are symbol-relative at -O0).
@@ -1361,7 +1414,8 @@ def main():
                 run([OBJCOPY, *[f"--weaken-symbol={name}" for name in hits], obj(source)])
     # Position-independent i386 code (Android) names the GOT, which the
     # linker defines.
-    wanted = (undefined | tentative | KEPT_FOR_MODS) - game_defined - native_defined - HOST_LIBC - {"_GLOBAL_OFFSET_TABLE_"}
+    wanted = (undefined | tentative | KEPT_FOR_MODS) - game_defined - native_defined - HOST_LIBC - STACK_PROBES - \
+        {"_GLOBAL_OFFSET_TABLE_"}
     pinned, stubs, unknown, aliases = {}, [], [], {}
     for name in sorted(wanted):
         address = addresses.get(name)
@@ -1382,6 +1436,14 @@ def main():
     for name in native_undefined - game_defined - native_defined:
         if name.startswith("D_8") and name in addresses:
             pinned[name] = host_address(addresses[name])
+    # A ported model module has no ELF: a name its C uses that no table
+    # places would be a stub, so it stops the build instead.
+    unplaced = sorted(name for name in unknown
+                      if any(name in module_symbols[module][2] | module_symbols[module][1]
+                             for module in SOURCE_ADDRESSED_MODULES))
+    if unplaced:
+        sys.exit("names the model modules' C uses that no table places (config/pc/guest_addresses.txt, "
+                 "config/pc/model_gate_names.txt): " + ", ".join(unplaced[:20]))
     # Overlay entry points and data live outside the resident image.
     stubs += [name for name in unknown if name in undefined]
     # Some pinned names are functions of a loadable module that the C calls
