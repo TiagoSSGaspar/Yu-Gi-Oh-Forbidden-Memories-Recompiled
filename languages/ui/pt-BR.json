@@ -674,6 +674,7 @@
  "something went wrong.": "algo deu errado.",
  "the ARM64 state is truncated or its integrity check failed": "o estado ARM64 está truncado ou a verificação de integridade falhou",
  "the reason is in the report": "o motivo está no relatório",
+ "this copy was built for an older release of the game and cannot run on this one: replace it with the mod that comes with this release": "esta cópia foi feita para uma versão mais antiga do jogo e não funciona nesta: troque pelo mod que vem com esta versão",
  "this state has different mods": "este estado tem mods diferentes",
  "this state uses another architecture or state format": "este estado usa outra arquitetura ou outro formato de estado",
  "this state was made with a different build of the game, and one of the two has no symbol table to carry it over with": "este estado foi feito com outra versão do jogo, e uma das duas não tem tabela de símbolos para transportá-lo",

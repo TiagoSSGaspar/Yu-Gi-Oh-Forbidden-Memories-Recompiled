@@ -211,6 +211,16 @@ the English picks. The words follow the language when the player changes
 it, and the overlays are drawn again in them. A mod that also runs on an
 older game checks `host->api >= 27` first and keeps its English there.
 
+`text` and `picture_point` are this fork's own entries, kept after the
+newest of upstream's: API 27 now, API 23 in the fork's v1.2.0, where
+upstream's mouse is today. A copy of Duelist Kingdom rules or Extra hand
+plays built for v1.2.0 would ask `host->api >= 23`, be told yes, and call the
+wrong entry, so the game loads none of its code and says beside the mod to
+replace it with this release's: it knows such a copy by its `mod.json`
+version, older than 0.11.0 (`built_for_forks_old_table` in
+`src/pc/mods/mods.c`). When the fork's entries move again, both mods'
+versions and that table go up with them.
+
 The mods the release ships have `lang/pt-BR.json`; Extra hand plays'
 translates its hints, its phase menu and its notices this way.
 

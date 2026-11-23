@@ -712,7 +712,8 @@ static int body(MenuCanvas *c, int w, int y)
                                         : UI("Content mod: assets, cards or data patches."),
                  DIM);
         if (Mods_Status(selected)[0])
-            y = wrap(c, 0, y + 16 * unit, w, Mods_Status(selected), Mods_Failed(selected) ? RED : WARN);
+            /* A status the port's words have (an old copy of one of the fork's mods) in the player's language. */
+            y = wrap(c, 0, y + 16 * unit, w, UI(Mods_Status(selected)), Mods_Failed(selected) ? RED : WARN);
     } else if (tab == 1) {
         if (!counts[selected])
             return wrap(c, 0, y, w, UI("This mod does not declare configurable settings."), DIM);

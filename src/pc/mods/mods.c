@@ -3417,6 +3417,37 @@ static int old_android_object(const Mod *mod)
 #endif
 #endif
 
+/* The fork's own host entries (text, picture_point) are API 27. In the
+ * fork's v1.2.0 they were API 23, and API 22 in the builds before it, where
+ * upstream's packet_area and mouse are now: a copy of one of the fork's mods
+ * built then asks host->api >= 23, is told yes, and calls another entry with
+ * its arguments. Nothing in the table can stop that, and those mods say
+ * mod->api = 4 whenever they were built, so a copy is known by its mod.json:
+ * the version below is each mod's first built for this table, and an older
+ * one is broken from the moment its manifest is read, so none of its code is
+ * loaded and what depends on it says so too. When the fork's entries move
+ * again, both mods' versions and these go up with them. */
+static int built_for_forks_old_table(const Mod *mod, const char *version)
+{
+    static const struct { const char *id, *first; } own[] = {
+        {"modern-rules", "0.11.0"},
+        {"extra-hand-plays", "0.11.0"},
+    };
+    for (size_t i = 0; i < sizeof(own) / sizeof(own[0]); i++) {
+        const char *a = version, *b = own[i].first;
+        if (strcmp(mod->id, own[i].id) != 0) continue;
+        for (int part = 0; part < 4; part++) { /* dotted numbers, as a dependency's bounds are compared */
+            char *a_end, *b_end;
+            long have = strtol(a, &a_end, 10), first = strtol(b, &b_end, 10);
+            if (have != first) return have < first;
+            a = *a_end == '.' ? a_end + 1 : "";
+            b = *b_end == '.' ? b_end + 1 : "";
+        }
+        return 0;
+    }
+    return 0;
+}
+
 static int load_library(Mod *mod)
 {
     char path[PATH_MAX_];
@@ -3787,6 +3818,12 @@ static int read_manifest(Mod *mod, const char *directory, const char *origin)
 #endif
             }
         }
+    }
+    if (mod->library[0] && built_for_forks_old_table(mod, Json_String(Json_Member(root, "version"), ""))) {
+        mod->broken = 1;
+        /* English here, as the log is; the Mods window shows it in the player's language (UI). */
+        note(mod, "this copy was built for an older release of the game and cannot run on this one: "
+                  "replace it with the mod that comes with this release");
     }
     mod->restart = Json_Bool(Json_Member(root, "restart"), 0);
     mod->default_enabled = Json_Bool(Json_Member(root, "enabled"), 0);
